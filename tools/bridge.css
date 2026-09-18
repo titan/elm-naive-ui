@@ -1,0 +1,31 @@
+/* ===== elm-ui bridge =====
+ *
+ * Components are built from elm-ui elements, and elm-ui styles its flex helpers in a
+ * way Naive UI does not expect:
+ *
+ *   .s.r > .s  { flex-basis: 0% }
+ *   .s.c > .s  { flex-basis: 0px; min-height: min-content }
+ *
+ * Naive UI components are ordinary elements (flex-basis / min-height default), so a
+ * `flex-basis: 0` would shrink them to their min-content width. Naive UI's own rules
+ * always win on specificity (they are scoped under `.nui-root.nui-root`), but these
+ * two properties are *not declared* by Naive UI, so they must be restored here.
+ *
+ * Any element carrying a Naive UI class (`n-button`, `n-button__icon`, ...) gets the
+ * browser defaults back.
+ */
+.nui-root.nui-root [class^="n-"],
+.nui-root.nui-root [class*=" n-"] {
+  flex-basis: auto;
+}
+
+/* elm-ui's `.s.e` sets `white-space: pre`; Naive UI relies on normal/`nowrap`
+ * inherited from its own rules. Only reset elements Naive UI does not itself style. */
+.nui-root.nui-root [class^="n-button__"],
+.nui-root.nui-root [class*=" n-button__"] {
+  white-space: normal;
+}
+
+.nui-root.nui-root .n-button.n-button {
+  white-space: nowrap;
+}

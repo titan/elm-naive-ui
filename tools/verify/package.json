@@ -1,0 +1,8 @@
+{
+  "name": "elm-naive-ui-verify",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "jsdom": "^25.0.0"
+  }
+}

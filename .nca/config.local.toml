@@ -1,0 +1,10 @@
+extra_paths = [
+    "/tmp",
+    "/home/titan/Works/elm/naive-ui",
+]
+
+[permissions]
+allow = ["execute_bash:*"]
+
+[provider]
+default = "deepseek"

@@ -1,0 +1,28 @@
+{
+  "light": {
+    "borderRadius": "3px",
+    "fontSize": "14px",
+    "border": "2px solid #fff",
+    "heightTiny": "22px",
+    "heightSmall": "28px",
+    "heightMedium": "34px",
+    "heightLarge": "40px",
+    "heightHuge": "46px",
+    "color": "rgba(204, 204, 204, 1)",
+    "colorModal": "rgba(204, 204, 204, 1)",
+    "colorPopover": "rgba(204, 204, 204, 1)"
+  },
+  "dark": {
+    "borderRadius": "3px",
+    "fontSize": "14px",
+    "border": "2px solid rgb(24, 24, 28)",
+    "heightTiny": "22px",
+    "heightSmall": "28px",
+    "heightMedium": "34px",
+    "heightLarge": "40px",
+    "heightHuge": "46px",
+    "color": "rgba(66, 66, 69, 1)",
+    "colorModal": "rgba(82, 82, 87, 1)",
+    "colorPopover": "rgba(105, 105, 110, 1)"
+  }
+}

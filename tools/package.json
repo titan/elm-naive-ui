@@ -1,0 +1,15 @@
+{
+  "name": "elm-naive-ui-tools",
+  "private": true,
+  "type": "module",
+  "description": "Build tooling: extracts exact CSS + theme values from the naive-ui reference source.",
+  "scripts": {
+    "extract": "node extract-all.mjs"
+  },
+  "dependencies": {
+    "@css-render/plugin-bem": "^0.15.14",
+    "css-render": "^0.15.14",
+    "esbuild": "^0.28.0",
+    "seemly": "^0.3.6"
+  }
+}
