@@ -348,6 +348,19 @@ progressRailStyleMultipleOpts =
     }
 
 
+progressRailStyleCircleOpts : Progress.Options msg
+progressRailStyleCircleOpts =
+    let
+        d =
+            Progress.defaults
+    in
+    { d
+        | type_ = Progress.Circle
+        , percentage = 60
+        , railStyle = Just [ ( "opacity", "0.3" ) ]
+    }
+
+
 badgeScrollUpOpts : Badge.Options msg
 badgeScrollUpOpts =
     let
@@ -1091,6 +1104,8 @@ liveNodes =
                     (Progress.view Theme.default progressRailStyleLineOpts [])
                 , Element.el [ Element.htmlAttribute (HA.id "live-progress-railstyle-multiple") ]
                     (Progress.view Theme.default progressRailStyleMultipleOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-progress-railstyle-circle") ]
+                    (Progress.view Theme.default progressRailStyleCircleOpts [])
                 , Element.el [ Element.htmlAttribute (HA.id "live-badge-offset") ]
                     (Badge.view Theme.default badgeOffsetOpts [ Element.text "Mail" ])
                 ]

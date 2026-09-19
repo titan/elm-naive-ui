@@ -615,6 +615,17 @@ dTrue(
   rsMulti1.includes('stroke:#18a058') && rsMulti1.includes('opacity:0.5'),
   rsMulti1
 )
+const railStyleCircleRail = doc.querySelector(
+  '#live-progress-railstyle-circle .n-progress-graph-circle-rail'
+)
+const rsCircleStyle = railStyleCircleRail
+  ? railStyleCircleRail.getAttribute('style') || ''
+  : ''
+dTrue(
+  'DOM: Progress circle ignores railStyle (faithful: Circle.tsx never applies it)',
+  !!railStyleCircleRail && !rsCircleStyle.includes('opacity:0.3'),
+  rsCircleStyle
+)
 
 // Result ---------------------------------------------------------------------
 const result = doc.querySelector('#live-result .n-result')

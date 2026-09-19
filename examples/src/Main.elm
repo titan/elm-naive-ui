@@ -581,7 +581,10 @@ progressSection =
                     , percentages = [ 80, 60 ]
                     , colors = [ Progress.Solid "#2080f0", Progress.Solid "#18a058" ]
                     , railColors = [ "#2080f0", "#18a058" ]
-                    , railStyles = [ [ ( "opacity", "0.3" ) ], [ ( "opacity", "0.3" ) ] ]
+                    , railStyles =
+                        [ [ ( "stroke", "#2080f0" ), ( "opacity", "0.3" ) ]
+                        , [ ( "stroke", "#18a058" ), ( "opacity", "0.3" ) ]
+                        ]
                     , strokeWidth = 6
                     , circleGap = 0.5
                 }
