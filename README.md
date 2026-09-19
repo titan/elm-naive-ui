@@ -71,6 +71,7 @@ bridge, tests).
 | `NUI.Alert`       | ✅ |
 | `NUI.Avatar`      | ✅ |
 | `NUI.AvatarGroup` | ✅ |
+| `NUI.BackTop`     | ✅ |
 | `NUI.Badge`       | ✅ |
 | `NUI.Breadcrumb`  | ✅ |
 | `NUI.Button`      | ✅ |
@@ -79,6 +80,7 @@ bridge, tests).
 | `NUI.Checkbox`    | ✅ |
 | `NUI.Countdown`   | ✅ |
 | `NUI.Divider`     | ✅ |
+| `NUI.Ellipsis`    | ✅ |
 | `NUI.Empty`       | ✅ |
 | `NUI.GradientText`| ✅ |
 | `NUI.Input`       | ✅ |
@@ -86,6 +88,7 @@ bridge, tests).
 | `NUI.Marquee`     | ✅ |
 | `NUI.PageHeader`  | ✅ |
 | `NUI.Progress`    | ✅ |
+| `NUI.QrCode`      | ✅ |
 | `NUI.Radio`       | ✅ |
 | `NUI.Result`      | ✅ |
 | `NUI.Skeleton`    | ✅ |

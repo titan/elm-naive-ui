@@ -49,7 +49,10 @@ const targets = {
   '.n-page-header-wrapper': true,
   '.n-affix': false,
   '.n-split': true,
-  '.n-steps': false
+  '.n-steps': false,
+  '.n-ellipsis': false,
+  '.n-back-top': true,
+  '.n-qr-code': true
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {

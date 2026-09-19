@@ -1233,6 +1233,86 @@ dTrue(
   'ok'
 )
 
+// Ellipsis -------------------------------------------------------------------
+const ell = doc.querySelector('#live-ellipsis .n-ellipsis')
+dTrue(
+  'DOM: Ellipsis renders .n-ellipsis--line-clamp.n-ellipsis--cursor-pointer',
+  !!ell &&
+    ell.classList.contains('n-ellipsis') &&
+    ell.classList.contains('n-ellipsis--line-clamp') &&
+    ell.classList.contains('n-ellipsis--cursor-pointer'),
+  ell ? ell.getAttribute('class') : 'missing'
+)
+const ellStyle = ell ? ell.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: Ellipsis line-clamp sets -webkit-line-clamp:2',
+  ellStyle.includes('-webkit-line-clamp:2'),
+  ellStyle
+)
+const ellExpanded = doc.querySelector('#live-ellipsis-expanded .n-ellipsis')
+dTrue(
+  'DOM: Ellipsis expanded omits the clamp style',
+  !!ellExpanded &&
+    !((ellExpanded.getAttribute('style') || '').includes('-webkit-line-clamp')),
+  ellExpanded ? JSON.stringify(ellExpanded.getAttribute('style')) : 'missing'
+)
+
+// BackTop --------------------------------------------------------------------
+const bt = doc.querySelector('#live-back-top .n-back-top')
+dTrue(
+  'DOM: BackTop renders .n-back-top',
+  !!bt && bt.classList.contains('n-back-top'),
+  bt ? bt.getAttribute('class') : 'missing'
+)
+const btStyle = bt ? bt.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: BackTop carries --n-height:44px',
+  btStyle.includes('--n-height:44px'),
+  btStyle
+)
+dTrue(
+  'DOM: BackTop default icon renders in .n-base-icon svg',
+  !!doc.querySelector('#live-back-top .n-base-icon svg'),
+  'ok'
+)
+
+// QrCode ---------------------------------------------------------------------
+const qrc = doc.querySelector('#live-qr-code .n-qr-code')
+dTrue(
+  'DOM: QrCode renders .n-qr-code with an inline svg[role=img]',
+  !!qrc && qrc.classList.contains('n-qr-code') && !!qrc.querySelector('svg[role="img"]'),
+  qrc ? qrc.getAttribute('class') : 'missing'
+)
+const qrcStyle = qrc ? qrc.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: QrCode default padding/width/height + --n-border-radius',
+  qrcStyle.includes('padding:12px') &&
+    qrcStyle.includes('width:100px') &&
+    qrcStyle.includes('height:100px') &&
+    qrcStyle.includes('--n-border-radius:'),
+  qrcStyle
+)
+dEq(
+  'DOM: QrCode HELLO WORLD (M) viewBox is 21x21',
+  '0 0 21 21',
+  qrc ? (qrc.querySelector('svg') ? qrc.querySelector('svg').getAttribute('viewBox') : null) : null
+)
+const qrcs = doc.querySelector('#live-qr-code-styled .n-qr-code')
+const qrcsSvg = qrcs ? qrcs.querySelector('svg') : null
+dTrue(
+  'DOM: QrCode size 140 sets svg width and height 140',
+  !!qrcsSvg &&
+    qrcsSvg.getAttribute('width') === '140' &&
+    qrcsSvg.getAttribute('height') === '140',
+  qrcsSvg ? `${qrcsSvg.getAttribute('width')}x${qrcsSvg.getAttribute('height')}` : 'missing'
+)
+dTrue(
+  'DOM: QrCode color paints a #18a058 crispEdges path',
+  !!qrcsSvg &&
+    !!qrcsSvg.querySelector('path[fill="#18a058"][shape-rendering="crispEdges"]'),
+  'ok'
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

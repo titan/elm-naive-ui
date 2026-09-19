@@ -1,0 +1,30 @@
+{
+  "light": {
+    "width": "44px",
+    "height": "44px",
+    "borderRadius": "22px",
+    "iconSize": "26px",
+    "color": "#fff",
+    "textColor": "rgb(51, 54, 57)",
+    "iconColor": "rgb(51, 54, 57)",
+    "iconColorHover": "#36ad6a",
+    "iconColorPressed": "#0c7a43",
+    "boxShadow": "0 2px 8px 0px rgba(0, 0, 0, .12)",
+    "boxShadowHover": "0 2px 12px 0px rgba(0, 0, 0, .18)",
+    "boxShadowPressed": "0 2px 12px 0px rgba(0, 0, 0, .18)"
+  },
+  "dark": {
+    "width": "44px",
+    "height": "44px",
+    "borderRadius": "22px",
+    "iconSize": "26px",
+    "color": "rgb(72, 72, 78)",
+    "textColor": "rgba(255, 255, 255, 0.82)",
+    "iconColor": "rgba(255, 255, 255, 0.82)",
+    "iconColorHover": "#7fe7c4",
+    "iconColorPressed": "#5acea7",
+    "boxShadow": "0 2px 8px 0px rgba(0, 0, 0, .12)",
+    "boxShadowHover": "0 2px 12px 0px rgba(0, 0, 0, .18)",
+    "boxShadowPressed": "0 2px 12px 0px rgba(0, 0, 0, .18)"
+  }
+}

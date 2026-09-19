@@ -3404,6 +3404,68 @@ margin-top: calc(var(--n-indicator-size) / 2 - var(--n-step-header-font-size) / 
                     left: unset;
                     right: calc(var(--n-indicator-size) / 2);}
 
+/* ===== naive-ui: ellipsis ===== */
+.nui-root.nui-root .n-ellipsis {
+  overflow: hidden;}.nui-root.nui-root .n-ellipsis:not(.n-ellipsis--line-clamp) {
+
+    white-space: nowrap;
+    display: inline-block;
+    vertical-align: bottom;
+    max-width: 100%;}.nui-root.nui-root .n-ellipsis.n-ellipsis--line-clamp {
+
+    display: -webkit-inline-box;
+    -webkit-box-orient: vertical;}.nui-root.nui-root .n-ellipsis.n-ellipsis--cursor-pointer {
+
+    cursor: pointer;}
+
+/* ===== naive-ui: back-top ===== */
+.nui-root.nui-root .n-back-top {
+
+  position: fixed;
+  right: 40px;
+  bottom: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--n-text-color);
+  transition:
+    color .3s var(--n-bezier),
+    box-shadow .3s var(--n-bezier),
+    background-color .3s var(--n-bezier);
+  border-radius: var(--n-border-radius);
+  height: var(--n-height);
+  min-width: var(--n-width);
+  box-shadow: var(--n-box-shadow);
+  background-color: var(--n-color);}.nui-root.nui-root .n-back-top.fade-in-scale-up-transition-leave-active {
+  transform-origin: inherit;
+  transition: opacity .2s cubic-bezier(.4, 0, 1, 1), transform .2s cubic-bezier(.4, 0, 1, 1) ;}.nui-root.nui-root .n-back-top.fade-in-scale-up-transition-enter-active {
+  transform-origin: inherit;
+  transition: opacity .2s cubic-bezier(0, 0, .2, 1), transform .2s cubic-bezier(0, 0, .2, 1) ;}.nui-root.nui-root .n-back-top.fade-in-scale-up-transition-enter-from,
+.nui-root.nui-root .n-back-top.fade-in-scale-up-transition-leave-to {
+  opacity: 0;
+  transform:  scale(.9);}.nui-root.nui-root .n-back-top.fade-in-scale-up-transition-leave-from,
+.nui-root.nui-root .n-back-top.fade-in-scale-up-transition-enter-to {
+  opacity: 1;
+  transform:  scale(1);}.nui-root.nui-root .n-back-top.n-back-top--transition-disabled {
+  transition: none !important;}.nui-root.nui-root .n-back-top .n-base-icon {
+
+    font-size: var(--n-icon-size);
+    color: var(--n-icon-color);
+    transition: color .3s var(--n-bezier);}.nui-root.nui-root .n-back-top svg {
+  pointer-events: none;}.nui-root.nui-root .n-back-top:hover {
+  box-shadow: var(--n-box-shadow-hover);}.nui-root.nui-root .n-back-top:hover .n-base-icon {
+  color: var(--n-icon-color-hover);}.nui-root.nui-root .n-back-top:active {
+  box-shadow: var(--n-box-shadow-pressed);}.nui-root.nui-root .n-back-top:active .n-base-icon {
+  color: var(--n-icon-color-pressed);}
+
+/* ===== naive-ui: qr-code ===== */
+.nui-root.nui-root .n-qr-code {
+
+    background: #fff;
+    border-radius: var(--n-border-radius);
+    display: inline-flex;}
+
 /* ===== elm-ui bridge =====
  *
  * Components are built from elm-ui elements, and elm-ui styles its own helper classes

@@ -21,6 +21,7 @@ import NUI.Affix as Affix
 import NUI.Alert as Alert
 import NUI.Avatar as Avatar
 import NUI.AvatarGroup as AvatarGroup
+import NUI.BackTop as BackTop
 import NUI.Badge as Badge
 import NUI.Breadcrumb as Breadcrumb
 import NUI.Button as Button
@@ -29,6 +30,7 @@ import NUI.Card as Card
 import NUI.Checkbox as Checkbox
 import NUI.Countdown as Countdown
 import NUI.Css as Css
+import NUI.Ellipsis as Ellipsis
 import NUI.Empty as Empty
 import NUI.GradientText as GradientText
 import NUI.Input as Input
@@ -37,6 +39,8 @@ import NUI.List as NList
 import NUI.Marquee as Marquee
 import NUI.PageHeader as PageHeader
 import NUI.Progress as Progress
+import NUI.QrCode as QrCode
+import NUI.Qrcodegen as Qrcodegen
 import NUI.Radio as Radio
 import NUI.Result as Result
 import NUI.Skeleton as Skeleton
@@ -800,6 +804,110 @@ stepsLiveItems =
     ]
 
 
+ellipsisLineClampOpts : Ellipsis.Options Msg
+ellipsisLineClampOpts =
+    let
+        d =
+            Ellipsis.defaults
+    in
+    { d | lineClamp = Just 2, expandOnClick = True, onToggle = Just NoOp }
+
+
+ellipsisExpandedOpts : Ellipsis.Options Msg
+ellipsisExpandedOpts =
+    let
+        d =
+            Ellipsis.defaults
+    in
+    { d | lineClamp = Just 2, expanded = True }
+
+
+backTopLiveOpts : BackTop.Options Msg
+backTopLiveOpts =
+    let
+        d =
+            BackTop.defaults
+    in
+    { d | show = True, onClick = Just NoOp }
+
+
+qrCodeLiveOpts : QrCode.Options msg
+qrCodeLiveOpts =
+    let
+        d =
+            QrCode.defaults
+    in
+    { d | value = "HELLO WORLD" }
+
+
+qrCodeStyledOpts : QrCode.Options msg
+qrCodeStyledOpts =
+    let
+        d =
+            QrCode.defaults
+    in
+    { d
+        | value = "https://www.naiveui.com/"
+        , color = "#18a058"
+        , backgroundColor = "#F5F5F5"
+        , size = 140
+        , errorCorrectionLevel = QrCode.H
+    }
+
+
+
+-- QRCODEGEN PROBES -------------------------------------------------------------
+
+
+encodedSize : String -> Qrcodegen.Ecc -> Int
+encodedSize text ecc =
+    case Qrcodegen.encodeText text ecc of
+        Ok qr ->
+            Qrcodegen.size qr
+
+        Err _ ->
+            -1
+
+
+gridSquare : String -> Qrcodegen.Ecc -> Bool
+gridSquare text ecc =
+    case Qrcodegen.encodeText text ecc of
+        Ok qr ->
+            let
+                size =
+                    Qrcodegen.size qr
+
+                rows =
+                    Qrcodegen.getModules qr
+            in
+            List.length rows
+                == size
+                && List.all (\row -> List.length row == size) rows
+
+        Err _ ->
+            False
+
+
+moduleAt : String -> Qrcodegen.Ecc -> Int -> Int -> Bool
+moduleAt text ecc x y =
+    case Qrcodegen.encodeText text ecc of
+        Ok qr ->
+            Qrcodegen.getModule qr x y
+
+        Err _ ->
+            False
+
+
+isErr : Result e a -> Bool
+isErr result =
+    case result of
+        Err _ ->
+            True
+
+        Ok _ ->
+            False
+
+
 
 -- CHECKS -----------------------------------------------------------------------
 
@@ -1045,6 +1153,15 @@ checks =
 
         stepsSmallVars =
             Steps.cssVarsFor light { stepsD | size = Steps.Small } Steps.Process
+
+        backTopVars =
+            BackTop.cssVarsFor light
+
+        qrD =
+            QrCode.defaults
+
+        qrVars =
+            QrCode.cssVarsFor light qrD
     in
     [ -- 1. NUI.Theme -------------------------------------------------------------
       eq "Theme.default == Theme.light" True (Theme.default == Theme.light)
@@ -1472,6 +1589,51 @@ checks =
     , eq "steps Finish --n-indicator-color = transparent" (Just "#0000") (lookup "--n-indicator-color" stepsFinishVars)
     , eq "steps Process --n-header-text-color = textColor1" (Just common.textColor1) (lookup "--n-header-text-color" stepsVars)
     , eq "steps Finish --n-header-text-color = textColorDisabled" (Just common.textColorDisabled) (lookup "--n-header-text-color" stepsFinishVars)
+
+    -- 24. NUI.BackTop cssVarsFor ------------------------------------------------
+    , eq "back-top cssVarsFor has 13 vars" 13 (List.length backTopVars)
+    , eq "back-top cssVarsFor exact --n-* names"
+        [ "--n-bezier"
+        , "--n-border-radius"
+        , "--n-height"
+        , "--n-width"
+        , "--n-box-shadow"
+        , "--n-box-shadow-hover"
+        , "--n-box-shadow-pressed"
+        , "--n-color"
+        , "--n-icon-size"
+        , "--n-icon-color"
+        , "--n-icon-color-hover"
+        , "--n-icon-color-pressed"
+        , "--n-text-color"
+        ]
+        (varKeys backTopVars)
+    , eq "back-top --n-border-radius = common.heightTiny" (Just common.heightTiny) (lookup "--n-border-radius" backTopVars)
+    , eq "back-top --n-height" (Just "44px") (lookup "--n-height" backTopVars)
+    , eq "back-top --n-icon-size" (Just "26px") (lookup "--n-icon-size" backTopVars)
+    , eq "back-top --n-color = common.popoverColor" (Just common.popoverColor) (lookup "--n-color" backTopVars)
+    , eq "back-top --n-icon-color-hover = primaryColorHover" (Just common.primaryColorHover) (lookup "--n-icon-color-hover" backTopVars)
+
+    -- 25. NUI.QrCode cssVarsFor -------------------------------------------------
+    , eq "qr-code cssVarsFor exact order"
+        [ ( "padding", "12px" )
+        , ( "background-color", "#FFF" )
+        , ( "width", "100px" )
+        , ( "height", "100px" )
+        , ( "--n-border-radius", common.borderRadius )
+        ]
+        qrVars
+    , eq "qr-code Px 8 padding" (Just "8px") (lookup "padding" (QrCode.cssVarsFor light { qrD | padding = QrCode.Px 8 }))
+    , eq "qr-code Custom padding passes through" (Just "4px 8px") (lookup "padding" (QrCode.cssVarsFor light { qrD | padding = QrCode.Custom "4px 8px" }))
+    , eq "qr-code size 140 sets width" (Just "140px") (lookup "width" (QrCode.cssVarsFor light { qrD | size = 140 }))
+
+    -- 26. NUI.Qrcodegen (Nayuki encoder) ----------------------------------------
+    , eq "qrcodegen HELLO WORLD (M) size 21" 21 (encodedSize "HELLO WORLD" Qrcodegen.Medium)
+    , eq "qrcodegen grid is size x size" True (gridSquare "HELLO WORLD" Qrcodegen.Medium)
+    , eq "qrcodegen finder (0,0) dark" True (moduleAt "HELLO WORLD" Qrcodegen.Medium 0 0)
+    , eq "qrcodegen finder (1,1) light" False (moduleAt "HELLO WORLD" Qrcodegen.Medium 1 1)
+    , eq "qrcodegen finder (3,3) dark" True (moduleAt "HELLO WORLD" Qrcodegen.Medium 3 3)
+    , eq "qrcodegen overflow errors" True (isErr (Qrcodegen.encodeText (String.repeat 4000 "x") Qrcodegen.Low))
     ]
 
 
@@ -1691,6 +1853,19 @@ liveNodes =
                     (Split.view Theme.default splitLiveOpts)
                 , Element.el [ Element.htmlAttribute (HA.id "live-steps") ]
                     (Steps.view Theme.default stepsLiveOpts stepsLiveItems)
+                , Element.el [ Element.htmlAttribute (HA.id "live-ellipsis") ]
+                    (Ellipsis.view Theme.default
+                        ellipsisLineClampOpts
+                        [ Element.text "A very long single line of text that gets cut off with an ellipsis character." ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-ellipsis-expanded") ]
+                    (Ellipsis.view Theme.default ellipsisExpandedOpts [ Element.text "Expanded two-line clamp." ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-back-top") ]
+                    (BackTop.view Theme.default backTopLiveOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-qr-code") ]
+                    (QrCode.view Theme.default qrCodeLiveOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-qr-code-styled") ]
+                    (QrCode.view Theme.default qrCodeStyledOpts)
                 ]
             )
         ]

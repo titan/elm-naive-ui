@@ -11,6 +11,7 @@ import NUI.Affix as Affix
 import NUI.Alert as Alert
 import NUI.Avatar as Avatar
 import NUI.AvatarGroup as AvatarGroup
+import NUI.BackTop as BackTop
 import NUI.Badge as Badge
 import NUI.Breadcrumb as Breadcrumb
 import NUI.Button as Button
@@ -20,6 +21,7 @@ import NUI.Checkbox as Checkbox
 import NUI.Countdown as Countdown
 import NUI.Css as Css
 import NUI.Divider as Divider
+import NUI.Ellipsis as Ellipsis
 import NUI.Empty as Empty
 import NUI.GradientText as GradientText
 import NUI.Input as Input
@@ -27,6 +29,7 @@ import NUI.List as NList
 import NUI.Marquee as Marquee
 import NUI.PageHeader as PageHeader
 import NUI.Progress as Progress
+import NUI.QrCode as QrCode
 import NUI.Radio as Radio
 import NUI.Result as Result
 import NUI.Skeleton as Skeleton
@@ -247,6 +250,21 @@ stepsItem =
     Steps.item
 
 
+backTopD : BackTop.Options msg
+backTopD =
+    BackTop.defaults
+
+
+ellipsisD : Ellipsis.Options msg
+ellipsisD =
+    Ellipsis.defaults
+
+
+qrD : QrCode.Options msg
+qrD =
+    QrCode.defaults
+
+
 {-| A distinct colour per showcase avatar (the group's slot path uses the
 `src` as a label).
 -}
@@ -338,6 +356,9 @@ body =
     , countdownSection
     , splitSection
     , stepsSection
+    , ellipsisSection
+    , backTopSection
+    , qrCodeSection
     , rtlSection
     , themeSection
     ]
@@ -1124,6 +1145,62 @@ stepsSection =
             [ { stepsItem | title = Just "First", description = Just "Details" }
             , { stepsItem | title = Just "Second" }
             , { stepsItem | title = Just "Third" }
+            ]
+        ]
+
+
+ellipsisSection : Element msg
+ellipsisSection =
+    section "Ellipsis" "Truncated text (the expand state is caller-owned)." <|
+        [ Element.el [ Element.width (Element.px 220) ]
+            (Ellipsis.view theme
+                ellipsisD
+                [ Element.text "A very long single line of text that gets cut off with an ellipsis character." ]
+            )
+        , Element.el [ Element.width (Element.px 220) ]
+            (Ellipsis.view theme
+                { ellipsisD | lineClamp = Just 2 }
+                [ Element.text "Line clamping caps this paragraph at two lines and hides the remaining text behind a trailing ellipsis." ]
+            )
+        , Element.el [ Element.width (Element.px 220) ]
+            (Ellipsis.view theme
+                { ellipsisD | lineClamp = Just 2, expandOnClick = True }
+                [ Element.text "A clickable two-line clamp. The caller toggles `expanded`." ]
+            )
+        ]
+
+
+backTopSection : Element msg
+backTopSection =
+    section "BackTop" "A fixed back-to-top button (the scroll state is caller-owned)." <|
+        [ BackTop.view theme { backTopD | show = True } [ Element.text "Up" ]
+        ]
+
+
+qrCodeSection : Element msg
+qrCodeSection =
+    section "QrCode" "QR codes, encoded by the ported Nayuki library and drawn as inline SVG." <|
+        [ demoRow "Values"
+            [ QrCode.view theme { qrD | value = "https://www.naiveui.com/" }
+            , QrCode.view theme
+                { qrD
+                    | value = "https://www.naiveui.com/"
+                    , color = "#18a058"
+                    , backgroundColor = "#F5F5F5"
+                }
+            ]
+        , demoRow "Size & error correction"
+            [ QrCode.view theme { qrD | value = "The rain dampened the sky", size = 140 }
+            , QrCode.view theme
+                { qrD | value = "雨淋湿了天空", errorCorrectionLevel = QrCode.H }
+            ]
+        , demoRow "Icon"
+            [ QrCode.view theme
+                { qrD
+                    | value = "https://www.naiveui.com/"
+                    , iconSrc = Just "https://example.com/icon.png"
+                    , errorCorrectionLevel = QrCode.H
+                }
             ]
         ]
 

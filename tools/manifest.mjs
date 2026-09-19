@@ -166,5 +166,17 @@ export const components = {
   steps: {
     cssr: ['steps/src/styles/index.cssr.ts', 'steps/src/styles/rtl.cssr.ts'],
     theme: 'steps/styles/light.ts'
+  },
+  ellipsis: {
+    cssr: ['ellipsis/src/styles/index.cssr.ts'],
+    theme: null
+  },
+  'back-top': {
+    cssr: ['back-top/src/styles/index.cssr.ts'],
+    theme: 'back-top/styles/light.ts'
+  },
+  'qr-code': {
+    cssr: ['qr-code/src/styles/index.cssr.ts'],
+    theme: 'qr-code/styles/light.ts'
   }
 }
