@@ -7,6 +7,7 @@ import Element exposing (Element)
 import Element.Background as Bg
 import Element.Font as Font
 import Html
+import NUI.Affix as Affix
 import NUI.Alert as Alert
 import NUI.Avatar as Avatar
 import NUI.AvatarGroup as AvatarGroup
@@ -16,6 +17,7 @@ import NUI.Button as Button
 import NUI.ButtonGroup as ButtonGroup
 import NUI.Card as Card
 import NUI.Checkbox as Checkbox
+import NUI.Countdown as Countdown
 import NUI.Css as Css
 import NUI.Divider as Divider
 import NUI.Empty as Empty
@@ -30,7 +32,9 @@ import NUI.Result as Result
 import NUI.Skeleton as Skeleton
 import NUI.Space as Space
 import NUI.Spin as Spin
+import NUI.Split as Split
 import NUI.Statistic as Statistic
+import NUI.Steps as Steps
 import NUI.Switch as Switch
 import NUI.Tag as Tag
 import NUI.Theme as Theme exposing (Theme)
@@ -218,6 +222,31 @@ pageHeaderD =
     PageHeader.defaults
 
 
+affixD : Affix.Options msg
+affixD =
+    Affix.defaults
+
+
+countdownD : Countdown.Options msg
+countdownD =
+    Countdown.defaults
+
+
+splitD : Split.Options msg
+splitD =
+    Split.defaults
+
+
+stepsD : Steps.Options msg
+stepsD =
+    Steps.defaults
+
+
+stepsItem : Steps.Item msg
+stepsItem =
+    Steps.item
+
+
 {-| A distinct colour per showcase avatar (the group's slot path uses the
 `src` as a label).
 -}
@@ -305,6 +334,10 @@ body =
     , marqueeSection
     , listSection
     , pageHeaderSection
+    , affixSection
+    , countdownSection
+    , splitSection
+    , stepsSection
     , rtlSection
     , themeSection
     ]
@@ -1033,6 +1066,65 @@ pageHeaderSection =
                 }
                 [ Element.text "The page body sits below the header." ]
             )
+        ]
+
+
+affixSection : Element msg
+affixSection =
+    section "Affix" "Pins content while scrolling (the affixed state is caller-owned)." <|
+        [ Element.el [ Element.height (Element.px 56) ]
+            (Affix.view theme
+                { affixD | affixed = True, top = Just 12 }
+                [ Button.view theme { btn | kind = T.Primary } [ Element.text "Affixed" ] ]
+            )
+        ]
+
+
+countdownSection : Element msg
+countdownSection =
+    section "Countdown" "Remaining time (the caller owns the clock)." <|
+        [ demoRow "Precisions"
+            [ Countdown.view theme { countdownD | distance = 90000, precision = 0 } []
+            , Countdown.view theme { countdownD | distance = 90000, precision = 1 } []
+            , Countdown.view theme { countdownD | distance = 90000, precision = 3 } []
+            ]
+        , demoRow "Custom render"
+            [ Countdown.view theme
+                { countdownD
+                    | distance = 5000
+                    , render =
+                        Just
+                            (\info ->
+                                Element.text (String.fromInt info.seconds ++ "s left")
+                            )
+                }
+                []
+            ]
+        ]
+
+
+splitSection : Element msg
+splitSection =
+    section "Split" "Resizable panes (the size is caller-owned)." <|
+        [ Element.el [ Element.height (Element.px 120), Element.width Element.fill ]
+            (Split.view theme
+                { splitD
+                    | pane1 = [ Element.el [ Element.padding 8 ] (Element.text "Pane 1") ]
+                    , pane2 = [ Element.el [ Element.padding 8 ] (Element.text "Pane 2") ]
+                }
+            )
+        ]
+
+
+stepsSection : Element msg
+stepsSection =
+    section "Steps" "Progress through a sequence." <|
+        [ Steps.view theme
+            { stepsD | current = Just 2 }
+            [ { stepsItem | title = Just "First", description = Just "Details" }
+            , { stepsItem | title = Just "Second" }
+            , { stepsItem | title = Just "Third" }
+            ]
         ]
 
 

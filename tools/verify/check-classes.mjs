@@ -25,6 +25,10 @@ const ALLOW = new Set([
   'n-marquee__original-item', // emitted by Marquee.tsx; no rule targets it
   'n-thing-header__extra', // emitted by Thing.tsx; no rule targets it
   'n-page-header__extra', // emitted by PageHeader.tsx; no rule targets it
+  'n-split__resize-trigger-wrapper', // emitted by Split.tsx; only the inner trigger is styled
+  // upstream emits n-step--show-description on the step, but the CSS :not is on
+  // .n-steps--show-description (Steps cssr) — a modifier mismatch, kept faithful
+  'n-step--show-description',
   // Harmless extras: not upstream class names, but the CSS targets the tag /
   // descendant, so rendering is unaffected.
   'n-avatar__img', // upstream CSS targets `.n-avatar img`

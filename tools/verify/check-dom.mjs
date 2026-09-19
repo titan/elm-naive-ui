@@ -46,7 +46,10 @@ const targets = {
   '.n-thing': true,
   '.n-marquee': true,
   '.n-list': true,
-  '.n-page-header-wrapper': true
+  '.n-page-header-wrapper': true,
+  '.n-affix': false,
+  '.n-split': true,
+  '.n-steps': false
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {

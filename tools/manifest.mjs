@@ -154,5 +154,17 @@ export const components = {
   list: {
     cssr: ['list/src/styles/index.cssr.ts', 'list/src/styles/rtl.cssr.ts'],
     theme: 'list/styles/light.ts'
+  },
+  affix: {
+    cssr: ['affix/src/styles/index.cssr.ts'],
+    theme: null
+  },
+  split: {
+    cssr: ['split/src/styles/index.cssr.ts'],
+    theme: null
+  },
+  steps: {
+    cssr: ['steps/src/styles/index.cssr.ts', 'steps/src/styles/rtl.cssr.ts'],
+    theme: 'steps/styles/light.ts'
   }
 }

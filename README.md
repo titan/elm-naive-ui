@@ -67,6 +67,7 @@ bridge, tests).
 
 | Module            | Status |
 | ----------------- | ------ |
+| `NUI.Affix`       | ✅ |
 | `NUI.Alert`       | ✅ |
 | `NUI.Avatar`      | ✅ |
 | `NUI.AvatarGroup` | ✅ |
@@ -76,6 +77,7 @@ bridge, tests).
 | `NUI.ButtonGroup` | ✅ |
 | `NUI.Card`        | ✅ |
 | `NUI.Checkbox`    | ✅ |
+| `NUI.Countdown`   | ✅ |
 | `NUI.Divider`     | ✅ |
 | `NUI.Empty`       | ✅ |
 | `NUI.GradientText`| ✅ |
@@ -89,7 +91,9 @@ bridge, tests).
 | `NUI.Skeleton`    | ✅ |
 | `NUI.Space`       | ✅ |
 | `NUI.Spin`        | ✅ |
+| `NUI.Split`       | ✅ |
 | `NUI.Statistic`   | ✅ |
+| `NUI.Steps`       | ✅ |
 | `NUI.Switch`      | ✅ |
 | `NUI.Tag`         | ✅ |
 | `NUI.Thing`       | ✅ |

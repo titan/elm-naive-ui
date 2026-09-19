@@ -17,6 +17,7 @@ import Browser
 import Element exposing (Element)
 import Html exposing (Html)
 import Html.Attributes as HA
+import NUI.Affix as Affix
 import NUI.Alert as Alert
 import NUI.Avatar as Avatar
 import NUI.AvatarGroup as AvatarGroup
@@ -26,6 +27,7 @@ import NUI.Button as Button
 import NUI.ButtonGroup as ButtonGroup
 import NUI.Card as Card
 import NUI.Checkbox as Checkbox
+import NUI.Countdown as Countdown
 import NUI.Css as Css
 import NUI.Empty as Empty
 import NUI.GradientText as GradientText
@@ -40,7 +42,9 @@ import NUI.Result as Result
 import NUI.Skeleton as Skeleton
 import NUI.Space as Space
 import NUI.Spin as Spin
+import NUI.Split as Split
 import NUI.Statistic as Statistic
+import NUI.Steps as Steps
 import NUI.Tag as Tag
 import NUI.Theme as Theme
 import NUI.Theme.Button as ButtonTheme
@@ -739,6 +743,63 @@ pageHeaderLiveOpts =
     { d | title = Just "Title", subtitle = Just "Sub", extra = Just "Extra", onBack = Just NoOp }
 
 
+affixLiveOpts : Affix.Options msg
+affixLiveOpts =
+    let
+        d =
+            Affix.defaults
+    in
+    { d | affixed = True, top = Just 12, position = Affix.Absolute }
+
+
+countdownLiveOpts : Countdown.Options msg
+countdownLiveOpts =
+    let
+        d =
+            Countdown.defaults
+    in
+    { d | distance = 90000, precision = 1 }
+
+
+countdownLiveOpts3 : Countdown.Options msg
+countdownLiveOpts3 =
+    let
+        d =
+            Countdown.defaults
+    in
+    { d | distance = 90000, precision = 3 }
+
+
+splitLiveOpts : Split.Options msg
+splitLiveOpts =
+    let
+        d =
+            Split.defaults
+    in
+    { d | size = Split.Ratio 0.4, pane1 = [ Element.text "A" ], pane2 = [ Element.text "B" ] }
+
+
+stepsLiveOpts : Steps.Options msg
+stepsLiveOpts =
+    let
+        d =
+            Steps.defaults
+    in
+    { d | current = Just 2 }
+
+
+stepsLiveItems : List (Steps.Item msg)
+stepsLiveItems =
+    let
+        i =
+            Steps.item
+    in
+    [ { i | title = Just "One", description = Just "Details" }
+    , { i | title = Just "Two" }
+    , { i | title = Just "Three" }
+    ]
+
+
 
 -- CHECKS -----------------------------------------------------------------------
 
@@ -969,6 +1030,21 @@ checks =
 
         pageHeaderVars =
             PageHeader.cssVarsFor light
+
+        splitVars =
+            Split.cssVarsFor light
+
+        stepsD =
+            Steps.defaults
+
+        stepsVars =
+            Steps.cssVarsFor light stepsD Steps.Process
+
+        stepsFinishVars =
+            Steps.cssVarsFor light stepsD Steps.Finish
+
+        stepsSmallVars =
+            Steps.cssVarsFor light { stepsD | size = Steps.Small } Steps.Process
     in
     [ -- 1. NUI.Theme -------------------------------------------------------------
       eq "Theme.default == Theme.light" True (Theme.default == Theme.light)
@@ -1362,6 +1438,40 @@ checks =
     , eq "page-header --n-back-size" (Just common.heightTiny) (lookup "--n-back-size" pageHeaderVars)
     , eq "page-header --n-back-color" (Just common.textColor2) (lookup "--n-back-color" pageHeaderVars)
     , eq "page-header --n-back-color-hover" (Just common.primaryColorHover) (lookup "--n-back-color-hover" pageHeaderVars)
+
+    -- 22. NUI.Split cssVarsFor -------------------------------------------------
+    , eq "split cssVarsFor has 3 vars" 3 (List.length splitVars)
+    , eq "split cssVarsFor exact --n-* names"
+        [ "--n-bezier", "--n-resize-trigger-color", "--n-resize-trigger-color-hover" ]
+        (varKeys splitVars)
+    , eq "split --n-resize-trigger-color = borderColor" (Just common.borderColor) (lookup "--n-resize-trigger-color" splitVars)
+    , eq "split --n-resize-trigger-color-hover = primaryColorHover" (Just common.primaryColorHover) (lookup "--n-resize-trigger-color-hover" splitVars)
+
+    -- 23. NUI.Steps cssVarsFor --------------------------------------------------
+    , eq "steps cssVarsFor has 12 vars" 12 (List.length stepsVars)
+    , eq "steps cssVarsFor exact --n-* names"
+        [ "--n-bezier"
+        , "--n-description-text-color"
+        , "--n-header-text-color"
+        , "--n-indicator-border-color"
+        , "--n-indicator-color"
+        , "--n-indicator-icon-size"
+        , "--n-indicator-index-font-size"
+        , "--n-indicator-size"
+        , "--n-indicator-text-color"
+        , "--n-splitor-color"
+        , "--n-step-header-font-size"
+        , "--n-step-header-font-weight"
+        ]
+        (varKeys stepsVars)
+    , eq "steps --n-indicator-size (medium)" (Just common.heightSmall) (lookup "--n-indicator-size" stepsVars)
+    , eq "steps --n-step-header-font-size (medium)" (Just common.fontSizeHuge) (lookup "--n-step-header-font-size" stepsVars)
+    , eq "steps Small --n-indicator-size" (Just common.heightTiny) (lookup "--n-indicator-size" stepsSmallVars)
+    , eq "steps Small --n-step-header-font-size" (Just common.fontSize) (lookup "--n-step-header-font-size" stepsSmallVars)
+    , eq "steps Process --n-indicator-color = primary" (Just common.primaryColor) (lookup "--n-indicator-color" stepsVars)
+    , eq "steps Finish --n-indicator-color = transparent" (Just "#0000") (lookup "--n-indicator-color" stepsFinishVars)
+    , eq "steps Process --n-header-text-color = textColor1" (Just common.textColor1) (lookup "--n-header-text-color" stepsVars)
+    , eq "steps Finish --n-header-text-color = textColorDisabled" (Just common.textColorDisabled) (lookup "--n-header-text-color" stepsFinishVars)
     ]
 
 
@@ -1571,6 +1681,16 @@ liveNodes =
                     (NList.view Theme.default nlistLiveOpts nlistLiveItems)
                 , Element.el [ Element.htmlAttribute (HA.id "live-page-header") ]
                     (PageHeader.view Theme.default pageHeaderLiveOpts [ Element.text "Body" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-affix") ]
+                    (Affix.view Theme.default affixLiveOpts [ Element.text "Sticky" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-countdown") ]
+                    (Countdown.view Theme.default countdownLiveOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-countdown-3") ]
+                    (Countdown.view Theme.default countdownLiveOpts3 [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-split") ]
+                    (Split.view Theme.default splitLiveOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-steps") ]
+                    (Steps.view Theme.default stepsLiveOpts stepsLiveItems)
                 ]
             )
         ]

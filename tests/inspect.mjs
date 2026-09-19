@@ -1142,6 +1142,97 @@ dEq('DOM: PageHeader subtitle renders', 'Sub', textAt('#live-page-header .n-page
 dEq('DOM: PageHeader extra renders', 'Extra', textAt('#live-page-header .n-page-header__extra'))
 dEq('DOM: PageHeader content renders', 'Body', textAt('#live-page-header .n-page-header-content'))
 
+// Affix ----------------------------------------------------------------------
+const affix = doc.querySelector('#live-affix .n-affix')
+dTrue(
+  'DOM: Affix renders .n-affix--affixed.n-affix--absolute-positioned',
+  !!affix &&
+    affix.classList.contains('n-affix') &&
+    affix.classList.contains('n-affix--affixed') &&
+    affix.classList.contains('n-affix--absolute-positioned'),
+  affix ? affix.getAttribute('class') : 'missing'
+)
+const affixStyle = affix ? affix.getAttribute('style') || '' : ''
+dTrue('DOM: Affix affixed emits top:12px', affixStyle.includes('top:12px'), affixStyle)
+
+// Countdown ------------------------------------------------------------------
+dEq(
+  'DOM: Countdown distance 90000 precision 1 renders 00:01:30.0',
+  '00:01:30.0',
+  textAt('#live-countdown')
+)
+dEq(
+  'DOM: Countdown distance 90000 precision 3 renders 00:01:30.000',
+  '00:01:30.000',
+  textAt('#live-countdown-3')
+)
+
+// Split ----------------------------------------------------------------------
+const split = doc.querySelector('#live-split .n-split')
+dTrue(
+  'DOM: Split renders .n-split.n-split--horizontal',
+  !!split &&
+    split.classList.contains('n-split') &&
+    split.classList.contains('n-split--horizontal'),
+  split ? split.getAttribute('class') : 'missing'
+)
+const splitPane1 = doc.querySelector('#live-split .n-split-pane-1')
+dTrue(
+  'DOM: Split pane 1 flex = calc(40% - 1.2px)',
+  !!splitPane1 && (splitPane1.getAttribute('style') || '').includes('calc(40% - 1.2px)'),
+  splitPane1 ? splitPane1.getAttribute('style') : 'missing'
+)
+dTrue(
+  'DOM: Split renders the resize trigger wrapper + trigger',
+  !!doc.querySelector('#live-split .n-split__resize-trigger-wrapper .n-split__resize-trigger'),
+  'ok'
+)
+
+// Steps ----------------------------------------------------------------------
+const steps = doc.querySelector('#live-steps .n-steps')
+dTrue(
+  'DOM: Steps renders .n-steps',
+  !!steps && steps.classList.contains('n-steps'),
+  steps ? steps.getAttribute('class') : 'missing'
+)
+const stepEls = doc.querySelectorAll('#live-steps .n-step')
+dEq('DOM: Steps renders 3 steps', 3, stepEls.length)
+dTrue(
+  'DOM: Steps current=2 => step 1 finish, step 2 process, step 3 wait',
+  stepEls.length === 3 &&
+    stepEls[0].classList.contains('n-step--finish-status') &&
+    stepEls[1].classList.contains('n-step--process-status') &&
+    stepEls[2].classList.contains('n-step--wait-status'),
+  Array.from(stepEls)
+    .map((e) => e.getAttribute('class'))
+    .join(' | ')
+)
+dEq(
+  'DOM: Steps finish step renders the checkmark icon (no index)',
+  0,
+  doc.querySelectorAll('#live-steps .n-step--finish-status .n-step-indicator-slot__index').length
+)
+dTrue(
+  'DOM: Steps finish step indicator is .n-base-icon svg',
+  !!doc.querySelector('#live-steps .n-step--finish-status .n-base-icon svg'),
+  'ok'
+)
+dEq(
+  'DOM: Steps process step shows the index 2',
+  '2',
+  textAt('#live-steps .n-step--process-status .n-step-indicator-slot__index')
+)
+dEq(
+  'DOM: Steps step 1 title renders',
+  'One',
+  textAt('#live-steps .n-step:first-child .n-step-content-header__title')
+)
+dTrue(
+  'DOM: Steps step 1 renders its description',
+  !!doc.querySelector('#live-steps .n-step--show-description .n-step-content__description'),
+  'ok'
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
