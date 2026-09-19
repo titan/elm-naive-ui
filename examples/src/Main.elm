@@ -549,7 +549,7 @@ progressSection =
                 { progD
                     | type_ = Progress.MultipleCircle
                     , percentages = [ 80, 60 ]
-                    , colors = [ "#2080f0", "#18a058" ]
+                    , colors = [ Progress.Solid "#2080f0", Progress.Solid "#18a058" ]
                     , railColors = [ "#2080f0", "#18a058" ]
                     , strokeWidth = 6
                     , circleGap = 0.5
@@ -563,6 +563,36 @@ progressSection =
                     , circleGap = 10
                 }
                 []
+            ]
+        , demoRow "Gradients"
+            [ Element.el [ Element.width (Element.px 260) ]
+                (Progress.view theme
+                    { progD
+                        | percentage = 80
+                        , color = Just (Progress.Gradient [ "white", "pink" ])
+                    }
+                    []
+                )
+            , Progress.view theme
+                { progD
+                    | type_ = Progress.Circle
+                    , percentage = 80
+                    , color = Just (Progress.Gradient [ "#E3F2FD", "#2080f0" ])
+                }
+                []
+            , Progress.view theme
+                { progD
+                    | type_ = Progress.MultipleCircle
+                    , percentages = [ 80, 70 ]
+                    , colors =
+                        [ Progress.Gradient [ "white", "#18a058" ]
+                        , Progress.Gradient [ "#E3F2FD", "#2080f0" ]
+                        ]
+                    , railColors = [ "#18a058", "#2080f0" ]
+                    , strokeWidth = 10
+                    , circleGap = 10
+                }
+                [ Element.text "Circle racing!" ]
             ]
         ]
 

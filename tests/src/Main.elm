@@ -254,7 +254,7 @@ progressMultipleOpts =
     { d
         | type_ = Progress.MultipleCircle
         , percentages = [ 80, 70 ]
-        , colors = [ "#2080f0", "#18a058" ]
+        , colors = [ Progress.Solid "#2080f0", Progress.Solid "#18a058" ]
         , railColors = [ "#2080f0", "#18a058" ]
         , strokeWidth = 10
         , circleGap = 10
@@ -270,6 +270,44 @@ progressMultiplePlainOpts =
     { d
         | type_ = Progress.MultipleCircle
         , percentages = [ 0, 60 ]
+        , strokeWidth = 10
+        , circleGap = 10
+    }
+
+
+progressGradientLineOpts : Progress.Options msg
+progressGradientLineOpts =
+    let
+        d =
+            Progress.defaults
+    in
+    { d | percentage = 80, color = Just (Progress.Gradient [ "white", "pink" ]) }
+
+
+progressGradientCircleOpts : Progress.Options msg
+progressGradientCircleOpts =
+    let
+        d =
+            Progress.defaults
+    in
+    { d
+        | type_ = Progress.Circle
+        , percentage = 80
+        , color = Just (Progress.Gradient [ "#E3F2FD", "#2080f0" ])
+    }
+
+
+progressGradientMultipleOpts : Progress.Options msg
+progressGradientMultipleOpts =
+    let
+        d =
+            Progress.defaults
+    in
+    { d
+        | type_ = Progress.MultipleCircle
+        , percentages = [ 80, 70 ]
+        , colors = [ Progress.Gradient [ "white", "#18a058" ], Progress.Solid "#2080f0" ]
+        , railColors = [ "#18a058", "#2080f0" ]
         , strokeWidth = 10
         , circleGap = 10
     }
@@ -828,6 +866,12 @@ liveNodes =
                     (Progress.view Theme.default progressMultipleOpts [ Element.text "Circle racing!" ])
                 , Element.el [ Element.htmlAttribute (HA.id "live-progress-multiple-plain") ]
                     (Progress.view Theme.default progressMultiplePlainOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-progress-gradient-line") ]
+                    (Progress.view Theme.default progressGradientLineOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-progress-gradient-circle") ]
+                    (Progress.view Theme.default progressGradientCircleOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-progress-gradient-multiple") ]
+                    (Progress.view Theme.default progressGradientMultipleOpts [])
                 , Element.el [ Element.htmlAttribute (HA.id "live-result") ]
                     (Result.view Theme.default resultLiveOpts [])
                 , Element.el [ Element.htmlAttribute (HA.id "live-skeleton") ]

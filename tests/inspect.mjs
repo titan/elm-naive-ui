@@ -471,6 +471,115 @@ dEq(
   doc.querySelectorAll('#live-progress-multiple-plain .n-progress-text').length
 )
 
+// Progress: gradients --------------------------------------------------------
+const gradLineFill = doc.querySelector(
+  '#live-progress-gradient-line .n-progress-graph-line-fill'
+)
+dTrue(
+  'DOM: Progress line gradient background = linear-gradient(to right, white , pink)',
+  !!gradLineFill &&
+    (gradLineFill.getAttribute('style') || '').includes(
+      'background:linear-gradient(to right, white , pink)'
+    ),
+  gradLineFill ? gradLineFill.getAttribute('style') : 'missing'
+)
+
+const gradCircleSvg = doc.querySelector('#live-progress-gradient-circle svg')
+dEq(
+  'DOM: Progress circle gradient svg has <defs> as its first child',
+  'defs',
+  gradCircleSvg && gradCircleSvg.children[0] ? gradCircleSvg.children[0].tagName.toLowerCase() : null
+)
+const gradCircleDef = doc.getElementById('gradient-1vnjwwz')
+dTrue(
+  'DOM: Progress circle gradient linearGradient id = gradient-{css-render hash}',
+  !!gradCircleDef && gradCircleDef.tagName.toLowerCase() === 'lineargradient',
+  gradCircleDef ? gradCircleDef.getAttribute('id') : 'missing'
+)
+dEq(
+  'DOM: Progress circle gradient linearGradient x1/y1/x2/y2',
+  '0%|100%|100%|0%',
+  gradCircleDef
+    ? [
+        gradCircleDef.getAttribute('x1'),
+        gradCircleDef.getAttribute('y1'),
+        gradCircleDef.getAttribute('x2'),
+        gradCircleDef.getAttribute('y2')
+      ].join('|')
+    : null
+)
+const gradCircleStops = gradCircleDef ? gradCircleDef.querySelectorAll('stop') : []
+dEq(
+  'DOM: Progress circle gradient stops = [#E3F2FD @0%, #2080f0 @100%]',
+  '0%:#E3F2FD|100%:#2080f0',
+  gradCircleStops.length
+    ? Array.from(gradCircleStops)
+        .map((s) => `${s.getAttribute('offset')}:${s.getAttribute('stop-color')}`)
+        .join('|')
+    : null
+)
+const gradCircleFill = doc.querySelector(
+  '#live-progress-gradient-circle .n-progress-graph-circle-fill'
+)
+dTrue(
+  'DOM: Progress circle gradient fill stroke = url(#gradient-{hash})',
+  !!gradCircleFill &&
+    (gradCircleFill.getAttribute('style') || '').includes('stroke:url(#gradient-1vnjwwz)'),
+  gradCircleFill ? gradCircleFill.getAttribute('style') : 'missing'
+)
+
+const gradMultiSvg = doc.querySelector('#live-progress-gradient-multiple svg')
+dEq(
+  'DOM: Progress multiple-circle gradient svg has <defs> as its first child',
+  'defs',
+  gradMultiSvg && gradMultiSvg.children[0]
+    ? gradMultiSvg.children[0].tagName.toLowerCase()
+    : null
+)
+const gradMultiDef = doc.getElementById('gradient-0')
+dEq(
+  'DOM: Progress multiple-circle gradient linearGradient id = gradient-{index}',
+  'gradient-0|100%|0%|0%|100%',
+  gradMultiDef
+    ? [
+        gradMultiDef.getAttribute('id'),
+        gradMultiDef.getAttribute('x1'),
+        gradMultiDef.getAttribute('y1'),
+        gradMultiDef.getAttribute('x2'),
+        gradMultiDef.getAttribute('y2')
+      ].join('|')
+    : null
+)
+dEq(
+  'DOM: Progress multiple-circle gradient stop colours = [white, #18a058]',
+  'white|#18a058',
+  gradMultiDef
+    ? Array.from(gradMultiDef.querySelectorAll('stop'))
+        .map((s) => s.getAttribute('stop-color'))
+        .join('|')
+    : null
+)
+dTrue(
+  'DOM: Progress multiple-circle has exactly one gradient def (only ring 0 is a gradient)',
+  gradMultiSvg ? gradMultiSvg.querySelectorAll('defs linearGradient').length === 1 : false,
+  gradMultiSvg ? String(gradMultiSvg.querySelectorAll('defs linearGradient').length) : 'missing'
+)
+const gradMultiFills = doc.querySelectorAll(
+  '#live-progress-gradient-multiple .n-progress-graph-circle-fill'
+)
+dTrue(
+  'DOM: Progress multiple-circle gradient fill[0] stroke = url(#gradient-0)',
+  !!gradMultiFills[0] &&
+    (gradMultiFills[0].getAttribute('style') || '').includes('stroke:url(#gradient-0)'),
+  gradMultiFills[0] ? gradMultiFills[0].getAttribute('style') : 'missing'
+)
+dTrue(
+  'DOM: Progress multiple-circle solid fill[1] stroke = #2080f0 (not a gradient)',
+  !!gradMultiFills[1] &&
+    (gradMultiFills[1].getAttribute('style') || '').includes('stroke:#2080f0'),
+  gradMultiFills[1] ? gradMultiFills[1].getAttribute('style') : 'missing'
+)
+
 // Result ---------------------------------------------------------------------
 const result = doc.querySelector('#live-result .n-result')
 dTrue(

@@ -1,5 +1,6 @@
 module NUI.Progress exposing
-    ( IndicatorPlacement(..)
+    ( FillColor(..)
+    , IndicatorPlacement(..)
     , Options
     , ProgressType(..)
     , Status(..)
@@ -32,7 +33,7 @@ module NUI.Progress exposing
         { NUI.Progress.defaults
             | type_ = NUI.Progress.MultipleCircle
             , percentages = [ 80, 60 ]
-            , colors = [ "#2080f0", "#18a058" ]
+            , colors = [ NUI.Progress.Solid "#2080f0", NUI.Progress.Solid "#18a058" ]
             , railColors = [ "#2080f0", "#18a058" ]
             , strokeWidth = 6
             , circleGap = 0.5
@@ -47,11 +48,17 @@ content, replacing the percentage text / status icon.
 `Dashboard` is the circle graph with `gapDegree` defaulting to 75.
 `MultipleCircle` draws concentric rings — one per entry in `percentages`, each
 with its own fill colour (`colors`) and rail colour (`railColors`) — and turns
-the default slot into the centre indicator when a child is given. Gradient
-colours (`{ stops }`) are not ported; the per-circle colours are plain strings.
+the default slot into the centre indicator when a child is given.
+
+A fill colour may be a solid colour (`Solid "#2080f0"`) or a linear gradient
+(`Gradient [ "white", "#18a058" ]`), Naive UI's `string | { stops }`. Rails are
+solid colours only, as upstream. The gradient's `id` is byte-identical to
+Naive UI's (`gradient-` + css-render's murmur2 hash for circles, the ring index
+for multiple-circle).
 
 -}
 
+import Bitwise
 import Element exposing (Element)
 import Html exposing (Html)
 import Html.Attributes as HA
@@ -87,6 +94,15 @@ type Status
     | Info
 
 
+{-| A fill colour: a solid CSS colour, or Naive UI's `{ stops }` gradient — a
+list of colour stops whose first two are the gradient's ends (`stops[0]` /
+`stops[1]`). Rails are always `Solid`; only fills may be `Gradient`.
+-}
+type FillColor
+    = Solid String
+    | Gradient (List String)
+
+
 {-| Naive UI's `indicator-placement` (line only): the indicator sits inside
 the fill or after the graph.
 -}
@@ -102,8 +118,8 @@ type alias Options msg =
     , status : Status
     , showIndicator : Bool
     , indicatorPlacement : IndicatorPlacement
-    , color : Maybe String
-    , colors : List String
+    , color : Maybe FillColor
+    , colors : List FillColor
     , railColor : Maybe String
     , railColors : List String
     , strokeWidth : Float
@@ -335,7 +351,7 @@ line opts children =
                     (HA.attribute "style"
                         (inlineStyle
                             ([ ( "max-width", String.fromFloat opts.percentage ++ "%" ) ]
-                                ++ optional "background" opts.color
+                                ++ optional "background" (fillBackground opts.color)
                                 ++ optional "height" heightLen
                                 ++ optional "line-height" heightLen
                                 ++ optional "border-radius" fillRadius
@@ -472,16 +488,18 @@ circleSvg opts gapDegree =
                         gapDegree
                         opts.percentage
                         (Maybe.withDefault 0 opts.offsetDegree)
-                        opts.color
+                        (circleFillStroke opts.color)
                     )
                 ]
                 []
     in
     Svg.svg
         [ SvgA.viewBox ("0 0 " ++ size ++ " " ++ size) ]
-        [ Svg.g [] [ railPath ]
-        , Svg.g [] [ fillPath ]
-        ]
+        (circleGradientDefs opts
+            ++ [ Svg.g [] [ railPath ]
+               , Svg.g [] [ fillPath ]
+               ]
+        )
 
 
 {-| The exact `d` from `Circle.tsx`'s `getPathStyles`: a full circle drawn as
@@ -558,9 +576,9 @@ transformPairs degree =
 {-| The concentric-rings graph: one rail / fill `<path>` pair per entry in
 `percentages`, each ring inset by `strokeWidth / 2 * (1 + 2i) + circleGap * i`.
 The default slot becomes the centre indicator, but only when a child is given —
-unlike `Circle`, the built-in text / icon indicators never render. Gradient
-colours (`{ stops }`) are not ported, so `colors` / `railColors` are plain
-colour strings.
+unlike `Circle`, the built-in text / icon indicators never render. A ring whose
+`colors` entry is a `Gradient` gets a `<linearGradient id="gradient-{i}">`
+(`x1="100%" y1="0%" x2="0%" y2="100%"`) in the `<defs>`.
 -}
 multipleCircle : Options msg -> List (Element msg) -> Element msg
 multipleCircle opts children =
@@ -602,7 +620,9 @@ multipleCircleSvg opts =
     in
     Svg.svg
         [ SvgA.viewBox ("0 0 " ++ size ++ " " ++ size) ]
-        (List.indexedMap (multipleCircleRings opts) opts.percentages)
+        (multipleCircleDefs opts
+            :: List.indexedMap (multipleCircleRings opts) opts.percentages
+        )
 
 
 {-| One ring: a rail `<path>` (full circle, per-circle rail colour) and a fill
@@ -647,7 +667,7 @@ multipleCircleRings opts index percent =
                     (inlineStyle
                         (( "stroke-dasharray", multipleDasharray opts index percent )
                             :: ( "stroke-dashoffset", "0" )
-                            :: optional "stroke" (nth index opts.colors)
+                            :: optional "stroke" (multipleFillStroke opts.colors index)
                         )
                     )
                 ]
@@ -746,6 +766,244 @@ multipleIndicator children =
 nth : Int -> List a -> Maybe a
 nth index items =
     items |> List.drop index |> List.head
+
+
+
+-- GRADIENT COLOURS
+
+
+{-| `Line.tsx`'s `styleFillColorRef`: a gradient becomes
+`linear-gradient(to right, {stops[0]} , {stops[1]})` (note the space before the
+comma, straight from upstream's template literal); a solid colour passes
+through.
+-}
+fillBackground : Maybe FillColor -> Maybe String
+fillBackground fillColor =
+    case fillColor of
+        Just (Gradient stops) ->
+            Just ("linear-gradient(to right, " ++ stopAt 0 stops ++ " , " ++ stopAt 1 stops ++ ")")
+
+        Just (Solid color) ->
+            Just color
+
+        Nothing ->
+            Nothing
+
+
+{-| `Circle.tsx`'s `createGradientNode`: a `<defs><linearGradient>` only when
+the fill colour is a gradient (upstream renders `false` otherwise). The `id` is
+`gradient-{hash}` with `hash = css-render's hash(JSON.stringify(fillColor))`.
+-}
+circleGradientDefs : Options msg -> List (Svg msg)
+circleGradientDefs opts =
+    case opts.color of
+        Just (Gradient stops) ->
+            [ Svg.defs []
+                [ Svg.linearGradient
+                    [ SvgA.id (circleGradientId stops)
+                    , SvgA.x1 "0%"
+                    , SvgA.y1 "100%"
+                    , SvgA.x2 "100%"
+                    , SvgA.y2 "0%"
+                    ]
+                    [ Svg.stop [ SvgA.offset "0%", SvgA.stopColor (stopAt 0 stops) ] []
+                    , Svg.stop [ SvgA.offset "100%", SvgA.stopColor (stopAt 1 stops) ] []
+                    ]
+                ]
+            ]
+
+        _ ->
+            []
+
+
+{-| `Circle.tsx`'s fill `stroke`: `url(#gradient-{hash})` for a gradient, the
+plain colour for a solid one.
+-}
+circleFillStroke : Maybe FillColor -> Maybe String
+circleFillStroke fillColor =
+    case fillColor of
+        Just (Gradient stops) ->
+            Just ("url(#" ++ circleGradientId stops ++ ")")
+
+        Just (Solid color) ->
+            Just color
+
+        Nothing ->
+            Nothing
+
+
+{-| `MultipleCircle.tsx`'s `<defs>` — one `<linearGradient id="gradient-{i}">`
+per gradient ring, in ring order (non-gradient rings contribute nothing).
+-}
+multipleCircleDefs : Options msg -> Svg msg
+multipleCircleDefs opts =
+    Svg.defs []
+        (opts.percentages
+            |> List.indexedMap (\index _ -> multipleGradientNodeAt opts index)
+            |> List.filterMap identity
+        )
+
+
+multipleGradientNodeAt : Options msg -> Int -> Maybe (Svg msg)
+multipleGradientNodeAt opts index =
+    case nth index opts.colors of
+        Just (Gradient stops) ->
+            Just
+                (Svg.linearGradient
+                    [ SvgA.id ("gradient-" ++ String.fromInt index)
+                    , SvgA.x1 "100%"
+                    , SvgA.y1 "0%"
+                    , SvgA.x2 "0%"
+                    , SvgA.y2 "100%"
+                    ]
+                    [ Svg.stop [ SvgA.offset "0%", SvgA.stopColor (stopAt 0 stops) ] []
+                    , Svg.stop [ SvgA.offset "100%", SvgA.stopColor (stopAt 1 stops) ] []
+                    ]
+                )
+
+        _ ->
+            Nothing
+
+
+{-| `MultipleCircle.tsx`'s fill `stroke`: `url(#gradient-{i})` when that ring's
+colour is a gradient, the plain colour otherwise. (Upstream's id here is the
+bare ring index, not a content hash.)
+-}
+multipleFillStroke : List FillColor -> Int -> Maybe String
+multipleFillStroke colors index =
+    case nth index colors of
+        Just (Gradient _) ->
+            Just ("url(#gradient-" ++ String.fromInt index ++ ")")
+
+        Just (Solid color) ->
+            Just color
+
+        Nothing ->
+            Nothing
+
+
+{-| `stops[n]` with JS's `undefined` collapsed to the empty string (which
+`optional` then drops, like Vue's absent attribute).
+-}
+stopAt : Int -> List String -> String
+stopAt index stops =
+    stops |> List.drop index |> List.head |> Maybe.withDefault ""
+
+
+{-| The `id` Naive UI gives a circle gradient: `gradient-` + css-render's
+`hash(JSON.stringify({ stops: […] }))`.
+-}
+circleGradientId : List String -> String
+circleGradientId stops =
+    "gradient-" ++ murmur2 (jsonStops stops)
+
+
+{-| `JSON.stringify({ stops: […] })` for a list of colour strings — enough of
+JSON to match what css-render hashes upstream (`{"stops":["white","pink"]}`).
+-}
+jsonStops : List String -> String
+jsonStops stops =
+    "{\"stops\":[" ++ String.join "," (List.map (\stop -> "\"" ++ stop ++ "\"") stops) ++ "]}"
+
+
+{-| `@emotion/hash` (the murmur2 behind css-render's `hash`), ported with
+`Bitwise` so gradient ids are byte-identical to upstream. Inputs here are ASCII
+(colour stops), so UTF-16 code units and code points coincide.
+-}
+murmur2 : String -> String
+murmur2 str =
+    let
+        multiplier =
+            0x5BD1E995
+
+        -- `Math.imul(x, multiplier)` emulation from the original source.
+        imul x =
+            Bitwise.and x 0xFFFF
+                * multiplier
+                + Bitwise.shiftLeftBy 16 (Bitwise.shiftRightZfBy 16 x * 0xE995)
+
+        block h a b c d =
+            let
+                k =
+                    Bitwise.or
+                        (Bitwise.or
+                            (Bitwise.and (Char.toCode a) 0xFF)
+                            (Bitwise.shiftLeftBy 8 (Bitwise.and (Char.toCode b) 0xFF))
+                        )
+                        (Bitwise.or
+                            (Bitwise.shiftLeftBy 16 (Bitwise.and (Char.toCode c) 0xFF))
+                            (Bitwise.shiftLeftBy 24 (Bitwise.and (Char.toCode d) 0xFF))
+                        )
+
+                mixed =
+                    Bitwise.xor (imul k) (Bitwise.shiftRightZfBy 24 (imul k))
+            in
+            Bitwise.xor (imul mixed) (imul h)
+
+        loop h chars =
+            case chars of
+                a :: b :: c :: d :: rest ->
+                    loop (block h a b c d) rest
+
+                _ ->
+                    tail h chars
+
+        tail h chars =
+            case chars of
+                [ a, b, c ] ->
+                    imul
+                        (Bitwise.xor
+                            (Bitwise.xor
+                                (Bitwise.xor h (Bitwise.shiftLeftBy 16 (Bitwise.and (Char.toCode c) 0xFF)))
+                                (Bitwise.shiftLeftBy 8 (Bitwise.and (Char.toCode b) 0xFF))
+                            )
+                            (Bitwise.and (Char.toCode a) 0xFF)
+                        )
+
+                [ a, b ] ->
+                    imul
+                        (Bitwise.xor
+                            (Bitwise.xor h (Bitwise.shiftLeftBy 8 (Bitwise.and (Char.toCode b) 0xFF)))
+                            (Bitwise.and (Char.toCode a) 0xFF)
+                        )
+
+                [ a ] ->
+                    imul (Bitwise.xor h (Bitwise.and (Char.toCode a) 0xFF))
+
+                _ ->
+                    h
+
+        finalize h =
+            let
+                h1 =
+                    Bitwise.xor h (Bitwise.shiftRightZfBy 13 h)
+
+                h2 =
+                    imul h1
+            in
+            toBase36 (Bitwise.shiftRightZfBy 0 (Bitwise.xor h2 (Bitwise.shiftRightZfBy 15 h2)))
+    in
+    finalize (loop 0 (String.toList str))
+
+
+{-| `(value >>> 0).toString(36)` — lowercase base36 of the unsigned 32-bit hash.
+-}
+toBase36 : Int -> String
+toBase36 n =
+    if n < 36 then
+        String.fromChar (Char.fromCode (base36Digit n))
+
+    else
+        toBase36 (n // 36) ++ String.fromChar (Char.fromCode (base36Digit (modBy 36 n)))
+
+
+base36Digit : Int -> Int
+base36Digit d =
+    if d < 10 then
+        48 + d
+
+    else
+        87 + d
 
 
 
