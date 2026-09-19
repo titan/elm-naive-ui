@@ -2220,6 +2220,378 @@ margin-bottom: 0;}.nui-root.nui-root .n-a {
     vertical-align: bottom;
     font-size: calc(var(--n-merged-size) - 6px);}.nui-root.nui-root .n-avatar .n-avatar__text {}
 
+/* ===== naive-ui: badge ===== */
+@keyframes badge-wave-spread {from {
+    box-shadow: 0 0 0.5px 0px var(--n-ripple-color);
+    opacity: 0.6;}to {
+    box-shadow: 0 0 0.5px 4.5px var(--n-ripple-color);
+    opacity: 0;}}.nui-root.nui-root .n-badge {
+
+    display: inline-flex;
+    position: relative;
+    vertical-align: middle;
+    font-family: var(--n-font-family);}.nui-root.nui-root .n-badge.n-badge--as-is .n-badge-sup {
+  position: static;
+  transform: translateX(0);}.nui-root.nui-root .n-badge.n-badge--as-is .n-badge-sup.fade-in-scale-up-transition-leave-active {
+  transform-origin: left bottom;
+  transition: opacity .2s cubic-bezier(.4, 0, 1, 1), transform .2s cubic-bezier(.4, 0, 1, 1) ;}.nui-root.nui-root .n-badge.n-badge--as-is .n-badge-sup.fade-in-scale-up-transition-enter-active {
+  transform-origin: left bottom;
+  transition: opacity .2s cubic-bezier(0, 0, .2, 1), transform .2s cubic-bezier(0, 0, .2, 1) ;}.nui-root.nui-root .n-badge.n-badge--as-is .n-badge-sup.fade-in-scale-up-transition-enter-from,
+.nui-root.nui-root .n-badge.n-badge--as-is .n-badge-sup.fade-in-scale-up-transition-leave-to {
+  opacity: 0;
+  transform: translateX(0) scale(.9);}.nui-root.nui-root .n-badge.n-badge--as-is .n-badge-sup.fade-in-scale-up-transition-leave-from,
+.nui-root.nui-root .n-badge.n-badge--as-is .n-badge-sup.fade-in-scale-up-transition-enter-to {
+  opacity: 1;
+  transform: translateX(0) scale(1);}.nui-root.nui-root .n-badge.n-badge--dot .n-badge-sup {
+
+        height: 8px;
+        width: 8px;
+        padding: 0;
+        min-width: 8px;
+        left: 100%;
+        bottom: calc(100% - 4px);}.nui-root.nui-root .n-badge.n-badge--dot .n-badge-sup ::before {
+border-radius: 4px;}.nui-root.nui-root .n-badge .n-badge-sup {
+
+      background: var(--n-color);
+      transition:
+        background-color .3s var(--n-bezier),
+        color .3s var(--n-bezier);
+      color: #FFF;
+      position: absolute;
+      height: 18px;
+      line-height: 18px;
+      border-radius: 9px;
+      padding: 0 6px;
+      text-align: center;
+      font-size: var(--n-font-size);
+      transform: translateX(-50%);
+      left: 100%;
+      bottom: calc(100% - 9px);
+      font-variant-numeric: tabular-nums;
+      z-index: 2;
+      display: flex;
+      align-items: center;}.nui-root.nui-root .n-badge .n-badge-sup.fade-in-scale-up-transition-leave-active {
+  transform-origin: left bottom;
+  transition: opacity .2s cubic-bezier(.4, 0, 1, 1), transform .2s cubic-bezier(.4, 0, 1, 1) ;}.nui-root.nui-root .n-badge .n-badge-sup.fade-in-scale-up-transition-enter-active {
+  transform-origin: left bottom;
+  transition: opacity .2s cubic-bezier(0, 0, .2, 1), transform .2s cubic-bezier(0, 0, .2, 1) ;}.nui-root.nui-root .n-badge .n-badge-sup.fade-in-scale-up-transition-enter-from,
+.nui-root.nui-root .n-badge .n-badge-sup.fade-in-scale-up-transition-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) scale(.9);}.nui-root.nui-root .n-badge .n-badge-sup.fade-in-scale-up-transition-leave-from,
+.nui-root.nui-root .n-badge .n-badge-sup.fade-in-scale-up-transition-enter-to {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);}.nui-root.nui-root .n-badge .n-badge-sup .n-base-wave {
+  z-index: 1;
+  animation-duration: 2s;
+  animation-iteration-count: infinite;
+  animation-delay: 1s;
+  animation-timing-function: var(--n-ripple-bezier);
+  animation-name: badge-wave-spread;}.nui-root.nui-root .n-badge .n-badge-sup::before {
+
+        opacity: 0;
+        transform: scale(1);
+        border-radius: 9px;
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;}
+
+/* ===== naive-ui: spin ===== */
+@keyframes spin-rotate {from {
+      transform: rotate(0);}to {
+      transform: rotate(360deg);}}.nui-root.nui-root .n-spin-container {
+
+    position: relative;}.nui-root.nui-root .n-spin-container .n-spin-body {
+
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translateX(-50%) translateY(-50%);}.nui-root.nui-root .n-spin-container .n-spin-body.fade-in-transition-enter-active {
+  transition: all 0.2s cubic-bezier(.4, 0, .2, 1)!important;}.nui-root.nui-root .n-spin-container .n-spin-body.fade-in-transition-leave-active {
+  transition: all 0.2s cubic-bezier(.4, 0, .2, 1)!important;}.nui-root.nui-root .n-spin-container .n-spin-body.fade-in-transition-enter-from,
+.nui-root.nui-root .n-spin-container .n-spin-body.fade-in-transition-leave-to {
+  opacity: 0;}.nui-root.nui-root .n-spin-container .n-spin-body.fade-in-transition-leave-from,
+.nui-root.nui-root .n-spin-container .n-spin-body.fade-in-transition-enter-to {
+  opacity: 1;}.nui-root.nui-root .n-spin-body {
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;}.nui-root.nui-root .n-spin {
+
+    display: inline-flex;
+    height: var(--n-size);
+    width: var(--n-size);
+    font-size: var(--n-size);
+    color: var(--n-color);}.nui-root.nui-root .n-spin.n-spin--rotate {
+
+      animation: spin-rotate 2s linear infinite;}.nui-root.nui-root .n-spin-description {
+
+    display: inline-block;
+    font-size: var(--n-font-size);
+    color: var(--n-text-color);
+    transition: color .3s var(--n-bezier);
+    margin-top: 8px;}.nui-root.nui-root .n-spin-content {
+
+    opacity: 1;
+    transition: opacity .3s var(--n-bezier);
+    pointer-events: all;}.nui-root.nui-root .n-spin-content.n-spin-content--spinning {
+
+      user-select: none;
+      -webkit-user-select: none;
+      pointer-events: none;
+      opacity: var(--n-opacity-spinning);}
+
+/* ===== naive-ui: progress ===== */
+.nui-root.nui-root .n-progress {
+  display: inline-block;}.nui-root.nui-root .n-progress .n-progress-icon {
+
+      color: var(--n-icon-color);
+      transition: color .3s var(--n-bezier);}.nui-root.nui-root .n-progress.n-progress--line {
+
+      width: 100%;
+      display: block;}.nui-root.nui-root .n-progress.n-progress--line .n-progress-content {
+
+        display: flex;
+        align-items: center;}.nui-root.nui-root .n-progress.n-progress--line .n-progress-content .n-progress-graph {
+  flex: 1;}.nui-root.nui-root .n-progress.n-progress--line .n-progress-custom-content {
+  margin-left: 14px;}.nui-root.nui-root .n-progress.n-progress--line .n-progress-icon {
+
+        width: 30px;
+        padding-left: 14px;
+        height: var(--n-icon-size-line);
+        line-height: var(--n-icon-size-line);
+        font-size: var(--n-icon-size-line);}.nui-root.nui-root .n-progress.n-progress--line .n-progress-icon.n-progress-icon--as-text {
+
+          color: var(--n-text-color-line-outer);
+          text-align: center;
+          width: 40px;
+          font-size: var(--n-font-size);
+          padding-left: 4px;
+          transition: color .3s var(--n-bezier);}.nui-root.nui-root .n-progress.n-progress--circle,
+.nui-root.nui-root .n-progress.n-progress--dashboard {
+  width: 120px;}.nui-root.nui-root .n-progress.n-progress--circle .n-progress-custom-content,
+.nui-root.nui-root .n-progress.n-progress--dashboard .n-progress-custom-content {
+
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translateX(-50%) translateY(-50%);
+        display: flex;
+        align-items: center;
+        justify-content: center;}.nui-root.nui-root .n-progress.n-progress--circle .n-progress-text,
+.nui-root.nui-root .n-progress.n-progress--dashboard .n-progress-text {
+
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translateX(-50%) translateY(-50%);
+        display: flex;
+        align-items: center;
+        color: inherit;
+        font-size: var(--n-font-size-circle);
+        color: var(--n-text-color-circle);
+        font-weight: var(--n-font-weight-circle);
+        transition: color .3s var(--n-bezier);
+        white-space: nowrap;}.nui-root.nui-root .n-progress.n-progress--circle .n-progress-icon,
+.nui-root.nui-root .n-progress.n-progress--dashboard .n-progress-icon {
+
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translateX(-50%) translateY(-50%);
+        display: flex;
+        align-items: center;
+        color: var(--n-icon-color);
+        font-size: var(--n-icon-size-circle);}.nui-root.nui-root .n-progress.n-progress--multiple-circle {
+
+      width: 200px;
+      color: inherit;}.nui-root.nui-root .n-progress.n-progress--multiple-circle .n-progress-text {
+
+        font-weight: var(--n-font-weight-circle);
+        color: var(--n-text-color-circle);
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translateX(-50%) translateY(-50%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: color .3s var(--n-bezier);}.nui-root.nui-root .n-progress .n-progress-content {
+  position: relative;}.nui-root.nui-root .n-progress .n-progress-graph {
+  position: relative;}.nui-root.nui-root .n-progress .n-progress-graph .n-progress-graph-circle svg {
+  vertical-align: bottom;}.nui-root.nui-root .n-progress .n-progress-graph .n-progress-graph-circle .n-progress-graph-circle-fill {
+
+          stroke: var(--n-fill-color);
+          transition:
+            opacity .3s var(--n-bezier),
+            stroke .3s var(--n-bezier),
+            stroke-dasharray .3s var(--n-bezier);}.nui-root.nui-root .n-progress .n-progress-graph .n-progress-graph-circle .n-progress-graph-circle-fill.n-progress-graph-circle-fill--empty {
+  opacity: 0;}.nui-root.nui-root .n-progress .n-progress-graph .n-progress-graph-circle .n-progress-graph-circle-rail {
+
+          transition: stroke .3s var(--n-bezier);
+          overflow: hidden;
+          stroke: var(--n-rail-color);}.nui-root.nui-root .n-progress .n-progress-graph .n-progress-graph-line.n-progress-graph-line--indicator-inside .n-progress-graph-line-rail {
+
+            height: 16px;
+            line-height: 16px;
+            border-radius: 10px;}.nui-root.nui-root .n-progress .n-progress-graph .n-progress-graph-line.n-progress-graph-line--indicator-inside .n-progress-graph-line-rail .n-progress-graph-line-fill {
+
+              height: inherit;
+              border-radius: 10px;}.nui-root.nui-root .n-progress .n-progress-graph .n-progress-graph-line.n-progress-graph-line--indicator-inside .n-progress-graph-line-rail .n-progress-graph-line-indicator {
+
+              background: #0000;
+              white-space: nowrap;
+              text-align: right;
+              margin-left: 14px;
+              margin-right: 14px;
+              height: inherit;
+              font-size: 12px;
+              color: var(--n-text-color-line-inner);
+              transition: color .3s var(--n-bezier);}.nui-root.nui-root .n-progress .n-progress-graph .n-progress-graph-line.n-progress-graph-line--indicator-inside-label {
+
+          height: 16px;
+          display: flex;
+          align-items: center;}.nui-root.nui-root .n-progress .n-progress-graph .n-progress-graph-line.n-progress-graph-line--indicator-inside-label .n-progress-graph-line-rail {
+
+            flex: 1;
+            transition: background-color .3s var(--n-bezier);}.nui-root.nui-root .n-progress .n-progress-graph .n-progress-graph-line.n-progress-graph-line--indicator-inside-label .n-progress-graph-line-indicator {
+
+            background: var(--n-fill-color);
+            font-size: 12px;
+            transform: translateZ(0);
+            display: flex;
+            vertical-align: middle;
+            height: 16px;
+            line-height: 16px;
+            padding: 0 10px;
+            border-radius: 10px;
+            position: absolute;
+            white-space: nowrap;
+            color: var(--n-text-color-line-inner);
+            transition:
+              right .2s var(--n-bezier),
+              color .3s var(--n-bezier),
+              background-color .3s var(--n-bezier);}.nui-root.nui-root .n-progress .n-progress-graph .n-progress-graph-line .n-progress-graph-line-rail {
+
+          position: relative;
+          overflow: hidden;
+          height: var(--n-rail-height);
+          border-radius: 5px;
+          background-color: var(--n-rail-color);
+          transition: background-color .3s var(--n-bezier);}.nui-root.nui-root .n-progress .n-progress-graph .n-progress-graph-line .n-progress-graph-line-rail .n-progress-graph-line-fill {
+
+            background: var(--n-fill-color);
+            position: relative;
+            border-radius: 5px;
+            height: inherit;
+            width: 100%;
+            max-width: 0%;
+            transition:
+              background-color .3s var(--n-bezier),
+              max-width .2s var(--n-bezier);}.nui-root.nui-root .n-progress .n-progress-graph .n-progress-graph-line .n-progress-graph-line-rail .n-progress-graph-line-fill.n-progress-graph-line-fill--processing::after {
+
+                content: "";
+                background-image: var(--n-line-bg-processing);
+                animation: progress-processing-animation 2s var(--n-bezier) infinite;}@keyframes progress-processing-animation {0% {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      right: 100%;
+      opacity: 1;}66% {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      right: 0;
+      opacity: 0;}100% {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      right: 0;
+      opacity: 0;}}
+
+/* ===== naive-ui: skeleton ===== */
+.nui-root.nui-root .n-skeleton {
+
+    height: 1em;
+    width: 100%;
+    transition:
+      --n-color-start .3s var(--n-bezier),
+      --n-color-end .3s var(--n-bezier),
+      background-color .3s var(--n-bezier);
+    animation: 2s skeleton-loading infinite cubic-bezier(0.36, 0, 0.64, 1);
+    background-color: var(--n-color-start);}@keyframes skeleton-loading {0% {
+      background: var(--n-color-start);}40% {
+      background: var(--n-color-end);}80% {
+      background: var(--n-color-start);}100% {
+      background: var(--n-color-start);}}
+
+/* ===== naive-ui: empty ===== */
+.nui-root.nui-root .n-empty {
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: var(--n-font-size);}.nui-root.nui-root .n-empty .n-empty__icon {
+
+    width: var(--n-icon-size);
+    height: var(--n-icon-size);
+    font-size: var(--n-icon-size);
+    line-height: var(--n-icon-size);
+    color: var(--n-icon-color);
+    transition:
+      color .3s var(--n-bezier);}.nui-root.nui-root .n-empty .n-empty__icon + .n-empty__description {
+
+        margin-top: 8px;}.nui-root.nui-root .n-empty .n-empty__description {
+
+    transition: color .3s var(--n-bezier);
+    color: var(--n-text-color);}.nui-root.nui-root .n-empty .n-empty__extra {
+
+    text-align: center;
+    transition: color .3s var(--n-bezier);
+    margin-top: 12px;
+    color: var(--n-extra-text-color);}
+
+/* ===== naive-ui: result ===== */
+.nui-root.nui-root .n-result {
+
+  color: var(--n-text-color);
+  line-height: var(--n-line-height);
+  font-size: var(--n-font-size);
+  transition:
+    color .3s var(--n-bezier);}.nui-root.nui-root .n-result .n-result-icon {
+
+    display: flex;
+    justify-content: center;
+    transition: color .3s var(--n-bezier);}.nui-root.nui-root .n-result .n-result-icon .n-result-icon__status-image {
+
+      font-size: var(--n-icon-size);
+      width: 1em;
+      height: 1em;}.nui-root.nui-root .n-result .n-result-icon .n-base-icon {
+
+      color: var(--n-icon-color);
+      font-size: var(--n-icon-size);}.nui-root.nui-root .n-result .n-result-content {
+  margin-top: 24px;}.nui-root.nui-root .n-result .n-result-footer {
+
+    margin-top: 24px;
+    text-align: center;}.nui-root.nui-root .n-result .n-result-header .n-result-header__title {
+
+      margin-top: 16px;
+      font-weight: var(--n-title-font-weight);
+      transition: color .3s var(--n-bezier);
+      text-align: center;
+      color: var(--n-title-text-color);
+      font-size: var(--n-title-font-size);}.nui-root.nui-root .n-result .n-result-header .n-result-header__description {
+
+      margin-top: 4px;
+      text-align: center;
+      font-size: var(--n-font-size);}
+
 /* ===== elm-ui bridge =====
  *
  * Components are built from elm-ui elements, and elm-ui styles its own helper classes

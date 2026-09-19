@@ -82,5 +82,29 @@ export const components = {
   space: {
     cssr: [],
     theme: 'space/styles/light.ts'
+  },
+  badge: {
+    cssr: ['badge/src/styles/index.cssr.ts'],
+    theme: 'badge/styles/light.ts'
+  },
+  spin: {
+    cssr: ['spin/src/styles/index.cssr.ts'],
+    theme: 'spin/styles/light.ts'
+  },
+  progress: {
+    cssr: ['progress/src/styles/index.cssr.ts'],
+    theme: 'progress/styles/light.ts'
+  },
+  skeleton: {
+    cssr: ['skeleton/src/styles/index.cssr.ts'],
+    theme: 'skeleton/styles/light.ts'
+  },
+  empty: {
+    cssr: ['empty/src/styles/index.cssr.ts'],
+    theme: 'empty/styles/light.ts'
+  },
+  result: {
+    cssr: ['result/src/styles/index.cssr.ts'],
+    theme: 'result/styles/light.ts'
   }
 }

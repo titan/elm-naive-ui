@@ -1,0 +1,24 @@
+{
+  "light": {
+    "fontSize": "14px",
+    "textColor": "#18a058",
+    "sizeTiny": "22px",
+    "sizeSmall": "28px",
+    "sizeMedium": "34px",
+    "sizeLarge": "40px",
+    "sizeHuge": "46px",
+    "color": "#18a058",
+    "opacitySpinning": "0.5"
+  },
+  "dark": {
+    "fontSize": "14px",
+    "textColor": "#63e2b7",
+    "sizeTiny": "22px",
+    "sizeSmall": "28px",
+    "sizeMedium": "34px",
+    "sizeLarge": "40px",
+    "sizeHuge": "46px",
+    "color": "#63e2b7",
+    "opacitySpinning": "0.38"
+  }
+}

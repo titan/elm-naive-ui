@@ -25,9 +25,12 @@ async function dumpComponent(rel) {
   const darkRel = rel.replace(/light\.ts$/, 'dark.ts')
   const src = [
     commonImport,
-    `import light from './${rel}'`,
-    `import dark from './${darkRel}'`,
-    `export default { light: light.self(commonLight), dark: dark.self(commonDark) }`
+    `import * as lightMod from './${rel}'`,
+    `import * as darkMod from './${darkRel}'`,
+    // Naive UI theme modules export their theme object either as `default` or as a
+    // named const (e.g. `skeletonLight`); pick whichever carries a `self` function.
+    `const pick = (m) => (m.default && m.default.self ? m.default : Object.values(m).find((v) => v && typeof v.self === 'function'))`,
+    `export default { light: pick(lightMod).self(commonLight), dark: pick(darkMod).self(commonDark) }`
   ].join('\n')
   return (await loadModuleAt(RESOLVE_DIR, path.join(RESOLVE_DIR, rel), src)).default
 }

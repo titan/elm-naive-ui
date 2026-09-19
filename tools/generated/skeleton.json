@@ -1,0 +1,18 @@
+{
+  "light": {
+    "color": "#eee",
+    "colorEnd": "#ddd",
+    "borderRadius": "3px",
+    "heightSmall": "28px",
+    "heightMedium": "34px",
+    "heightLarge": "40px"
+  },
+  "dark": {
+    "color": "rgba(255, 255, 255, 0.12)",
+    "colorEnd": "rgba(255, 255, 255, 0.18)",
+    "borderRadius": "3px",
+    "heightSmall": "28px",
+    "heightMedium": "34px",
+    "heightLarge": "40px"
+  }
+}
