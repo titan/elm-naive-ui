@@ -2,6 +2,7 @@ module NUI.Button exposing
     ( IconPlacement(..)
     , Options
     , Variant(..)
+    , cssVarsFor
     , defaults
     , view
     )
@@ -173,6 +174,15 @@ view theme opts children =
             :: interactive
         )
         (body ++ borderEls)
+
+
+{-| The raw `--n-*` custom properties a button with these options attaches (before
+`NUI.Internal.renderVars` drops `initial`/empty values). Exposed so the `--n-*` output
+can be asserted directly; `view` uses exactly this.
+-}
+cssVarsFor : Theme -> Options msg -> List ( String, String )
+cssVarsFor theme opts =
+    cssVars theme opts (ButtonTheme.vars theme)
 
 
 cssVars : Theme -> Options msg -> ButtonTheme.Vars -> List ( String, String )

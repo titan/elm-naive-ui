@@ -4,7 +4,13 @@ extra_paths = [
 ]
 
 [permissions]
-allow = ["execute_bash:*"]
+allow = [
+    "execute_bash:*",
+    "task_message:*",
+    "task_status:*",
+    "task_result:*",
+    "task_revive:*",
+]
 
 [provider]
 default = "deepseek"

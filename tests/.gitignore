@@ -1,0 +1,5 @@
+# Build artifacts and test-only deps
+index.html
+elm-stuff/
+node_modules/
+package-lock.json

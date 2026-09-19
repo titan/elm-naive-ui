@@ -45,18 +45,17 @@ parse raw =
 parseHex : String -> Maybe Rgba
 parseHex hex =
     let
-        expand c =
-            String.toList c |> List.map (\ch -> String.fromChar ch) |> List.map (\ch -> ch ++ ch) |> String.concat
-
-        pairs body =
-            chunksOf 2 body
+        expand s =
+            String.toList s
+                |> List.map (\c -> String.fromChar c ++ String.fromChar c)
+                |> String.concat
     in
     case String.length hex of
         3 ->
-            pairs (expand hex) |> hexParts
+            hexParts (chunksOf 2 (expand hex))
 
         6 ->
-            pairs hex |> hexParts
+            hexParts (chunksOf 2 hex)
 
         _ ->
             Nothing
@@ -71,9 +70,50 @@ chunksOf n s =
         String.left n s :: chunksOf n (String.dropLeft n s)
 
 
+{-| Elm's `String.toInt` only parses decimal, so hex digits are decoded by hand.
+-}
+hexDigit : Char -> Maybe Int
+hexDigit c =
+    if Char.isDigit c then
+        Just (Char.toCode c - Char.toCode '0')
+
+    else
+        case Char.toLower c of
+            'a' ->
+                Just 10
+
+            'b' ->
+                Just 11
+
+            'c' ->
+                Just 12
+
+            'd' ->
+                Just 13
+
+            'e' ->
+                Just 14
+
+            'f' ->
+                Just 15
+
+            _ ->
+                Nothing
+
+
+hexPair : String -> Maybe Int
+hexPair s =
+    case String.toList s of
+        [ hi, lo ] ->
+            Maybe.map2 (\a b -> a * 16 + b) (hexDigit hi) (hexDigit lo)
+
+        _ ->
+            Nothing
+
+
 hexParts : List String -> Maybe Rgba
 hexParts ps =
-    case List.map (\p -> String.toInt ("0x" ++ p)) ps of
+    case List.map hexPair ps of
         [ Just r, Just g, Just b ] ->
             Just { r = toFloat r, g = toFloat g, b = toFloat b, a = 1 }
 
@@ -121,25 +161,15 @@ formatFloat x =
 
 toCss : Rgba -> String
 toCss { r, g, b, a } =
-    if a >= 1 then
-        "rgb("
-            ++ String.fromInt (round r)
-            ++ ", "
-            ++ String.fromInt (round g)
-            ++ ", "
-            ++ String.fromInt (round b)
-            ++ ")"
-
-    else
-        "rgba("
-            ++ String.fromInt (round r)
-            ++ ", "
-            ++ String.fromInt (round g)
-            ++ ", "
-            ++ String.fromInt (round b)
-            ++ ", "
-            ++ formatFloat (roundTo 3 a)
-            ++ ")"
+    "rgba("
+        ++ String.fromInt (round r)
+        ++ ", "
+        ++ String.fromInt (round g)
+        ++ ", "
+        ++ String.fromInt (round b)
+        ++ ", "
+        ++ formatFloat (roundTo 3 a)
+        ++ ")"
 
 
 {-| Composite `top` over `bottom` (seemly's `composite`).

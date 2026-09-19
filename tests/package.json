@@ -1,0 +1,13 @@
+{
+  "name": "elm-naive-ui-tests",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Self-contained DOM test harness for elm-naive-ui (built with elm make, inspected with jsdom).",
+  "scripts": {
+    "test": "node inspect.mjs index.html"
+  },
+  "dependencies": {
+    "jsdom": "^25.0.0"
+  }
+}

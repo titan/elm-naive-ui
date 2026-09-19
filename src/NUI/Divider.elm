@@ -1,12 +1,126 @@
-module NUI.Divider exposing (view)
+module NUI.Divider exposing
+    ( Options
+    , TitlePlacement(..)
+    , defaults
+    , view
+    )
 
-{-| Placeholder module — implemented by the Divider lane.
+{-| Naive UI's `Divider`, rebuilt on elm-ui.
+
+    NUI.Divider.view theme NUI.Divider.defaults []
+
+    NUI.Divider.view theme
+        { NUI.Divider.defaults
+            | titlePlacement = NUI.Divider.Left
+        }
+        [ Element.text "Title" ]
+
+The element carries the `.n-divider` BEM classes and Naive UI's `--n-*` custom
+properties; `NUI.Css` ships Naive UI's exact CSS.
+
 -}
 
 import Element exposing (Element)
+import Html.Attributes as HA
+import NUI.Internal as I
 import NUI.Theme exposing (Theme)
+import NUI.Theme.Divider as DividerTheme
 
 
-view : Theme -> Element msg
-view _ =
-    Element.none
+{-| Where the title sits on a horizontal divider (Naive UI's `title-placement`).
+-}
+type TitlePlacement
+    = Left
+    | Center
+    | Right
+
+
+type alias Options msg =
+    { vertical : Bool
+    , titlePlacement : TitlePlacement
+    , dashed : Bool
+    , attributes : List (Element.Attribute msg)
+    }
+
+
+defaults : Options msg
+defaults =
+    { vertical = False
+    , titlePlacement = Center
+    , dashed = False
+    , attributes = []
+    }
+
+
+view : Theme -> Options msg -> List (Element msg) -> Element msg
+view theme opts children =
+    let
+        v =
+            DividerTheme.vars theme
+
+        hasTitle =
+            not (List.isEmpty children)
+
+        line modifier =
+            Element.el
+                [ I.classes [ "n-divider__line", "n-divider__line--" ++ modifier ] ]
+                Element.none
+
+        title =
+            Element.row [ I.classes [ "n-divider__title" ] ] children
+
+        body =
+            if opts.vertical then
+                []
+
+            else
+                line "left"
+                    :: (if hasTitle then
+                            [ title, line "right" ]
+
+                        else
+                            []
+                       )
+
+        placementClass =
+            if hasTitle then
+                [ "n-divider--title-position-" ++ placementName opts.titlePlacement ]
+
+            else
+                []
+
+        classes =
+            [ "n-divider" ]
+                ++ I.classIf opts.vertical "n-divider--vertical"
+                ++ I.classIf (not hasTitle) "n-divider--no-title"
+                ++ I.classIf opts.dashed "n-divider--dashed"
+                ++ placementClass
+
+        vars =
+            [ ( "--n-bezier", theme.common.cubicBezierEaseInOut )
+            , ( "--n-color", v.color )
+            , ( "--n-text-color", v.textColor )
+            , ( "--n-font-weight", v.fontWeight )
+            ]
+    in
+    Element.row
+        ([ I.classes classes
+         , I.cssVars vars
+         , Element.htmlAttribute (HA.attribute "role" "separator")
+         ]
+            ++ opts.attributes
+        )
+        body
+
+
+placementName : TitlePlacement -> String
+placementName placement =
+    case placement of
+        Left ->
+            "left"
+
+        Center ->
+            "center"
+
+        Right ->
+            "right"
