@@ -53,13 +53,20 @@ and the view emits exactly Naive UI's DOM for it:
   - RTL — `rtl` adds `n-badge--rtl` and mirrors the offset base to `50%`.
   - Digit scroll — `previousValue` renders the previous digits (aligned by place
     value) and the `--up-scroll` / `--down-scroll` classes on the slot machine.
+    The classes are attached while `previousValue` is set and differs from
+    `value`, and stay attached for as long as it keeps differing (upstream keeps
+    them on after a change too, only dropping them on the _next_ change). So to
+    replay the animation the caller must move `previousValue` between renders —
+    e.g. clear it to `Nothing` (or set it equal to `value`) between changes.
   - Mount / leave transition — `transition` (a `NUI.Internal.TransitionPhase`)
     adds the `fade-in-scale-up-transition-*` class on the sup; a leave phase
     keeps the sup mounted after the badge is hidden.
   - Wave replay — `waveActive` adds `n-base-wave--active`.
 
 Still out of scope: Naive UI's `value` slot (custom sup content) — `value`
-renders it.
+renders it; and the TransitionGroup / expand mount animations for digits added
+when the digit count grows (e.g. `99` → `100`), where upstream animates the new
+leading cell and the `+` cell (the resting DOM we render matches).
 
 -}
 
@@ -336,6 +343,8 @@ as bare text — upstream's string branch renders no machine internals either.
 When `previousValue` is set and differs, each cell also carries the previous
 digit (aligned by place value, from the right) and the `--up-scroll` /
 `--down-scroll` classes, so the caller can play the digit-scroll animation.
+Those classes persist for as long as `previousValue` keeps differing from
+`value`; move `previousValue` between renders to replay (see the module doc).
 
 -}
 slotMachine : Options msg -> Html msg

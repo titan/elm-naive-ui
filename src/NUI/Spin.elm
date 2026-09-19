@@ -33,10 +33,13 @@ kept so real browsers animate the dash arc too.
 
 **Data-driven runtime.** The caller owns the state: `delay` and the
 deprecated `spinning` alias are just `show` applied late (no debouncing timer
-here), and `transition` (a `NUI.Internal.TransitionPhase`) adds the
-`fade-in-transition-*` class around `.n-spin-body` — a leave phase keeps the
-body mounted after `show` turns false. `content-class` / `content-style` are
-not ported (use `attributes`).
+here). `transition` (a `NUI.Internal.TransitionPhase`) adds the
+`fade-in-transition-*` class around `.n-spin-body` and holds a leave mounted —
+but only in the **wrapped** shape; the standalone shape renders the spinner
+directly with no `Transition` (matching upstream's `Spin.tsx`, where the
+`<Transition>` wraps `icon` only under a default slot), so `transition` is
+ignored there. `content-class` / `content-style` are not ported (use
+`attributes`).
 
 -}
 
