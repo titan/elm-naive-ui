@@ -81,6 +81,15 @@ Model each component on `src/NUI/Button.elm`.
   identically because `.n-button` sets all button-reset properties itself.
 - **Icons**: render Naive UI's `__icon` / `__border` / `__state-border` wrapper elements
   so the CSS applies.
+- **RTL**: components that support it take an `rtl : Bool` option and add their
+  `n-<comp>--rtl` class. The RTL *rules* come from each component's
+  `src/<comp>/src/styles/rtl.cssr.ts`, listed in `tools/manifest.mjs` alongside the
+  base cssr (Naive UI mounts them via `useRtl`); regenerate with `npm run extract`.
+- **Runtime behaviour**: Naive UI animates from `ref`/`watch`/`setTimeout`/`Transition`
+  state. This library is pure, so that state is data-driven — the caller owns it (and
+  its timers) and the view emits exactly Naive UI's DOM for it (e.g. Progress gradient
+  colours, Badge `previousValue` / `waveActive`, Spin/Badge mount/leave via a
+  `NUI.Internal.TransitionPhase`). No component holds a Model/update loop.
 
 ## Reference source (read-only)
 
