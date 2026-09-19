@@ -105,6 +105,7 @@ type alias Options msg =
     , minlength : Maybe Int
     , prefix : Maybe (Element msg)
     , suffix : Maybe (Element msg)
+    , rtl : Bool
     }
 
 
@@ -128,6 +129,7 @@ defaults =
     , minlength = Nothing
     , prefix = Nothing
     , suffix = Nothing
+    , rtl = False
     }
 
 
@@ -532,6 +534,7 @@ rootClasses opts isTextarea =
 
             Nothing ->
                 []
+        , I.classIf opts.rtl "n-input--rtl"
         , I.classIf opts.disabled "n-input--disabled"
         , I.classIf isTextarea "n-input--textarea"
         , I.classIf (isTextarea && opts.resizable) "n-input--resizable"

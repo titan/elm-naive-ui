@@ -657,6 +657,96 @@ dTrue(
   'ok'
 )
 
+// Badge digit scroll ---------------------------------------------------------
+const textsOf = (sel) =>
+  Array.from(doc.querySelectorAll(sel)).map((e) => e.textContent)
+const dClass = (name, selector, cls) => {
+  const el = doc.querySelector(selector)
+  dTrue(
+    name,
+    !!el && el.classList.contains(cls),
+    el ? el.getAttribute('class') : 'missing'
+  )
+}
+dEq(
+  'DOM: Badge digit scroll up renders the current digits',
+  '1,2,3',
+  textsOf('#live-badge-scroll-up .n-base-slot-machine-current-number__inner').join(',')
+)
+dEq(
+  'DOM: Badge digit scroll up old-number cells carry the previous digits',
+  '1,1,8',
+  textsOf('#live-badge-scroll-up .n-base-slot-machine-old-number--top').join(',')
+)
+dEq(
+  'DOM: Badge digit scroll up adds --up-scroll to every current-number cell',
+  3,
+  doc.querySelectorAll('#live-badge-scroll-up .n-base-slot-machine-current-number--up-scroll')
+    .length
+)
+dEq(
+  'DOM: Badge digit scroll up adds --up-scroll to every old-number copy (2 per cell)',
+  6,
+  doc.querySelectorAll('#live-badge-scroll-up .n-base-slot-machine-old-number--up-scroll')
+    .length
+)
+dEq(
+  'DOM: Badge digit scroll down old-number cells carry the previous digits',
+  '2,3',
+  textsOf('#live-badge-scroll-down .n-base-slot-machine-old-number--top').join(',')
+)
+dEq(
+  'DOM: Badge digit scroll down adds --down-scroll to every current-number cell',
+  2,
+  doc.querySelectorAll('#live-badge-scroll-down .n-base-slot-machine-current-number--down-scroll')
+    .length
+)
+
+// Badge wave replay + mount/leave transition ---------------------------------
+dClass(
+  'DOM: Badge waveActive adds n-base-wave--active',
+  '#live-badge-wave .n-base-wave',
+  'n-base-wave--active'
+)
+dClass(
+  'DOM: Badge leave transition keeps the sup mounted with the leave class',
+  '#live-badge-leave .n-badge-sup',
+  'fade-in-scale-up-transition-leave-active'
+)
+
+// Spin mount/leave transition ------------------------------------------------
+dClass(
+  'DOM: Spin transition adds fade-in-transition-enter-active to .n-spin-body',
+  '#live-spin-transition .n-spin-body',
+  'fade-in-transition-enter-active'
+)
+
+// RTL ------------------------------------------------------------------------
+dClass('DOM: Alert rtl adds n-alert--rtl', '#live-rtl-alert .n-alert', 'n-alert--rtl')
+dClass('DOM: Button rtl adds n-button--rtl', '#live-rtl-button .n-button', 'n-button--rtl')
+dClass('DOM: Card rtl adds n-card--rtl', '#live-rtl-card .n-card', 'n-card--rtl')
+dClass(
+  'DOM: Checkbox rtl adds n-checkbox--rtl',
+  '#live-rtl-checkbox .n-checkbox',
+  'n-checkbox--rtl'
+)
+dClass('DOM: Input rtl adds n-input--rtl', '#live-rtl-input .n-input', 'n-input--rtl')
+dClass('DOM: Radio rtl adds n-radio--rtl', '#live-rtl-radio .n-radio', 'n-radio--rtl')
+dClass(
+  'DOM: Radio group rtl adds n-radio-group--rtl',
+  '#live-rtl-radio-group .n-radio-group',
+  'n-radio-group--rtl'
+)
+dClass('DOM: Space rtl adds n-space--rtl', '#live-rtl-space .n-space', 'n-space--rtl')
+dClass('DOM: Tag rtl adds n-tag--rtl', '#live-rtl-tag .n-tag', 'n-tag--rtl')
+dClass('DOM: Badge rtl adds n-badge--rtl', '#live-rtl-badge .n-badge', 'n-badge--rtl')
+const rtlBadgeSup = doc.querySelector('#live-rtl-badge .n-badge-sup')
+dTrue(
+  'DOM: Badge rtl mirrors the sup offset base to translateX(50%)',
+  !!rtlBadgeSup && (rtlBadgeSup.getAttribute('style') || '').includes('translateX(50%)'),
+  rtlBadgeSup ? rtlBadgeSup.getAttribute('style') : 'missing'
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

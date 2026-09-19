@@ -62,6 +62,7 @@ type alias Options msg =
     , icon : Maybe (Element msg)
     , iconPlacement : IconPlacement
     , onPress : Maybe msg
+    , rtl : Bool
     }
 
 
@@ -84,6 +85,7 @@ defaults =
     , icon = Nothing
     , iconPlacement = IconLeft
     , onPress = Nothing
+    , rtl = False
     }
 
 
@@ -143,6 +145,7 @@ view theme opts children =
                   , "n-button--" ++ T.kindClass opts.kind ++ "-type"
                   , "n-button--" ++ T.sizeClass opts.size ++ "-type"
                   ]
+                , I.classIf opts.rtl "n-button--rtl"
                 , I.classIf opts.disabled "n-button--disabled"
                 , I.classIf opts.block "n-button--block"
                 , I.classIf (opts.dashed && not isText) "n-button--dashed"

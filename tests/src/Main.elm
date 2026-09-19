@@ -17,14 +17,20 @@ import Browser
 import Element exposing (Element)
 import Html exposing (Html)
 import Html.Attributes as HA
+import NUI.Alert as Alert
 import NUI.Badge as Badge
 import NUI.Button as Button
+import NUI.Card as Card
+import NUI.Checkbox as Checkbox
 import NUI.Css as Css
 import NUI.Empty as Empty
+import NUI.Input as Input
 import NUI.Internal as Internal
 import NUI.Progress as Progress
+import NUI.Radio as Radio
 import NUI.Result as Result
 import NUI.Skeleton as Skeleton
+import NUI.Space as Space
 import NUI.Spin as Spin
 import NUI.Tag as Tag
 import NUI.Theme as Theme
@@ -311,6 +317,141 @@ progressGradientMultipleOpts =
         , strokeWidth = 10
         , circleGap = 10
     }
+
+
+badgeScrollUpOpts : Badge.Options msg
+badgeScrollUpOpts =
+    let
+        d =
+            Badge.defaults
+    in
+    { d | value = Just (Badge.Number 123), previousValue = Just (Badge.Number 118) }
+
+
+badgeScrollDownOpts : Badge.Options msg
+badgeScrollDownOpts =
+    let
+        d =
+            Badge.defaults
+    in
+    { d | value = Just (Badge.Number 18), previousValue = Just (Badge.Number 23) }
+
+
+badgeWaveOpts : Badge.Options msg
+badgeWaveOpts =
+    let
+        d =
+            Badge.defaults
+    in
+    { d | value = Just (Badge.Number 5), processing = True, waveActive = True }
+
+
+badgeLeaveOpts : Badge.Options msg
+badgeLeaveOpts =
+    let
+        d =
+            Badge.defaults
+    in
+    { d | value = Just (Badge.Number 5), show = False, transition = Just Internal.LeaveActive }
+
+
+spinTransitionOpts : Spin.Options msg
+spinTransitionOpts =
+    let
+        d =
+            Spin.defaults
+    in
+    { d | transition = Just Internal.EnterActive }
+
+
+rtlAlertOpts : Alert.Options msg
+rtlAlertOpts =
+    let
+        d =
+            Alert.defaults
+    in
+    { d | rtl = True }
+
+
+rtlButtonOpts : Button.Options msg
+rtlButtonOpts =
+    let
+        d =
+            Button.defaults
+    in
+    { d | rtl = True }
+
+
+rtlCardOpts : Card.Options msg
+rtlCardOpts =
+    let
+        d =
+            Card.defaults
+    in
+    { d | rtl = True }
+
+
+rtlCheckboxOpts : Checkbox.Options msg
+rtlCheckboxOpts =
+    let
+        d =
+            Checkbox.defaults
+    in
+    { d | rtl = True }
+
+
+rtlInputOpts : Input.Options msg
+rtlInputOpts =
+    let
+        d =
+            Input.defaults
+    in
+    { d | rtl = True }
+
+
+rtlRadioOpts : Radio.Options msg
+rtlRadioOpts =
+    let
+        d =
+            Radio.defaults
+    in
+    { d | rtl = True }
+
+
+rtlRadioGroupOpts : Radio.GroupOptions String msg
+rtlRadioGroupOpts =
+    let
+        d =
+            Radio.groupDefaults
+    in
+    { d | rtl = True }
+
+
+rtlSpaceOpts : Space.Options msg
+rtlSpaceOpts =
+    let
+        d =
+            Space.defaults
+    in
+    { d | rtl = True }
+
+
+rtlTagOpts : Tag.Options msg
+rtlTagOpts =
+    let
+        d =
+            Tag.defaults
+    in
+    { d | rtl = True }
+
+
+rtlBadgeOpts : Badge.Options msg
+rtlBadgeOpts =
+    let
+        d =
+            Badge.defaults
+    in
+    { d | rtl = True, value = Just (Badge.Number 5) }
 
 
 resultLiveOpts : Result.Options msg
@@ -878,6 +1019,36 @@ liveNodes =
                     (Skeleton.view Theme.default skeletonLiveOpts [])
                 , Element.el [ Element.htmlAttribute (HA.id "live-spin") ]
                     (Spin.view Theme.default Spin.defaults [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-badge-scroll-up") ]
+                    (Badge.view Theme.default badgeScrollUpOpts [ Element.text "Mail" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-badge-scroll-down") ]
+                    (Badge.view Theme.default badgeScrollDownOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-badge-wave") ]
+                    (Badge.view Theme.default badgeWaveOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-badge-leave") ]
+                    (Badge.view Theme.default badgeLeaveOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-spin-transition") ]
+                    (Spin.view Theme.default spinTransitionOpts [ Element.text "Content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-rtl-alert") ]
+                    (Alert.view Theme.default rtlAlertOpts [ Element.text "RTL" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-rtl-button") ]
+                    (Button.view Theme.default rtlButtonOpts [ Element.text "RTL" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-rtl-card") ]
+                    (Card.view Theme.default rtlCardOpts [ Element.text "RTL" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-rtl-checkbox") ]
+                    (Checkbox.view Theme.default rtlCheckboxOpts [ Element.text "RTL" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-rtl-input") ]
+                    (Input.view Theme.default rtlInputOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-rtl-radio") ]
+                    (Radio.view Theme.default rtlRadioOpts [ Element.text "RTL" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-rtl-radio-group") ]
+                    (Radio.group Theme.default rtlRadioGroupOpts [ Radio.choice "a" "A" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-rtl-space") ]
+                    (Space.view Theme.default rtlSpaceOpts [ Element.text "A", Element.text "B" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-rtl-tag") ]
+                    (Tag.view Theme.default rtlTagOpts [ Element.text "RTL" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-rtl-badge") ]
+                    (Badge.view Theme.default rtlBadgeOpts [ Element.text "Mail" ])
                 ]
             )
         ]

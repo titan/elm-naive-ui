@@ -81,6 +81,7 @@ type alias Options msg =
     , justify : Justify
     , reverse : Bool
     , inline : Bool
+    , rtl : Bool
     , attributes : List (Element.Attribute msg)
     }
 
@@ -94,6 +95,7 @@ defaults =
     , justify = JustifyStart
     , reverse = False
     , inline = False
+    , rtl = False
     , attributes = []
     }
 
@@ -149,7 +151,7 @@ view theme opts children =
             Vertical ->
                 Element.column
         )
-            ([ I.classes [ "n-space" ]
+            ([ I.classes ("n-space" :: I.classIf opts.rtl "n-space--rtl")
              , Element.htmlAttribute (HA.attribute "role" "none")
              ]
                 ++ List.map Element.htmlAttribute styles

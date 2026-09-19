@@ -43,6 +43,7 @@ type alias Options msg =
     , disabled : Bool
     , focusable : Bool
     , onCheck : Maybe (Bool -> msg)
+    , rtl : Bool
     }
 
 
@@ -54,6 +55,7 @@ defaults =
     , disabled = False
     , focusable = True
     , onCheck = Nothing
+    , rtl = False
     }
 
 
@@ -103,6 +105,7 @@ view theme opts label =
 
         classes =
             [ "n-checkbox" ]
+                ++ I.classIf opts.rtl "n-checkbox--rtl"
                 ++ I.classIf opts.checked "n-checkbox--checked"
                 ++ I.classIf opts.disabled "n-checkbox--disabled"
                 ++ I.classIf opts.indeterminate "n-checkbox--indeterminate"

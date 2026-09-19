@@ -24,31 +24,32 @@ export const components = {
     theme: null
   },
   button: {
-    cssr: ['button/src/styles/index.cssr.ts'],
+    cssr: ['button/src/styles/index.cssr.ts', 'button/src/styles/rtl.cssr.ts'],
     theme: 'button/styles/light.ts'
   },
   input: {
     cssr: [
       'input/src/styles/input.cssr.ts',
       'input/src/styles/input-group.cssr.ts',
-      'input/src/styles/input-group-label.cssr.ts'
+      'input/src/styles/input-group-label.cssr.ts',
+      'input/src/styles/rtl.cssr.ts'
     ],
     theme: 'input/styles/light.ts'
   },
   card: {
-    cssr: ['card/src/styles/index.cssr.ts'],
+    cssr: ['card/src/styles/index.cssr.ts', 'card/src/styles/rtl.cssr.ts'],
     theme: 'card/styles/light.ts'
   },
   tag: {
-    cssr: ['tag/src/styles/index.cssr.ts'],
+    cssr: ['tag/src/styles/index.cssr.ts', 'tag/src/styles/rtl.cssr.ts'],
     theme: 'tag/styles/light.ts'
   },
   alert: {
-    cssr: ['alert/src/styles/index.cssr.ts'],
+    cssr: ['alert/src/styles/index.cssr.ts', 'alert/src/styles/rtl.cssr.ts'],
     theme: 'alert/styles/light.ts'
   },
   checkbox: {
-    cssr: ['checkbox/src/styles/index.cssr.ts'],
+    cssr: ['checkbox/src/styles/index.cssr.ts', 'checkbox/src/styles/rtl.cssr.ts'],
     theme: 'checkbox/styles/light.ts'
   },
   switch: {
@@ -56,7 +57,11 @@ export const components = {
     theme: 'switch/styles/light.ts'
   },
   radio: {
-    cssr: ['radio/src/styles/radio.cssr.ts', 'radio/src/styles/radio-group.cssr.ts'],
+    cssr: [
+      'radio/src/styles/radio.cssr.ts',
+      'radio/src/styles/radio-group.cssr.ts',
+      'radio/src/styles/rtl.cssr.ts'
+    ],
     theme: 'radio/styles/light.ts'
   },
   divider: {
@@ -80,11 +85,11 @@ export const components = {
     theme: 'avatar/styles/light.ts'
   },
   space: {
-    cssr: [],
+    cssr: ['space/src/styles/rtl.cssr.ts'],
     theme: 'space/styles/light.ts'
   },
   badge: {
-    cssr: ['badge/src/styles/index.cssr.ts'],
+    cssr: ['badge/src/styles/index.cssr.ts', 'badge/src/styles/rtl.cssr.ts'],
     theme: 'badge/styles/light.ts'
   },
   spin: {

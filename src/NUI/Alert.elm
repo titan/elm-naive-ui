@@ -41,6 +41,7 @@ type alias Options msg =
     , showIcon : Bool
     , icon : Maybe (Element msg)
     , onClose : Maybe msg
+    , rtl : Bool
     }
 
 
@@ -53,6 +54,7 @@ defaults =
     , showIcon = True
     , icon = Nothing
     , onClose = Nothing
+    , rtl = False
     }
 
 
@@ -147,6 +149,7 @@ view theme opts children =
                 , I.classIf opts.closable "n-alert--closable"
                 , I.classIf opts.showIcon "n-alert--show-icon"
                 , I.classIf (opts.title == Nothing && opts.closable) "n-alert--right-adjust"
+                , I.classIf opts.rtl "n-alert--rtl"
                 ]
     in
     Element.column

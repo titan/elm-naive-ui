@@ -97,6 +97,7 @@ type alias Options msg =
     , segmented : Segmented
     , contentStyle : List ( String, String )
     , role : Maybe String
+    , rtl : Bool
     }
 
 
@@ -116,6 +117,7 @@ defaults =
     , segmented = noSegmentation
     , contentStyle = []
     , role = Nothing
+    , rtl = False
     }
 
 
@@ -240,6 +242,7 @@ rootClasses : Options msg -> List String
 rootClasses opts =
     [ "n-card" ]
         ++ I.classIf opts.embedded "n-card--embedded"
+        ++ I.classIf opts.rtl "n-card--rtl"
         ++ segmentClass "content" opts.segmented.content
         ++ segmentClass "footer" opts.segmented.footer
         ++ segmentClass "action" opts.segmented.action

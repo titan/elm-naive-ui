@@ -1,4 +1,11 @@
-module NUI.Internal exposing (classIf, classes, cssVars)
+module NUI.Internal exposing
+    ( TransitionPhase(..)
+    , classIf
+    , classes
+    , cssVars
+    , isLeavePhase
+    , transitionClass
+    )
 
 {-| Small shared helpers used by every component.
 
@@ -15,6 +22,71 @@ Both are attached to elm-ui elements via `Element.htmlAttribute`.
 
 import Element exposing (Attribute)
 import Html.Attributes as HA
+
+
+{-| A Vue `<Transition>` phase. Naive UI's transitions are runtime state
+(`fade-in-scale-up-transition`, `fade-in-transition`, …); this library is pure,
+so the caller owns the timing and tells the view which phase to render. The
+matching CSS rules ship in the stylesheet. `enter` phases animate an element in,
+`leave` phases animate it out (the element must stay mounted until the leave
+finishes — see `isLeavePhase`).
+-}
+type TransitionPhase
+    = EnterFrom
+    | EnterActive
+    | EnterTo
+    | LeaveFrom
+    | LeaveActive
+    | LeaveTo
+
+
+{-| The class a phase adds to the transitioning element, e.g.
+`transitionClass "fade-in-transition" EnterActive == "fade-in-transition-enter-active"`.
+-}
+transitionClass : String -> TransitionPhase -> String
+transitionClass name phase =
+    name ++ "-" ++ transitionSuffix phase
+
+
+transitionSuffix : TransitionPhase -> String
+transitionSuffix phase =
+    case phase of
+        EnterFrom ->
+            "enter-from"
+
+        EnterActive ->
+            "enter-active"
+
+        EnterTo ->
+            "enter-to"
+
+        LeaveFrom ->
+            "leave-from"
+
+        LeaveActive ->
+            "leave-active"
+
+        LeaveTo ->
+            "leave-to"
+
+
+{-| Whether the phase is a leave — the element is on its way out and must stay
+mounted until the animation ends.
+-}
+isLeavePhase : TransitionPhase -> Bool
+isLeavePhase phase =
+    case phase of
+        LeaveFrom ->
+            True
+
+        LeaveActive ->
+            True
+
+        LeaveTo ->
+            True
+
+        _ ->
+            False
 
 
 {-| `classIf True "x" == [ "x" ]`, `classIf False "x" == []`. Compose a class list

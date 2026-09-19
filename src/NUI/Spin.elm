@@ -31,12 +31,12 @@ Naive UI's internal `n-base-loading` SVG — the CSS `rotator` keyframe already
 spins `__container`, and the SMIL `<animate>`/`<animateTransform>` children are
 kept so real browsers animate the dash arc too.
 
-**Not ported** (Vue runtime behaviour, per the project's static-rendering
-stance): `delay` and the deprecated `spinning` alias (`show` applies
-immediately, no debouncing timer), the fade-in mount/unmount transition around
-`.n-spin-body` (the body is simply rendered when `show`, matching upstream's
-`active ? icon : null`), and `content-class`/`content-style` (use
-`attributes`).
+**Data-driven runtime.** The caller owns the state: `delay` and the
+deprecated `spinning` alias are just `show` applied late (no debouncing timer
+here), and `transition` (a `NUI.Internal.TransitionPhase`) adds the
+`fade-in-transition-*` class around `.n-spin-body` — a leave phase keeps the
+body mounted after `show` turns false. `content-class` / `content-style` are
+not ported (use `attributes`).
 
 -}
 
@@ -71,6 +71,7 @@ type alias Options msg =
     , scale : Float
     , radius : Int
     , icon : Maybe (Element msg)
+    , transition : Maybe I.TransitionPhase
     , attributes : List (Element.Attribute msg)
     }
 
@@ -86,6 +87,7 @@ defaults =
     , scale = 1
     , radius = 100
     , icon = Nothing
+    , transition = Nothing
     , attributes = []
     }
 
@@ -116,6 +118,19 @@ view theme opts children =
         bodyChildren =
             spinner :: descriptionEls opts
 
+        bodyClasses =
+            "n-spin-body"
+                :: (case opts.transition of
+                        Just phase ->
+                            [ I.transitionClass "fade-in-transition" phase ]
+
+                        Nothing ->
+                            []
+                   )
+
+        showBody =
+            opts.show || isLeaving opts.transition
+
         content =
             Element.column
                 [ Element.width Element.fill
@@ -132,19 +147,30 @@ view theme opts children =
                 ++ opts.attributes
             )
             (content
-                :: (if opts.show then
-                        [ Element.column [ I.classes [ "n-spin-body" ] ] bodyChildren ]
+                :: (if showBody then
+                        [ Element.column [ I.classes bodyClasses ] bodyChildren ]
 
                     else
-                        -- not spinning: upstream's fade Transition renders null
                         []
                    )
             )
 
     else
-        Element.column
-            ([ I.classes [ "n-spin-body" ] ] ++ opts.attributes)
+        Element.column ([ I.classes [ "n-spin-body" ] ] ++ opts.attributes)
             bodyChildren
+
+
+{-| Whether a leave transition keeps `.n-spin-body` mounted after `show` turns
+false (upstream's fade Transition holds the leaving icon).
+-}
+isLeaving : Maybe I.TransitionPhase -> Bool
+isLeaving maybePhase =
+    case maybePhase of
+        Just phase ->
+            I.isLeavePhase phase
+
+        Nothing ->
+            False
 
 
 descriptionEls : Options msg -> List (Element msg)

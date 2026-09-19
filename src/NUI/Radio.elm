@@ -68,6 +68,7 @@ type alias Options msg =
     , disabled : Bool
     , label : Maybe String
     , onChange : Maybe msg
+    , rtl : Bool
     }
 
 
@@ -78,6 +79,7 @@ defaults =
     , disabled = False
     , label = Nothing
     , onChange = Nothing
+    , rtl = False
     }
 
 
@@ -107,6 +109,7 @@ type alias GroupOptions value msg =
     , onChange : Maybe (value -> msg)
     , size : Size
     , disabled : Bool
+    , rtl : Bool
     }
 
 
@@ -116,6 +119,7 @@ groupDefaults =
     , onChange = Nothing
     , size = Medium
     , disabled = False
+    , rtl = False
     }
 
 
@@ -170,7 +174,8 @@ view theme opts children =
     Element.row
         (I.classes
             ("n-radio"
-                :: I.classIf opts.disabled "n-radio--disabled"
+                :: I.classIf opts.rtl "n-radio--rtl"
+                ++ I.classIf opts.disabled "n-radio--disabled"
                 ++ I.classIf opts.checked "n-radio--checked"
             )
             :: I.cssVars (radioCssVars theme v opts.size)
@@ -268,7 +273,8 @@ group theme opts choices =
     Element.row
         [ I.classes
             ("n-radio-group"
-                :: I.classIf isButtonGroup "n-radio-group--button-group"
+                :: I.classIf opts.rtl "n-radio-group--rtl"
+                ++ I.classIf isButtonGroup "n-radio-group--button-group"
             )
         , I.cssVars (groupCssVars theme v opts.size)
         ]

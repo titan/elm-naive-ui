@@ -40,6 +40,7 @@ type alias Options msg =
     , avatar : Maybe (Element msg)
     , onClose : Maybe msg
     , onCheck : Maybe (Bool -> msg)
+    , rtl : Bool
     }
 
 
@@ -61,6 +62,7 @@ defaults =
     , avatar = Nothing
     , onClose = Nothing
     , onCheck = Nothing
+    , rtl = False
     }
 
 
@@ -141,6 +143,7 @@ view theme opts children =
         classes =
             List.concat
                 [ [ "n-tag" ]
+                , I.classIf opts.rtl "n-tag--rtl"
                 , I.classIf opts.strong "n-tag--strong"
                 , I.classIf opts.disabled "n-tag--disabled"
                 , I.classIf opts.checkable "n-tag--checkable"

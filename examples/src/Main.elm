@@ -200,6 +200,7 @@ body =
     , resultSection
     , skeletonSection
     , spinSection
+    , rtlSection
     , themeSection
     ]
 
@@ -487,6 +488,21 @@ badgeSection =
                 []
             , Badge.view theme { badgeD | dot = True, color = Just "#18a058" } []
             ]
+        , demoRow "Runtime (digit scroll · wave)"
+            [ Badge.view theme
+                { badgeD
+                    | value = Just (Badge.Number 128)
+                    , previousValue = Just (Badge.Number 118)
+                }
+                []
+            , Badge.view theme
+                { badgeD
+                    | value = Just (Badge.Number 5)
+                    , processing = True
+                    , waveActive = True
+                }
+                []
+            ]
         ]
 
 
@@ -681,6 +697,29 @@ spinSection =
                         [ Element.text "The spinner overlays this content while loading." ]
                     ]
                 )
+            ]
+        ]
+
+
+rtlSection : Element msg
+rtlSection =
+    section "RTL"
+        "Right-to-left layout — pass `rtl = True`; the RTL rules ship in the stylesheet."
+    <|
+        [ demoRow "Alert"
+            [ Element.el [ Element.width (Element.px 340) ]
+                (Alert.view theme
+                    { alertD | rtl = True, kind = T.Info, title = Just "Info" }
+                    [ Element.text "A right-to-left alert." ]
+                )
+            ]
+        , demoRow "Components"
+            [ Button.view theme { btn | rtl = True, kind = T.Primary } [ Element.text "Button" ]
+            , Tag.view theme { tagD | rtl = True, kind = T.Primary } [ Element.text "Tag" ]
+            , Badge.view theme { badgeD | rtl = True, value = Just (Badge.Number 5) } [ Element.text "Mail" ]
+            , Space.view theme
+                { spaceD | rtl = True }
+                [ Element.text "One", Element.text "Two", Element.text "Three" ]
             ]
         ]
 

@@ -47,15 +47,19 @@ with none, the badge renders "as is" (`n-badge--as-is`). Structure mirrors
         │   └── span.n-base-slot-machine-number … the "+" over max
         └── div.n-base-wave                 when processing
 
-Deliberately out of scope (static rendering, like the rest of the library):
+Runtime behaviour is data-driven — the caller owns the state (and its timers),
+and the view emits exactly Naive UI's DOM for it:
 
-  - RTL — `n-badge--rtl` and the mirrored `50%` offset base need an RTL
-    runtime Elm does not have.
-  - Mount / leave transitions (`fade-in-scale-up-transition` classes on the
-    sup) and the digit scroll animation (`--up-scroll` / `--down-scroll` on
-    the slot machine, `n-base-wave--active` on the wave) — runtime state; the
-    DOM here is the rested state upstream renders initially.
-  - Naive UI's `value` slot (custom sup content) — `value` renders it.
+  - RTL — `rtl` adds `n-badge--rtl` and mirrors the offset base to `50%`.
+  - Digit scroll — `previousValue` renders the previous digits (aligned by place
+    value) and the `--up-scroll` / `--down-scroll` classes on the slot machine.
+  - Mount / leave transition — `transition` (a `NUI.Internal.TransitionPhase`)
+    adds the `fade-in-scale-up-transition-*` class on the sup; a leave phase
+    keeps the sup mounted after the badge is hidden.
+  - Wave replay — `waveActive` adds `n-base-wave--active`.
+
+Still out of scope: Naive UI's `value` slot (custom sup content) — `value`
+renders it.
 
 -}
 
@@ -98,6 +102,10 @@ type alias Options msg =
     , processing : Bool
     , color : Maybe String
     , offset : Maybe ( Float, Float )
+    , rtl : Bool
+    , previousValue : Maybe BadgeValue
+    , waveActive : Bool
+    , transition : Maybe I.TransitionPhase
     , attributes : List (Element.Attribute msg)
     }
 
@@ -113,6 +121,10 @@ defaults =
     , processing = False
     , color = Nothing
     , offset = Nothing
+    , rtl = False
+    , previousValue = Nothing
+    , waveActive = False
+    , transition = Nothing
     , attributes = []
     }
 
@@ -123,6 +135,7 @@ view theme opts children =
         classes =
             List.concat
                 [ [ "n-badge" ]
+                , I.classIf opts.rtl "n-badge--rtl"
                 , I.classIf opts.dot "n-badge--dot"
                 , I.classIf (List.isEmpty children) "n-badge--as-is"
                 ]
@@ -147,11 +160,11 @@ view theme opts children =
 
 supElement : Options msg -> List (Element msg)
 supElement opts =
-    if showBadge opts then
+    if showBadge opts || isLeaving opts.transition then
         [ Element.html
             (Html.sup
-                ([ HA.class "n-badge-sup"
-                 , HA.style "transform" (offsetTransform opts.offset)
+                ([ HA.class (supClasses opts)
+                 , HA.style "transform" (offsetTransform opts.rtl opts.offset)
                  ]
                     ++ titleAttributes opts.value
                 )
@@ -161,13 +174,13 @@ supElement opts =
 
                       else
                         case opts.value of
-                            Just v ->
-                                [ slotMachine v opts.max ]
+                            Just _ ->
+                                [ slotMachine opts ]
 
                             Nothing ->
                                 []
                     , if opts.processing then
-                        [ wave ]
+                        [ wave opts.waveActive ]
 
                       else
                         []
@@ -178,6 +191,37 @@ supElement opts =
 
     else
         []
+
+
+{-| The sup's classes: its BEM name plus, while a mount / leave transition is
+active, the phase class Vue's `<Transition name="fade-in-scale-up-transition">`
+would add.
+-}
+supClasses : Options msg -> String
+supClasses opts =
+    String.join " "
+        ("n-badge-sup"
+            :: (case opts.transition of
+                    Just phase ->
+                        [ I.transitionClass "fade-in-scale-up-transition" phase ]
+
+                    Nothing ->
+                        []
+               )
+        )
+
+
+{-| Whether a leave transition keeps the sup mounted after `showBadge` turns
+false.
+-}
+isLeaving : Maybe I.TransitionPhase -> Bool
+isLeaving maybePhase =
+    case maybePhase of
+        Just phase ->
+            I.isLeavePhase phase
+
+        Nothing ->
+            False
 
 
 {-| `showBadgeRef` (minus the unported `value` slot): shown when `show` is on
@@ -245,50 +289,144 @@ titleAttributes maybeValue =
 
 
 {-| The sup's offset transform. Naive UI only computes it when `offset` is
-set (the stylesheet carries the `translateX(-50%)` base); we always attach it
-so the default and offset forms are uniform — the default value is identical
-to the stylesheet's. RTL (a `50%` base) is not ported.
+set (the stylesheet carries the `translateX(-50%)` base, and the RTL rule flips
+it to `translateX(50%)`); we attach it always so the default and offset forms
+are uniform, using the RTL base so the inline value matches what the stylesheet
+would have applied.
 -}
-offsetTransform : Maybe ( Float, Float ) -> String
-offsetTransform offset =
+offsetTransform : Bool -> Maybe ( Float, Float ) -> String
+offsetTransform rtl offset =
+    let
+        base =
+            if rtl then
+                "50%"
+
+            else
+                "-50%"
+    in
     case offset of
         Nothing ->
-            "translateX(-50%)"
+            "translateX(" ++ base ++ ")"
 
         Just ( x, y ) ->
-            "translate(calc(-50% + "
+            "translate(calc("
+                ++ base
+                ++ " + "
                 ++ String.fromFloat x
                 ++ "px), "
                 ++ String.fromFloat y
                 ++ "px)"
 
 
-{-| `NBaseSlotMachine` at rest. Numbers render the digits (and the trailing
-`+` when the value overflows `max`) inside the TransitionGroup's wrapper
-span; strings render as bare text — upstream's string branch renders no
-machine internals either.
+{-| `NBaseSlotMachine`. Numbers render the digits (and the trailing `+` when the
+value overflows `max`) inside the TransitionGroup's wrapper span; strings render
+as bare text — upstream's string branch renders no machine internals either.
+
+When `previousValue` is set and differs, each cell also carries the previous
+digit (aligned by place value, from the right) and the `--up-scroll` /
+`--down-scroll` classes, so the caller can play the digit-scroll animation.
+
 -}
-slotMachine : BadgeValue -> Maybe Int -> Html msg
-slotMachine value maybeMax =
-    case value of
-        Text s ->
+slotMachine : Options msg -> Html msg
+slotMachine opts =
+    case opts.value of
+        Just (Text s) ->
             Html.span [ HA.class "n-base-slot-machine" ] [ Html.text s ]
 
-        Number n ->
+        Just (Number n) ->
+            let
+                newDigits =
+                    digits n opts.max
+
+                direction =
+                    scrollDirection opts
+
+                oldDigits =
+                    alignedOldDigits opts newDigits
+            in
             Html.span [ HA.class "n-base-slot-machine" ] <|
-                Html.span [] (List.map (slotMachineNumber True << String.fromInt) (digits n maybeMax))
-                    :: plusNumber n maybeMax
+                Html.span []
+                    (List.map2
+                        (\oldDigit newDigit ->
+                            slotMachineNumber True
+                                direction
+                                (String.fromInt oldDigit)
+                                (String.fromInt newDigit)
+                        )
+                        oldDigits
+                        newDigits
+                    )
+                    :: plusNumber n opts.max
+
+        Nothing ->
+            Html.span [ HA.class "n-base-slot-machine" ] []
+
+
+{-| `'up'` when the value grew and `'down'` when it shrank (upstream compares
+the new vs old raw number); `Nothing` when there is nothing to scroll.
+-}
+scrollDirection : Options msg -> Maybe String
+scrollDirection opts =
+    case ( opts.value, opts.previousValue ) of
+        ( Just (Number n), Just (Number p) ) ->
+            if n > p then
+                Just "up"
+
+            else if p > n then
+                Just "down"
+
+            else
+                Nothing
+
+        _ ->
+            Nothing
+
+
+{-| The old-number content of each digit cell: the previous value's digit at the
+same place value (digits align from the right, matching the TransitionGroup key
+`length - i - 1`), falling back to the current digit for places the previous
+value did not reach (newly added leading cells keep their current digit —
+upstream's per-cell watcher never fires for them).
+-}
+alignedOldDigits : Options msg -> List Int -> List Int
+alignedOldDigits opts newDigits =
+    case opts.previousValue of
+        Just (Number prev) ->
+            let
+                reversedPrev =
+                    List.reverse (digits prev opts.max)
+
+                lenNew =
+                    List.length newDigits
+
+                oldAt index =
+                    let
+                        place =
+                            lenNew - 1 - index
+                    in
+                    case List.drop place reversedPrev |> List.head of
+                        Just d ->
+                            d
+
+                        Nothing ->
+                            Maybe.withDefault 0 (List.drop index newDigits |> List.head)
+            in
+            List.indexedMap (\index _ -> oldAt index) newDigits
+
+        _ ->
+            newDigits
 
 
 {-| The `+` cell Naive UI appends when `max < value` — the comparison uses the
-uncapped value. Rendered as a not-number slot machine cell.
+uncapped value. Rendered as a not-number slot machine cell (its old copies show
+`+`, like upstream's `SlotMachineNumber value="+"`).
 -}
 plusNumber : Int -> Maybe Int -> List (Html msg)
 plusNumber value maybeMax =
     case maybeMax of
         Just m ->
             if m < value then
-                [ slotMachineNumber False "+" ]
+                [ slotMachineNumber False Nothing "+" "+" ]
 
             else
                 []
@@ -297,22 +435,22 @@ plusNumber value maybeMax =
             []
 
 
-{-| One `NBaseSlotMachineNumber` at rest: the current digit plus the two
-off-screen "old number" copies the scroll animation rolls from (they are part
-of the initial DOM upstream, hidden by the cell's overflow). Scroll /
-transition classes are runtime state and are not attached.
+{-| One `NBaseSlotMachineNumber`: two off-screen "old number" copies (the
+previous digit, or the current one at rest) and the current digit, plus the
+`--up-scroll` / `--down-scroll` classes while `direction` is set.
 -}
-slotMachineNumber : Bool -> String -> Html msg
-slotMachineNumber isNumber innerText =
+slotMachineNumber : Bool -> Maybe String -> String -> String -> Html msg
+slotMachineNumber isNumber direction oldText newText =
     let
         oldNumber modifier =
             Html.span
                 [ HA.class
                     ("n-base-slot-machine-old-number n-base-slot-machine-old-number--"
                         ++ modifier
+                        ++ scrollClass "n-base-slot-machine-old-number" direction
                     )
                 ]
-                [ Html.text innerText ]
+                [ Html.text oldText ]
 
         innerClass =
             if isNumber then
@@ -323,11 +461,28 @@ slotMachineNumber isNumber innerText =
     in
     Html.span [ HA.class "n-base-slot-machine-number" ]
         [ oldNumber "top"
-        , Html.span [ HA.class "n-base-slot-machine-current-number" ]
-            [ Html.span [ HA.class innerClass ] [ Html.text innerText ]
+        , Html.span
+            [ HA.class
+                ("n-base-slot-machine-current-number"
+                    ++ scrollClass "n-base-slot-machine-current-number" direction
+                )
+            ]
+            [ Html.span [ HA.class innerClass ] [ Html.text newText ]
             ]
         , oldNumber "bottom"
         ]
+
+
+{-| `n-base-slot-machine-old-number--up-scroll` etc., or empty when not scrolling.
+-}
+scrollClass : String -> Maybe String -> String
+scrollClass name direction =
+    case direction of
+        Just dir ->
+            " " ++ name ++ "--" ++ dir ++ "-scroll"
+
+        Nothing ->
+            ""
 
 
 {-| `numbersRef`: `[0]` below 1, otherwise the decimal digits of
@@ -360,14 +515,20 @@ leastSignificantFirst n =
         modBy 10 n :: leastSignificantFirst (n // 10)
 
 
-{-| `NBaseWave` at rest: upstream toggles `n-base-wave--active` from a timer
-to replay the ripple; statically the element is just present (the badge CSS
-gives it the infinite ripple animation under `.n-badge-sup`).
+{-| `NBaseWave`: `n-base-wave--active` replays the ripple (upstream toggles it
+from a 1s timer); the badge CSS also gives it the infinite ripple animation
+under `.n-badge-sup`.
 -}
-wave : Html msg
-wave =
+wave : Bool -> Html msg
+wave active =
     Html.div
-        [ HA.class "n-base-wave"
+        [ HA.class
+            (if active then
+                "n-base-wave n-base-wave--active"
+
+             else
+                "n-base-wave"
+            )
         , HA.attribute "aria-hidden" "true"
         ]
         []
