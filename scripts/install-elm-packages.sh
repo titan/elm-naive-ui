@@ -42,6 +42,7 @@ DEFAULT_PKGS=(
   elm/core@1.0.5
   elm/json@1.1.3
   elm/html@1.0.0
+  elm/svg@1.0.1
   elm/virtual-dom@1.0.3
   elm/time@1.0.0
   elm/url@1.0.0
