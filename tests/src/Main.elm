@@ -28,10 +28,12 @@ import NUI.Button as Button
 import NUI.ButtonGroup as ButtonGroup
 import NUI.Card as Card
 import NUI.Checkbox as Checkbox
+import NUI.Collapse as Collapse
 import NUI.Countdown as Countdown
 import NUI.Css as Css
 import NUI.Ellipsis as Ellipsis
 import NUI.Empty as Empty
+import NUI.FloatButton as FloatButton
 import NUI.GradientText as GradientText
 import NUI.Input as Input
 import NUI.Internal as Internal
@@ -42,6 +44,7 @@ import NUI.Progress as Progress
 import NUI.QrCode as QrCode
 import NUI.Qrcodegen as Qrcodegen
 import NUI.Radio as Radio
+import NUI.Rate as Rate
 import NUI.Result as Result
 import NUI.Skeleton as Skeleton
 import NUI.Space as Space
@@ -855,6 +858,121 @@ qrCodeStyledOpts =
     }
 
 
+collapseLiveOpts : Collapse.Options msg
+collapseLiveOpts =
+    let
+        d =
+            Collapse.defaults
+    in
+    { d | expandedNames = [ "1" ] }
+
+
+collapseLiveItems : List (Collapse.Item msg)
+collapseLiveItems =
+    let
+        i =
+            Collapse.item
+    in
+    [ { i | name = "1", title = Just "One" }
+    , { i | name = "2", title = Just "Two", disabled = True }
+    ]
+
+
+collapseOneItem : List (Collapse.Item msg)
+collapseOneItem =
+    let
+        i =
+            Collapse.item
+    in
+    [ { i | name = "1", title = Just "One" } ]
+
+
+collapseShowOpts : Collapse.Options msg
+collapseShowOpts =
+    let
+        d =
+            Collapse.defaults
+    in
+    { d | displayDirective = Collapse.ShowContent }
+
+
+collapseRtlOpts : Collapse.Options msg
+collapseRtlOpts =
+    let
+        d =
+            Collapse.defaults
+    in
+    { d | rtl = True }
+
+
+rateLiveOpts : Rate.Options msg
+rateLiveOpts =
+    let
+        d =
+            Rate.defaults
+    in
+    { d | value = Just 4 }
+
+
+rateReadonlyOpts : Rate.Options msg
+rateReadonlyOpts =
+    let
+        d =
+            Rate.defaults
+    in
+    { d | value = Just 3, readonly = True }
+
+
+rateHalfOpts : Rate.Options msg
+rateHalfOpts =
+    let
+        d =
+            Rate.defaults
+    in
+    { d | allowHalf = True, value = Just 3.5 }
+
+
+floatButtonLiveOpts : FloatButton.Options msg
+floatButtonLiveOpts =
+    FloatButton.defaults
+
+
+floatButtonSquareOpts : FloatButton.Options msg
+floatButtonSquareOpts =
+    let
+        d =
+            FloatButton.defaults
+    in
+    { d | shape = FloatButton.Square, type_ = FloatButton.Primary }
+
+
+floatButtonMenuOpts : FloatButton.Options msg
+floatButtonMenuOpts =
+    let
+        d =
+            FloatButton.defaults
+    in
+    { d | menuTrigger = Just FloatButton.Click, showMenu = True, menu = [ Element.text "M" ] }
+
+
+floatButtonWidthOpts : FloatButton.Options msg
+floatButtonWidthOpts =
+    let
+        d =
+            FloatButton.defaults
+    in
+    { d | width = FloatButton.Custom "40" }
+
+
+floatButtonPercentOpts : FloatButton.Options msg
+floatButtonPercentOpts =
+    let
+        d =
+            FloatButton.defaults
+    in
+    { d | width = FloatButton.Custom "50%" }
+
+
 
 -- QRCODEGEN PROBES -------------------------------------------------------------
 
@@ -1162,6 +1280,33 @@ checks =
 
         qrVars =
             QrCode.cssVarsFor light qrD
+
+        rateD =
+            Rate.defaults
+
+        rateVars =
+            Rate.cssVarsFor light rateD
+
+        rateSmallVars =
+            Rate.cssVarsFor light { rateD | size = Rate.Small }
+
+        rateLargeVars =
+            Rate.cssVarsFor light { rateD | size = Rate.Large }
+
+        rateColorVars =
+            Rate.cssVarsFor light { rateD | color = Just "#f0a020" }
+
+        collapseVars =
+            Collapse.cssVarsFor light
+
+        floatButtonD =
+            FloatButton.defaults
+
+        floatButtonDefaultVars =
+            FloatButton.cssVarsFor light floatButtonD
+
+        floatButtonPrimaryVars =
+            FloatButton.cssVarsFor light { floatButtonD | type_ = FloatButton.Primary }
     in
     [ -- 1. NUI.Theme -------------------------------------------------------------
       eq "Theme.default == Theme.light" True (Theme.default == Theme.light)
@@ -1634,6 +1779,81 @@ checks =
     , eq "qrcodegen finder (1,1) light" False (moduleAt "HELLO WORLD" Qrcodegen.Medium 1 1)
     , eq "qrcodegen finder (3,3) dark" True (moduleAt "HELLO WORLD" Qrcodegen.Medium 3 3)
     , eq "qrcodegen overflow errors" True (isErr (Qrcodegen.encodeText (String.repeat 4000 "x") Qrcodegen.Low))
+
+    -- 27. NUI.Rate cssVarsFor ---------------------------------------------------
+    , eq "rate cssVarsFor has 4 vars" 4 (List.length rateVars)
+    , eq "rate cssVarsFor exact --n-* names"
+        [ "--n-bezier"
+        , "--n-item-color"
+        , "--n-item-color-active"
+        , "--n-item-size"
+        ]
+        (varKeys rateVars)
+    , eq "rate --n-item-color = common.railColor" (Just common.railColor) (lookup "--n-item-color" rateVars)
+    , eq "rate --n-item-color-active default #FFCC33" (Just "#FFCC33") (lookup "--n-item-color-active" rateVars)
+    , eq "rate --n-item-color-active honours color option" (Just "#f0a020") (lookup "--n-item-color-active" rateColorVars)
+    , eq "rate --n-item-size Small" (Just "16px") (lookup "--n-item-size" rateSmallVars)
+    , eq "rate --n-item-size Medium" (Just "20px") (lookup "--n-item-size" rateVars)
+    , eq "rate --n-item-size Large" (Just "24px") (lookup "--n-item-size" rateLargeVars)
+    , eq "rate --n-bezier = common.cubicBezierEaseInOut" (Just common.cubicBezierEaseInOut) (lookup "--n-bezier" rateVars)
+
+    -- 28. NUI.Collapse cssVarsFor -----------------------------------------------
+    , eq "collapse cssVarsFor has 12 vars" 12 (List.length collapseVars)
+    , eq "collapse cssVarsFor exact --n-* names"
+        [ "--n-font-size"
+        , "--n-bezier"
+        , "--n-text-color"
+        , "--n-divider-color"
+        , "--n-title-padding"
+        , "--n-title-font-size"
+        , "--n-title-text-color"
+        , "--n-title-text-color-disabled"
+        , "--n-title-font-weight"
+        , "--n-arrow-color"
+        , "--n-arrow-color-disabled"
+        , "--n-item-margin"
+        ]
+        (varKeys collapseVars)
+    , eq "collapse --n-title-padding" (Just "16px 0 0 0") (lookup "--n-title-padding" collapseVars)
+    , eq "collapse --n-item-margin" (Just "16px 0 0 0") (lookup "--n-item-margin" collapseVars)
+    , eq "collapse --n-font-size = common.fontSize" (Just common.fontSize) (lookup "--n-font-size" collapseVars)
+    , eq "collapse --n-title-font-size = common.fontSize" (Just common.fontSize) (lookup "--n-title-font-size" collapseVars)
+    , eq "collapse --n-bezier = common.cubicBezierEaseInOut" (Just common.cubicBezierEaseInOut) (lookup "--n-bezier" collapseVars)
+    , eq "collapse --n-text-color = common.textColor2" (Just common.textColor2) (lookup "--n-text-color" collapseVars)
+    , eq "collapse --n-divider-color = common.dividerColor" (Just common.dividerColor) (lookup "--n-divider-color" collapseVars)
+    , eq "collapse --n-title-text-color = common.textColor1" (Just common.textColor1) (lookup "--n-title-text-color" collapseVars)
+    , eq "collapse --n-title-text-color-disabled = common.textColorDisabled" (Just common.textColorDisabled) (lookup "--n-title-text-color-disabled" collapseVars)
+    , eq "collapse --n-title-font-weight = common.fontWeight" (Just common.fontWeight) (lookup "--n-title-font-weight" collapseVars)
+    , eq "collapse --n-arrow-color = common.textColor2" (Just common.textColor2) (lookup "--n-arrow-color" collapseVars)
+    , eq "collapse --n-arrow-color-disabled = common.textColorDisabled" (Just common.textColorDisabled) (lookup "--n-arrow-color-disabled" collapseVars)
+
+    -- 29. NUI.FloatButton cssVarsFor --------------------------------------------
+    , eq "float-button cssVarsFor has 9 vars" 9 (List.length floatButtonDefaultVars)
+    , eq "float-button cssVarsFor exact --n-* names"
+        [ "--n-bezier"
+        , "--n-box-shadow"
+        , "--n-box-shadow-hover"
+        , "--n-box-shadow-pressed"
+        , "--n-color"
+        , "--n-text-color"
+        , "--n-color-hover"
+        , "--n-color-pressed"
+        , "--n-border-radius-square"
+        ]
+        (varKeys floatButtonDefaultVars)
+    , eq "float-button default --n-color = common.popoverColor" (Just common.popoverColor) (lookup "--n-color" floatButtonDefaultVars)
+    , eq "float-button default --n-text-color = common.textColor2" (Just common.textColor2) (lookup "--n-text-color" floatButtonDefaultVars)
+    , eq "float-button default --n-color-hover = buttonColor2Hover" (Just common.buttonColor2Hover) (lookup "--n-color-hover" floatButtonDefaultVars)
+    , eq "float-button default --n-color-pressed = buttonColor2Pressed" (Just common.buttonColor2Pressed) (lookup "--n-color-pressed" floatButtonDefaultVars)
+    , eq "float-button primary --n-color = common.primaryColor" (Just common.primaryColor) (lookup "--n-color" floatButtonPrimaryVars)
+    , eq "float-button primary --n-text-color = #fff" (Just "#fff") (lookup "--n-text-color" floatButtonPrimaryVars)
+    , eq "float-button primary --n-color-hover = primaryColorHover" (Just common.primaryColorHover) (lookup "--n-color-hover" floatButtonPrimaryVars)
+    , eq "float-button primary --n-color-pressed = primaryColorPressed" (Just common.primaryColorPressed) (lookup "--n-color-pressed" floatButtonPrimaryVars)
+    , eq "float-button type switch changes --n-color" True (lookup "--n-color" floatButtonDefaultVars /= lookup "--n-color" floatButtonPrimaryVars)
+    , eq "float-button --n-border-radius-square = common.borderRadius" (Just common.borderRadius) (lookup "--n-border-radius-square" floatButtonDefaultVars)
+    , eq "float-button --n-box-shadow" (Just "0 2px 8px 0px rgba(0, 0, 0, .16)") (lookup "--n-box-shadow" floatButtonDefaultVars)
+    , eq "float-button --n-box-shadow-hover" (Just "0 2px 12px 0px rgba(0, 0, 0, .24)") (lookup "--n-box-shadow-hover" floatButtonDefaultVars)
+    , eq "float-button --n-box-shadow-pressed" (Just "0 2px 12px 0px rgba(0, 0, 0, .24)") (lookup "--n-box-shadow-pressed" floatButtonDefaultVars)
     ]
 
 
@@ -1866,6 +2086,28 @@ liveNodes =
                     (QrCode.view Theme.default qrCodeLiveOpts)
                 , Element.el [ Element.htmlAttribute (HA.id "live-qr-code-styled") ]
                     (QrCode.view Theme.default qrCodeStyledOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-collapse") ]
+                    (Collapse.view Theme.default collapseLiveOpts collapseLiveItems)
+                , Element.el [ Element.htmlAttribute (HA.id "live-collapse-show") ]
+                    (Collapse.view Theme.default collapseShowOpts collapseOneItem)
+                , Element.el [ Element.htmlAttribute (HA.id "live-collapse-rtl") ]
+                    (Collapse.view Theme.default collapseRtlOpts collapseOneItem)
+                , Element.el [ Element.htmlAttribute (HA.id "live-rate") ]
+                    (Rate.view Theme.default rateLiveOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-rate-readonly") ]
+                    (Rate.view Theme.default rateReadonlyOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-rate-half") ]
+                    (Rate.view Theme.default rateHalfOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-float-button") ]
+                    (FloatButton.view Theme.default floatButtonLiveOpts [ Element.text "+" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-float-button-square") ]
+                    (FloatButton.view Theme.default floatButtonSquareOpts [ Element.text "+" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-float-button-menu") ]
+                    (FloatButton.view Theme.default floatButtonMenuOpts [ Element.text "+" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-float-button-width") ]
+                    (FloatButton.view Theme.default floatButtonWidthOpts [ Element.text "+" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-float-button-percent") ]
+                    (FloatButton.view Theme.default floatButtonPercentOpts [ Element.text "+" ])
                 ]
             )
         ]
