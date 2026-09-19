@@ -30,7 +30,13 @@ const targets = {
   '.n-text': true,
   '.n-h1': true,
   '.n-avatar': true,
-  '.n-space': false
+  '.n-space': false,
+  '.n-badge': true,
+  '.n-empty': true,
+  '.n-progress': true,
+  '.n-result': true,
+  '.n-skeleton': true,
+  '.n-spin-container': true
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {

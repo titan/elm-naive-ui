@@ -17,9 +17,15 @@ import Browser
 import Element exposing (Element)
 import Html exposing (Html)
 import Html.Attributes as HA
+import NUI.Badge as Badge
 import NUI.Button as Button
 import NUI.Css as Css
+import NUI.Empty as Empty
 import NUI.Internal as Internal
+import NUI.Progress as Progress
+import NUI.Result as Result
+import NUI.Skeleton as Skeleton
+import NUI.Spin as Spin
 import NUI.Tag as Tag
 import NUI.Theme as Theme
 import NUI.Theme.Button as ButtonTheme
@@ -66,6 +72,11 @@ lookup key vars =
         |> List.filter (\( k, _ ) -> k == key)
         |> List.head
         |> Maybe.map Tuple.second
+
+
+varKeys : List ( String, String ) -> List String
+varKeys vars =
+    List.map Tuple.first vars
 
 
 
@@ -180,6 +191,78 @@ disabledTagOpts =
     { d | disabled = True, round = True }
 
 
+badgeNumOpts : Badge.Options msg
+badgeNumOpts =
+    let
+        d =
+            Badge.defaults
+    in
+    { d | value = Just (Badge.Number 20), max = Just 9 }
+
+
+badgeOverflowOpts : Badge.Options msg
+badgeOverflowOpts =
+    let
+        d =
+            Badge.defaults
+    in
+    { d | value = Just (Badge.Number 200), max = Just 99 }
+
+
+badgeDotOpts : Badge.Options msg
+badgeDotOpts =
+    let
+        d =
+            Badge.defaults
+    in
+    { d | dot = True, type_ = Badge.Info }
+
+
+emptyLiveOpts : Empty.Options msg
+emptyLiveOpts =
+    let
+        d =
+            Empty.defaults
+    in
+    { d | description = Just "Nothing here", size = Empty.Huge }
+
+
+progressLineOpts : Progress.Options msg
+progressLineOpts =
+    let
+        d =
+            Progress.defaults
+    in
+    { d | percentage = 66 }
+
+
+progressCircleOpts : Progress.Options msg
+progressCircleOpts =
+    let
+        d =
+            Progress.defaults
+    in
+    { d | type_ = Progress.Circle, percentage = 80, status = Progress.Success }
+
+
+resultLiveOpts : Result.Options msg
+resultLiveOpts =
+    let
+        d =
+            Result.defaults
+    in
+    { d | status = Result.Code404, size = Result.Huge, title = Just "404", description = Just "Page not found" }
+
+
+skeletonLiveOpts : Skeleton.Options msg
+skeletonLiveOpts =
+    let
+        d =
+            Skeleton.defaults
+    in
+    { d | text = True, width = Just (Skeleton.Px 120), repeat = 3 }
+
+
 
 -- CHECKS -----------------------------------------------------------------------
 
@@ -250,6 +333,114 @@ checks =
 
         vTagCustom =
             TagTheme.vars customPrimary
+
+        badgeD =
+            Badge.defaults
+
+        badgeDefaultVars =
+            Badge.cssVarsFor light badgeD
+
+        badgeInfoVars =
+            Badge.cssVarsFor light { badgeD | type_ = Badge.Info }
+
+        badgeSuccessVars =
+            Badge.cssVarsFor light { badgeD | type_ = Badge.Success }
+
+        badgeWarningVars =
+            Badge.cssVarsFor light { badgeD | type_ = Badge.Warning }
+
+        badgeCustomVars =
+            Badge.cssVarsFor light { badgeD | color = Just "#ff0000" }
+
+        badgeDarkVars =
+            Badge.cssVarsFor dark badgeD
+
+        emptyD =
+            Empty.defaults
+
+        emptyDefaultVars =
+            Empty.cssVarsFor light emptyD
+
+        emptyHugeVars =
+            Empty.cssVarsFor light { emptyD | size = Empty.Huge }
+
+        emptyTinyVars =
+            Empty.cssVarsFor light { emptyD | size = Empty.Tiny }
+
+        progD =
+            Progress.defaults
+
+        progDefaultVars =
+            Progress.cssVarsFor light progD
+
+        progSuccessVars =
+            Progress.cssVarsFor light { progD | status = Progress.Success }
+
+        progErrorVars =
+            Progress.cssVarsFor light { progD | status = Progress.Error }
+
+        progWarningVars =
+            Progress.cssVarsFor light { progD | status = Progress.Warning }
+
+        resultD =
+            Result.defaults
+
+        resultDefaultVars =
+            Result.cssVarsFor light resultD
+
+        result404Vars =
+            Result.cssVarsFor light { resultD | status = Result.Code404 }
+
+        resultSuccessVars =
+            Result.cssVarsFor light { resultD | status = Result.Success }
+
+        resultHugeVars =
+            Result.cssVarsFor light { resultD | size = Result.Huge }
+
+        resultSmallVars =
+            Result.cssVarsFor light { resultD | size = Result.Small }
+
+        skelD =
+            Skeleton.defaults
+
+        skelDefaultVars =
+            Skeleton.cssVarsFor light skelD
+
+        skelTextVars =
+            Skeleton.cssVarsFor light { skelD | text = True, width = Just (Skeleton.Px 120) }
+
+        skelCircleVars =
+            Skeleton.cssVarsFor light { skelD | circle = True, width = Just (Skeleton.Px 40) }
+
+        skelRoundVars =
+            Skeleton.cssVarsFor light { skelD | round = True }
+
+        skelSoftVars =
+            Skeleton.cssVarsFor light { skelD | sharp = False }
+
+        skelStaticVars =
+            Skeleton.cssVarsFor light { skelD | animated = False }
+
+        skelSizeVars =
+            Skeleton.cssVarsFor light { skelD | size = Just T.Large }
+
+        skelCustomVars =
+            Skeleton.cssVarsFor light { skelD | width = Just (Skeleton.Custom "50%") }
+
+        spinD =
+            Spin.defaults
+
+        spinDefaultVars =
+            Spin.cssVarsFor light spinD
+
+        spinSmallVars =
+            Spin.cssVarsFor light { spinD | size = Spin.Small }
+
+        spinLargeVars =
+            Spin.cssVarsFor light { spinD | size = Spin.Large }
+
+        spinNumberVars =
+            Spin.cssVarsFor light { spinD | size = Spin.Number 24 }
     in
     [ -- 1. NUI.Theme -------------------------------------------------------------
       eq "Theme.default == Theme.light" True (Theme.default == Theme.light)
@@ -364,6 +555,138 @@ checks =
     , eq "css contains .n-text" True (String.contains ".n-text" Css.css)
     , eq "css contains button wave keyframes" True (String.contains "button-wave-spread" Css.css)
     , eq "css is non-trivial (>50k)" True (String.length Css.css > 50000)
+
+    -- 8. NUI.Badge cssVarsFor ---------------------------------------------------
+    , eq "badge cssVarsFor has 6 vars" 6 (List.length badgeDefaultVars)
+    , eq "badge cssVarsFor exact --n-* names"
+        [ "--n-font-size", "--n-font-family", "--n-color", "--n-ripple-color", "--n-bezier", "--n-ripple-bezier" ]
+        (varKeys badgeDefaultVars)
+    , eq "badge cssVarsFor starts with --n-font-size" (Just "--n-font-size") (List.head badgeDefaultVars |> Maybe.map Tuple.first)
+    , eq "badge cssVarsFor --n-font-size" (Just common.fontSizeMini) (lookup "--n-font-size" badgeDefaultVars)
+    , eq "badge cssVarsFor --n-font-family" (Just common.fontFamily) (lookup "--n-font-family" badgeDefaultVars)
+    , eq "badge cssVarsFor --n-color (Default = error colour)" (Just "#d03050") (lookup "--n-color" badgeDefaultVars)
+    , eq "badge cssVarsFor --n-ripple-color == --n-color" (lookup "--n-color" badgeDefaultVars) (lookup "--n-ripple-color" badgeDefaultVars)
+    , eq "badge cssVarsFor --n-bezier" (Just common.cubicBezierEaseInOut) (lookup "--n-bezier" badgeDefaultVars)
+    , eq "badge cssVarsFor --n-ripple-bezier = easeOut" (Just common.cubicBezierEaseOut) (lookup "--n-ripple-bezier" badgeDefaultVars)
+    , eq "badge cssVarsFor Info --n-color" (Just "#2080f0") (lookup "--n-color" badgeInfoVars)
+    , eq "badge cssVarsFor Success --n-color" (Just "#18a058") (lookup "--n-color" badgeSuccessVars)
+    , eq "badge cssVarsFor Warning --n-color" (Just "#f0a020") (lookup "--n-color" badgeWarningVars)
+    , eq "badge cssVarsFor custom color --n-color" (Just "#ff0000") (lookup "--n-color" badgeCustomVars)
+    , eq "badge cssVarsFor custom color --n-ripple-color" (Just "#ff0000") (lookup "--n-ripple-color" badgeCustomVars)
+    , eq "badge cssVarsFor dark --n-color" (Just "rgb(208, 58, 82)") (lookup "--n-color" badgeDarkVars)
+
+    -- 9. NUI.Empty cssVarsFor ---------------------------------------------------
+    , eq "empty cssVarsFor has 6 vars" 6 (List.length emptyDefaultVars)
+    , eq "empty cssVarsFor exact --n-* names"
+        [ "--n-icon-size", "--n-font-size", "--n-bezier", "--n-text-color", "--n-icon-color", "--n-extra-text-color" ]
+        (varKeys emptyDefaultVars)
+    , eq "empty cssVarsFor --n-icon-size (Medium)" (Just common.heightLarge) (lookup "--n-icon-size" emptyDefaultVars)
+    , eq "empty cssVarsFor --n-font-size (Medium)" (Just common.fontSize) (lookup "--n-font-size" emptyDefaultVars)
+    , eq "empty cssVarsFor --n-bezier" (Just common.cubicBezierEaseInOut) (lookup "--n-bezier" emptyDefaultVars)
+    , eq "empty cssVarsFor --n-text-color" (Just common.textColorDisabled) (lookup "--n-text-color" emptyDefaultVars)
+    , eq "empty cssVarsFor --n-icon-color" (Just common.textColorDisabled) (lookup "--n-icon-color" emptyDefaultVars)
+    , eq "empty cssVarsFor --n-extra-text-color" (Just common.textColor2) (lookup "--n-extra-text-color" emptyDefaultVars)
+    , eq "empty cssVarsFor Huge --n-icon-size" (Just "52px") (lookup "--n-icon-size" emptyHugeVars)
+    , eq "empty cssVarsFor Huge --n-font-size" (Just common.fontSizeHuge) (lookup "--n-font-size" emptyHugeVars)
+    , eq "empty cssVarsFor Tiny --n-icon-size" (Just common.heightSmall) (lookup "--n-icon-size" emptyTinyVars)
+
+    -- 10. NUI.Progress cssVarsFor -----------------------------------------------
+    , eq "progress cssVarsFor has 14 vars" 14 (List.length progDefaultVars)
+    , eq "progress cssVarsFor exact --n-* names"
+        [ "--n-bezier"
+        , "--n-fill-color"
+        , "--n-font-size"
+        , "--n-font-size-circle"
+        , "--n-font-weight-circle"
+        , "--n-icon-color"
+        , "--n-icon-size-circle"
+        , "--n-icon-size-line"
+        , "--n-line-bg-processing"
+        , "--n-rail-color"
+        , "--n-rail-height"
+        , "--n-text-color-circle"
+        , "--n-text-color-line-inner"
+        , "--n-text-color-line-outer"
+        ]
+        (varKeys progDefaultVars)
+    , eq "progress cssVarsFor --n-fill-color (Default = info)" (Just common.infoColor) (lookup "--n-fill-color" progDefaultVars)
+    , eq "progress cssVarsFor --n-icon-color (Default = info)" (Just common.infoColor) (lookup "--n-icon-color" progDefaultVars)
+    , eq "progress cssVarsFor --n-rail-color" (Just common.progressRailColor) (lookup "--n-rail-color" progDefaultVars)
+    , eq "progress cssVarsFor --n-rail-height" (Just "8px") (lookup "--n-rail-height" progDefaultVars)
+    , eq "progress cssVarsFor --n-icon-size-line" (Just "18px") (lookup "--n-icon-size-line" progDefaultVars)
+    , eq "progress cssVarsFor --n-icon-size-circle" (Just "36px") (lookup "--n-icon-size-circle" progDefaultVars)
+    , eq "progress cssVarsFor --n-text-color-line-inner" (Just "rgb(255, 255, 255)") (lookup "--n-text-color-line-inner" progDefaultVars)
+    , eq "progress cssVarsFor --n-bezier" (Just common.cubicBezierEaseInOut) (lookup "--n-bezier" progDefaultVars)
+    , eq "progress cssVarsFor Success --n-fill-color" (Just common.primaryColor) (lookup "--n-fill-color" progSuccessVars)
+    , eq "progress cssVarsFor Success --n-icon-color" (Just common.primaryColor) (lookup "--n-icon-color" progSuccessVars)
+    , eq "progress cssVarsFor Error --n-fill-color" (Just common.errorColor) (lookup "--n-fill-color" progErrorVars)
+    , eq "progress cssVarsFor Warning --n-fill-color" (Just common.warningColor) (lookup "--n-fill-color" progWarningVars)
+
+    -- 11. NUI.Result cssVarsFor -------------------------------------------------
+    , eq "result cssVarsFor has 9 vars" 9 (List.length resultDefaultVars)
+    , eq "result cssVarsFor exact --n-* names"
+        [ "--n-bezier"
+        , "--n-font-size"
+        , "--n-icon-size"
+        , "--n-line-height"
+        , "--n-text-color"
+        , "--n-title-font-size"
+        , "--n-title-font-weight"
+        , "--n-title-text-color"
+        , "--n-icon-color"
+        ]
+        (varKeys resultDefaultVars)
+    , eq "result cssVarsFor --n-font-size (Medium)" (Just common.fontSize) (lookup "--n-font-size" resultDefaultVars)
+    , eq "result cssVarsFor --n-icon-size (Medium)" (Just "80px") (lookup "--n-icon-size" resultDefaultVars)
+    , eq "result cssVarsFor --n-title-font-size (Medium)" (Just "32px") (lookup "--n-title-font-size" resultDefaultVars)
+    , eq "result cssVarsFor --n-title-font-weight" (Just common.fontWeightStrong) (lookup "--n-title-font-weight" resultDefaultVars)
+    , eq "result cssVarsFor --n-text-color" (Just common.textColor2) (lookup "--n-text-color" resultDefaultVars)
+    , eq "result cssVarsFor --n-title-text-color" (Just common.textColor1) (lookup "--n-title-text-color" resultDefaultVars)
+    , eq "result cssVarsFor --n-line-height" (Just common.lineHeight) (lookup "--n-line-height" resultDefaultVars)
+    , eq "result cssVarsFor Info --n-icon-color" (Just common.infoColor) (lookup "--n-icon-color" resultDefaultVars)
+    , eq "result cssVarsFor Code404 --n-icon-color is empty" (Just "") (lookup "--n-icon-color" result404Vars)
+    , eq "result cssVarsFor Success --n-icon-color" (Just common.primaryColor) (lookup "--n-icon-color" resultSuccessVars)
+    , eq "result cssVarsFor Huge --n-icon-size" (Just "125px") (lookup "--n-icon-size" resultHugeVars)
+    , eq "result cssVarsFor Huge --n-title-font-size" (Just "48px") (lookup "--n-title-font-size" resultHugeVars)
+    , eq "result cssVarsFor Small --n-title-font-size" (Just "26px") (lookup "--n-title-font-size" resultSmallVars)
+
+    -- 12. NUI.Skeleton cssVarsFor (the single inline style block) --------------
+    , eq "skeleton cssVarsFor has 9 entries" 9 (List.length skelDefaultVars)
+    , eq "skeleton cssVarsFor exact inline style keys"
+        [ "display", "vertical-align", "border-radius", "width", "height", "animation", "--n-bezier", "--n-color-start", "--n-color-end" ]
+        (varKeys skelDefaultVars)
+    , eq "skeleton starts with display (plain prop first)" (Just "display") (List.head skelDefaultVars |> Maybe.map Tuple.first)
+    , eq "skeleton defaults display unset" (Just "") (lookup "display" skelDefaultVars)
+    , eq "skeleton defaults border-radius unset (sharp)" (Just "") (lookup "border-radius" skelDefaultVars)
+    , eq "skeleton defaults --n-color-start" (Just "#eee") (lookup "--n-color-start" skelDefaultVars)
+    , eq "skeleton defaults --n-color-end" (Just "#ddd") (lookup "--n-color-end" skelDefaultVars)
+    , eq "skeleton defaults --n-bezier" (Just common.cubicBezierEaseInOut) (lookup "--n-bezier" skelDefaultVars)
+    , eq "skeleton text display = inline-block" (Just "inline-block") (lookup "display" skelTextVars)
+    , eq "skeleton text vertical-align = -0.125em" (Just "-0.125em") (lookup "vertical-align" skelTextVars)
+    , eq "skeleton text width = 120px" (Just "120px") (lookup "width" skelTextVars)
+    , eq "skeleton circle border-radius = 50%" (Just "50%") (lookup "border-radius" skelCircleVars)
+    , eq "skeleton circle width == height" (lookup "width" skelCircleVars) (lookup "height" skelCircleVars)
+    , eq "skeleton circle width = 40px" (Just "40px") (lookup "width" skelCircleVars)
+    , eq "skeleton round border-radius = 4096px" (Just "4096px") (lookup "border-radius" skelRoundVars)
+    , eq "skeleton not sharp uses theme radius" (Just common.borderRadius) (lookup "border-radius" skelSoftVars)
+    , eq "skeleton not animated animation = none" (Just "none") (lookup "animation" skelStaticVars)
+    , eq "skeleton size Large height = heightLarge" (Just common.heightLarge) (lookup "height" skelSizeVars)
+    , eq "skeleton custom width passes through" (Just "50%") (lookup "width" skelCustomVars)
+
+    -- 13. NUI.Spin cssVarsFor ---------------------------------------------------
+    , eq "spin cssVarsFor has 6 vars" 6 (List.length spinDefaultVars)
+    , eq "spin cssVarsFor exact --n-* names"
+        [ "--n-bezier", "--n-opacity-spinning", "--n-size", "--n-color", "--n-text-color", "--n-font-size" ]
+        (varKeys spinDefaultVars)
+    , eq "spin cssVarsFor --n-size (Medium)" (Just common.heightMedium) (lookup "--n-size" spinDefaultVars)
+    , eq "spin cssVarsFor --n-color = primary" (Just common.primaryColor) (lookup "--n-color" spinDefaultVars)
+    , eq "spin cssVarsFor --n-text-color = primary" (Just common.primaryColor) (lookup "--n-text-color" spinDefaultVars)
+    , eq "spin cssVarsFor --n-opacity-spinning" (Just common.opacityDisabled) (lookup "--n-opacity-spinning" spinDefaultVars)
+    , eq "spin cssVarsFor --n-font-size" (Just common.fontSize) (lookup "--n-font-size" spinDefaultVars)
+    , eq "spin cssVarsFor --n-bezier" (Just common.cubicBezierEaseInOut) (lookup "--n-bezier" spinDefaultVars)
+    , eq "spin cssVarsFor Small --n-size" (Just common.heightSmall) (lookup "--n-size" spinSmallVars)
+    , eq "spin cssVarsFor Large --n-size" (Just common.heightLarge) (lookup "--n-size" spinLargeVars)
+    , eq "spin cssVarsFor Number 24 --n-size" (Just "24px") (lookup "--n-size" spinNumberVars)
     ]
 
 
@@ -458,6 +781,24 @@ liveNodes =
                     (Tag.view Theme.default checkedTagOpts [ Element.text "Checked" ])
                 , Element.el [ Element.htmlAttribute (HA.id "live-tag-disabled") ]
                     (Tag.view Theme.default disabledTagOpts [ Element.text "Disabled" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-badge-num") ]
+                    (Badge.view Theme.default badgeNumOpts [ Element.text "Mail" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-badge-overflow") ]
+                    (Badge.view Theme.default badgeOverflowOpts [ Element.text "Mail" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-badge-dot") ]
+                    (Badge.view Theme.default badgeDotOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-empty") ]
+                    (Empty.view Theme.default emptyLiveOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-progress-line") ]
+                    (Progress.view Theme.default progressLineOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-progress-circle") ]
+                    (Progress.view Theme.default progressCircleOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-result") ]
+                    (Result.view Theme.default resultLiveOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-skeleton") ]
+                    (Skeleton.view Theme.default skeletonLiveOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-spin") ]
+                    (Spin.view Theme.default Spin.defaults [])
                 ]
             )
         ]

@@ -205,6 +205,239 @@ dTrue(
   tagDisabled ? tagDisabled.getAttribute('class') : 'missing'
 )
 
+// Badge ----------------------------------------------------------------------
+const badgeNum = doc.querySelector('#live-badge-num .n-badge')
+dTrue(
+  'DOM: Badge.view renders .n-badge wrapping the content',
+  !!badgeNum && badgeNum.classList.contains('n-badge') && /Mail/.test(badgeNum.textContent),
+  badgeNum ? badgeNum.getAttribute('class') : 'missing'
+)
+const badgeNumStyle = badgeNum ? badgeNum.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: Badge default --n-color = error colour (#d03050)',
+  badgeNumStyle.includes('--n-color:#d03050'),
+  badgeNumStyle
+)
+dTrue(
+  'DOM: Badge --n-ripple-color mirrors --n-color',
+  badgeNumStyle.includes('--n-ripple-color:#d03050'),
+  badgeNumStyle
+)
+const badgeSup = doc.querySelector('#live-badge-num .n-badge-sup')
+dTrue(
+  'DOM: Badge sup.n-badge-sup carries the offset transform + title',
+  !!badgeSup &&
+    badgeSup.tagName.toLowerCase() === 'sup' &&
+    badgeSup.classList.contains('n-badge-sup') &&
+    (badgeSup.getAttribute('style') || '').includes('transform:') &&
+    badgeSup.getAttribute('title') === '20',
+  badgeSup ? badgeSup.getAttribute('style') : 'missing'
+)
+const badgeSlot = doc.querySelector('#live-badge-num .n-badge-sup .n-base-slot-machine')
+dTrue(
+  'DOM: Badge numeric value renders NBaseSlotMachine',
+  !!badgeSlot,
+  badgeSlot ? badgeSlot.getAttribute('class') : 'missing'
+)
+const badgeCells = doc.querySelectorAll('#live-badge-num .n-badge-sup .n-base-slot-machine-number')
+dEq('DOM: Badge value 20 / max 9 -> one digit cell + one "+" cell', 2, badgeCells.length)
+const badgeDigit = doc.querySelector(
+  '#live-badge-num .n-base-slot-machine-current-number__inner:not(.n-base-slot-machine-current-number__inner--not-number)'
+)
+const badgePlus = doc.querySelector('#live-badge-num .n-base-slot-machine-current-number__inner--not-number')
+dEq('DOM: Badge capped digit is "9" (min max value)', '9', badgeDigit ? badgeDigit.textContent : null)
+dEq('DOM: Badge overflow cell is "+"', '+', badgePlus ? badgePlus.textContent : null)
+const overflowCells = doc.querySelectorAll(
+  '#live-badge-overflow .n-badge-sup .n-base-slot-machine-number'
+)
+dEq('DOM: Badge value 200 / max 99 -> two digit cells + one "+" cell', 3, overflowCells.length)
+const badgeDot = doc.querySelector('#live-badge-dot .n-badge')
+dTrue(
+  'DOM: Badge dot renders n-badge--dot + n-badge--as-is without a slot machine',
+  !!badgeDot &&
+    badgeDot.classList.contains('n-badge--dot') &&
+    badgeDot.classList.contains('n-badge--as-is') &&
+    !!badgeDot.querySelector('.n-badge-sup') &&
+    !badgeDot.querySelector('.n-base-slot-machine'),
+  badgeDot ? badgeDot.getAttribute('class') : 'missing'
+)
+const badgeDotStyle = badgeDot ? badgeDot.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: Badge dot Info --n-color = info (#2080f0)',
+  badgeDotStyle.includes('--n-color:#2080f0'),
+  badgeDotStyle
+)
+
+// Empty ----------------------------------------------------------------------
+const empty = doc.querySelector('#live-empty .n-empty')
+dTrue(
+  'DOM: Empty.view renders .n-empty',
+  !!empty && empty.classList.contains('n-empty'),
+  empty ? empty.getAttribute('class') : 'missing'
+)
+const emptyStyle = empty ? empty.getAttribute('style') || '' : ''
+dTrue('DOM: Empty Huge --n-icon-size:52px', emptyStyle.includes('--n-icon-size:52px'), emptyStyle)
+dTrue('DOM: Empty Huge --n-font-size:16px', emptyStyle.includes('--n-font-size:16px'), emptyStyle)
+const emptyIcon = doc.querySelector('#live-empty .n-empty__icon')
+dTrue(
+  'DOM: Empty .n-empty__icon wraps .n-base-icon svg',
+  !!emptyIcon && !!emptyIcon.querySelector('.n-base-icon svg'),
+  emptyIcon ? emptyIcon.getAttribute('class') : 'missing'
+)
+const emptyDesc = doc.querySelector('#live-empty .n-empty__description')
+dEq(
+  'DOM: Empty .n-empty__description renders the description text',
+  'Nothing here',
+  emptyDesc ? emptyDesc.textContent : null
+)
+
+// Progress -------------------------------------------------------------------
+const progLine = doc.querySelector('#live-progress-line .n-progress')
+dTrue(
+  'DOM: Progress line renders .n-progress--line.n-progress--default + role=progressbar/aria',
+  !!progLine &&
+    progLine.classList.contains('n-progress--line') &&
+    progLine.classList.contains('n-progress--default') &&
+    progLine.getAttribute('role') === 'progressbar' &&
+    progLine.getAttribute('aria-valuemax') === '100' &&
+    progLine.getAttribute('aria-valuemin') === '0' &&
+    progLine.getAttribute('aria-valuenow') === '66',
+  progLine ? progLine.getAttribute('class') : 'missing'
+)
+const progLineStyle = progLine ? progLine.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: Progress --n-fill-color (Default = info #2080f0)',
+  progLineStyle.includes('--n-fill-color:#2080f0'),
+  progLineStyle
+)
+const progFill = doc.querySelector('#live-progress-line .n-progress-graph-line-fill')
+dEq(
+  'DOM: Progress line fill max-width = percentage',
+  'max-width:66%',
+  progFill ? progFill.getAttribute('style') : null
+)
+const progAsText = doc.querySelector('#live-progress-line .n-progress-icon--as-text')
+dEq(
+  'DOM: Progress line default indicator is the percentage text',
+  '66%',
+  progAsText ? progAsText.textContent : null
+)
+
+const progCircle = doc.querySelector('#live-progress-circle .n-progress')
+dTrue(
+  'DOM: Progress circle renders .n-progress--circle.n-progress--success + aria-valuenow=80',
+  !!progCircle &&
+    progCircle.classList.contains('n-progress--circle') &&
+    progCircle.classList.contains('n-progress--success') &&
+    progCircle.getAttribute('role') === 'progressbar' &&
+    progCircle.getAttribute('aria-valuenow') === '80',
+  progCircle ? progCircle.getAttribute('class') : 'missing'
+)
+const progCircleStyle = progCircle ? progCircle.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: Progress circle Success --n-fill-color = primary (#18a058)',
+  progCircleStyle.includes('--n-fill-color:#18a058'),
+  progCircleStyle
+)
+const progCircleFill = doc.querySelector('#live-progress-circle .n-progress-graph-circle-fill')
+const expFillDash = `${String((80 / 100) * (2 * Math.PI * 50))}px 800px`
+dTrue(
+  'DOM: Progress circle fill stroke-dasharray = 80% of the arc + blank span',
+  !!progCircleFill &&
+    (progCircleFill.getAttribute('style') || '').includes(`stroke-dasharray:${expFillDash}`),
+  progCircleFill ? progCircleFill.getAttribute('style') : 'missing'
+)
+const progCircleRail = doc.querySelector('#live-progress-circle .n-progress-graph-circle-rail')
+const expRailDash = `${String((2 * Math.PI * 50))}px 800px`
+dTrue(
+  'DOM: Progress circle rail stroke-dasharray = full arc',
+  !!progCircleRail &&
+    (progCircleRail.getAttribute('style') || '').includes(`stroke-dasharray:${expRailDash}`),
+  progCircleRail ? progCircleRail.getAttribute('style') : 'missing'
+)
+dTrue(
+  'DOM: Progress circle Success indicator is the status icon (.n-progress-icon .n-base-icon svg)',
+  !!progCircle && !!progCircle.querySelector('.n-progress-icon .n-base-icon svg'),
+  progCircle ? 'indicator ok' : 'missing'
+)
+
+// Result ---------------------------------------------------------------------
+const result = doc.querySelector('#live-result .n-result')
+dTrue(
+  'DOM: Result.view renders .n-result',
+  !!result && result.classList.contains('n-result'),
+  result ? result.getAttribute('class') : 'missing'
+)
+const resultStyle = result ? result.getAttribute('style') || '' : ''
+dTrue('DOM: Result Huge --n-icon-size:125px', resultStyle.includes('--n-icon-size:125px'), resultStyle)
+dTrue(
+  'DOM: Result Huge --n-title-font-size:48px',
+  resultStyle.includes('--n-title-font-size:48px'),
+  resultStyle
+)
+dTrue(
+  'DOM: Result Code404 emits no --n-icon-color (empty value dropped)',
+  !resultStyle.includes('--n-icon-color'),
+  resultStyle
+)
+const resultTitle = doc.querySelector('#live-result .n-result-header__title')
+dEq(
+  'DOM: Result .n-result-header__title renders the title',
+  '404',
+  resultTitle ? resultTitle.textContent : null
+)
+const resultDesc = doc.querySelector('#live-result .n-result-header__description')
+dEq(
+  'DOM: Result .n-result-header__description renders the description',
+  'Page not found',
+  resultDesc ? resultDesc.textContent : null
+)
+dTrue(
+  'DOM: Result icon wraps the 404 preset svg in .n-base-icon',
+  !!doc.querySelector('#live-result .n-result-icon .n-base-icon svg'),
+  'ok'
+)
+
+// Skeleton -------------------------------------------------------------------
+const skeletons = doc.querySelectorAll('#live-skeleton .n-skeleton')
+dEq('DOM: Skeleton repeat=3 renders three .n-skeleton placeholders', 3, skeletons.length)
+const skelStyle = skeletons.length ? skeletons[0].getAttribute('style') || '' : ''
+dTrue('DOM: Skeleton text display:inline-block', skelStyle.includes('display:inline-block'), skelStyle)
+dTrue(
+  'DOM: Skeleton text vertical-align:-0.125em',
+  skelStyle.includes('vertical-align:-0.125em'),
+  skelStyle
+)
+dTrue('DOM: Skeleton width:120px (Px length)', skelStyle.includes('width:120px'), skelStyle)
+dTrue('DOM: Skeleton inline style carries --n-color-start:#eee', skelStyle.includes('--n-color-start:#eee'), skelStyle)
+dTrue('DOM: Skeleton inline style carries --n-color-end:#ddd', skelStyle.includes('--n-color-end:#ddd'), skelStyle)
+const skelWrapper = doc.querySelector('#live-skeleton [style*="display: contents"]')
+dTrue(
+  'DOM: Skeleton repeat wrapper uses display:contents',
+  !!skelWrapper,
+  skelWrapper ? skelWrapper.getAttribute('style') : 'missing'
+)
+
+// Spin -----------------------------------------------------------------------
+const spin = doc.querySelector('#live-spin .n-spin-body .n-base-loading')
+dTrue(
+  'DOM: Spin renders .n-base-loading.n-spin with role=img + aria-label=loading',
+  !!spin &&
+    spin.classList.contains('n-base-loading') &&
+    spin.classList.contains('n-spin') &&
+    spin.getAttribute('role') === 'img' &&
+    spin.getAttribute('aria-label') === 'loading',
+  spin ? spin.getAttribute('class') : 'missing'
+)
+const spinStyle = spin ? spin.getAttribute('style') || '' : ''
+dTrue('DOM: Spin --n-size:34px (Medium)', spinStyle.includes('--n-size:34px'), spinStyle)
+dTrue('DOM: Spin --n-color:#18a058 (primary)', spinStyle.includes('--n-color:#18a058'), spinStyle)
+dTrue(
+  'DOM: Spin renders .n-base-loading__container svg.n-base-loading__icon',
+  !!doc.querySelector('#live-spin .n-base-loading__container svg.n-base-loading__icon'),
+  'ok'
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

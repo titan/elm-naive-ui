@@ -9,14 +9,20 @@ import Element.Font as Font
 import Html
 import NUI.Alert as Alert
 import NUI.Avatar as Avatar
+import NUI.Badge as Badge
 import NUI.Button as Button
 import NUI.Card as Card
 import NUI.Checkbox as Checkbox
 import NUI.Css as Css
 import NUI.Divider as Divider
+import NUI.Empty as Empty
 import NUI.Input as Input
+import NUI.Progress as Progress
 import NUI.Radio as Radio
+import NUI.Result as Result
+import NUI.Skeleton as Skeleton
 import NUI.Space as Space
+import NUI.Spin as Spin
 import NUI.Switch as Switch
 import NUI.Tag as Tag
 import NUI.Theme as Theme exposing (Theme)
@@ -107,6 +113,36 @@ spaceD =
     Space.defaults
 
 
+badgeD : Badge.Options msg
+badgeD =
+    Badge.defaults
+
+
+emptyD : Empty.Options msg
+emptyD =
+    Empty.defaults
+
+
+progD : Progress.Options msg
+progD =
+    Progress.defaults
+
+
+resultD : Result.Options msg
+resultD =
+    Result.defaults
+
+
+skelD : Skeleton.Options msg
+skelD =
+    Skeleton.defaults
+
+
+spinD : Spin.Options msg
+spinD =
+    Spin.defaults
+
+
 
 -- PAGE
 
@@ -158,6 +194,12 @@ body =
     , avatarSection
     , cardSection
     , spaceSection
+    , badgeSection
+    , emptySection
+    , progressSection
+    , resultSection
+    , skeletonSection
+    , spinSection
     , themeSection
     ]
 
@@ -412,6 +454,183 @@ spaceSection =
             [ Space.view theme
                 { spaceD | direction = Space.Vertical, size = Space.Medium }
                 (List.map chip [ "Stacked", "Vertically", "Spaced" ])
+            ]
+        ]
+
+
+badgeSection : Element msg
+badgeSection =
+    section "Badge" "Counts and status dots on arbitrary content." <|
+        [ demoRow "Annotating a button"
+            [ Badge.view theme
+                { badgeD | value = Just (Badge.Number 5) }
+                [ Button.view theme { btn | size = T.Small } [ Element.text "Mail" ] ]
+            , Badge.view theme
+                { badgeD | value = Just (Badge.Number 200), max = Just 99 }
+                [ Button.view theme { btn | size = T.Small } [ Element.text "Inbox" ] ]
+            , Badge.view theme
+                { badgeD | dot = True, processing = True, type_ = Badge.Error }
+                [ Button.view theme { btn | size = T.Small } [ Element.text "Alerts" ] ]
+            ]
+        , demoRow "Types"
+            (List.map
+                (\t ->
+                    Badge.view theme
+                        { badgeD | value = Just (Badge.Number 9), type_ = t }
+                        []
+                )
+                [ Badge.Default, Badge.Info, Badge.Success, Badge.Warning, Badge.Error ]
+            )
+        , demoRow "Custom colour"
+            [ Badge.view theme
+                { badgeD | value = Just (Badge.Text "New"), color = Just "#36ad6a" }
+                []
+            , Badge.view theme { badgeD | dot = True, color = Just "#18a058" } []
+            ]
+        ]
+
+
+emptySection : Element msg
+emptySection =
+    section "Empty" "Placeholder for empty states." <|
+        [ demoRow "Default"
+            [ Element.el [ Element.width (Element.px 240) ]
+                (Empty.view theme emptyD [])
+            ]
+        , demoRow "Description & extra"
+            [ Element.el [ Element.width (Element.px 240) ]
+                (Empty.view theme
+                    { emptyD
+                        | description = Just "Nothing here yet."
+                        , extra = Just (Button.view theme { btn | size = T.Small } [ Element.text "Reload" ])
+                    }
+                    []
+                )
+            ]
+        , demoRow "Sizes"
+            [ Element.el [ Element.width (Element.px 150) ]
+                (Empty.view theme { emptyD | size = Empty.Small, description = Just "Small" } [])
+            , Element.el [ Element.width (Element.px 260) ]
+                (Empty.view theme { emptyD | size = Empty.Large, description = Just "Large" } [])
+            ]
+        ]
+
+
+progressSection : Element msg
+progressSection =
+    section "Progress" "Line, circle and dashboard meters." <|
+        [ demoRow "Line"
+            [ Element.el [ Element.width (Element.px 260) ]
+                (Progress.view theme { progD | percentage = 50 } [])
+            , Element.el [ Element.width (Element.px 260) ]
+                (Progress.view theme
+                    { progD | percentage = 66, processing = True, height = Just 12 }
+                    []
+                )
+            ]
+        , demoRow "Statuses"
+            [ Element.el [ Element.width (Element.px 260) ]
+                (Progress.view theme
+                    { progD | percentage = 100, status = Progress.Success }
+                    []
+                )
+            , Element.el [ Element.width (Element.px 260) ]
+                (Progress.view theme
+                    { progD | percentage = 32, status = Progress.Error }
+                    []
+                )
+            ]
+        , demoRow "Circle & dashboard"
+            [ Progress.view theme { progD | type_ = Progress.Circle, percentage = 75 } []
+            , Progress.view theme { progD | type_ = Progress.Dashboard, percentage = 60 } []
+            ]
+        ]
+
+
+resultSection : Element msg
+resultSection =
+    section "Result" "Important feedback pages." <|
+        [ demoRow "Statuses"
+            [ Element.el [ Element.width (Element.px 210) ]
+                (Result.view theme
+                    { resultD | status = Result.Info, title = Just "Informational" }
+                    []
+                )
+            , Element.el [ Element.width (Element.px 210) ]
+                (Result.view theme
+                    { resultD | status = Result.Success, title = Just "Successful" }
+                    []
+                )
+            ]
+        , Element.el [ Element.width (Element.px 340) ]
+            (Result.view theme
+                { resultD
+                    | status = Result.Code404
+                    , title = Just "404"
+                    , description = Just "The page you are looking for does not exist."
+                    , footer = Just (Button.view theme btn [ Element.text "Back home" ])
+                }
+                [ Element.text "Custom content can fill the default slot." ]
+            )
+        ]
+
+
+skeletonSection : Element msg
+skeletonSection =
+    section "Skeleton" "Placeholder shimmer for loading content." <|
+        [ demoRow "Default"
+            [ Skeleton.view theme
+                { skelD
+                    | width = Just (Skeleton.Px 240)
+                    , height = Just (Skeleton.Px 16)
+                }
+                []
+            ]
+        , demoRow "Text & repeat"
+            [ Skeleton.view theme
+                { skelD | text = True, width = Just (Skeleton.Px 150), repeat = 3 }
+                []
+            ]
+        , demoRow "Shapes & states"
+            [ Skeleton.view theme { skelD | circle = True, width = Just (Skeleton.Px 40) } []
+            , Skeleton.view theme
+                { skelD
+                    | round = True
+                    , width = Just (Skeleton.Px 100)
+                    , height = Just (Skeleton.Px 12)
+                }
+                []
+            , Skeleton.view theme
+                { skelD
+                    | width = Just (Skeleton.Px 100)
+                    , height = Just (Skeleton.Px 12)
+                    , animated = False
+                }
+                []
+            ]
+        ]
+
+
+spinSection : Element msg
+spinSection =
+    section "Spin" "Loading spinners, standalone or wrapping content." <|
+        [ demoRow "Standalone"
+            [ Spin.view theme spinD []
+            , Spin.view theme { spinD | size = Spin.Small } []
+            , Spin.view theme { spinD | size = Spin.Large } []
+            ]
+        , demoRow "With description"
+            [ Spin.view theme { spinD | description = Just (Element.text "Loading") } []
+            ]
+        , demoRow "Wrapping content"
+            [ Element.el [ Element.width (Element.px 320), Element.height (Element.px 110) ]
+                (Spin.view theme
+                    spinD
+                    [ Card.view theme
+                        { cardD | title = Just (Element.text "A card") }
+                        [ Element.text "The spinner overlays this content while loading." ]
+                    ]
+                )
             ]
         ]
 
