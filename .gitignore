@@ -1,5 +1,7 @@
 .elm-home/
 elm-stuff/
+examples/index.html
 *.log
 .nca/
 node_modules/
+tests/index.html
