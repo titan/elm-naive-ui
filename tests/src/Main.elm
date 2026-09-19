@@ -401,10 +401,12 @@ avatarGroupSlotOpts =
                 )
         , rest =
             Just
-                (\_ count ->
+                (\opts count ->
                     Element.el
                         [ Element.htmlAttribute (HA.class "slot-rest") ]
-                        (Element.text ("+" ++ String.fromInt count))
+                        (Element.text
+                            ("+" ++ String.fromInt count ++ "[" ++ String.join "," (List.map .src opts) ++ "]")
+                        )
                 )
     }
 

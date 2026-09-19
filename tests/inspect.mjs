@@ -718,8 +718,8 @@ dEq(
 )
 const agSlotRest = doc.querySelector('#live-avatar-group-slots .slot-rest')
 dEq(
-  'DOM: AvatarGroup rest slot receives the overflow count',
-  '+2',
+  'DOM: AvatarGroup rest slot receives the overflow count and options',
+  '+2[b.png,c.png]',
   agSlotRest ? agSlotRest.textContent : null
 )
 
