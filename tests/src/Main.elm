@@ -20,9 +20,11 @@ import Html.Attributes as HA
 import NUI.Button as Button
 import NUI.Css as Css
 import NUI.Internal as Internal
+import NUI.Tag as Tag
 import NUI.Theme as Theme
 import NUI.Theme.Button as ButtonTheme
 import NUI.Theme.Color as Color
+import NUI.Theme.Tag as TagTheme
 import NUI.Types as T
 
 
@@ -151,6 +153,33 @@ disabledRoundOpts =
     { d | disabled = True, round = True }
 
 
+primaryTagOpts : Tag.Options msg
+primaryTagOpts =
+    let
+        d =
+            Tag.defaults
+    in
+    { d | kind = T.Primary, closable = True }
+
+
+checkedTagOpts : Tag.Options msg
+checkedTagOpts =
+    let
+        d =
+            Tag.defaults
+    in
+    { d | kind = T.Success, checkable = True, checked = True }
+
+
+disabledTagOpts : Tag.Options msg
+disabledTagOpts =
+    let
+        d =
+            Tag.defaults
+    in
+    { d | disabled = True, round = True }
+
+
 
 -- CHECKS -----------------------------------------------------------------------
 
@@ -212,6 +241,15 @@ checks =
 
         strongVar =
             Button.cssVarsFor light strongOpts
+
+        vTagLight =
+            TagTheme.vars light
+
+        vTagDark =
+            TagTheme.vars dark
+
+        vTagCustom =
+            TagTheme.vars customPrimary
     in
     [ -- 1. NUI.Theme -------------------------------------------------------------
       eq "Theme.default == Theme.light" True (Theme.default == Theme.light)
@@ -296,7 +334,30 @@ checks =
     , eq "cssVarsFor --n-bezier = common.cubicBezierEaseInOut" (Just common.cubicBezierEaseInOut) (lookup "--n-bezier" filledDefault)
     , eq "cssVarsFor starts with --n-bezier" (Just "--n-bezier") (List.head filledPrimary |> Maybe.map Tuple.first)
 
-    -- 6. NUI.Css.css -------------------------------------------------------------
+    -- 6. NUI.Theme.Tag.vars -----------------------------------------------------
+    , eq "tag vars(light).heightMedium == common.heightSmall" common.heightSmall vTagLight.heightMedium
+    , eq "tag vars(light).heightSmall == common.heightTiny" common.heightTiny vTagLight.heightSmall
+    , eq "tag vars(light).heightTiny == common.fontSizeHuge" common.fontSizeHuge vTagLight.heightTiny
+    , eq "tag vars(light).heightLarge == common.heightMedium" common.heightMedium vTagLight.heightLarge
+    , eq "tag vars(light).padding" "0 7px" vTagLight.padding
+    , eq "tag vars(light).closeMargin" "0 0 0 4px" vTagLight.closeMargin
+    , eq "tag vars(light).closeSizeMedium" "18px" vTagLight.closeSizeMedium
+    , eq "tag vars(light).borderRadius == common.borderRadiusSmall" common.borderRadiusSmall vTagLight.borderRadius
+    , eq "tag vars(light).opacityDisabled == common.opacityDisabled" common.opacityDisabled vTagLight.opacityDisabled
+    , eq "tag vars(light).fontWeightStrong == common.fontWeightStrong" common.fontWeightStrong vTagLight.fontWeightStrong
+    , eq "tag vars(light).border" "1px solid rgb(224, 224, 230)" vTagLight.border
+    , eq "tag vars(light).colorBordered" "rgb(250, 250, 252)" vTagLight.colorBordered
+    , eq "tag vars(light).colorPrimary" "rgba(24, 160, 88, 0.12)" vTagLight.colorPrimary
+    , eq "tag vars(light).colorBorderedPrimary" "rgba(24, 160, 88, 0.1)" vTagLight.colorBorderedPrimary
+    , eq "tag vars(light).textColorPrimary == common.primaryColor" common.primaryColor vTagLight.textColorPrimary
+    , eq "tag vars(light).closeIconColorPrimary" "#18a058" vTagLight.closeIconColorPrimary
+    , eq "tag vars(light).colorChecked == common.primaryColor" common.primaryColor vTagLight.colorChecked
+    , eq "tag vars(dark) /= vars(light)" True (vTagDark /= vTagLight)
+    , eq "tag vars(setPrimary).colorChecked tracks primary" "#ff0000" vTagCustom.colorChecked
+    , eq "tag vars(setPrimary).colorCheckedHover == createHoverColor" (Color.createHoverColor "#ff0000") vTagCustom.colorCheckedHover
+    , eq "tag vars(setPrimary) keeps padding" "0 7px" vTagCustom.padding
+
+    -- 7. NUI.Css.css -------------------------------------------------------------
     , eq "css contains .n-button" True (String.contains ".n-button" Css.css)
     , eq "css is scoped under .nui-root.nui-root" True (String.contains ".nui-root.nui-root" Css.css)
     , eq "css contains flex-basis bridge" True (String.contains "flex-basis: auto" Css.css)
@@ -391,6 +452,12 @@ liveNodes =
                     (Button.view Theme.default primaryOpts [ Element.text "Primary" ])
                 , Element.el [ Element.htmlAttribute (HA.id "live-disabled") ]
                     (Button.view Theme.default disabledRoundOpts [ Element.text "Disabled" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-tag-primary") ]
+                    (Tag.view Theme.default primaryTagOpts [ Element.text "Primary" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-tag-checked") ]
+                    (Tag.view Theme.default checkedTagOpts [ Element.text "Checked" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-tag-disabled") ]
+                    (Tag.view Theme.default disabledTagOpts [ Element.text "Disabled" ])
                 ]
             )
         ]

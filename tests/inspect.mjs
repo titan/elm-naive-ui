@@ -144,6 +144,67 @@ dTrue(
   disabledStyle
 )
 
+// Tag ------------------------------------------------------------------------
+const tagPrimary = doc.querySelector('#live-tag-primary .n-tag')
+dTrue(
+  'DOM: Tag.view primary renders .n-tag with content + border',
+  !!tagPrimary &&
+    tagPrimary.classList.contains('n-tag') &&
+    !!tagPrimary.querySelector('.n-tag__content') &&
+    !!tagPrimary.querySelector('.n-tag__border'),
+  tagPrimary ? tagPrimary.getAttribute('class') : 'missing'
+)
+
+const tagPrimaryStyle = tagPrimary ? tagPrimary.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: primary tag --n-color = colorBorderedPrimary',
+  tagPrimaryStyle.includes('--n-color:rgba(24, 160, 88, 0.1)'),
+  tagPrimaryStyle
+)
+dTrue(
+  'DOM: primary tag --n-text-color = primary',
+  tagPrimaryStyle.includes('--n-text-color:#18a058'),
+  tagPrimaryStyle
+)
+dTrue(
+  'DOM: primary tag carries --n-close-* vars + close button',
+  tagPrimaryStyle.includes('--n-close-size:') &&
+    tagPrimaryStyle.includes('--n-close-icon-size:') &&
+    !!tagPrimary.querySelector('.n-tag__close.n-base-close'),
+  tagPrimary ? 'style + close ok' : 'missing'
+)
+
+dTrue(
+  'DOM: closable tag has n-tag--closable',
+  !!tagPrimary && tagPrimary.classList.contains('n-tag--closable'),
+  tagPrimary ? tagPrimary.getAttribute('class') : 'missing'
+)
+
+const tagChecked = doc.querySelector('#live-tag-checked .n-tag')
+dTrue(
+  'DOM: checkable tag renders n-tag--checkable.n-tag--checked + role=checkbox',
+  !!tagChecked &&
+    tagChecked.classList.contains('n-tag--checkable') &&
+    tagChecked.classList.contains('n-tag--checked') &&
+    tagChecked.getAttribute('role') === 'checkbox' &&
+    tagChecked.getAttribute('aria-checked') === 'true',
+  tagChecked ? tagChecked.getAttribute('class') : 'missing'
+)
+dTrue(
+  'DOM: checked tag --n-color = primary --n-color-checked',
+  (tagChecked ? tagChecked.getAttribute('style') || '' : '').includes('--n-color-checked:#18a058'),
+  tagChecked ? tagChecked.getAttribute('style') : 'missing'
+)
+
+const tagDisabled = doc.querySelector('#live-tag-disabled .n-tag')
+dTrue(
+  'DOM: disabled tag renders n-tag--disabled.n-tag--round',
+  !!tagDisabled &&
+    tagDisabled.classList.contains('n-tag--disabled') &&
+    tagDisabled.classList.contains('n-tag--round'),
+  tagDisabled ? tagDisabled.getAttribute('class') : 'missing'
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
