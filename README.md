@@ -62,20 +62,33 @@ The full variable sets are extracted from Naive UI, so all values are the origin
 
 ## Components
 
-| Module            | Status |
-| ----------------- | ------ |
-| `NUI.Button`      | ✅ |
-| `NUI.Input`       | ✅ |
-| `NUI.Card`        | ✅ |
-| `NUI.Tag`         | ✅ |
-| `NUI.Alert`       | ✅ |
-| `NUI.Checkbox`    | ✅ |
-| `NUI.Switch`      | ✅ |
-| `NUI.Radio`       | ✅ |
-| `NUI.Divider`     | ✅ |
-| `NUI.Space`       | ✅ |
-| `NUI.Typography`  | ✅ |
-| `NUI.Avatar`      | ✅ |
+All ported components are verified by `scripts/verify.sh` (class coverage, DOM
+bridge, tests).
+
+| Module           | Status |
+| ---------------- | ------ |
+| `NUI.Alert`      | ✅ |
+| `NUI.Avatar`     | ✅ |
+| `NUI.Badge`      | ✅ |
+| `NUI.Button`     | ✅ |
+| `NUI.Card`       | ✅ |
+| `NUI.Checkbox`   | ✅ |
+| `NUI.Divider`    | ✅ |
+| `NUI.Empty`      | ✅ |
+| `NUI.Input`      | ✅ |
+| `NUI.Progress`   | ✅ |
+| `NUI.Radio`      | ✅ |
+| `NUI.Result`     | ✅ |
+| `NUI.Skeleton`   | ✅ |
+| `NUI.Space`      | ✅ |
+| `NUI.Spin`       | ✅ |
+| `NUI.Switch`     | ✅ |
+| `NUI.Tag`        | ✅ |
+| `NUI.Typography` | ✅ |
+
+Supporting modules: `NUI.Css` (the scoped stylesheet + root marker),
+`NUI.Theme` (Naive UI's variable sets), `NUI.Types` (shared enums) and
+`NUI.Internal` (the class / `--n-*` bridge).
 
 ## Development
 
