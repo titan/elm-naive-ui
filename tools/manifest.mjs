@@ -178,5 +178,17 @@ export const components = {
   'qr-code': {
     cssr: ['qr-code/src/styles/index.cssr.ts'],
     theme: 'qr-code/styles/light.ts'
+  },
+  collapse: {
+    cssr: ['collapse/src/styles/index.cssr.ts', 'collapse/src/styles/rtl.cssr.ts'],
+    theme: 'collapse/styles/light.ts'
+  },
+  rate: {
+    cssr: ['rate/src/styles/index.cssr.ts'],
+    theme: 'rate/styles/light.ts'
+  },
+  'float-button': {
+    cssr: ['float-button/src/styles/index.cssr.ts'],
+    theme: 'float-button/styles/light.ts'
   }
 }

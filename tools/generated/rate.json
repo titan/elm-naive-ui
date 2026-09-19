@@ -1,0 +1,47 @@
+{
+  "light": {
+    "itemColor": "rgb(219, 219, 223)",
+    "itemColorActive": "#FFCC33",
+    "sizeSmall": "16px",
+    "sizeMedium": "20px",
+    "sizeLarge": "24px"
+  },
+  "dark": {
+    "itemColor": "rgba(255, 255, 255, 0.2)",
+    "itemColorActive": "#CCAA33",
+    "itemSize": "20px",
+    "sizeSmall": "16px",
+    "sizeMedium": "20px",
+    "sizeLarge": "24px"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "itemColor": "railColor"
+      },
+      "seen": [
+        "vars",
+        "itemColor",
+        "itemColorActive",
+        "sizeSmall",
+        "sizeMedium",
+        "sizeLarge",
+        "themeLight"
+      ]
+    },
+    "dark": {
+      "refs": {
+        "itemColor": "railColor"
+      },
+      "seen": [
+        "rateDark",
+        "itemColor",
+        "itemColorActive",
+        "itemSize",
+        "sizeSmall",
+        "sizeMedium",
+        "sizeLarge"
+      ]
+    }
+  }
+}

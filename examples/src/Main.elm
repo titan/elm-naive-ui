@@ -18,11 +18,13 @@ import NUI.Button as Button
 import NUI.ButtonGroup as ButtonGroup
 import NUI.Card as Card
 import NUI.Checkbox as Checkbox
+import NUI.Collapse as Collapse
 import NUI.Countdown as Countdown
 import NUI.Css as Css
 import NUI.Divider as Divider
 import NUI.Ellipsis as Ellipsis
 import NUI.Empty as Empty
+import NUI.FloatButton as FloatButton
 import NUI.GradientText as GradientText
 import NUI.Input as Input
 import NUI.List as NList
@@ -31,6 +33,7 @@ import NUI.PageHeader as PageHeader
 import NUI.Progress as Progress
 import NUI.QrCode as QrCode
 import NUI.Radio as Radio
+import NUI.Rate as Rate
 import NUI.Result as Result
 import NUI.Skeleton as Skeleton
 import NUI.Space as Space
@@ -265,6 +268,26 @@ qrD =
     QrCode.defaults
 
 
+collapseD : Collapse.Options msg
+collapseD =
+    Collapse.defaults
+
+
+collapseItem : Collapse.Item msg
+collapseItem =
+    Collapse.item
+
+
+rateD : Rate.Options msg
+rateD =
+    Rate.defaults
+
+
+floatButtonD : FloatButton.Options msg
+floatButtonD =
+    FloatButton.defaults
+
+
 {-| A distinct colour per showcase avatar (the group's slot path uses the
 `src` as a label).
 -}
@@ -359,6 +382,9 @@ body =
     , ellipsisSection
     , backTopSection
     , qrCodeSection
+    , collapseSection
+    , rateSection
+    , floatButtonSection
     , rtlSection
     , themeSection
     ]
@@ -1201,6 +1227,95 @@ qrCodeSection =
                     , iconSrc = Just "https://example.com/icon.png"
                     , errorCorrectionLevel = QrCode.H
                 }
+            ]
+        ]
+
+
+collapseSection : Element msg
+collapseSection =
+    section "Collapse" "Expandable panels (the expanded set is caller-owned)." <|
+        [ Collapse.view theme
+            { collapseD | expandedNames = [ "1" ] }
+            [ { collapseItem
+                | name = "1"
+                , title = Just "First panel"
+                , content = [ Element.text "The first panel is expanded by default." ]
+              }
+            , { collapseItem
+                | name = "2"
+                , title = Just "Second panel"
+                , content = [ Element.text "Click the header, the extra or the arrow to toggle." ]
+              }
+            , { collapseItem
+                | name = "3"
+                , title = Just "Disabled panel"
+                , disabled = True
+                , content = [ Element.text "A disabled panel cannot be toggled." ]
+              }
+            ]
+        , Collapse.view theme
+            { collapseD
+                | arrowPlacement = Collapse.ArrowRight
+                , displayDirective = Collapse.ShowContent
+            }
+            [ { collapseItem
+                | name = "a"
+                , title = Just "Arrow on the right"
+                , content = [ Element.text "The arrow sits after the title." ]
+              }
+            ]
+        ]
+
+
+rateSection : Element msg
+rateSection =
+    section "Rate" "Star ratings (the value and hover are caller-owned)." <|
+        [ demoRow "Value"
+            [ Rate.view theme { rateD | value = Just 4 }
+            , Rate.view theme { rateD | value = Just 3, readonly = True }
+            , Rate.view theme { rateD | value = Just 2, color = Just "#f0a020" }
+            ]
+        , demoRow "Half & sizes"
+            [ Rate.view theme { rateD | allowHalf = True, value = Just 3.5 }
+            , Rate.view theme { rateD | size = Rate.Small, value = Just 5 }
+            , Rate.view theme { rateD | size = Rate.Large, value = Just 5 }
+            ]
+        ]
+
+
+floatButtonSection : Element msg
+floatButtonSection =
+    section "Float Button" "A floating action button (position and offsets are caller-owned)." <|
+        [ demoRow "Shapes & types"
+            [ FloatButton.view theme { floatButtonD | position = FloatButton.Relative } [ Element.text "+" ]
+            , FloatButton.view theme
+                { floatButtonD | position = FloatButton.Relative, shape = FloatButton.Square }
+                [ Element.text "S" ]
+            , FloatButton.view theme
+                { floatButtonD | position = FloatButton.Relative, type_ = FloatButton.Primary }
+                [ Element.text "+" ]
+            ]
+        , demoRow "Description"
+            [ FloatButton.view theme
+                { floatButtonD | position = FloatButton.Relative, description = Just (Element.text "Top") }
+                [ Element.text "↑" ]
+            ]
+        , demoRow "Menu"
+            [ FloatButton.view theme
+                { floatButtonD
+                    | position = FloatButton.Relative
+                    , menuTrigger = Just FloatButton.Click
+                    , showMenu = True
+                    , menu =
+                        [ FloatButton.view theme
+                            { floatButtonD | position = FloatButton.Relative }
+                            [ Element.text "A" ]
+                        , FloatButton.view theme
+                            { floatButtonD | position = FloatButton.Relative }
+                            [ Element.text "B" ]
+                        ]
+                }
+                [ Element.text "+" ]
             ]
         ]
 

@@ -78,10 +78,12 @@ bridge, tests).
 | `NUI.ButtonGroup` | ✅ |
 | `NUI.Card`        | ✅ |
 | `NUI.Checkbox`    | ✅ |
+| `NUI.Collapse`    | ✅ |
 | `NUI.Countdown`   | ✅ |
 | `NUI.Divider`     | ✅ |
 | `NUI.Ellipsis`    | ✅ |
 | `NUI.Empty`       | ✅ |
+| `NUI.FloatButton` | ✅ |
 | `NUI.GradientText`| ✅ |
 | `NUI.Input`       | ✅ |
 | `NUI.List`        | ✅ |
@@ -90,6 +92,7 @@ bridge, tests).
 | `NUI.Progress`    | ✅ |
 | `NUI.QrCode`      | ✅ |
 | `NUI.Radio`       | ✅ |
+| `NUI.Rate`        | ✅ |
 | `NUI.Result`      | ✅ |
 | `NUI.Skeleton`    | ✅ |
 | `NUI.Space`       | ✅ |

@@ -1,0 +1,60 @@
+{
+  "light": {
+    "titleFontSize": "14px",
+    "titleFontWeight": "400",
+    "dividerColor": "rgb(239, 239, 245)",
+    "titleTextColor": "rgb(31, 34, 37)",
+    "titleTextColorDisabled": "rgba(194, 194, 194, 1)",
+    "fontSize": "14px",
+    "textColor": "rgb(51, 54, 57)",
+    "arrowColor": "rgb(51, 54, 57)",
+    "arrowColorDisabled": "rgba(194, 194, 194, 1)",
+    "itemMargin": "16px 0 0 0",
+    "titlePadding": "16px 0 0 0"
+  },
+  "dark": {
+    "titleFontSize": "14px",
+    "titleFontWeight": "400",
+    "dividerColor": "rgba(255, 255, 255, 0.09)",
+    "titleTextColor": "rgba(255, 255, 255, 0.9)",
+    "titleTextColorDisabled": "rgba(255, 255, 255, 0.38)",
+    "fontSize": "14px",
+    "textColor": "rgba(255, 255, 255, 0.82)",
+    "arrowColor": "rgba(255, 255, 255, 0.82)",
+    "arrowColorDisabled": "rgba(255, 255, 255, 0.38)",
+    "itemMargin": "16px 0 0 0",
+    "titlePadding": "16px 0 0 0"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "titleFontSize": "fontSize",
+        "titleFontWeight": "fontWeight",
+        "titleTextColor": "textColor1",
+        "titleTextColorDisabled": "textColorDisabled",
+        "textColor": "textColor2",
+        "arrowColor": "textColor2",
+        "arrowColorDisabled": "textColorDisabled"
+      },
+      "seen": [
+        "vars",
+        "titleFontSize",
+        "titleFontWeight",
+        "titleTextColor",
+        "titleTextColorDisabled",
+        "textColor",
+        "arrowColor",
+        "arrowColorDisabled",
+        "itemMargin",
+        "titlePadding",
+        "collapseLight"
+      ]
+    },
+    "dark": {
+      "refs": {},
+      "seen": [
+        "collapseDark"
+      ]
+    }
+  }
+}

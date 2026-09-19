@@ -52,7 +52,10 @@ const targets = {
   '.n-steps': false,
   '.n-ellipsis': false,
   '.n-back-top': true,
-  '.n-qr-code': true
+  '.n-qr-code': true,
+  '.n-collapse': true,
+  '.n-rate': true,
+  '.n-float-button': true
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {

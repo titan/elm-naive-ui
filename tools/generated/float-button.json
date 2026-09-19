@@ -1,0 +1,88 @@
+{
+  "light": {
+    "color": "#fff",
+    "colorHover": "rgba(46, 51, 56, .09)",
+    "colorPressed": "rgba(46, 51, 56, .13)",
+    "colorPrimary": "#18a058",
+    "colorPrimaryHover": "#36ad6a",
+    "colorPrimaryPressed": "#0c7a43",
+    "textColor": "rgb(51, 54, 57)",
+    "boxShadow": "0 2px 8px 0px rgba(0, 0, 0, .16)",
+    "boxShadowHover": "0 2px 12px 0px rgba(0, 0, 0, .24)",
+    "boxShadowPressed": "0 2px 12px 0px rgba(0, 0, 0, .24)",
+    "textColorPrimary": "#fff",
+    "borderRadiusSquare": "3px"
+  },
+  "dark": {
+    "color": "rgb(72, 72, 78)",
+    "textColor": "rgba(255, 255, 255, 0.82)",
+    "boxShadow": "0 2px 8px 0px rgba(0, 0, 0, .12)",
+    "boxShadowHover": "0 2px 12px 0px rgba(0, 0, 0, .18)",
+    "boxShadowPressed": "0 2px 12px 0px rgba(0, 0, 0, .18)",
+    "colorHover": "rgba(255, 255, 255, .12)",
+    "colorPressed": "rgba(255, 255, 255, .08)",
+    "colorPrimary": "#63e2b7",
+    "colorPrimaryHover": "#7fe7c4",
+    "colorPrimaryPressed": "#5acea7",
+    "textColorPrimary": "#000",
+    "borderRadiusSquare": "3px"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "color": "popoverColor",
+        "colorHover": "buttonColor2Hover",
+        "colorPressed": "buttonColor2Pressed",
+        "colorPrimary": "primaryColor",
+        "colorPrimaryHover": "primaryColorHover",
+        "colorPrimaryPressed": "primaryColorPressed",
+        "textColor": "textColor2",
+        "borderRadiusSquare": "borderRadius"
+      },
+      "seen": [
+        "vars",
+        "color",
+        "colorHover",
+        "colorPressed",
+        "colorPrimary",
+        "colorPrimaryHover",
+        "colorPrimaryPressed",
+        "textColor",
+        "boxShadow",
+        "boxShadowHover",
+        "boxShadowPressed",
+        "textColorPrimary",
+        "borderRadiusSquare",
+        "themeLight"
+      ]
+    },
+    "dark": {
+      "refs": {
+        "color": "popoverColor",
+        "textColor": "textColor2",
+        "colorHover": "buttonColor2Hover",
+        "colorPressed": "buttonColor2Pressed",
+        "colorPrimary": "primaryColor",
+        "colorPrimaryHover": "primaryColorHover",
+        "colorPrimaryPressed": "primaryColorPressed",
+        "textColorPrimary": "baseColor",
+        "borderRadiusSquare": "borderRadius"
+      },
+      "seen": [
+        "floatButtonDark",
+        "color",
+        "textColor",
+        "boxShadow",
+        "boxShadowHover",
+        "boxShadowPressed",
+        "colorHover",
+        "colorPressed",
+        "colorPrimary",
+        "colorPrimaryHover",
+        "colorPrimaryPressed",
+        "textColorPrimary",
+        "borderRadiusSquare"
+      ]
+    }
+  }
+}
