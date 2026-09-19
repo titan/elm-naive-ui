@@ -18,5 +18,36 @@
     "valuePrefixTextColor": "rgba(255, 255, 255, 0.82)",
     "valueSuffixTextColor": "rgba(255, 255, 255, 0.82)",
     "valueTextColor": "rgba(255, 255, 255, 0.82)"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "labelFontSize": "fontSize",
+        "labelFontWeight": "fontWeight",
+        "valueFontWeight": "fontWeight",
+        "labelTextColor": "textColor3",
+        "valuePrefixTextColor": "textColor2",
+        "valueSuffixTextColor": "textColor2",
+        "valueTextColor": "textColor2"
+      },
+      "seen": [
+        "vars",
+        "labelFontSize",
+        "labelFontWeight",
+        "valueFontWeight",
+        "valueFontSize",
+        "labelTextColor",
+        "valuePrefixTextColor",
+        "valueSuffixTextColor",
+        "valueTextColor",
+        "statisticLight"
+      ]
+    },
+    "dark": {
+      "refs": {},
+      "seen": [
+        "statisticDark"
+      ]
+    }
   }
 }

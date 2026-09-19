@@ -44,5 +44,55 @@
     "fillColorWarning": "#f2c97d",
     "fillColorError": "#e88080",
     "lineBgProcessing": "linear-gradient(90deg, rgba(255, 255, 255, .3) 0%, rgba(255, 255, 255, .5) 100%)"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "fontWeightCircle": "fontWeight",
+        "railColor": "progressRailColor",
+        "iconColor": "infoColor",
+        "iconColorInfo": "infoColor",
+        "iconColorSuccess": "successColor",
+        "iconColorWarning": "warningColor",
+        "iconColorError": "errorColor",
+        "textColorCircle": "textColor2",
+        "textColorLineOuter": "textColor2",
+        "fillColor": "infoColor",
+        "fillColorInfo": "infoColor",
+        "fillColorSuccess": "successColor",
+        "fillColorWarning": "warningColor",
+        "fillColorError": "errorColor"
+      },
+      "seen": [
+        "vars",
+        "fontSizeCircle",
+        "fontWeightCircle",
+        "railColor",
+        "railHeight",
+        "iconSizeCircle",
+        "iconSizeLine",
+        "iconColor",
+        "iconColorInfo",
+        "iconColorSuccess",
+        "iconColorWarning",
+        "iconColorError",
+        "textColorCircle",
+        "textColorLineInner",
+        "textColorLineOuter",
+        "fillColor",
+        "fillColorInfo",
+        "fillColorSuccess",
+        "fillColorWarning",
+        "fillColorError",
+        "lineBgProcessing",
+        "progressLight"
+      ]
+    },
+    "dark": {
+      "refs": {},
+      "seen": [
+        "progressDark"
+      ]
+    }
   }
 }

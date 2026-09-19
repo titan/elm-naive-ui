@@ -24,5 +24,38 @@
     "itemColorHover": "rgba(255, 255, 255, .12)",
     "itemColorPressed": "rgba(255, 255, 255, .08)",
     "separatorColor": "rgba(255, 255, 255, 0.52)"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "itemTextColor": "textColor3",
+        "itemTextColorHover": "textColor2",
+        "itemTextColorPressed": "textColor2",
+        "itemTextColorActive": "textColor2",
+        "itemBorderRadius": "borderRadius",
+        "itemColorHover": "buttonColor2Hover",
+        "itemColorPressed": "buttonColor2Pressed",
+        "separatorColor": "textColor3"
+      },
+      "seen": [
+        "vars",
+        "itemLineHeight",
+        "itemTextColor",
+        "itemTextColorHover",
+        "itemTextColorPressed",
+        "itemTextColorActive",
+        "itemBorderRadius",
+        "itemColorHover",
+        "itemColorPressed",
+        "separatorColor",
+        "breadcrumbLight"
+      ]
+    },
+    "dark": {
+      "refs": {},
+      "seen": [
+        "breadcrumbDark"
+      ]
+    }
   }
 }

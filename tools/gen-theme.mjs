@@ -83,12 +83,23 @@ for (const name of componentFiles) {
   const keys = Object.keys(data.light)
   const moduleName = pascal(name)
 
-  const buildFn = (themeName, selector) => {
+  const refsFor = t => (data.refs && data.refs[t]) || { refs: {}, seen: [] }
+
+  const buildFn = (themeName) => {
     const themedValues = data[themeName]
+    const { refs, seen } = refsFor(themeName)
+    const seenSet = new Set(seen)
     const lines = keys.map(k => {
-      const key = data.light[k] + '\u0000' + data.dark[k]
-      const cf = commonReverse.get(key)
-      const value = cf ? `common.${cf}` : `"${esc(themedValues[k])}"`
+      let value
+      if (seenSet.has(k)) {
+        // Provenance known: honour whether the source referenced a common var, so a
+        // literal that merely equals a common value stays a literal.
+        value = refs[k] ? `common.${fieldName(refs[k])}` : `"${esc(themedValues[k])}"`
+      } else {
+        // Unknown shape (e.g. dark reuses light's `self`): fall back to value-matching.
+        const cf = commonReverse.get(data.light[k] + '\u0000' + data.dark[k])
+        value = cf ? `common.${cf}` : `"${esc(themedValues[k])}"`
+      }
       return `        ${fieldName(k)} = ${value}`
     })
     return `\n\n${themeName} : Common -> Vars\n${themeName} common =\n    { ` +

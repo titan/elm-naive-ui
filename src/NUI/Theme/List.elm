@@ -36,7 +36,7 @@ vars theme =
 light : Common -> Vars
 light common =
     { textColor = common.textColor2
-    , color = common.tableColor
+    , color = common.cardColor
     , colorHover = common.hoverColor
     , colorModal = common.modalColor
     , colorHoverModal = "rgba(243, 243, 245, 1)"

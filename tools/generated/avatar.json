@@ -24,5 +24,24 @@
     "color": "rgba(66, 66, 69, 1)",
     "colorModal": "rgba(82, 82, 87, 1)",
     "colorPopover": "rgba(105, 105, 110, 1)"
+  },
+  "refs": {
+    "light": {
+      "refs": {},
+      "seen": [
+        "vars",
+        "border",
+        "color",
+        "colorModal",
+        "colorPopover",
+        "avatarLight"
+      ]
+    },
+    "dark": {
+      "refs": {},
+      "seen": [
+        "avatarDark"
+      ]
+    }
   }
 }

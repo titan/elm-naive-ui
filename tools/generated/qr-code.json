@@ -4,5 +4,26 @@
   },
   "dark": {
     "borderRadius": "3px"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "borderRadius": "borderRadius"
+      },
+      "seen": [
+        "vars",
+        "borderRadius",
+        "themeLight"
+      ]
+    },
+    "dark": {
+      "refs": {
+        "borderRadius": "borderRadius"
+      },
+      "seen": [
+        "qrcodeDark",
+        "borderRadius"
+      ]
+    }
   }
 }

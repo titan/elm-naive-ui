@@ -8,5 +8,27 @@
     "textColor": "rgba(255, 255, 255, 0.9)",
     "color": "rgba(255, 255, 255, 0.09)",
     "fontWeight": "500"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "textColor": "textColor1",
+        "color": "dividerColor",
+        "fontWeight": "fontWeightStrong"
+      },
+      "seen": [
+        "vars",
+        "textColor",
+        "color",
+        "fontWeight",
+        "dividerLight"
+      ]
+    },
+    "dark": {
+      "refs": {},
+      "seen": [
+        "dividerDark"
+      ]
+    }
   }
 }

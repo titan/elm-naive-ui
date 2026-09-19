@@ -58,5 +58,54 @@
     "boxShadowFocus": "0 0 0 2px rgba(99, 226, 183, 0.3)",
     "textColor": "rgba(255, 255, 255, 0.82)",
     "textColorDisabled": "rgba(255, 255, 255, 0.38)"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "labelLineHeight": "lineHeight",
+        "borderRadius": "borderRadiusSmall",
+        "color": "baseColor",
+        "colorChecked": "primaryColor",
+        "colorDisabled": "inputColorDisabled",
+        "colorDisabledChecked": "inputColorDisabled",
+        "colorTableHeader": "cardColor",
+        "colorTableHeaderModal": "modalColor",
+        "colorTableHeaderPopover": "popoverColor",
+        "checkMarkColor": "baseColor",
+        "checkMarkColorDisabled": "textColorDisabled",
+        "checkMarkColorDisabledChecked": "textColorDisabled",
+        "textColor": "textColor2"
+      },
+      "seen": [
+        "vars",
+        "labelLineHeight",
+        "borderRadius",
+        "color",
+        "colorChecked",
+        "colorDisabled",
+        "colorDisabledChecked",
+        "colorTableHeader",
+        "colorTableHeaderModal",
+        "colorTableHeaderPopover",
+        "checkMarkColor",
+        "checkMarkColorDisabled",
+        "checkMarkColorDisabledChecked",
+        "border",
+        "borderDisabled",
+        "borderDisabledChecked",
+        "borderChecked",
+        "borderFocus",
+        "boxShadowFocus",
+        "alpha",
+        "textColor",
+        "checkboxLight"
+      ]
+    },
+    "dark": {
+      "refs": {},
+      "seen": [
+        "checkboxDark"
+      ]
+    }
   }
 }

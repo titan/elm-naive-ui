@@ -4,5 +4,24 @@
   },
   "dark": {
     "gap": "-12px"
+  },
+  "refs": {
+    "light": {
+      "refs": {},
+      "seen": [
+        "gap",
+        "avatarGroupLight",
+        "peers",
+        "Avatar"
+      ]
+    },
+    "dark": {
+      "refs": {},
+      "seen": [
+        "avatarGroupDark",
+        "peers",
+        "Avatar"
+      ]
+    }
   }
 }

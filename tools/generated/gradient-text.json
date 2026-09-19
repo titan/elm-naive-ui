@@ -26,5 +26,64 @@
     "colorEndError": "rgb(208, 58, 82)",
     "colorStartSuccess": "#63e2b7",
     "colorEndSuccess": "rgb(42, 148, 125)"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "fontWeight": "fontWeightStrong",
+        "colorEndPrimary": "primaryColor",
+        "colorEndInfo": "infoColor",
+        "colorEndWarning": "warningColor",
+        "colorEndError": "errorColor",
+        "colorEndSuccess": "successColor"
+      },
+      "seen": [
+        "vars",
+        "fontWeight",
+        "rotate",
+        "colorStartPrimary",
+        "alpha",
+        "colorEndPrimary",
+        "colorStartInfo",
+        "colorEndInfo",
+        "colorStartWarning",
+        "colorEndWarning",
+        "colorStartError",
+        "colorEndError",
+        "colorStartSuccess",
+        "colorEndSuccess",
+        "gradientTextLight"
+      ]
+    },
+    "dark": {
+      "refs": {
+        "fontWeight": "fontWeightStrong",
+        "colorStartPrimary": "primaryColor",
+        "colorEndPrimary": "primaryColorSuppl",
+        "colorStartInfo": "infoColor",
+        "colorEndInfo": "infoColorSuppl",
+        "colorStartWarning": "warningColor",
+        "colorEndWarning": "warningColorSuppl",
+        "colorStartError": "errorColor",
+        "colorEndError": "errorColorSuppl",
+        "colorStartSuccess": "successColor",
+        "colorEndSuccess": "successColorSuppl"
+      },
+      "seen": [
+        "gradientTextDark",
+        "fontWeight",
+        "rotate",
+        "colorStartPrimary",
+        "colorEndPrimary",
+        "colorStartInfo",
+        "colorEndInfo",
+        "colorStartWarning",
+        "colorEndWarning",
+        "colorStartError",
+        "colorEndError",
+        "colorStartSuccess",
+        "colorEndSuccess"
+      ]
+    }
   }
 }

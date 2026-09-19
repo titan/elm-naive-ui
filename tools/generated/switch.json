@@ -62,5 +62,71 @@
     "buttonBorderRadiusMedium": "3px",
     "buttonBorderRadiusLarge": "3px",
     "boxShadowFocus": "0 0 8px 0 rgba(99, 226, 183, 0.3)"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "iconColor": "textColor3",
+        "loadingColor": "primaryColor",
+        "railColorActive": "primaryColor",
+        "railBorderRadiusSmall": "borderRadius",
+        "railBorderRadiusMedium": "borderRadius",
+        "railBorderRadiusLarge": "borderRadius",
+        "buttonBorderRadiusSmall": "borderRadius",
+        "buttonBorderRadiusMedium": "borderRadius",
+        "buttonBorderRadiusLarge": "borderRadius"
+      },
+      "seen": [
+        "vars",
+        "iconColor",
+        "textColor",
+        "loadingColor",
+        "railColor",
+        "railColorActive",
+        "buttonBoxShadow",
+        "buttonColor",
+        "railBorderRadiusSmall",
+        "railBorderRadiusMedium",
+        "railBorderRadiusLarge",
+        "buttonBorderRadiusSmall",
+        "buttonBorderRadiusMedium",
+        "buttonBorderRadiusLarge",
+        "boxShadowFocus",
+        "alpha",
+        "switchLight"
+      ]
+    },
+    "dark": {
+      "refs": {
+        "iconColor": "baseColor",
+        "textColor": "textColor2",
+        "loadingColor": "primaryColorSuppl",
+        "railColorActive": "primaryColorSuppl",
+        "railBorderRadiusSmall": "borderRadius",
+        "railBorderRadiusMedium": "borderRadius",
+        "railBorderRadiusLarge": "borderRadius",
+        "buttonBorderRadiusSmall": "borderRadius",
+        "buttonBorderRadiusMedium": "borderRadius",
+        "buttonBorderRadiusLarge": "borderRadius"
+      },
+      "seen": [
+        "switchDark",
+        "iconColor",
+        "textColor",
+        "loadingColor",
+        "railColor",
+        "railColorActive",
+        "buttonBoxShadow",
+        "buttonColor",
+        "railBorderRadiusSmall",
+        "railBorderRadiusMedium",
+        "railBorderRadiusLarge",
+        "buttonBorderRadiusSmall",
+        "buttonBorderRadiusMedium",
+        "buttonBorderRadiusLarge",
+        "boxShadowFocus",
+        "alpha"
+      ]
+    }
   }
 }

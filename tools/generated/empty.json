@@ -28,5 +28,25 @@
     "textColor": "rgba(255, 255, 255, 0.38)",
     "iconColor": "rgba(255, 255, 255, 0.38)",
     "extraTextColor": "rgba(255, 255, 255, 0.82)"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "textColor": "textColorDisabled",
+        "extraTextColor": "textColor2"
+      },
+      "seen": [
+        "vars",
+        "textColor",
+        "extraTextColor",
+        "emptyLight"
+      ]
+    },
+    "dark": {
+      "refs": {},
+      "seen": [
+        "emptyDark"
+      ]
+    }
   }
 }

@@ -38,15 +38,15 @@ light common =
     { fontWeight = common.fontWeightStrong
     , rotate = "252deg"
     , colorStartPrimary = "rgba(24, 160, 88, 0.6)"
-    , colorEndPrimary = "#18a058"
+    , colorEndPrimary = common.primaryColor
     , colorStartInfo = "rgba(32, 128, 240, 0.6)"
-    , colorEndInfo = "#2080f0"
+    , colorEndInfo = common.infoColor
     , colorStartWarning = "rgba(240, 160, 32, 0.6)"
-    , colorEndWarning = "#f0a020"
+    , colorEndWarning = common.warningColor
     , colorStartError = "rgba(208, 48, 80, 0.6)"
-    , colorEndError = "#d03050"
+    , colorEndError = common.errorColor
     , colorStartSuccess = "rgba(24, 160, 88, 0.6)"
-    , colorEndSuccess = "#18a058"
+    , colorEndSuccess = common.successColor
     }
 
 
@@ -54,14 +54,14 @@ dark : Common -> Vars
 dark common =
     { fontWeight = common.fontWeightStrong
     , rotate = "252deg"
-    , colorStartPrimary = "#63e2b7"
-    , colorEndPrimary = "rgb(42, 148, 125)"
-    , colorStartInfo = "#70c0e8"
-    , colorEndInfo = "rgb(56, 137, 197)"
-    , colorStartWarning = "#f2c97d"
-    , colorEndWarning = "rgb(240, 138, 0)"
-    , colorStartError = "#e88080"
-    , colorEndError = "rgb(208, 58, 82)"
-    , colorStartSuccess = "#63e2b7"
-    , colorEndSuccess = "rgb(42, 148, 125)"
+    , colorStartPrimary = common.primaryColor
+    , colorEndPrimary = common.primaryColorSuppl
+    , colorStartInfo = common.infoColor
+    , colorEndInfo = common.infoColorSuppl
+    , colorStartWarning = common.warningColor
+    , colorEndWarning = common.warningColorSuppl
+    , colorStartError = common.errorColor
+    , colorEndError = common.errorColorSuppl
+    , colorStartSuccess = common.successColor
+    , colorEndSuccess = common.successColorSuppl
     }

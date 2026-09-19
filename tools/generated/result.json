@@ -42,5 +42,35 @@
     "iconColorSuccess": "#63e2b7",
     "iconColorInfo": "#70c0e8",
     "iconColorWarning": "#f2c97d"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "titleFontWeight": "fontWeightStrong",
+        "titleTextColor": "textColor1",
+        "textColor": "textColor2",
+        "iconColorError": "errorColor",
+        "iconColorSuccess": "successColor",
+        "iconColorInfo": "infoColor",
+        "iconColorWarning": "warningColor"
+      },
+      "seen": [
+        "vars",
+        "titleFontWeight",
+        "titleTextColor",
+        "textColor",
+        "iconColorError",
+        "iconColorSuccess",
+        "iconColorInfo",
+        "iconColorWarning",
+        "resultLight"
+      ]
+    },
+    "dark": {
+      "refs": {},
+      "seen": [
+        "resultDark"
+      ]
+    }
   }
 }

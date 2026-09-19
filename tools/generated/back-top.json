@@ -26,5 +26,48 @@
     "boxShadow": "0 2px 8px 0px rgba(0, 0, 0, .12)",
     "boxShadowHover": "0 2px 12px 0px rgba(0, 0, 0, .18)",
     "boxShadowPressed": "0 2px 12px 0px rgba(0, 0, 0, .18)"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "color": "popoverColor",
+        "textColor": "textColor2",
+        "iconColor": "textColor2",
+        "iconColorHover": "primaryColorHover",
+        "iconColorPressed": "primaryColorPressed"
+      },
+      "seen": [
+        "vars",
+        "color",
+        "textColor",
+        "iconColor",
+        "iconColorHover",
+        "iconColorPressed",
+        "boxShadow",
+        "boxShadowHover",
+        "boxShadowPressed",
+        "backTopLight"
+      ]
+    },
+    "dark": {
+      "refs": {
+        "color": "popoverColor",
+        "textColor": "textColor2",
+        "iconColor": "textColor2",
+        "iconColorHover": "primaryColorHover",
+        "iconColorPressed": "primaryColorPressed"
+      },
+      "seen": [
+        "backTopDark",
+        "color",
+        "textColor",
+        "iconColor",
+        "iconColorHover",
+        "iconColorPressed",
+        "boxShadow",
+        "boxShadowHover",
+        "boxShadowPressed"
+      ]
+    }
   }
 }

@@ -10,5 +10,27 @@
     "titleTextColor": "rgba(255, 255, 255, 0.9)",
     "textColor": "rgba(255, 255, 255, 0.82)",
     "titleFontWeight": "500"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "titleTextColor": "textColor1",
+        "textColor": "textColor2",
+        "titleFontWeight": "fontWeightStrong"
+      },
+      "seen": [
+        "vars",
+        "titleTextColor",
+        "textColor",
+        "titleFontWeight",
+        "thingLight"
+      ]
+    },
+    "dark": {
+      "refs": {},
+      "seen": [
+        "thingDark"
+      ]
+    }
   }
 }

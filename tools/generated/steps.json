@@ -68,5 +68,68 @@
     "descriptionTextColorWait": "rgba(255, 255, 255, 0.38)",
     "descriptionTextColorFinish": "rgba(255, 255, 255, 0.38)",
     "descriptionTextColorError": "#e88080"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "stepHeaderFontWeight": "fontWeightStrong",
+        "indicatorTextColorProcess": "baseColor",
+        "indicatorTextColorWait": "textColorDisabled",
+        "indicatorTextColorFinish": "primaryColor",
+        "indicatorTextColorError": "errorColor",
+        "indicatorBorderColorProcess": "primaryColor",
+        "indicatorBorderColorWait": "textColorDisabled",
+        "indicatorBorderColorFinish": "primaryColor",
+        "indicatorBorderColorError": "errorColor",
+        "indicatorColorProcess": "primaryColor",
+        "splitorColorProcess": "textColorDisabled",
+        "splitorColorWait": "textColorDisabled",
+        "splitorColorFinish": "primaryColor",
+        "splitorColorError": "textColorDisabled",
+        "headerTextColorProcess": "textColor1",
+        "headerTextColorWait": "textColorDisabled",
+        "headerTextColorFinish": "textColorDisabled",
+        "headerTextColorError": "errorColor",
+        "descriptionTextColorProcess": "textColor2",
+        "descriptionTextColorWait": "textColorDisabled",
+        "descriptionTextColorFinish": "textColorDisabled",
+        "descriptionTextColorError": "errorColor"
+      },
+      "seen": [
+        "vars",
+        "stepHeaderFontWeight",
+        "indicatorTextColorProcess",
+        "indicatorTextColorWait",
+        "indicatorTextColorFinish",
+        "indicatorTextColorError",
+        "indicatorBorderColorProcess",
+        "indicatorBorderColorWait",
+        "indicatorBorderColorFinish",
+        "indicatorBorderColorError",
+        "indicatorColorProcess",
+        "indicatorColorWait",
+        "indicatorColorFinish",
+        "indicatorColorError",
+        "splitorColorProcess",
+        "splitorColorWait",
+        "splitorColorFinish",
+        "splitorColorError",
+        "headerTextColorProcess",
+        "headerTextColorWait",
+        "headerTextColorFinish",
+        "headerTextColorError",
+        "descriptionTextColorProcess",
+        "descriptionTextColorWait",
+        "descriptionTextColorFinish",
+        "descriptionTextColorError",
+        "stepsLight"
+      ]
+    },
+    "dark": {
+      "refs": {},
+      "seen": [
+        "stepsDark"
+      ]
+    }
   }
 }

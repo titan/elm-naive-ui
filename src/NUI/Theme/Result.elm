@@ -60,7 +60,7 @@ light common =
     , titleTextColor = common.textColor1
     , textColor = common.textColor2
     , iconColorError = common.errorColor
-    , iconColorSuccess = common.primaryColor
+    , iconColorSuccess = common.successColor
     , iconColorInfo = common.infoColor
     , iconColorWarning = common.warningColor
     }

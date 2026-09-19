@@ -20,5 +20,37 @@
     "sizeHuge": "46px",
     "color": "#63e2b7",
     "opacitySpinning": "0.38"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "textColor": "primaryColor",
+        "sizeTiny": "heightTiny",
+        "sizeSmall": "heightSmall",
+        "sizeMedium": "heightMedium",
+        "sizeLarge": "heightLarge",
+        "sizeHuge": "heightHuge",
+        "color": "primaryColor",
+        "opacitySpinning": "opacityDisabled"
+      },
+      "seen": [
+        "vars",
+        "textColor",
+        "sizeTiny",
+        "sizeSmall",
+        "sizeMedium",
+        "sizeLarge",
+        "sizeHuge",
+        "color",
+        "opacitySpinning",
+        "spinLight"
+      ]
+    },
+    "dark": {
+      "refs": {},
+      "seen": [
+        "spinDark"
+      ]
+    }
   }
 }

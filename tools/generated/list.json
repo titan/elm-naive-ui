@@ -26,5 +26,37 @@
     "borderColorPopover": "rgba(88, 88, 94, 1)",
     "borderRadius": "3px",
     "fontSize": "14px"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "textColor": "textColor2",
+        "color": "cardColor",
+        "colorHover": "hoverColor",
+        "colorModal": "modalColor",
+        "colorPopover": "popoverColor",
+        "borderColor": "dividerColor"
+      },
+      "seen": [
+        "vars",
+        "textColor",
+        "color",
+        "colorHover",
+        "colorModal",
+        "colorHoverModal",
+        "colorPopover",
+        "colorHoverPopover",
+        "borderColor",
+        "borderColorModal",
+        "borderColorPopover",
+        "listLight"
+      ]
+    },
+    "dark": {
+      "refs": {},
+      "seen": [
+        "listDark"
+      ]
+    }
   }
 }
