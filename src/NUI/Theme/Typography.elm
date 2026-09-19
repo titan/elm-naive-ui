@@ -1,9 +1,7 @@
 module NUI.Theme.Typography exposing (Vars, vars)
 
-
 {-| Naive UI typography theme variables.
 -}
-
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)

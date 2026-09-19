@@ -1,0 +1,60 @@
+// Static check: every `n-*` class literal emitted by src/NUI/*.elm must exist in the
+// extracted stylesheet (css/naive-ui.css). Catches typos and classes that were never
+// extracted. Some classes are intentionally absent — see ALLOW.
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const here = path.dirname(fileURLToPath(import.meta.url))
+const root = path.resolve(here, '..', '..')
+
+const css = fs.readFileSync(path.join(root, 'css', 'naive-ui.css'), 'utf8')
+const cssClasses = new Set()
+for (const m of css.matchAll(/\.(n-[a-zA-Z0-9_-]+)/g)) cssClasses.add(m[1])
+
+// Emitted on purpose but not part of the extracted stylesheet.
+const ALLOW = new Set([
+  'nui-root', // our own scope marker
+  // Real Naive UI classes that carry no CSS rule of their own:
+  'n-button--ghost', // emitted by Button.tsx; only used to collapse borders in a group
+  'n-button--secondary',
+  'n-alert-body--bordered', // Alert.tsx emits it; styled via .n-alert-body instead
+  'n-text--delete', // Text.tsx emits it; the <del> tag carries the look
+  'n-input--stateful',
+  'n-space', // Space has no stylesheet at all (pure flex layout)
+  // Harmless extras: not upstream class names, but the CSS targets the tag /
+  // descendant, so rendering is unaffected.
+  'n-avatar__img', // upstream CSS targets `.n-avatar img`
+  'n-li', // upstream `Li` renders a bare <li>; list CSS targets `.n-ul li`
+])
+
+const srcDir = path.join(root, 'src', 'NUI')
+const files = fs.readdirSync(srcDir).filter(f => f.endsWith('.elm'))
+
+const missing = new Map() // class -> [files]
+for (const f of files) {
+  const text = fs.readFileSync(path.join(srcDir, f), 'utf8')
+  // Only quoted class literals; CSS custom properties are "--n-..." and excluded.
+  for (const m of text.matchAll(/"(n-[a-zA-Z0-9_-]+)"/g)) {
+    const cls = m[1]
+    if (ALLOW.has(cls)) continue
+    if (cls.endsWith('--') || cls.endsWith('-')) continue // class-name prefixes
+    if (cssClasses.has(cls)) continue
+    if (!missing.has(cls)) missing.set(cls, new Set())
+    missing.get(cls).add(f)
+  }
+}
+
+console.log(`stylesheet defines ${cssClasses.size} n-* classes`)
+console.log(`scanned ${files.length} component modules`)
+
+if (missing.size === 0) {
+  console.log('\nOK: every emitted n-* class exists in the stylesheet')
+  process.exit(0)
+}
+
+console.log(`\n${missing.size} class(es) referenced but NOT in the stylesheet:`)
+for (const [cls, fs_] of [...missing].sort()) {
+  console.log(`  ${cls}   (${[...fs_].join(', ')})`)
+}
+process.exit(1)

@@ -1,6 +1,5 @@
 module NUI.Theme.Common exposing (Common, dark, light)
 
-
 {-| Naive UI common theme variables (exact values extracted from naive-ui).
 -}
 
@@ -110,6 +109,7 @@ type alias Common =
     , boxShadow2 : String
     , boxShadow3 : String
     }
+
 
 light : Common
 light =

@@ -1,9 +1,7 @@
 module NUI.Theme.Avatar exposing (Vars, vars)
 
-
 {-| Naive UI avatar theme variables.
 -}
-
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)

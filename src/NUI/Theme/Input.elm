@@ -1,9 +1,7 @@
 module NUI.Theme.Input exposing (Vars, vars)
 
-
 {-| Naive UI input theme variables.
 -}
-
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)

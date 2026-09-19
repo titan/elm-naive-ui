@@ -1,9 +1,7 @@
 module NUI.Theme.Space exposing (Vars, vars)
 
-
 {-| Naive UI space theme variables.
 -}
-
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)

@@ -214,7 +214,6 @@ railStyleAttrs opts =
                 (f opts.value)
 
 
-
 {-| Naive UI renders `NBaseLoading` (an animated SVG arc). elm/html cannot
 create SVG namespaced nodes (no elm/svg dependency), so the exact spinner SVG
 — same geometry and SMIL animation — is embedded as a data-URI background

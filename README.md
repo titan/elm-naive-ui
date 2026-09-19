@@ -80,19 +80,28 @@ The full variable sets are extracted from Naive UI, so all values are the origin
 ## Development
 
 ```bash
-# 1. install the Elm packages (github.com zipballs are blocked in some sandboxes;
-#    this fetches from codeload.github.com instead)
+# install the Elm packages (github.com zipballs are blocked in some sandboxes;
+# this fetches from codeload.github.com instead)
 ELM_HOME=/tmp/elm-home ./scripts/install-elm-packages.sh
 
-# 2. build the library
+# everything: class coverage, builds, DOM bridge checks, tests, formatting
+ELM_HOME=/tmp/elm-home ./scripts/verify.sh
+```
+
+Individual steps:
+
+```bash
+# build the library
 ELM_HOME=/tmp/elm-home elm make
 
-# 3. build + inspect the example page (jsdom implements the CSS cascade)
+# build the showcase page and inspect it (jsdom implements the CSS cascade)
 cd examples && ELM_HOME=/tmp/elm-home elm make src/Main.elm --output=index.html
-node ../tools/verify/jsdom-inspect.mjs index.html .n-button
+node ../tools/verify/check-dom.mjs index.html        # bridge + --n-* vars per component
+node ../tools/verify/check-classes.mjs                # emitted classes exist in the CSS
+bash ../tests/run.sh                                  # 89 assertions
 
-# 4. regenerate the CSS + theme modules from the Naive UI checkout
-cd tools && npm install && npm run extract   # NAIVE_UI_SRC=/path/to/naive-ui
+# regenerate the CSS + theme modules from a Naive UI checkout
+cd tools && npm install && npm run extract            # NAIVE_UI_SRC=/path/to/naive-ui
 ```
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the component conventions.

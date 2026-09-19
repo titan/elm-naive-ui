@@ -1,9 +1,7 @@
 module NUI.Theme.Radio exposing (Vars, vars)
 
-
 {-| Naive UI radio theme variables.
 -}
-
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)

@@ -1,9 +1,7 @@
 module NUI.Theme.Alert exposing (Vars, vars)
 
-
 {-| Naive UI alert theme variables.
 -}
-
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)

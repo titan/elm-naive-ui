@@ -98,14 +98,27 @@ src/<comp>/demos/enUS/*.md         usage examples
 ## Building & verifying
 
 ```bash
-# library
+# everything (installs packages if needed)
+ELM_HOME=/tmp/elm-home ./scripts/verify.sh
+```
+
+That runs, in order:
+
+1.  `tools/verify/check-classes.mjs` — every `n-*` class a component emits exists in the
+    extracted stylesheet (static; catches typos).
+2.  `elm make` — the library compiles.
+3.  `elm make src/Main.elm` — the example page compiles.
+4.  `tools/verify/check-dom.mjs` — renders the example in jsdom and asserts each component
+    root has `flex-basis: auto` (the bridge works) and carries its `--n-*` variables.
+5.  `tests/run.sh` — 89 assertions over theme maths, `cssVars`, and live DOM output.
+6.  `elm-format --validate`.
+
+```bash
+# library only
 ELM_HOME=/tmp/elm-home elm make
 
 # example page
 cd examples && ELM_HOME=/tmp/elm-home elm make src/Main.elm --output=index.html
-
-# DOM/style inspection (jsdom implements the CSS cascade)
-node tools/verify/jsdom-inspect.mjs examples/index.html .n-button
 ```
 
 `ELM_HOME` must point at a directory with the packages pre-installed; see

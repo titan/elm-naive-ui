@@ -1,9 +1,7 @@
 module NUI.Theme.Card exposing (Vars, vars)
 
-
 {-| Naive UI card theme variables.
 -}
-
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)

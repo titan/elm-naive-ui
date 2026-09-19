@@ -1,9 +1,7 @@
 module NUI.Theme.Tag exposing (Vars, vars)
 
-
 {-| Naive UI tag theme variables.
 -}
-
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)

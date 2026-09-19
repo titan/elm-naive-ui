@@ -1,9 +1,7 @@
 module NUI.Theme.Switch exposing (Vars, vars)
 
-
 {-| Naive UI switch theme variables.
 -}
-
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)

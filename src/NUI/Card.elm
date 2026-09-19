@@ -28,10 +28,10 @@ module NUI.Card exposing
 The visual result is Naive UI's own: the element carries the `.n-card` BEM classes and
 Naive UI's `--n-*` custom properties, and `NUI.Css` ships Naive UI's exact CSS.
 
-__Sizes.__ Naive UI's card takes `small | medium | large | huge`, which does not match
+**Sizes.** Naive UI's card takes `small | medium | large | huge`, which does not match
 `NUI.Types.Size` (`tiny … large`), so this module defines its own `CardSize`.
 
-__Closable.__ The close button is Naive UI's internal `n-base-close`. Its stylesheet is
+**Closable.** The close button is Naive UI's internal `n-base-close`. Its stylesheet is
 not part of the generated CSS yet, so its structural rules are ported inline here
 (`:hover` / `:active` colour shifts cannot be inlined and are currently missing).
 

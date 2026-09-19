@@ -1,9 +1,7 @@
 module NUI.Theme.Divider exposing (Vars, vars)
 
-
 {-| Naive UI divider theme variables.
 -}
-
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)

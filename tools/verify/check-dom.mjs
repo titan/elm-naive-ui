@@ -1,0 +1,72 @@
+// Cross-component DOM verification.
+//
+// Loads a built Elm page in jsdom (which implements a CSS cascade) and checks, for
+// every Naive UI component root, that the bridge works:
+//   - the root exists and is rendered
+//   - `flex-basis` is `auto` (elm-ui's `.s.r > .s { flex-basis: 0% }` was beaten)
+//   - themed components carry inline `--n-*` custom properties
+//
+// Usage: node tools/verify/check-dom.mjs [examples/index.html]
+import { JSDOM } from 'jsdom'
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const here = path.dirname(fileURLToPath(import.meta.url))
+const root = path.resolve(here, '..', '..')
+const htmlPath = process.argv[2] || path.join(root, 'examples', 'index.html')
+
+// selector -> [needs --n-* vars?]
+const targets = {
+  '.n-button': true,
+  '.n-input': true,
+  '.n-card': true,
+  '.n-tag': true,
+  '.n-alert': true,
+  '.n-checkbox': true,
+  '.n-switch': true,
+  '.n-radio': true,
+  '.n-divider': false,
+  '.n-text': true,
+  '.n-h1': true,
+  '.n-avatar': true,
+  '.n-space': false
+}
+
+const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {
+  runScripts: 'dangerously',
+  pretendToBeVisual: true,
+  resources: 'usable'
+})
+const { window } = dom
+await new Promise(r => setTimeout(r, 700))
+
+let failures = 0
+const rows = []
+for (const [sel, needsVars] of Object.entries(targets)) {
+  const el = window.document.querySelector(sel)
+  if (!el) {
+    rows.push([sel, 'MISSING', '-', '-'])
+    failures++
+    continue
+  }
+  const cs = window.getComputedStyle(el)
+  const inline = el.getAttribute('style') || ''
+  const flexBasis = cs.flexBasis
+  const hasVars = inline.includes('--n-')
+  const ok = flexBasis === 'auto' && (!needsVars || hasVars)
+  if (!ok) failures++
+  rows.push([
+    sel,
+    ok ? 'ok' : 'FAIL',
+    `flexBasis=${flexBasis}`,
+    needsVars ? `--n-*:${hasVars ? 'yes' : 'NO'}` : '--n-*:n/a'
+  ])
+}
+
+const w = Math.max(...rows.map(r => r[0].length))
+for (const [sel, status, a, b] of rows) {
+  console.log(`${sel.padEnd(w)}  ${status.padEnd(7)} ${a.padEnd(18)} ${b}`)
+}
+console.log(`\n${rows.length} components checked, ${failures} failure(s)`)
+process.exit(failures === 0 ? 0 : 1)

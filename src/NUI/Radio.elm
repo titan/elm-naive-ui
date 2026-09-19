@@ -126,10 +126,10 @@ view theme opts children =
             RadioTheme.vars theme
 
         {- The `&nbsp;` gives the wrapper its height, exactly as in Naive UI's
-               render. Raw text (not `Element.text`) so it inherits this
-               element's line-height instead of elm-ui's forced `line-height: 1`
-               — which only matches Naive UI for string labels, so the inline
-               line-height below is attached in that case only.
+           render. Raw text (not `Element.text`) so it inherits this
+           element's line-height instead of elm-ui's forced `line-height: 1`
+           — which only matches Naive UI for string labels, so the inline
+           line-height below is attached in that case only.
         -}
         stringLabel =
             List.isEmpty children && opts.label /= Nothing
@@ -192,7 +192,8 @@ group theme opts choices =
             opts.value == Just c.value
 
         {- Naive UI's splitor priority (checked beats enabled beats rest),
-           computed from the raw choice props just like `mapSlot` does. -}
+           computed from the raw choice props just like `mapSlot` does.
+        -}
         splitorBetween a b =
             let
                 priority c =
@@ -374,7 +375,8 @@ groupCssVars theme v size =
     ]
 
 
-{-| Naive UI's radio scale has no tiny step; it clamps to small. -}
+{-| Naive UI's radio scale has no tiny step; it clamps to small.
+-}
 fontSizeOf : Size -> RadioTheme.Vars -> String
 fontSizeOf size v =
     case size of
