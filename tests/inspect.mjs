@@ -1313,6 +1313,173 @@ dTrue(
   'ok'
 )
 
+// Collapse -------------------------------------------------------------------
+const collapse = doc.querySelector('#live-collapse .n-collapse')
+dTrue(
+  'DOM: Collapse renders .n-collapse',
+  !!collapse && collapse.classList.contains('n-collapse'),
+  collapse ? collapse.getAttribute('class') : 'missing'
+)
+const collapseActive = doc.querySelector('#live-collapse .n-collapse-item--active')
+dTrue(
+  'DOM: Collapse expanded item is --active with --trigger-area-main',
+  !!collapseActive &&
+    collapseActive.classList.contains('n-collapse-item--active') &&
+    collapseActive.classList.contains('n-collapse-item--trigger-area-main'),
+  collapseActive ? collapseActive.getAttribute('class') : 'missing'
+)
+const collapseDisabled = doc.querySelector('#live-collapse .n-collapse-item--disabled')
+dTrue(
+  'DOM: Collapse disabled item is --disabled',
+  !!collapseDisabled && collapseDisabled.classList.contains('n-collapse-item--disabled'),
+  collapseDisabled ? collapseDisabled.getAttribute('class') : 'missing'
+)
+const collapseHeaderActive = doc.querySelector('#live-collapse .n-collapse-item__header--active')
+dTrue(
+  'DOM: Collapse expanded header is .n-collapse-item__header--active',
+  !!collapseHeaderActive,
+  collapseHeaderActive ? collapseHeaderActive.getAttribute('class') : 'missing'
+)
+dEq(
+  'DOM: Collapse expanded item renders its content wrapper',
+  1,
+  doc.querySelectorAll('#live-collapse .n-collapse-item--active .n-collapse-item__content-wrapper')
+    .length
+)
+dEq(
+  'DOM: Collapse collapsed item omits content wrapper under IfContent',
+  0,
+  doc.querySelectorAll('#live-collapse .n-collapse-item--disabled .n-collapse-item__content-wrapper')
+    .length
+)
+dEq(
+  'DOM: Collapse ShowContent keeps the collapsed wrapper mounted',
+  1,
+  doc.querySelectorAll('#live-collapse-show .n-collapse-item__content-wrapper').length
+)
+const collapseShowWrapper = doc.querySelector('#live-collapse-show .n-collapse-item__content-wrapper')
+dTrue(
+  'DOM: Collapse ShowContent collapsed wrapper is display:none',
+  !!collapseShowWrapper &&
+    (collapseShowWrapper.getAttribute('style') || '').includes('display:none'),
+  collapseShowWrapper ? collapseShowWrapper.getAttribute('style') : 'missing'
+)
+const collapseArrow = doc.querySelector('#live-collapse .n-collapse-item-arrow .n-base-icon svg')
+dEq(
+  'DOM: Collapse default chevron svg viewBox 0 0 16 16',
+  '0 0 16 16',
+  collapseArrow ? collapseArrow.getAttribute('viewBox') : null
+)
+const collapseRtl = doc.querySelector('#live-collapse-rtl .n-collapse')
+dTrue(
+  'DOM: Collapse rtl adds .n-collapse--rtl',
+  !!collapseRtl && collapseRtl.classList.contains('n-collapse--rtl'),
+  collapseRtl ? collapseRtl.getAttribute('class') : 'missing'
+)
+
+// Rate -----------------------------------------------------------------------
+const rate = doc.querySelector('#live-rate .n-rate')
+dTrue(
+  'DOM: Rate renders .n-rate',
+  !!rate && rate.classList.contains('n-rate'),
+  rate ? rate.getAttribute('class') : 'missing'
+)
+dEq('DOM: Rate renders 5 items (default count)', 5, doc.querySelectorAll('#live-rate .n-rate__item').length)
+dEq(
+  'DOM: Rate value 4 lights 4 items with .n-rate__item--active',
+  4,
+  doc.querySelectorAll('#live-rate .n-rate__item--active').length
+)
+const rateReadonly = doc.querySelector('#live-rate-readonly .n-rate')
+dTrue(
+  'DOM: Rate readonly adds .n-rate--readonly',
+  !!rateReadonly && rateReadonly.classList.contains('n-rate--readonly'),
+  rateReadonly ? rateReadonly.getAttribute('class') : 'missing'
+)
+const rateHalf = doc.querySelector('#live-rate-half .n-rate__half')
+dTrue(
+  'DOM: Rate allowHalf renders .n-rate__half',
+  !!rateHalf && rateHalf.classList.contains('n-rate__half'),
+  rateHalf ? rateHalf.getAttribute('class') : 'missing'
+)
+const rateStar = doc.querySelector('#live-rate .n-rate__item .n-base-icon svg')
+dEq(
+  'DOM: Rate star svg viewBox 0 0 512 512',
+  '0 0 512 512',
+  rateStar ? rateStar.getAttribute('viewBox') : null
+)
+
+// FloatButton ----------------------------------------------------------------
+const fb = doc.querySelector('#live-float-button .n-float-button')
+dTrue(
+  'DOM: FloatButton renders .n-float-button--circle-shape.n-float-button--default-type',
+  !!fb &&
+    fb.classList.contains('n-float-button') &&
+    fb.classList.contains('n-float-button--circle-shape') &&
+    fb.classList.contains('n-float-button--default-type'),
+  fb ? fb.getAttribute('class') : 'missing'
+)
+const fbStyle = fb ? fb.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: FloatButton inline style carries position/width/min-height',
+  fbStyle.includes('position:fixed') &&
+    fbStyle.includes('width:40px') &&
+    fbStyle.includes('min-height:40px'),
+  fbStyle
+)
+dTrue('DOM: FloatButton default --n-color = popoverColor', fbStyle.includes('--n-color:#fff'), fbStyle)
+dTrue(
+  'DOM: FloatButton carries __fill + __body',
+  !!doc.querySelector('#live-float-button .n-float-button__fill') &&
+    !!doc.querySelector('#live-float-button .n-float-button__body'),
+  'ok'
+)
+dEq(
+  'DOM: FloatButton without menuTrigger omits __close/__menu',
+  0,
+  doc.querySelectorAll(
+    '#live-float-button .n-float-button__close, #live-float-button .n-float-button__menu'
+  ).length
+)
+const fbSquare = doc.querySelector('#live-float-button-square .n-float-button')
+dTrue(
+  'DOM: FloatButton square/primary renders --square-shape.--primary-type',
+  !!fbSquare &&
+    fbSquare.classList.contains('n-float-button--square-shape') &&
+    fbSquare.classList.contains('n-float-button--primary-type'),
+  fbSquare ? fbSquare.getAttribute('class') : 'missing'
+)
+const fbSquareStyle = fbSquare ? fbSquare.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: FloatButton primary --n-color = primaryColor #18a058',
+  fbSquareStyle.includes('--n-color:#18a058'),
+  fbSquareStyle
+)
+const fbMenu = doc.querySelector('#live-float-button-menu .n-float-button')
+dTrue(
+  'DOM: FloatButton showMenu adds .n-float-button--show-menu',
+  !!fbMenu && fbMenu.classList.contains('n-float-button--show-menu'),
+  fbMenu ? fbMenu.getAttribute('class') : 'missing'
+)
+dTrue(
+  'DOM: FloatButton menuTrigger renders __close + __menu',
+  !!doc.querySelector('#live-float-button-menu .n-float-button__close') &&
+    !!doc.querySelector('#live-float-button-menu .n-float-button__menu'),
+  'ok'
+)
+const fbWidth = doc.querySelector('#live-float-button-width .n-float-button')
+dTrue(
+  'DOM: FloatButton Custom "40" formats to width:40px',
+  !!fbWidth && (fbWidth.getAttribute('style') || '').includes('width:40px'),
+  fbWidth ? fbWidth.getAttribute('style') : 'missing'
+)
+const fbPercent = doc.querySelector('#live-float-button-percent .n-float-button')
+dTrue(
+  'DOM: FloatButton Custom "50%" passes through as width:50%',
+  !!fbPercent && (fbPercent.getAttribute('style') || '').includes('width:50%'),
+  fbPercent ? fbPercent.getAttribute('style') : 'missing'
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
