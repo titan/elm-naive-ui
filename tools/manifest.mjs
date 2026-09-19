@@ -8,6 +8,21 @@ export const components = {
     cssr: ['_styles/global/index.cssr.ts'],
     theme: null
   },
+  internal: {
+    cssr: [
+      '_internal/clear/src/styles/index.cssr.ts',
+      '_internal/close/src/styles/index.cssr.ts',
+      '_internal/icon/src/styles/index.cssr.ts',
+      '_internal/loading/src/styles/index.cssr.ts',
+      '_internal/menu-mask/src/styles/index.cssr.ts',
+      '_internal/scrollbar/src/styles/index.cssr.ts',
+      '_internal/select-menu/src/styles/index.cssr.ts',
+      '_internal/selection/src/styles/index.cssr.ts',
+      '_internal/slot-machine/src/styles/index.cssr.ts',
+      '_internal/wave/src/styles/index.cssr.ts'
+    ],
+    theme: null
+  },
   button: {
     cssr: ['button/src/styles/index.cssr.ts'],
     theme: 'button/styles/light.ts'

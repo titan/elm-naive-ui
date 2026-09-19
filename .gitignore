@@ -1,6 +1,5 @@
+.elm-home/
 elm-stuff/
-node_modules/
-.elm-home/
 *.log
+.nca/
 node_modules/
-.elm-home/

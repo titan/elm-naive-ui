@@ -154,7 +154,7 @@ view theme opts children =
         , I.cssVars (cssVars theme v opts.kind)
         , Element.htmlAttribute (HA.attribute "role" "alert")
         ]
-        (internalStyles :: closeEl ++ borderEl ++ iconEl ++ [ bodyEl ])
+        (closeEl ++ borderEl ++ iconEl ++ [ bodyEl ])
 
 
 cssVars : Theme -> AlertTheme.Vars -> Kind -> List ( String, String )
@@ -397,48 +397,3 @@ closePath =
 
 
 
--- INTERNAL STYLES
-
-
-{-| Two pieces of Naive UI CSS that the extracted `css/naive-ui.css` does not carry,
-because they belong to internal (`_internal/`) components rather than to a public
-component: `.n-base-close` (the closable button) and `.n-base-icon` (the icon
-wrapper). They are ported verbatim from
-
-  - `src/_internal/close/src/styles/index.cssr.ts`
-  - `src/_internal/icon/src/styles/index.cssr.ts`
-
-and scoped `.nui-root.nui-root` like the generated stylesheet, so the alert renders
-exactly like Naive UI's. Rendered as a `<style>` node (not a layout element), once
-per alert. Move these into the central extraction when `tools/` learns to collect
-`_internal` cssr.
-
-The last rule bridges an elm-ui conflict: elm-ui's `.s` class sets `line-height: 1`
-on every element wrapper, which would override the line-height Naive UI declares on
-`.n-alert` for everything below it (body, title, content, text runs). Restoring
-`inherit` keeps Naive UI's `var(--n-line-height)` chain; the title keeps its own
-`19px` from the generated stylesheet, which is more specific.
-
--}
-internalStyles : Element msg
-internalStyles =
-    Element.html
-        (Html.node "style"
-            []
-            [ Html.text """
-.nui-root.nui-root .n-base-close{display:flex;align-items:center;justify-content:center;cursor:pointer;background-color:transparent;color:var(--n-close-icon-color);border-radius:var(--n-close-border-radius);height:var(--n-close-size);width:var(--n-close-size);font-size:var(--n-close-icon-size);outline:none;border:none;position:relative;padding:0;}
-.nui-root.nui-root .n-base-close--absolute{height:var(--n-close-icon-size);width:var(--n-close-icon-size);}
-.nui-root.nui-root .n-base-close::before{content:"";position:absolute;width:var(--n-close-size);height:var(--n-close-size);left:50%;top:50%;transform:translateY(-50%) translateX(-50%);transition:inherit;border-radius:inherit;}
-.nui-root.nui-root .n-base-close:not(.n-base-close--disabled):hover{color:var(--n-close-icon-color-hover);}
-.nui-root.nui-root .n-base-close:not(.n-base-close--disabled):hover::before{background-color:var(--n-close-color-hover);}
-.nui-root.nui-root .n-base-close:not(.n-base-close--disabled):focus::before{background-color:var(--n-close-color-hover);}
-.nui-root.nui-root .n-base-close:not(.n-base-close--disabled):active{color:var(--n-close-icon-color-pressed);}
-.nui-root.nui-root .n-base-close:not(.n-base-close--disabled):active::before{background-color:var(--n-close-color-pressed);}
-.nui-root.nui-root .n-base-close--disabled{cursor:not-allowed;color:var(--n-close-icon-color-disabled);background-color:transparent;}
-.nui-root.nui-root .n-base-close--round::before{border-radius:50%;}
-.nui-root.nui-root .n-base-icon{height:1em;width:1em;line-height:1em;text-align:center;display:inline-block;position:relative;fill:currentColor;}
-.nui-root.nui-root .n-base-icon svg{height:1em;width:1em;}
-.nui-root.nui-root .n-alert .s{line-height:inherit;}
-"""
-            ]
-        )
