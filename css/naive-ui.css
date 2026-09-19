@@ -2791,6 +2791,213 @@ border-radius: 4px;}.nui-root.nui-root .n-badge .n-badge-sup {
       text-align: center;
       font-size: var(--n-font-size);}
 
+/* ===== naive-ui: gradient-text ===== */
+.nui-root.nui-root .n-gradient-text {
+
+  display: inline-block;
+  font-weight: var(--n-font-weight);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: #0000;
+  white-space: nowrap;
+  background-image: linear-gradient(var(--n-rotate), var(--n-color-start) 0%, var(--n-color-end) 100%);
+  transition:
+    --n-color-start .3s var(--n-bezier),
+    --n-color-end .3s var(--n-bezier);}
+
+/* ===== naive-ui: statistic ===== */
+.nui-root.nui-root .n-statistic .n-statistic__label {
+
+    font-weight: var(--n-label-font-weight);
+    transition: .3s color var(--n-bezier);
+    font-size: var(--n-label-font-size);
+    color: var(--n-label-text-color);}.nui-root.nui-root .n-statistic .n-statistic-value {
+
+    margin-top: 4px;
+    font-weight: var(--n-value-font-weight);}.nui-root.nui-root .n-statistic .n-statistic-value .n-statistic-value__prefix {
+
+      margin: 0 4px 0 0;
+      font-size: var(--n-value-font-size);
+      transition: .3s color var(--n-bezier);
+      color: var(--n-value-prefix-text-color);}.nui-root.nui-root .n-statistic .n-statistic-value .n-statistic-value__prefix .n-icon {
+  vertical-align: -0.125em;}.nui-root.nui-root .n-statistic .n-statistic-value .n-statistic-value__content {
+
+      font-size: var(--n-value-font-size);
+      transition: .3s color var(--n-bezier);
+      color: var(--n-value-text-color);}.nui-root.nui-root .n-statistic .n-statistic-value .n-statistic-value__suffix {
+
+      margin: 0 0 0 4px;
+      font-size: var(--n-value-font-size);
+      transition: .3s color var(--n-bezier);
+      color: var(--n-value-suffix-text-color);}.nui-root.nui-root .n-statistic .n-statistic-value .n-statistic-value__suffix .n-icon {
+  vertical-align: -0.125em;}.nui-root.nui-root .n-statistic.n-statistic--rtl {
+
+    direction: rtl;
+    text-align: right;}.nui-root.nui-root .n-statistic.n-statistic--rtl .n-statistic-value .n-statistic-value__prefix {
+
+        margin: 0 0 0 4px;}.nui-root.nui-root .n-statistic.n-statistic--rtl .n-statistic-value .n-statistic-value__suffix {
+
+        margin: 0 4px 0 0;}
+
+/* ===== naive-ui: breadcrumb ===== */
+.nui-root.nui-root .n-breadcrumb {
+
+  white-space: nowrap;
+  cursor: default;
+  line-height: var(--n-item-line-height);}.nui-root.nui-root .n-breadcrumb ul {
+
+    list-style: none;
+    padding: 0;
+    margin: 0;}.nui-root.nui-root .n-breadcrumb a {
+
+    color: inherit;
+    text-decoration: inherit;}.nui-root.nui-root .n-breadcrumb .n-breadcrumb-item {
+
+    font-size: var(--n-font-size);
+    transition: color .3s var(--n-bezier);
+    display: inline-flex;
+    align-items: center;}.nui-root.nui-root .n-breadcrumb .n-breadcrumb-item .n-icon {
+
+      font-size: 18px;
+      vertical-align: -.2em;
+      transition: color .3s var(--n-bezier);
+      color: var(--n-item-text-color);}.nui-root.nui-root .n-breadcrumb .n-breadcrumb-item:not(:last-child).n-breadcrumb-item--clickable .n-breadcrumb-item__link {
+
+          cursor: pointer;}.nui-root.nui-root .n-breadcrumb .n-breadcrumb-item:not(:last-child).n-breadcrumb-item--clickable .n-breadcrumb-item__link:hover {
+
+            background-color: var(--n-item-color-hover);}.nui-root.nui-root .n-breadcrumb .n-breadcrumb-item:not(:last-child).n-breadcrumb-item--clickable .n-breadcrumb-item__link:active {
+
+            background-color: var(--n-item-color-pressed);}.nui-root.nui-root .n-breadcrumb .n-breadcrumb-item .n-breadcrumb-item__link {
+
+      padding: 4px;
+      border-radius: var(--n-item-border-radius);
+      transition:
+        background-color .3s var(--n-bezier),
+        color .3s var(--n-bezier);
+      color: var(--n-item-text-color);
+      position: relative;}.nui-root.nui-root .n-breadcrumb .n-breadcrumb-item .n-breadcrumb-item__link:hover {
+
+        color: var(--n-item-text-color-hover);}.nui-root.nui-root .n-breadcrumb .n-breadcrumb-item .n-breadcrumb-item__link:hover .n-icon {
+
+          color: var(--n-item-text-color-hover);}.nui-root.nui-root .n-breadcrumb .n-breadcrumb-item .n-breadcrumb-item__link:active {
+
+        color: var(--n-item-text-color-pressed);}.nui-root.nui-root .n-breadcrumb .n-breadcrumb-item .n-breadcrumb-item__link:active .n-icon {
+
+          color: var(--n-item-text-color-pressed);}.nui-root.nui-root .n-breadcrumb .n-breadcrumb-item .n-breadcrumb-item__separator {
+
+      margin: 0 8px;
+      color: var(--n-separator-color);
+      transition: color .3s var(--n-bezier);
+      user-select: none;
+      -webkit-user-select: none;}.nui-root.nui-root .n-breadcrumb .n-breadcrumb-item:last-child .n-breadcrumb-item__link {
+
+        font-weight: var(--n-font-weight-active);
+        cursor: unset;
+        color: var(--n-item-text-color-active);}.nui-root.nui-root .n-breadcrumb .n-breadcrumb-item:last-child .n-breadcrumb-item__link .n-icon {
+
+          color: var(--n-item-text-color-active);}.nui-root.nui-root .n-breadcrumb .n-breadcrumb-item:last-child .n-breadcrumb-item__separator {
+
+        display: none;}
+
+/* ===== naive-ui: timeline ===== */
+.nui-root.nui-root .n-timeline {
+
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;}.nui-root.nui-root .n-timeline.n-timeline--horizontal {
+
+    flex-direction: row;}.nui-root.nui-root .n-timeline.n-timeline--horizontal > .n-timeline-item {
+
+        flex-shrink: 0;
+        padding-right: 40px;}.nui-root.nui-root .n-timeline.n-timeline--horizontal > .n-timeline-item.n-timeline-item--dashed-line-type > .n-timeline-item-timeline .n-timeline-item-timeline__line {
+
+                background-image: linear-gradient(90deg, var(--n-color-start), var(--n-color-start) 50%, transparent 50%, transparent 100%);
+                background-size: 10px 1px;}.nui-root.nui-root .n-timeline.n-timeline--horizontal > .n-timeline-item > .n-timeline-item-content {
+
+          margin-top: calc(var(--n-icon-size) + 12px);}.nui-root.nui-root .n-timeline.n-timeline--horizontal > .n-timeline-item > .n-timeline-item-content > .n-timeline-item-content__meta {
+
+                margin-top: 6px;
+                margin-bottom: unset;}.nui-root.nui-root .n-timeline.n-timeline--horizontal > .n-timeline-item > .n-timeline-item-timeline {
+
+            width: 100%;
+            height: calc(var(--n-icon-size) + 12px);}.nui-root.nui-root .n-timeline.n-timeline--horizontal > .n-timeline-item > .n-timeline-item-timeline .n-timeline-item-timeline__line {
+
+              left: var(--n-icon-size);
+              top: calc(var(--n-icon-size) / 2 - 1px);
+              right: 0px;
+              width: unset;
+              height: 2px;}.nui-root.nui-root .n-timeline.n-timeline--right-placement .n-timeline-item .n-timeline-item-content {
+
+        text-align: right;
+        margin-right: calc(var(--n-icon-size) + 12px);}.nui-root.nui-root .n-timeline.n-timeline--right-placement .n-timeline-item .n-timeline-item-timeline {
+
+        width: var(--n-icon-size);
+        right: 0;}.nui-root.nui-root .n-timeline.n-timeline--left-placement .n-timeline-item .n-timeline-item-content {
+
+        margin-left: calc(var(--n-icon-size) + 12px);}.nui-root.nui-root .n-timeline.n-timeline--left-placement .n-timeline-item .n-timeline-item-timeline {
+
+        left: 0;}.nui-root.nui-root .n-timeline .n-timeline-item {
+
+    position: relative;}.nui-root.nui-root .n-timeline .n-timeline-item:last-child .n-timeline-item-timeline .n-timeline-item-timeline__line {
+
+          display: none;}.nui-root.nui-root .n-timeline .n-timeline-item:last-child .n-timeline-item-content .n-timeline-item-content__meta {
+
+          margin-bottom: 0;}.nui-root.nui-root .n-timeline .n-timeline-item .n-timeline-item-content .n-timeline-item-content__title {
+
+        margin: var(--n-title-margin);
+        font-size: var(--n-title-font-size);
+        transition: color .3s var(--n-bezier);
+        font-weight: var(--n-title-font-weight);
+        color: var(--n-title-text-color);}.nui-root.nui-root .n-timeline .n-timeline-item .n-timeline-item-content .n-timeline-item-content__content {
+
+        transition: color .3s var(--n-bezier);
+        font-size: var(--n-content-font-size);
+        color: var(--n-content-text-color);}.nui-root.nui-root .n-timeline .n-timeline-item .n-timeline-item-content .n-timeline-item-content__meta {
+
+        transition: color .3s var(--n-bezier);
+        font-size: 12px;
+        margin-top: 6px;
+        margin-bottom: 20px;
+        color: var(--n-meta-text-color);}.nui-root.nui-root .n-timeline .n-timeline-item.n-timeline-item--dashed-line-type .n-timeline-item-timeline .n-timeline-item-timeline__line {
+
+          --n-color-start: var(--n-line-color);
+          transition: --n-color-start .3s var(--n-bezier);
+          background-color: transparent;
+          background-image: linear-gradient(180deg, var(--n-color-start), var(--n-color-start) 50%, transparent 50%, transparent 100%);
+          background-size: 1px 10px;}.nui-root.nui-root .n-timeline .n-timeline-item .n-timeline-item-timeline {
+
+      width: calc(var(--n-icon-size) + 12px);
+      position: absolute;
+      top: calc(var(--n-title-font-size) * 1.25 / 2 - var(--n-icon-size) / 2);
+      height: 100%;}.nui-root.nui-root .n-timeline .n-timeline-item .n-timeline-item-timeline .n-timeline-item-timeline__circle {
+
+        border: var(--n-circle-border);
+        transition:
+          background-color .3s var(--n-bezier),
+          border-color .3s var(--n-bezier);
+        width: var(--n-icon-size);
+        height: var(--n-icon-size);
+        border-radius: var(--n-icon-size);
+        box-sizing: border-box;}.nui-root.nui-root .n-timeline .n-timeline-item .n-timeline-item-timeline .n-timeline-item-timeline__icon {
+
+        color: var(--n-icon-color);
+        font-size: var(--n-icon-size);
+        height: var(--n-icon-size);
+        width: var(--n-icon-size);
+        display: flex;
+        align-items: center;
+        justify-content: center;}.nui-root.nui-root .n-timeline .n-timeline-item .n-timeline-item-timeline .n-timeline-item-timeline__line {
+
+        transition: background-color .3s var(--n-bezier);
+        position: absolute;
+        top: var(--n-icon-size);
+        left: calc(var(--n-icon-size) / 2 - 1px);
+        bottom: 0px;
+        width: 2px;
+        background-color: var(--n-line-color);}
+
 /* ===== elm-ui bridge =====
  *
  * Components are built from elm-ui elements, and elm-ui styles its own helper classes

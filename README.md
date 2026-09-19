@@ -71,12 +71,14 @@ bridge, tests).
 | `NUI.Avatar`      | ✅ |
 | `NUI.AvatarGroup` | ✅ |
 | `NUI.Badge`       | ✅ |
+| `NUI.Breadcrumb`  | ✅ |
 | `NUI.Button`      | ✅ |
 | `NUI.ButtonGroup` | ✅ |
 | `NUI.Card`        | ✅ |
 | `NUI.Checkbox`    | ✅ |
 | `NUI.Divider`     | ✅ |
 | `NUI.Empty`       | ✅ |
+| `NUI.GradientText`| ✅ |
 | `NUI.Input`       | ✅ |
 | `NUI.Progress`    | ✅ |
 | `NUI.Radio`       | ✅ |
@@ -84,8 +86,10 @@ bridge, tests).
 | `NUI.Skeleton`    | ✅ |
 | `NUI.Space`       | ✅ |
 | `NUI.Spin`        | ✅ |
+| `NUI.Statistic`   | ✅ |
 | `NUI.Switch`      | ✅ |
 | `NUI.Tag`         | ✅ |
+| `NUI.Timeline`    | ✅ |
 | `NUI.Typography`  | ✅ |
 
 Supporting modules: `NUI.Css` (the scoped stylesheet + root marker),

@@ -38,7 +38,11 @@ const targets = {
   '.n-progress': true,
   '.n-result': true,
   '.n-skeleton': true,
-  '.n-spin-container': true
+  '.n-spin-container': true,
+  '.n-gradient-text': true,
+  '.n-statistic': true,
+  '.n-breadcrumb': true,
+  '.n-timeline': false
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {

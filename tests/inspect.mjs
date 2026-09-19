@@ -925,6 +925,126 @@ dTrue(
   dotBadgeSup ? dotBadgeSup.getAttribute('style') : 'missing'
 )
 
+// GradientText ---------------------------------------------------------------
+const gt = doc.querySelector('#live-gradient-text .n-gradient-text')
+dTrue(
+  'DOM: GradientText renders .n-gradient-text.n-gradient-text--success-type',
+  !!gt &&
+    gt.classList.contains('n-gradient-text') &&
+    gt.classList.contains('n-gradient-text--success-type'),
+  gt ? gt.getAttribute('class') : 'missing'
+)
+const gtStyle = gt ? gt.getAttribute('style') || '' : ''
+dTrue('DOM: GradientText carries --n-rotate:252deg', gtStyle.includes('--n-rotate:252deg'), gtStyle)
+dTrue(
+  'DOM: GradientText Success --n-color-start = success 60%',
+  gtStyle.includes('--n-color-start:rgba(24, 160, 88, 0.6)'),
+  gtStyle
+)
+dTrue(
+  'DOM: GradientText Success --n-color-end = primary',
+  gtStyle.includes('--n-color-end:#18a058'),
+  gtStyle
+)
+
+const gtCustom = doc.querySelector('#live-gradient-custom .n-gradient-text')
+const gtCustomStyle = gtCustom ? gtCustom.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: GradientText custom gradient sets the background-image',
+  gtCustomStyle.includes('background-image:linear-gradient(0deg, #ffffff 0%, #18a058 100%)'),
+  gtCustomStyle
+)
+dTrue(
+  'DOM: GradientText custom size sets font-size:20px',
+  gtCustomStyle.includes('font-size:20px'),
+  gtCustomStyle
+)
+
+// Statistic ------------------------------------------------------------------
+const statRoot = doc.querySelector('#live-statistic .n-statistic')
+const statRootStyle = statRoot ? statRoot.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: Statistic carries --n-value-font-size:24px',
+  statRootStyle.includes('--n-value-font-size:24px'),
+  statRootStyle
+)
+const statLabel = doc.querySelector('#live-statistic .n-statistic__label')
+dEq('DOM: Statistic label renders text', 'Active', statLabel ? statLabel.textContent : null)
+const statPrefix = doc.querySelector('#live-statistic .n-statistic-value__prefix')
+dEq('DOM: Statistic prefix renders $', '$', statPrefix ? statPrefix.textContent : null)
+const statContent = doc.querySelector('#live-statistic .n-statistic-value__content')
+dEq('DOM: Statistic content renders the value', '128', statContent ? statContent.textContent : null)
+const statValue = doc.querySelector('#live-statistic .n-statistic-value')
+dTrue(
+  'DOM: Statistic value div carries no --n-* (vars live on the root)',
+  !(statValue ? statValue.getAttribute('style') || '' : '').includes('--n-'),
+  statValue ? statValue.getAttribute('style') : 'missing'
+)
+
+// Breadcrumb -----------------------------------------------------------------
+const bc = doc.querySelector('#live-breadcrumb .n-breadcrumb')
+dTrue(
+  'DOM: Breadcrumb renders .n-breadcrumb[aria-label=Breadcrumb]',
+  !!bc && bc.classList.contains('n-breadcrumb') && bc.getAttribute('aria-label') === 'Breadcrumb',
+  bc ? bc.getAttribute('class') : 'missing'
+)
+const bcStyle = bc ? bc.getAttribute('style') || '' : ''
+dTrue('DOM: Breadcrumb --n-item-line-height:1.25', bcStyle.includes('--n-item-line-height:1.25'), bcStyle)
+const bcItems = doc.querySelectorAll('#live-breadcrumb .n-breadcrumb-item')
+dEq('DOM: Breadcrumb renders 3 items', 3, bcItems.length)
+const bcLink = doc.querySelector('#live-breadcrumb .n-breadcrumb-item a.n-breadcrumb-item__link')
+dEq('DOM: Breadcrumb href item renders an <a> with href', '/', bcLink ? bcLink.getAttribute('href') : null)
+const bcSeps = doc.querySelectorAll('#live-breadcrumb .n-breadcrumb-item__separator')
+dEq('DOM: Breadcrumb renders one separator per item', 3, bcSeps.length)
+dEq('DOM: Breadcrumb separator text is "/"', '/', bcSeps[0] ? bcSeps[0].textContent : null)
+
+// Timeline -------------------------------------------------------------------
+const tl = doc.querySelector('#live-timeline .n-timeline')
+dTrue(
+  'DOM: Timeline renders .n-timeline--medium-size.n-timeline--left-placement',
+  !!tl &&
+    tl.classList.contains('n-timeline') &&
+    tl.classList.contains('n-timeline--medium-size') &&
+    tl.classList.contains('n-timeline--left-placement'),
+  tl ? tl.getAttribute('class') : 'missing'
+)
+dEq('DOM: Timeline renders 3 items', 3, doc.querySelectorAll('#live-timeline .n-timeline-item').length)
+const tlSuccessItem = doc.querySelector('#live-timeline .n-timeline-item--success-type')
+dTrue(
+  'DOM: Timeline success item --n-circle-border = 2px solid #18a058',
+  !!tlSuccessItem &&
+    (tlSuccessItem.getAttribute('style') || '').includes('--n-circle-border:2px solid #18a058'),
+  tlSuccessItem ? tlSuccessItem.getAttribute('style') : 'missing'
+)
+const tlTitle = doc.querySelector('#live-timeline .n-timeline-item-content__title')
+dEq('DOM: Timeline item title renders', 'Deployed', tlTitle ? tlTitle.textContent : null)
+const tlMeta = doc.querySelector('#live-timeline .n-timeline-item-content__meta')
+dEq('DOM: Timeline item meta renders the time', '2023-01-01', tlMeta ? tlMeta.textContent : null)
+const tlDashed = doc.querySelector('#live-timeline .n-timeline-item--dashed-line-type')
+dTrue(
+  'DOM: Timeline dashed line-type modifier',
+  !!tlDashed && tlDashed.classList.contains('n-timeline-item--dashed-line-type'),
+  tlDashed ? tlDashed.getAttribute('class') : 'missing'
+)
+const tlCircle = doc.querySelector(
+  '#live-timeline .n-timeline-item--dashed-line-type .n-timeline-item-timeline__circle'
+)
+dTrue(
+  'DOM: Timeline custom color sets the circle border-color',
+  !!tlCircle && (tlCircle.getAttribute('style') || '').includes('border-color:#d03050'),
+  tlCircle ? tlCircle.getAttribute('style') : 'missing'
+)
+const tlLarge = doc.querySelector('#live-timeline-large .n-timeline')
+const tlLargeItem = doc.querySelector('#live-timeline-large .n-timeline-item')
+dTrue(
+  'DOM: Timeline Large size + iconSize 20',
+  !!tlLarge &&
+    tlLarge.classList.contains('n-timeline--large-size') &&
+    !!tlLargeItem &&
+    (tlLargeItem.getAttribute('style') || '').includes('--n-icon-size:20px'),
+  tlLarge ? tlLarge.getAttribute('class') : 'missing'
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

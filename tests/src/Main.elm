@@ -21,12 +21,14 @@ import NUI.Alert as Alert
 import NUI.Avatar as Avatar
 import NUI.AvatarGroup as AvatarGroup
 import NUI.Badge as Badge
+import NUI.Breadcrumb as Breadcrumb
 import NUI.Button as Button
 import NUI.ButtonGroup as ButtonGroup
 import NUI.Card as Card
 import NUI.Checkbox as Checkbox
 import NUI.Css as Css
 import NUI.Empty as Empty
+import NUI.GradientText as GradientText
 import NUI.Input as Input
 import NUI.Internal as Internal
 import NUI.Progress as Progress
@@ -35,11 +37,13 @@ import NUI.Result as Result
 import NUI.Skeleton as Skeleton
 import NUI.Space as Space
 import NUI.Spin as Spin
+import NUI.Statistic as Statistic
 import NUI.Tag as Tag
 import NUI.Theme as Theme
 import NUI.Theme.Button as ButtonTheme
 import NUI.Theme.Color as Color
 import NUI.Theme.Tag as TagTheme
+import NUI.Timeline as Timeline
 import NUI.Types as T
 
 
@@ -596,6 +600,85 @@ skeletonLiveOpts =
     { d | text = True, width = Just (Skeleton.Px 120), repeat = 3 }
 
 
+gradientLiveOpts : GradientText.Options msg
+gradientLiveOpts =
+    let
+        d =
+            GradientText.defaults
+    in
+    { d | type_ = GradientText.Success }
+
+
+gradientCustomOpts : GradientText.Options msg
+gradientCustomOpts =
+    let
+        d =
+            GradientText.defaults
+    in
+    { d | gradient = Just (GradientText.fromTo "#ffffff" "#18a058"), size = Just "20px" }
+
+
+statisticLiveOpts : Statistic.Options msg
+statisticLiveOpts =
+    let
+        d =
+            Statistic.defaults
+    in
+    { d | label = Just "Active", value = Just "128", prefix = Just (Element.text "$") }
+
+
+breadcrumbLiveOpts : Breadcrumb.Options msg
+breadcrumbLiveOpts =
+    Breadcrumb.defaults
+
+
+breadcrumbLiveItems : List (Breadcrumb.Item msg)
+breadcrumbLiveItems =
+    let
+        i =
+            Breadcrumb.item
+    in
+    [ { i | href = Just "/", content = [ Element.text "Home" ] }
+    , { i | href = Just "/library", content = [ Element.text "Library" ] }
+    , { i | content = [ Element.text "Data" ] }
+    ]
+
+
+timelineLiveOpts : Timeline.Options msg
+timelineLiveOpts =
+    Timeline.defaults
+
+
+timelineLiveItems : List (Timeline.Item msg)
+timelineLiveItems =
+    let
+        i =
+            Timeline.item
+    in
+    [ { i | time = Just "2023-01-01", content = [ Element.text "Created" ] }
+    , { i
+        | type_ = Timeline.Success
+        , title = Just "Deployed"
+        , time = Just "2023-01-02"
+        , content = [ Element.text "Live." ]
+      }
+    , { i
+        | lineType = Timeline.Dashed
+        , color = Just "#d03050"
+        , content = [ Element.text "Investigating" ]
+      }
+    ]
+
+
+timelineLargeOpts : Timeline.Options msg
+timelineLargeOpts =
+    let
+        d =
+            Timeline.defaults
+    in
+    { d | size = Timeline.Large, iconSize = Just 20 }
+
+
 
 -- CHECKS -----------------------------------------------------------------------
 
@@ -774,6 +857,42 @@ checks =
 
         spinNumberVars =
             Spin.cssVarsFor light { spinD | size = Spin.Number 24 }
+
+        gtD =
+            GradientText.defaults
+
+        gtDefaultVars =
+            GradientText.cssVarsFor light gtD
+
+        gtInfoVars =
+            GradientText.cssVarsFor light { gtD | type_ = GradientText.Info }
+
+        statD =
+            Statistic.defaults
+
+        statDefaultVars =
+            Statistic.cssVarsFor light statD
+
+        bcVars =
+            Breadcrumb.cssVarsFor light
+
+        tlD =
+            Timeline.defaults
+
+        tlItemD =
+            Timeline.item
+
+        tlDefaultVars =
+            Timeline.cssVarsFor light tlD tlItemD
+
+        tlInfoVars =
+            Timeline.cssVarsFor light tlD { tlItemD | type_ = Timeline.Info }
+
+        tlLargeVars =
+            Timeline.cssVarsFor light { tlD | size = Timeline.Large } tlItemD
+
+        tlIconSizeVars =
+            Timeline.cssVarsFor light { tlD | iconSize = Just 20 } tlItemD
     in
     [ -- 1. NUI.Theme -------------------------------------------------------------
       eq "Theme.default == Theme.light" True (Theme.default == Theme.light)
@@ -1021,6 +1140,89 @@ checks =
     , eq "spin cssVarsFor Small --n-size" (Just common.heightSmall) (lookup "--n-size" spinSmallVars)
     , eq "spin cssVarsFor Large --n-size" (Just common.heightLarge) (lookup "--n-size" spinLargeVars)
     , eq "spin cssVarsFor Number 24 --n-size" (Just "24px") (lookup "--n-size" spinNumberVars)
+
+    -- 14. NUI.GradientText cssVarsFor ------------------------------------------
+    , eq "gradient-text cssVarsFor has 5 vars" 5 (List.length gtDefaultVars)
+    , eq "gradient-text cssVarsFor exact --n-* names"
+        [ "--n-bezier", "--n-rotate", "--n-color-start", "--n-color-end", "--n-font-weight" ]
+        (varKeys gtDefaultVars)
+    , eq "gradient-text default --n-color-start (primary 60%)" (Just "rgba(24, 160, 88, 0.6)") (lookup "--n-color-start" gtDefaultVars)
+    , eq "gradient-text default --n-color-end (primary)" (Just "#18a058") (lookup "--n-color-end" gtDefaultVars)
+    , eq "gradient-text --n-rotate" (Just "252deg") (lookup "--n-rotate" gtDefaultVars)
+    , eq "gradient-text --n-font-weight = strong" (Just common.fontWeightStrong) (lookup "--n-font-weight" gtDefaultVars)
+    , eq "gradient-text --n-bezier" (Just common.cubicBezierEaseInOut) (lookup "--n-bezier" gtDefaultVars)
+    , eq "gradient-text Info --n-color-start" (Just "rgba(32, 128, 240, 0.6)") (lookup "--n-color-start" gtInfoVars)
+    , eq "gradient-text Info --n-color-end" (Just "#2080f0") (lookup "--n-color-end" gtInfoVars)
+
+    -- 15. NUI.Statistic cssVarsFor ----------------------------------------------
+    , eq "statistic cssVarsFor has 9 vars" 9 (List.length statDefaultVars)
+    , eq "statistic cssVarsFor exact --n-* names"
+        [ "--n-bezier"
+        , "--n-label-font-size"
+        , "--n-label-font-weight"
+        , "--n-label-text-color"
+        , "--n-value-font-weight"
+        , "--n-value-font-size"
+        , "--n-value-prefix-text-color"
+        , "--n-value-suffix-text-color"
+        , "--n-value-text-color"
+        ]
+        (varKeys statDefaultVars)
+    , eq "statistic --n-label-font-size" (Just common.fontSize) (lookup "--n-label-font-size" statDefaultVars)
+    , eq "statistic --n-value-font-size" (Just "24px") (lookup "--n-value-font-size" statDefaultVars)
+    , eq "statistic --n-label-text-color" (Just common.textColor3) (lookup "--n-label-text-color" statDefaultVars)
+    , eq "statistic --n-value-text-color" (Just common.textColor2) (lookup "--n-value-text-color" statDefaultVars)
+    , eq "statistic --n-bezier" (Just common.cubicBezierEaseInOut) (lookup "--n-bezier" statDefaultVars)
+
+    -- 16. NUI.Breadcrumb cssVarsFor ---------------------------------------------
+    , eq "breadcrumb cssVarsFor has 12 vars" 12 (List.length bcVars)
+    , eq "breadcrumb cssVarsFor exact --n-* names"
+        [ "--n-font-size"
+        , "--n-bezier"
+        , "--n-item-text-color"
+        , "--n-item-text-color-hover"
+        , "--n-item-text-color-pressed"
+        , "--n-item-text-color-active"
+        , "--n-separator-color"
+        , "--n-item-color-hover"
+        , "--n-item-color-pressed"
+        , "--n-item-border-radius"
+        , "--n-font-weight-active"
+        , "--n-item-line-height"
+        ]
+        (varKeys bcVars)
+    , eq "breadcrumb --n-item-text-color" (Just common.textColor3) (lookup "--n-item-text-color" bcVars)
+    , eq "breadcrumb --n-item-text-color-active" (Just common.textColor2) (lookup "--n-item-text-color-active" bcVars)
+    , eq "breadcrumb --n-font-weight-active" (Just "400") (lookup "--n-font-weight-active" bcVars)
+    , eq "breadcrumb --n-item-line-height" (Just "1.25") (lookup "--n-item-line-height" bcVars)
+    , eq "breadcrumb --n-bezier" (Just common.cubicBezierEaseInOut) (lookup "--n-bezier" bcVars)
+
+    -- 17. NUI.Timeline cssVarsFor -----------------------------------------------
+    , eq "timeline cssVarsFor has 12 vars" 12 (List.length tlDefaultVars)
+    , eq "timeline cssVarsFor exact --n-* names"
+        [ "--n-bezier"
+        , "--n-circle-border"
+        , "--n-icon-color"
+        , "--n-content-font-size"
+        , "--n-content-text-color"
+        , "--n-line-color"
+        , "--n-meta-text-color"
+        , "--n-title-font-size"
+        , "--n-title-font-weight"
+        , "--n-title-margin"
+        , "--n-title-text-color"
+        , "--n-icon-size"
+        ]
+        (varKeys tlDefaultVars)
+    , eq "timeline --n-circle-border (default)" (Just "2px solid rgb(118, 124, 130)") (lookup "--n-circle-border" tlDefaultVars)
+    , eq "timeline Info --n-circle-border" (Just "2px solid #2080f0") (lookup "--n-circle-border" tlInfoVars)
+    , eq "timeline Info --n-icon-color" (Just "#2080f0") (lookup "--n-icon-color" tlInfoVars)
+    , eq "timeline --n-title-font-size (medium)" (Just common.fontSize) (lookup "--n-title-font-size" tlDefaultVars)
+    , eq "timeline Large --n-title-font-size" (Just common.fontSizeHuge) (lookup "--n-title-font-size" tlLargeVars)
+    , eq "timeline --n-icon-size (medium)" (Just common.fontSize) (lookup "--n-icon-size" tlDefaultVars)
+    , eq "timeline iconSize 20 -> 20px" (Just "20px") (lookup "--n-icon-size" tlIconSizeVars)
+    , eq "timeline --n-title-margin (medium)" (Just "0 0 6px 0") (lookup "--n-title-margin" tlDefaultVars)
+    , eq "timeline --n-line-color = railColor" (Just common.railColor) (lookup "--n-line-color" tlDefaultVars)
     ]
 
 
@@ -1210,6 +1412,18 @@ liveNodes =
                     )
                 , Element.el [ Element.htmlAttribute (HA.id "live-badge-offset") ]
                     (Badge.view Theme.default badgeOffsetOpts [ Element.text "Mail" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-gradient-text") ]
+                    (GradientText.view Theme.default gradientLiveOpts [ Element.text "Wonderful" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-gradient-custom") ]
+                    (GradientText.view Theme.default gradientCustomOpts [ Element.text "Custom" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-statistic") ]
+                    (Statistic.view Theme.default statisticLiveOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-breadcrumb") ]
+                    (Breadcrumb.view Theme.default breadcrumbLiveOpts breadcrumbLiveItems)
+                , Element.el [ Element.htmlAttribute (HA.id "live-timeline") ]
+                    (Timeline.view Theme.default timelineLiveOpts timelineLiveItems)
+                , Element.el [ Element.htmlAttribute (HA.id "live-timeline-large") ]
+                    (Timeline.view Theme.default timelineLargeOpts [ Timeline.item ])
                 ]
             )
         ]

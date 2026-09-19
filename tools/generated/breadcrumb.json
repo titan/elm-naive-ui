@@ -1,0 +1,28 @@
+{
+  "light": {
+    "fontWeightActive": "400",
+    "fontSize": "14px",
+    "itemLineHeight": "1.25",
+    "itemTextColor": "rgb(118, 124, 130)",
+    "itemTextColorHover": "rgb(51, 54, 57)",
+    "itemTextColorPressed": "rgb(51, 54, 57)",
+    "itemTextColorActive": "rgb(51, 54, 57)",
+    "itemBorderRadius": "3px",
+    "itemColorHover": "rgba(46, 51, 56, .09)",
+    "itemColorPressed": "rgba(46, 51, 56, .13)",
+    "separatorColor": "rgb(118, 124, 130)"
+  },
+  "dark": {
+    "fontWeightActive": "400",
+    "fontSize": "14px",
+    "itemLineHeight": "1.25",
+    "itemTextColor": "rgba(255, 255, 255, 0.52)",
+    "itemTextColorHover": "rgba(255, 255, 255, 0.82)",
+    "itemTextColorPressed": "rgba(255, 255, 255, 0.82)",
+    "itemTextColorActive": "rgba(255, 255, 255, 0.82)",
+    "itemBorderRadius": "3px",
+    "itemColorHover": "rgba(255, 255, 255, .12)",
+    "itemColorPressed": "rgba(255, 255, 255, .08)",
+    "separatorColor": "rgba(255, 255, 255, 0.52)"
+  }
+}

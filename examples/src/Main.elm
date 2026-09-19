@@ -11,6 +11,7 @@ import NUI.Alert as Alert
 import NUI.Avatar as Avatar
 import NUI.AvatarGroup as AvatarGroup
 import NUI.Badge as Badge
+import NUI.Breadcrumb as Breadcrumb
 import NUI.Button as Button
 import NUI.ButtonGroup as ButtonGroup
 import NUI.Card as Card
@@ -18,6 +19,7 @@ import NUI.Checkbox as Checkbox
 import NUI.Css as Css
 import NUI.Divider as Divider
 import NUI.Empty as Empty
+import NUI.GradientText as GradientText
 import NUI.Input as Input
 import NUI.Progress as Progress
 import NUI.Radio as Radio
@@ -25,9 +27,11 @@ import NUI.Result as Result
 import NUI.Skeleton as Skeleton
 import NUI.Space as Space
 import NUI.Spin as Spin
+import NUI.Statistic as Statistic
 import NUI.Switch as Switch
 import NUI.Tag as Tag
 import NUI.Theme as Theme exposing (Theme)
+import NUI.Timeline as Timeline
 import NUI.Types as T
 import NUI.Typography as Typo
 
@@ -155,6 +159,36 @@ spinD =
     Spin.defaults
 
 
+gtD : GradientText.Options msg
+gtD =
+    GradientText.defaults
+
+
+statD : Statistic.Options msg
+statD =
+    Statistic.defaults
+
+
+bcD : Breadcrumb.Options msg
+bcD =
+    Breadcrumb.defaults
+
+
+bcItem : Breadcrumb.Item msg
+bcItem =
+    Breadcrumb.item
+
+
+tlD : Timeline.Options msg
+tlD =
+    Timeline.defaults
+
+
+tlItem : Timeline.Item msg
+tlItem =
+    Timeline.item
+
+
 {-| A distinct colour per showcase avatar (the group's slot path uses the
 `src` as a label).
 -}
@@ -234,6 +268,10 @@ body =
     , resultSection
     , skeletonSection
     , spinSection
+    , gradientTextSection
+    , statisticSection
+    , breadcrumbSection
+    , timelineSection
     , rtlSection
     , themeSection
     ]
@@ -788,6 +826,102 @@ spinSection =
                     ]
                 )
             ]
+        ]
+
+
+gradientTextSection : Element msg
+gradientTextSection =
+    section "Gradient Text" "Themed gradient text." <|
+        [ demoRow "Types"
+            (List.map
+                (\t -> GradientText.view theme { gtD | type_ = t } [ Element.text "Wonderful" ])
+                [ GradientText.Primary
+                , GradientText.Info
+                , GradientText.Success
+                , GradientText.Warning
+                , GradientText.Error
+                ]
+            )
+        , demoRow "Custom gradient"
+            [ GradientText.view theme
+                { gtD
+                    | gradient =
+                        Just (GradientText.Raw "linear-gradient(90deg, #d03050, #2080f0)")
+                }
+                [ Element.text "Raw CSS" ]
+            , GradientText.view theme
+                { gtD | gradient = Just (GradientText.fromTo "#18a058" "#2080f0") }
+                [ Element.text "From / To" ]
+            , GradientText.view theme { gtD | size = Just "22px" } [ Element.text "Sized" ]
+            ]
+        ]
+
+
+statisticSection : Element msg
+statisticSection =
+    section "Statistic" "Labelled numeric displays." <|
+        [ demoRow "Basic"
+            [ Statistic.view theme
+                { statD | label = Just "Active users", value = Just "128" }
+                []
+            , Statistic.view theme
+                { statD
+                    | label = Just "Revenue"
+                    , value = Just "1,024"
+                    , prefix = Just (Element.text "$")
+                }
+                []
+            ]
+        , demoRow "Tabular nums & custom value"
+            [ Statistic.view theme
+                { statD
+                    | label = Just "Growth"
+                    , tabularNums = True
+                    , suffix = Just (Element.text "%")
+                }
+                [ Element.text "12.5" ]
+            ]
+        ]
+
+
+breadcrumbSection : Element msg
+breadcrumbSection =
+    section "Breadcrumb" "Navigation trails." <|
+        [ Breadcrumb.view theme
+            bcD
+            [ { bcItem | href = Just "/", content = [ Element.text "Home" ] }
+            , { bcItem | href = Just "/library", content = [ Element.text "Library" ] }
+            , { bcItem | content = [ Element.text "Data" ] }
+            ]
+        , Breadcrumb.view theme
+            { bcD | separator = "›" }
+            [ { bcItem | separator = Just "›", href = Just "/", content = [ Element.text "Root" ] }
+            , { bcItem | separator = Just "›", content = [ Element.text "Leaf" ] }
+            ]
+        ]
+
+
+timelineSection : Element msg
+timelineSection =
+    section "Timeline" "Vertical event trails." <|
+        [ Timeline.view theme
+            tlD
+            [ { tlItem | time = Just "2023-01-01", content = [ Element.text "Project created" ] }
+            , { tlItem
+                | type_ = Timeline.Success
+                , title = Just "Deployed"
+                , time = Just "2023-01-02"
+                , content = [ Element.text "Shipped to production." ]
+              }
+            , { tlItem
+                | type_ = Timeline.Warning
+                , lineType = Timeline.Dashed
+                , content = [ Element.text "Investigating a warning" ]
+              }
+            ]
+        , Timeline.view theme
+            { tlD | itemPlacement = Timeline.Right }
+            [ { tlItem | time = Just "1", content = [ Element.text "Right aligned" ] } ]
         ]
 
 

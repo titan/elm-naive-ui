@@ -122,5 +122,21 @@ export const components = {
   result: {
     cssr: ['result/src/styles/index.cssr.ts'],
     theme: 'result/styles/light.ts'
+  },
+  'gradient-text': {
+    cssr: ['gradient-text/src/styles/index.cssr.ts'],
+    theme: 'gradient-text/styles/light.ts'
+  },
+  statistic: {
+    cssr: ['statistic/src/styles/index.cssr.ts', 'statistic/src/styles/rtl.cssr.ts'],
+    theme: 'statistic/styles/light.ts'
+  },
+  breadcrumb: {
+    cssr: ['breadcrumb/src/styles/index.cssr.ts'],
+    theme: 'breadcrumb/styles/light.ts'
+  },
+  timeline: {
+    cssr: ['timeline/src/styles/index.cssr.ts'],
+    theme: 'timeline/styles/light.ts'
   }
 }
