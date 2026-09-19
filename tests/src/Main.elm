@@ -18,8 +18,11 @@ import Element exposing (Element)
 import Html exposing (Html)
 import Html.Attributes as HA
 import NUI.Alert as Alert
+import NUI.Avatar as Avatar
+import NUI.AvatarGroup as AvatarGroup
 import NUI.Badge as Badge
 import NUI.Button as Button
+import NUI.ButtonGroup as ButtonGroup
 import NUI.Card as Card
 import NUI.Checkbox as Checkbox
 import NUI.Css as Css
@@ -359,6 +362,74 @@ progressRailStyleCircleOpts =
         , percentage = 60
         , railStyle = Just [ ( "opacity", "0.3" ) ]
     }
+
+
+avatarGroupDefaults : AvatarGroup.Options msg
+avatarGroupDefaults =
+    AvatarGroup.defaults
+
+
+avatarGroupOpts : AvatarGroup.Options msg
+avatarGroupOpts =
+    { avatarGroupDefaults
+        | max = Just 3
+        , size = Just Avatar.Large
+        , maxStyle = [ ( "color", "rgb(1, 2, 3)" ) ]
+    }
+
+
+avatarGroupPlainOpts : AvatarGroup.Options msg
+avatarGroupPlainOpts =
+    avatarGroupDefaults
+
+
+avatarGroupVerticalOpts : AvatarGroup.Options msg
+avatarGroupVerticalOpts =
+    { avatarGroupDefaults | vertical = True, expandOnHover = True, rtl = True }
+
+
+avatarGroupSlotOpts : AvatarGroup.Options msg
+avatarGroupSlotOpts =
+    { avatarGroupDefaults
+        | max = Just 2
+        , avatar =
+            Just
+                (\opt ->
+                    Element.el
+                        [ Element.htmlAttribute (HA.class "slot-avatar") ]
+                        (Element.text opt.src)
+                )
+        , rest =
+            Just
+                (\_ count ->
+                    Element.el
+                        [ Element.htmlAttribute (HA.class "slot-rest") ]
+                        (Element.text ("+" ++ String.fromInt count))
+                )
+    }
+
+
+avatarGroupFour : List AvatarGroup.AvatarGroupOption
+avatarGroupFour =
+    [ { src = "a.png" }
+    , { src = "b.png" }
+    , { src = "c.png" }
+    , { src = "d.png" }
+    ]
+
+
+buttonGroupOpts : ButtonGroup.Options msg
+buttonGroupOpts =
+    ButtonGroup.defaults
+
+
+buttonGroupVerticalOpts : ButtonGroup.Options msg
+buttonGroupVerticalOpts =
+    let
+        d =
+            ButtonGroup.defaults
+    in
+    { d | vertical = True, rtl = True }
 
 
 badgeScrollUpOpts : Badge.Options msg
@@ -1106,6 +1177,35 @@ liveNodes =
                     (Progress.view Theme.default progressRailStyleMultipleOpts [])
                 , Element.el [ Element.htmlAttribute (HA.id "live-progress-railstyle-circle") ]
                     (Progress.view Theme.default progressRailStyleCircleOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-avatar-group") ]
+                    (AvatarGroup.view Theme.default avatarGroupOpts avatarGroupFour)
+                , Element.el [ Element.htmlAttribute (HA.id "live-avatar-group-plain") ]
+                    (AvatarGroup.view Theme.default
+                        avatarGroupPlainOpts
+                        [ { src = "a.png" }, { src = "b.png" } ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-avatar-group-vertical") ]
+                    (AvatarGroup.view Theme.default avatarGroupVerticalOpts [ { src = "a.png" } ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-avatar-group-slots") ]
+                    (AvatarGroup.view Theme.default
+                        avatarGroupSlotOpts
+                        [ { src = "a.png" }, { src = "b.png" }, { src = "c.png" } ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-button-group") ]
+                    (ButtonGroup.view Theme.default
+                        buttonGroupOpts
+                        [ Button.view Theme.default Button.defaults [ Element.text "A" ]
+                        , Button.view Theme.default Button.defaults [ Element.text "B" ]
+                        , Button.view Theme.default Button.defaults [ Element.text "C" ]
+                        ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-button-group-vertical") ]
+                    (ButtonGroup.view Theme.default
+                        buttonGroupVerticalOpts
+                        [ Button.view Theme.default Button.defaults [ Element.text "A" ]
+                        , Button.view Theme.default Button.defaults [ Element.text "B" ]
+                        ]
+                    )
                 , Element.el [ Element.htmlAttribute (HA.id "live-badge-offset") ]
                     (Badge.view Theme.default badgeOffsetOpts [ Element.text "Mail" ])
                 ]

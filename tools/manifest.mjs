@@ -84,6 +84,17 @@ export const components = {
     cssr: ['avatar/src/styles/index.cssr.ts'],
     theme: 'avatar/styles/light.ts'
   },
+  'avatar-group': {
+    cssr: [
+      'avatar-group/src/styles/avatar-group.cssr.ts',
+      'avatar-group/src/styles/avatar-group-rtl.cssr.ts'
+    ],
+    theme: 'avatar-group/styles/light.ts'
+  },
+  'button-group': {
+    cssr: ['button-group/src/styles/index.cssr.ts', 'button-group/src/styles/rtl.cssr.ts'],
+    theme: null
+  },
   space: {
     cssr: ['space/src/styles/rtl.cssr.ts'],
     theme: 'space/styles/light.ts'

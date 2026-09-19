@@ -30,6 +30,8 @@ const targets = {
   '.n-text': true,
   '.n-h1': true,
   '.n-avatar': true,
+  '.n-avatar-group': true,
+  '.n-button-group': false,
   '.n-space': false,
   '.n-badge': true,
   '.n-empty': true,

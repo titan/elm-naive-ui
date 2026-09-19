@@ -9,8 +9,10 @@ import Element.Font as Font
 import Html
 import NUI.Alert as Alert
 import NUI.Avatar as Avatar
+import NUI.AvatarGroup as AvatarGroup
 import NUI.Badge as Badge
 import NUI.Button as Button
+import NUI.ButtonGroup as ButtonGroup
 import NUI.Card as Card
 import NUI.Checkbox as Checkbox
 import NUI.Css as Css
@@ -103,6 +105,16 @@ avD =
     Avatar.defaults
 
 
+agD : AvatarGroup.Options msg
+agD =
+    AvatarGroup.defaults
+
+
+bgD : ButtonGroup.Options msg
+bgD =
+    ButtonGroup.defaults
+
+
 cardD : Card.Options msg
 cardD =
     Card.defaults
@@ -141,6 +153,28 @@ skelD =
 spinD : Spin.Options msg
 spinD =
     Spin.defaults
+
+
+{-| A distinct colour per showcase avatar (the group's slot path uses the
+`src` as a label).
+-}
+avatarColor : String -> String
+avatarColor name =
+    case name of
+        "Alice" ->
+            "#18a058"
+
+        "Bob" ->
+            "#2080f0"
+
+        "Carol" ->
+            "#f0a020"
+
+        "Dave" ->
+            "#d03050"
+
+        _ ->
+            "#8a8a8a"
 
 
 
@@ -275,6 +309,19 @@ buttonSection =
             ]
         , Element.el [ Element.width (Element.px 320) ]
             (Button.view theme { btn | block = True } [ Element.text "Block" ])
+        , demoRow "Group"
+            [ ButtonGroup.view theme
+                ButtonGroup.defaults
+                [ Button.view theme { btn | kind = T.Primary } [ Element.text "Left" ]
+                , Button.view theme { btn | kind = T.Primary } [ Element.text "Middle" ]
+                , Button.view theme { btn | kind = T.Primary } [ Element.text "Right" ]
+                ]
+            , ButtonGroup.view theme
+                { bgD | vertical = True }
+                [ Button.view theme btn [ Element.text "Top" ]
+                , Button.view theme btn [ Element.text "Bottom" ]
+                ]
+            ]
         ]
 
 
@@ -412,6 +459,31 @@ avatarSection =
             [ Avatar.view theme { avD | circle = True, color = Just "#18a058" } [ Element.text "A" ]
             , Avatar.view theme { avD | circle = True, color = Just "#2080f0" } [ Element.text "B" ]
             , Avatar.view theme { avD | color = Just "#f0a020" } [ Element.text "Rounded" ]
+            ]
+        , demoRow "Group"
+            [ AvatarGroup.view theme
+                { agD
+                    | max = Just 3
+                    , avatar =
+                        Just
+                            (\opt ->
+                                Avatar.view theme
+                                    { avD | color = Just (avatarColor opt.src) }
+                                    [ Element.text (String.left 1 opt.src) ]
+                            )
+                }
+                [ { src = "Alice" }
+                , { src = "Bob" }
+                , { src = "Carol" }
+                , { src = "Dave" }
+                , { src = "Eve" }
+                ]
+            , AvatarGroup.view theme
+                { agD | vertical = True, size = Just Avatar.Medium }
+                [ { src = "https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg" }
+                , { src = "https://picsum.photos/id/1/100/100" }
+                , { src = "https://picsum.photos/id/2/100/100" }
+                ]
             ]
         ]
 

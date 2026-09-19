@@ -627,6 +627,123 @@ dTrue(
   rsCircleStyle
 )
 
+// AvatarGroup ----------------------------------------------------------------
+const ag = doc.querySelector('#live-avatar-group .n-avatar-group')
+dTrue(
+  'DOM: AvatarGroup renders .n-avatar-group[role=group]',
+  !!ag && ag.classList.contains('n-avatar-group') && ag.getAttribute('role') === 'group',
+  ag ? ag.getAttribute('class') : 'missing'
+)
+dEq(
+  'DOM: AvatarGroup carries --n-gap:-12px',
+  '--n-gap:-12px',
+  ag ? ag.getAttribute('style') : null
+)
+const agAvatars = doc.querySelectorAll('#live-avatar-group .n-avatar-group > .n-avatar')
+dEq(
+  'DOM: AvatarGroup max=3 of 4 renders 2 avatars + 1 overflow avatar',
+  3,
+  agAvatars.length
+)
+dEq(
+  'DOM: AvatarGroup overflow avatar reads +2',
+  '+2',
+  agAvatars[2] ? agAvatars[2].textContent : null
+)
+const agFirst = agAvatars[0] ? agAvatars[0].getAttribute('style') || '' : ''
+dTrue(
+  'DOM: AvatarGroup avatars are forced round (--n-border-radius:50%)',
+  agFirst.includes('--n-border-radius:50%'),
+  agFirst
+)
+dTrue(
+  'DOM: AvatarGroup avatars are forced bordered',
+  agFirst.includes('--n-border:2px solid #fff'),
+  agFirst
+)
+dTrue(
+  'DOM: AvatarGroup size flows to the avatars (Large = 40px)',
+  agFirst.includes('--n-merged-size:var(--n-avatar-size-override, 40px)'),
+  agFirst
+)
+const agRest = agAvatars[2] ? agAvatars[2].getAttribute('style') || '' : ''
+// `maxStyle` is applied as a DOM style property (`HA.style`), which makes the
+// browser re-serialize the whole attribute as `key: value; …` (space after the
+// colon) — unlike the `key:value` form `NUI.Internal.cssVars` writes.
+dTrue(
+  'DOM: AvatarGroup maxStyle is merged into the overflow avatar style',
+  agRest.includes('color: rgb(1, 2, 3)'),
+  agRest
+)
+dTrue(
+  'DOM: AvatarGroup maxStyle keeps the overflow avatar --n-* vars',
+  agRest.includes('--n-border-radius: 50%'),
+  agRest
+)
+const agV = doc.querySelector('#live-avatar-group-vertical .n-avatar-group')
+dTrue(
+  'DOM: AvatarGroup rtl + vertical + expand-on-hover modifiers',
+  !!agV &&
+    agV.classList.contains('n-avatar-group--rtl') &&
+    agV.classList.contains('n-avatar-group--vertical') &&
+    agV.classList.contains('n-avatar-group--expand-on-hover'),
+  agV ? agV.getAttribute('class') : 'missing'
+)
+const agPlain = doc.querySelector('#live-avatar-group-plain .n-avatar-group')
+dEq(
+  'DOM: AvatarGroup without max renders every option',
+  2,
+  doc.querySelectorAll('#live-avatar-group-plain .n-avatar-group > .n-avatar').length
+)
+dTrue(
+  'DOM: AvatarGroup without max renders no overflow avatar',
+  !!agPlain && !(agPlain.textContent || '').includes('+'),
+  agPlain ? agPlain.textContent : 'missing'
+)
+const agSlotAvatars = doc.querySelectorAll('#live-avatar-group-slots .slot-avatar')
+dEq(
+  'DOM: AvatarGroup avatar slot replaces the built-in avatars',
+  1,
+  agSlotAvatars.length
+)
+dEq(
+  'DOM: AvatarGroup avatar slot receives the option',
+  'a.png',
+  agSlotAvatars[0] ? agSlotAvatars[0].textContent : null
+)
+dEq(
+  'DOM: AvatarGroup slot path renders no built-in n-avatar',
+  0,
+  doc.querySelectorAll('#live-avatar-group-slots .n-avatar').length
+)
+const agSlotRest = doc.querySelector('#live-avatar-group-slots .slot-rest')
+dEq(
+  'DOM: AvatarGroup rest slot receives the overflow count',
+  '+2',
+  agSlotRest ? agSlotRest.textContent : null
+)
+
+// ButtonGroup ----------------------------------------------------------------
+const bg = doc.querySelector('#live-button-group .n-button-group')
+dTrue(
+  'DOM: ButtonGroup renders .n-button-group[role=group]',
+  !!bg && bg.classList.contains('n-button-group') && bg.getAttribute('role') === 'group',
+  bg ? bg.getAttribute('class') : 'missing'
+)
+dEq(
+  'DOM: ButtonGroup contains its buttons in order',
+  3,
+  doc.querySelectorAll('#live-button-group .n-button-group > .n-button').length
+)
+const bgV = doc.querySelector('#live-button-group-vertical .n-button-group')
+dTrue(
+  'DOM: ButtonGroup vertical + rtl modifiers',
+  !!bgV &&
+    bgV.classList.contains('n-button-group--vertical') &&
+    bgV.classList.contains('n-button-group--rtl'),
+  bgV ? bgV.getAttribute('class') : 'missing'
+)
+
 // Result ---------------------------------------------------------------------
 const result = doc.querySelector('#live-result .n-result')
 dTrue(

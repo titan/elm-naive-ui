@@ -79,6 +79,14 @@ function scopeCss(css, scope) {
 
 const banner = name => `\n/* ===== naive-ui: ${name} ===== */\n`
 
+// Elm bindings cannot contain `-`, so a hyphenated component key becomes
+// camelCase (`avatar-group` -> `avatarGroup`); single words are unchanged.
+const elmValueName = name =>
+  name
+    .split(/[-_]/)
+    .map((s, i) => (i === 0 ? s : s.charAt(0).toUpperCase() + s.slice(1)))
+    .join('')
+
 async function renderCssr(rel) {
   const abs = path.join(SRC, 'src', rel)
   if (!fs.existsSync(abs)) return `/* missing: ${rel} */`
@@ -103,7 +111,7 @@ for (const [name, cfg] of Object.entries(components)) {
   const finalCss = name === 'global' ? css : scopeCss(css, SCOPE)
   console.log(`  ${name}  ${finalCss.length} bytes`)
   parts.push(banner(name) + finalCss)
-  elmChunks.push([name, finalCss])
+  elmChunks.push([elmValueName(name), finalCss])
 }
 
 const all = parts.join('\n')

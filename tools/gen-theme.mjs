@@ -74,10 +74,14 @@ const componentFiles = fs
   .filter(f => f.endsWith('.json') && f !== 'common.json')
   .map(f => f.replace(/\.json$/, ''))
 
+// `avatar-group` -> `AvatarGroup`; single words (`button`) are unchanged.
+const pascal = name =>
+  name.split(/[-_]/).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('')
+
 for (const name of componentFiles) {
   const data = readJson(name)
   const keys = Object.keys(data.light)
-  const pascal = name.charAt(0).toUpperCase() + name.slice(1)
+  const moduleName = pascal(name)
 
   const buildFn = (themeName, selector) => {
     const themedValues = data[themeName]
@@ -92,7 +96,7 @@ for (const name of componentFiles) {
       `\n    }\n`
   }
 
-  let mod = header(`NUI.Theme.${pascal}`, 'Vars, vars')
+  let mod = header(`NUI.Theme.${moduleName}`, 'Vars, vars')
   mod += `{-| Naive UI ${name} theme variables.\n-}\n\n\n`
   mod += `import NUI.Theme as Theme exposing (Theme)\nimport NUI.Theme.Common exposing (Common)\n\n\n`
   mod += typeAlias('Vars', keys)
@@ -100,8 +104,8 @@ for (const name of componentFiles) {
   mod += buildFn('light', 'light')
   mod += buildFn('dark', 'dark')
 
-  const file = path.join(outThemeDir, `${pascal}.elm`)
+  const file = path.join(outThemeDir, `${moduleName}.elm`)
   fs.writeFileSync(file, mod)
-  console.log(`  wrote NUI/Theme/${pascal}.elm (${keys.length} vars)`)
+  console.log(`  wrote NUI/Theme/${moduleName}.elm (${keys.length} vars)`)
 }
 console.log('done.')
