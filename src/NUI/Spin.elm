@@ -1,0 +1,365 @@
+module NUI.Spin exposing
+    ( Options
+    , SpinSize(..)
+    , cssVarsFor
+    , defaults
+    , view
+    )
+
+{-| Naive UI's `Spin`, rebuilt on elm-ui.
+
+    NUI.Spin.view theme NUI.Spin.defaults []
+
+    NUI.Spin.view theme
+        { NUI.Spin.defaults
+            | description = Just (Element.text "Loading")
+        }
+        []
+
+    -- wrapping content: the spinner overlays it while spinning
+    NUI.Spin.view theme NUI.Spin.defaults [ Element.text "Content" ]
+
+The visual result is Naive UI's own: the elements carry the `.n-spin` /
+`.n-base-loading` BEM classes and Naive UI's `--n-*` custom properties, and
+`NUI.Css` ships Naive UI's exact CSS.
+
+**Two shapes.** With children, `.n-spin-container` holds the content
+(`.n-spin-content`, dimmed via `.n-spin-content--spinning` while `show`) plus an
+absolutely-positioned `.n-spin-body`; without children, `.n-spin-body` is the
+root and renders a standalone spinner. Without a custom `icon` the spinner is
+Naive UI's internal `n-base-loading` SVG — the CSS `rotator` keyframe already
+spins `__container`, and the SMIL `<animate>`/`<animateTransform>` children are
+kept so real browsers animate the dash arc too.
+
+**Not ported** (Vue runtime behaviour, per the project's static-rendering
+stance): `delay` and the deprecated `spinning` alias (`show` applies
+immediately, no debouncing timer), the fade-in mount/unmount transition around
+`.n-spin-body` (the body is simply rendered when `show`, matching upstream's
+`active ? icon : null`), and `content-class`/`content-style` (use
+`attributes`).
+
+-}
+
+import Element exposing (Element)
+import Html.Attributes as HA
+import NUI.Internal as I
+import NUI.Theme exposing (Theme)
+import NUI.Theme.Spin as SpinTheme
+import Svg exposing (Svg)
+import Svg.Attributes as SA
+
+
+{-| Naive UI's `size` prop: `'small' | 'medium' | 'large' | number`. A numeric
+size is an explicit pixel size (Naive UI's `pxfy`). This does not match
+`NUI.Types.Size` (which adds `tiny` and cannot be a number), so — like `Card` —
+this module defines its own enum.
+-}
+type SpinSize
+    = Small
+    | Medium
+    | Large
+    | Number Int
+
+
+type alias Options msg =
+    { size : SpinSize
+    , show : Bool
+    , rotate : Bool
+    , description : Maybe (Element msg)
+    , stroke : Maybe String
+    , strokeWidth : Maybe Int
+    , scale : Float
+    , radius : Int
+    , icon : Maybe (Element msg)
+    , attributes : List (Element.Attribute msg)
+    }
+
+
+defaults : Options msg
+defaults =
+    { size = Medium
+    , show = True
+    , rotate = True
+    , description = Nothing
+    , stroke = Nothing
+    , strokeWidth = Nothing
+    , scale = 1
+    , radius = 100
+    , icon = Nothing
+    , attributes = []
+    }
+
+
+view : Theme -> Options msg -> List (Element msg) -> Element msg
+view theme opts children =
+    let
+        vars =
+            cssVarsFor theme opts
+
+        hasChildren =
+            not (List.isEmpty children)
+
+        spinner =
+            case opts.icon of
+                -- `n-spin--rotate` is only emitted for a custom icon
+                -- (upstream: `const rotate = $slots.icon && this.rotate`).
+                Just ic ->
+                    Element.el
+                        (I.classes ("n-spin" :: I.classIf opts.rotate "n-spin--rotate")
+                            :: spinnerVars hasChildren vars
+                        )
+                        ic
+
+                Nothing ->
+                    baseLoading opts (spinnerVars hasChildren vars)
+
+        bodyChildren =
+            spinner :: descriptionEls opts
+
+        content =
+            Element.column
+                [ Element.width Element.fill
+                , I.classes
+                    ("n-spin-content" :: I.classIf opts.show "n-spin-content--spinning")
+                ]
+                children
+    in
+    if hasChildren then
+        Element.column
+            ([ I.classes [ "n-spin-container" ]
+             , I.cssVars vars
+             ]
+                ++ opts.attributes
+            )
+            (content
+                :: (if opts.show then
+                        [ Element.column [ I.classes [ "n-spin-body" ] ] bodyChildren ]
+
+                    else
+                        -- not spinning: upstream's fade Transition renders null
+                        []
+                   )
+            )
+
+    else
+        Element.column
+            ([ I.classes [ "n-spin-body" ] ] ++ opts.attributes)
+            bodyChildren
+
+
+descriptionEls : Options msg -> List (Element msg)
+descriptionEls opts =
+    case opts.description of
+        Just d ->
+            [ Element.el [ I.classes [ "n-spin-description" ] ] d ]
+
+        Nothing ->
+            []
+
+
+{-| Upstream attaches the cssVars to `.n-spin-container` when wrapping content,
+and to the spinner itself otherwise (`NBaseLoading`'s root / the `.n-spin` icon
+wrapper get `style=cssVars` only in the standalone shape). `.n-spin-body` never
+carries them.
+-}
+spinnerVars : Bool -> List ( String, String ) -> List (Element.Attribute msg)
+spinnerVars hasChildren vars =
+    if hasChildren then
+        []
+
+    else
+        [ I.cssVars vars ]
+
+
+{-| The raw `--n-*` custom properties a spin with these options attaches
+(before `NUI.Internal.renderVars` drops `initial`/empty values). Exposed so the
+`--n-*` output can be asserted directly; `view` uses exactly this.
+
+The first five mirror Spin.tsx's `cssVarsRef`; `--n-font-size` is declared by
+the cssr vars list (and used by `.n-spin-description`) but never emitted by
+upstream's `cssVarsRef` — we emit it from the theme so the description's
+`var(--n-font-size)` resolves.
+
+-}
+cssVarsFor : Theme -> Options msg -> List ( String, String )
+cssVarsFor theme opts =
+    let
+        v =
+            SpinTheme.vars theme
+    in
+    [ ( "--n-bezier", theme.common.cubicBezierEaseInOut )
+    , ( "--n-opacity-spinning", v.opacitySpinning )
+    , ( "--n-size", sizeValue opts.size v )
+    , ( "--n-color", v.color )
+    , ( "--n-text-color", v.textColor )
+    , ( "--n-font-size", v.fontSize )
+    ]
+
+
+{-| Naive UI's `typeof size === 'number' ? pxfy(size) : self[createKey('size',
+size)]`. (The theme also defines `sizeTiny`/`sizeHuge`, but the prop only
+accepts small | medium | large | number.)
+-}
+sizeValue : SpinSize -> SpinTheme.Vars -> String
+sizeValue size v =
+    case size of
+        Small ->
+            v.sizeSmall
+
+        Medium ->
+            v.sizeMedium
+
+        Large ->
+            v.sizeLarge
+
+        Number n ->
+            String.fromInt n ++ "px"
+
+
+{-| Spin's `mergedStrokeWidth`: the prop when set, else the size default from
+upstream's `STROKE_WIDTH` map (`small: 20`, `medium: 18`, `large: 16`; a
+numeric size falls back to `medium`'s 18).
+-}
+mergedStrokeWidth : Options msg -> Int
+mergedStrokeWidth opts =
+    case opts.strokeWidth of
+        Just w ->
+            w
+
+        Nothing ->
+            case opts.size of
+                Small ->
+                    20
+
+                Medium ->
+                    18
+
+                Large ->
+                    16
+
+                Number _ ->
+                    18
+
+
+{-| Naive UI's internal `NBaseLoading`, as rendered inside a spin: the root also
+carries the `n-spin` class (Spin passes `class="n-spin"`, which Vue merges onto
+`n-base-loading`). Spin never passes `show=false`, so the placeholder branch
+never renders. The `NIconSwitchTransition` wrapper adds no element of its own.
+-}
+baseLoading : Options msg -> List (Element.Attribute msg) -> Element msg
+baseLoading opts extra =
+    Element.el
+        ([ I.classes [ "n-base-loading", "n-spin" ]
+         , Element.htmlAttribute (HA.attribute "role" "img")
+         , Element.htmlAttribute (HA.attribute "aria-label" "loading")
+         ]
+            ++ extra
+        )
+        (Element.el
+            [ I.classes [ "n-base-loading__transition-wrapper" ] ]
+            (Element.el
+                [ I.classes [ "n-base-loading__container" ] ]
+                (Element.html (loadingIcon opts))
+            )
+        )
+
+
+{-| `NBaseLoading`'s SMIL duration constant.
+-}
+loadingDuration : String
+loadingDuration =
+    "1.6s"
+
+
+loadingIcon : Options msg -> Svg msg
+loadingIcon opts =
+    let
+        radius =
+            toFloat opts.radius
+
+        scaledRadius =
+            radius / opts.scale
+
+        strokeWidth =
+            toFloat (mergedStrokeWidth opts)
+
+        animateTransform degrees =
+            Svg.node "animateTransform"
+                [ SA.attributeName "transform"
+                , SA.type_ "rotate"
+                , SA.values (rotateValues degrees scaledRadius)
+                , SA.begin "0s"
+                , SA.dur loadingDuration
+                , SA.fill "freeze"
+                , SA.repeatCount "indefinite"
+                ]
+                []
+
+        circleAnimates =
+            [ animateTransform [ 0, 135, 450 ]
+            , Svg.node "animate"
+                [ SA.attributeName "stroke-dashoffset"
+                , SA.values
+                    (String.join ";"
+                        [ String.fromFloat (5.67 * radius)
+                        , String.fromFloat (1.42 * radius)
+                        , String.fromFloat (5.67 * radius)
+                        ]
+                    )
+                , SA.begin "0s"
+                , SA.dur loadingDuration
+                , SA.fill "freeze"
+                , SA.repeatCount "indefinite"
+                ]
+                []
+            ]
+    in
+    Svg.svg
+        ([ SA.class "n-base-loading__icon"
+         , SA.viewBox
+            ("0 0 "
+                ++ String.fromFloat (2 * scaledRadius)
+                ++ " "
+                ++ String.fromFloat (2 * scaledRadius)
+            )
+         ]
+            ++ (case opts.stroke of
+                    -- Vue's `style={{ color: stroke }}` (absent when unset)
+                    Just s ->
+                        [ SA.style ("color:" ++ s) ]
+
+                    Nothing ->
+                        []
+               )
+        )
+        [ Svg.g []
+            ([ animateTransform [ 0, 270 ] ]
+                ++ [ Svg.circle
+                        [ SA.class "n-base-loading__icon"
+                        , SA.fill "none"
+                        , SA.stroke "currentColor"
+                        , SA.strokeWidth (String.fromFloat strokeWidth)
+                        , SA.strokeLinecap "round"
+                        , SA.cx (String.fromFloat scaledRadius)
+                        , SA.cy (String.fromFloat scaledRadius)
+                        , SA.r (String.fromFloat (radius - strokeWidth / 2))
+                        , SA.strokeDasharray (String.fromFloat (5.67 * radius))
+                        , SA.strokeDashoffset (String.fromFloat (18.48 * radius))
+                        ]
+                        circleAnimates
+                   ]
+            )
+        ]
+
+
+rotateValues : List Float -> Float -> String
+rotateValues degrees scaledRadius =
+    let
+        point deg =
+            String.fromFloat deg
+                ++ " "
+                ++ String.fromFloat scaledRadius
+                ++ " "
+                ++ String.fromFloat scaledRadius
+    in
+    String.join ";" (List.map point degrees)
