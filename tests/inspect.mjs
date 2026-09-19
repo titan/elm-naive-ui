@@ -580,6 +580,42 @@ dTrue(
   gradMultiFills[1] ? gradMultiFills[1].getAttribute('style') : 'missing'
 )
 
+// Progress: rail-style -------------------------------------------------------
+const railStyleLineRail = doc.querySelector(
+  '#live-progress-railstyle-line .n-progress-graph-line-rail'
+)
+const rsLineStyle = railStyleLineRail ? railStyleLineRail.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: Progress line railStyle overrides the base background-color',
+  rsLineStyle.includes('background-color:rgba(0,0,0,0.1)') && !rsLineStyle.includes('#000000'),
+  rsLineStyle
+)
+dTrue(
+  'DOM: Progress line railStyle appends the extra opacity key',
+  rsLineStyle.includes('opacity:0.5'),
+  rsLineStyle
+)
+const railStyleMultiRails = doc.querySelectorAll(
+  '#live-progress-railstyle-multiple .n-progress-graph-circle-rail'
+)
+const rsMulti0 = railStyleMultiRails[0] ? railStyleMultiRails[0].getAttribute('style') || '' : ''
+const rsMulti1 = railStyleMultiRails[1] ? railStyleMultiRails[1].getAttribute('style') || '' : ''
+dTrue(
+  'DOM: Progress multiple-circle railStyle[0] overrides the per-ring stroke',
+  rsMulti0.includes('stroke:#ff0000') && !rsMulti0.includes('#2080f0'),
+  rsMulti0
+)
+dTrue(
+  'DOM: Progress multiple-circle railStyle[0] appends opacity',
+  rsMulti0.includes('opacity:0.3'),
+  rsMulti0
+)
+dTrue(
+  'DOM: Progress multiple-circle rail[1] keeps its rail colour and gets railStyle[1] opacity',
+  rsMulti1.includes('stroke:#18a058') && rsMulti1.includes('opacity:0.5'),
+  rsMulti1
+)
+
 // Result ---------------------------------------------------------------------
 const result = doc.querySelector('#live-result .n-result')
 dTrue(

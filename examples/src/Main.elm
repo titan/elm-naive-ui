@@ -543,6 +543,20 @@ progressSection =
                     { progD | percentage = 66, processing = True, height = Just 12 }
                     []
                 )
+            , Element.el [ Element.width (Element.px 260) ]
+                (Progress.view theme
+                    { progD
+                        | percentage = 40
+                        , railColor = Just "#e0e0e0"
+                        , railStyle =
+                            Just
+                                [ ( "background-image"
+                                  , "repeating-linear-gradient(45deg, #eee, #eee 6px, #ddd 6px, #ddd 12px)"
+                                  )
+                                ]
+                    }
+                    []
+                )
             ]
         , demoRow "Statuses"
             [ Element.el [ Element.width (Element.px 260) ]
@@ -567,6 +581,7 @@ progressSection =
                     , percentages = [ 80, 60 ]
                     , colors = [ Progress.Solid "#2080f0", Progress.Solid "#18a058" ]
                     , railColors = [ "#2080f0", "#18a058" ]
+                    , railStyles = [ [ ( "opacity", "0.3" ) ], [ ( "opacity", "0.3" ) ] ]
                     , strokeWidth = 6
                     , circleGap = 0.5
                 }

@@ -56,6 +56,14 @@ solid colours only, as upstream. The gradient's `id` is byte-identical to
 Naive UI's (`gradient-` + css-render's murmur2 hash for circles, the ring index
 for multiple-circle).
 
+`railStyle` (`Line`) and `railStyles` (`MultipleCircle`) are Naive UI's
+`rail-style` prop: inline style overriding the built-in rail style, merged in
+Vue's array order (a colliding key wins in place, new keys append). Only the
+`CSSProperties` form is modelled as a `( "prop", "value" )` list; upstream's
+raw-string alternative is not. `Circle` / `Dashboard` accept `railStyle` but
+ignore it, exactly as upstream (`Circle.tsx` declares the prop and never
+applies it). `railStyles` is indexed per ring, paired with `railColors`.
+
 -}
 
 import Bitwise
@@ -121,7 +129,9 @@ type alias Options msg =
     , color : Maybe FillColor
     , colors : List FillColor
     , railColor : Maybe String
+    , railStyle : Maybe (List ( String, String ))
     , railColors : List String
+    , railStyles : List (List ( String, String ))
     , strokeWidth : Float
     , viewBoxWidth : Float
     , height : Maybe Int
@@ -148,7 +158,9 @@ defaults =
     , color = Nothing
     , colors = []
     , railColor = Nothing
+    , railStyle = Nothing
     , railColors = []
+    , railStyles = []
     , strokeWidth = 7
     , viewBoxWidth = 100
     , height = Nothing
@@ -371,9 +383,12 @@ line opts children =
             Element.el
                 ([ I.classes [ "n-progress-graph-line-rail" ] ]
                     ++ styleAttribute
-                        (optional "background-color" opts.railColor
-                            ++ optional "height" heightLen
-                            ++ optional "border-radius" railRadius
+                        (mergeStyles
+                            (optional "background-color" opts.railColor
+                                ++ optional "height" heightLen
+                                ++ optional "border-radius" railRadius
+                            )
+                            (Maybe.withDefault [] opts.railStyle)
                         )
                 )
                 fill
@@ -643,8 +658,11 @@ multipleCircleRings opts index percent =
                 , SvgA.fill "none"
                 , SvgA.style
                     (inlineStyle
-                        (( "stroke-dashoffset", "0" )
-                            :: optional "stroke" (nth index opts.railColors)
+                        (mergeStyles
+                            (( "stroke-dashoffset", "0" )
+                                :: optional "stroke" (nth index opts.railColors)
+                            )
+                            (Maybe.withDefault [] (nth index opts.railStyles))
                         )
                     )
                 ]
@@ -1249,6 +1267,34 @@ iconColorOf status v =
 
 
 -- STYLE HELPERS
+
+
+{-| Vue merges an array of style objects left to right: a later object wins on
+key collisions, but a key that is already present keeps its original position
+(so extra keys are appended). Naive UI applies `railStyle` after the built-in
+rail style, hence `railStyle`'s `background-color` / `border-radius` / `stroke`
+override the computed ones while any other properties are added.
+-}
+mergeStyles : List ( String, String ) -> List ( String, String ) -> List ( String, String )
+mergeStyles base overrides =
+    List.foldl
+        (\( key, value ) acc ->
+            if List.any (\( existingKey, _ ) -> existingKey == key) acc then
+                List.map
+                    (\( existingKey, existingValue ) ->
+                        if existingKey == key then
+                            ( key, value )
+
+                        else
+                            ( existingKey, existingValue )
+                    )
+                    acc
+
+            else
+                acc ++ [ ( key, value ) ]
+        )
+        base
+        overrides
 
 
 {-| Render `key:value;…` pairs in order, dropping absent values (Vue omits

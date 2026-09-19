@@ -319,6 +319,35 @@ progressGradientMultipleOpts =
     }
 
 
+progressRailStyleLineOpts : Progress.Options msg
+progressRailStyleLineOpts =
+    let
+        d =
+            Progress.defaults
+    in
+    { d
+        | percentage = 40
+        , railColor = Just "#000000"
+        , railStyle = Just [ ( "background-color", "rgba(0,0,0,0.1)" ), ( "opacity", "0.5" ) ]
+    }
+
+
+progressRailStyleMultipleOpts : Progress.Options msg
+progressRailStyleMultipleOpts =
+    let
+        d =
+            Progress.defaults
+    in
+    { d
+        | type_ = Progress.MultipleCircle
+        , percentages = [ 80, 70 ]
+        , railColors = [ "#2080f0", "#18a058" ]
+        , railStyles = [ [ ( "stroke", "#ff0000" ), ( "opacity", "0.3" ) ], [ ( "opacity", "0.5" ) ] ]
+        , strokeWidth = 10
+        , circleGap = 10
+    }
+
+
 badgeScrollUpOpts : Badge.Options msg
 badgeScrollUpOpts =
     let
@@ -1058,6 +1087,10 @@ liveNodes =
                     (Tag.view Theme.default rtlTagOpts [ Element.text "RTL" ])
                 , Element.el [ Element.htmlAttribute (HA.id "live-rtl-badge") ]
                     (Badge.view Theme.default rtlBadgeOpts [ Element.text "Mail" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-progress-railstyle-line") ]
+                    (Progress.view Theme.default progressRailStyleLineOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-progress-railstyle-multiple") ]
+                    (Progress.view Theme.default progressRailStyleMultipleOpts [])
                 , Element.el [ Element.htmlAttribute (HA.id "live-badge-offset") ]
                     (Badge.view Theme.default badgeOffsetOpts [ Element.text "Mail" ])
                 ]
