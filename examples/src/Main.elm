@@ -518,7 +518,7 @@ emptySection =
 
 progressSection : Element msg
 progressSection =
-    section "Progress" "Line, circle and dashboard meters." <|
+    section "Progress" "Line, circle, dashboard and multiple-circle meters." <|
         [ demoRow "Line"
             [ Element.el [ Element.width (Element.px 260) ]
                 (Progress.view theme { progD | percentage = 50 } [])
@@ -543,6 +543,26 @@ progressSection =
         , demoRow "Circle & dashboard"
             [ Progress.view theme { progD | type_ = Progress.Circle, percentage = 75 } []
             , Progress.view theme { progD | type_ = Progress.Dashboard, percentage = 60 } []
+            ]
+        , demoRow "Multiple circle"
+            [ Progress.view theme
+                { progD
+                    | type_ = Progress.MultipleCircle
+                    , percentages = [ 80, 60 ]
+                    , colors = [ "#2080f0", "#18a058" ]
+                    , railColors = [ "#2080f0", "#18a058" ]
+                    , strokeWidth = 6
+                    , circleGap = 0.5
+                }
+                [ Element.text "Circle racing!" ]
+            , Progress.view theme
+                { progD
+                    | type_ = Progress.MultipleCircle
+                    , percentages = [ 70, 40 ]
+                    , strokeWidth = 10
+                    , circleGap = 10
+                }
+                []
             ]
         ]
 

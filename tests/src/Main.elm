@@ -245,6 +245,36 @@ progressCircleOpts =
     { d | type_ = Progress.Circle, percentage = 80, status = Progress.Success }
 
 
+progressMultipleOpts : Progress.Options msg
+progressMultipleOpts =
+    let
+        d =
+            Progress.defaults
+    in
+    { d
+        | type_ = Progress.MultipleCircle
+        , percentages = [ 80, 70 ]
+        , colors = [ "#2080f0", "#18a058" ]
+        , railColors = [ "#2080f0", "#18a058" ]
+        , strokeWidth = 10
+        , circleGap = 10
+    }
+
+
+progressMultiplePlainOpts : Progress.Options msg
+progressMultiplePlainOpts =
+    let
+        d =
+            Progress.defaults
+    in
+    { d
+        | type_ = Progress.MultipleCircle
+        , percentages = [ 0, 60 ]
+        , strokeWidth = 10
+        , circleGap = 10
+    }
+
+
 resultLiveOpts : Result.Options msg
 resultLiveOpts =
     let
@@ -621,6 +651,7 @@ checks =
     , eq "progress cssVarsFor Success --n-icon-color" (Just common.primaryColor) (lookup "--n-icon-color" progSuccessVars)
     , eq "progress cssVarsFor Error --n-fill-color" (Just common.errorColor) (lookup "--n-fill-color" progErrorVars)
     , eq "progress cssVarsFor Warning --n-fill-color" (Just common.warningColor) (lookup "--n-fill-color" progWarningVars)
+    , eq "progress multiple-circle cssVarsFor has 14 vars" 14 (List.length (Progress.cssVarsFor light { progD | type_ = Progress.MultipleCircle }))
 
     -- 11. NUI.Result cssVarsFor -------------------------------------------------
     , eq "result cssVarsFor has 9 vars" 9 (List.length resultDefaultVars)
@@ -793,6 +824,10 @@ liveNodes =
                     (Progress.view Theme.default progressLineOpts [])
                 , Element.el [ Element.htmlAttribute (HA.id "live-progress-circle") ]
                     (Progress.view Theme.default progressCircleOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-progress-multiple") ]
+                    (Progress.view Theme.default progressMultipleOpts [ Element.text "Circle racing!" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-progress-multiple-plain") ]
+                    (Progress.view Theme.default progressMultiplePlainOpts [])
                 , Element.el [ Element.htmlAttribute (HA.id "live-result") ]
                     (Result.view Theme.default resultLiveOpts [])
                 , Element.el [ Element.htmlAttribute (HA.id "live-skeleton") ]

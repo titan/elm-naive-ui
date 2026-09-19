@@ -28,14 +28,27 @@ module NUI.Progress exposing
         }
         []
 
+    NUI.Progress.view theme
+        { NUI.Progress.defaults
+            | type_ = NUI.Progress.MultipleCircle
+            , percentages = [ 80, 60 ]
+            , colors = [ "#2080f0", "#18a058" ]
+            , railColors = [ "#2080f0", "#18a058" ]
+            , strokeWidth = 6
+            , circleGap = 0.5
+        }
+        [ Element.text "Circle racing!" ]
+
 The visual result is Naive UI's own: the element carries the `.n-progress`
 BEM classes and Naive UI's `--n-*` custom properties, and `NUI.Css` ships
 Naive UI's exact CSS. The children are the default slot: custom indicator
 content, replacing the percentage text / status icon.
 
 `Dashboard` is the circle graph with `gapDegree` defaulting to 75.
-`MultipleCircle` is not implemented yet — it renders the themed root element
-only (no graph, no indicator).
+`MultipleCircle` draws concentric rings — one per entry in `percentages`, each
+with its own fill colour (`colors`) and rail colour (`railColors`) — and turns
+the default slot into the centre indicator when a child is given. Gradient
+colours (`{ stops }`) are not ported; the per-circle colours are plain strings.
 
 -}
 
@@ -85,11 +98,14 @@ type IndicatorPlacement
 type alias Options msg =
     { type_ : ProgressType
     , percentage : Float
+    , percentages : List Float
     , status : Status
     , showIndicator : Bool
     , indicatorPlacement : IndicatorPlacement
     , color : Maybe String
+    , colors : List String
     , railColor : Maybe String
+    , railColors : List String
     , strokeWidth : Float
     , viewBoxWidth : Float
     , height : Maybe Int
@@ -100,6 +116,7 @@ type alias Options msg =
     , gapDegree : Maybe Float
     , gapOffsetDegree : Maybe Float
     , offsetDegree : Maybe Float
+    , circleGap : Float
     , attributes : List (Element.Attribute msg)
     }
 
@@ -108,11 +125,14 @@ defaults : Options msg
 defaults =
     { type_ = Line
     , percentage = 0
+    , percentages = [ 0 ]
     , status = Default
     , showIndicator = True
     , indicatorPlacement = Outside
     , color = Nothing
+    , colors = []
     , railColor = Nothing
+    , railColors = []
     , strokeWidth = 7
     , viewBoxWidth = 100
     , height = Nothing
@@ -123,6 +143,7 @@ defaults =
     , gapDegree = Nothing
     , gapOffsetDegree = Nothing
     , offsetDegree = Nothing
+    , circleGap = 1
     , attributes = []
     }
 
@@ -132,7 +153,8 @@ defaults =
 
 
 {-| The themed progress root (`div.n-progress.n-progress--{type}--
-{status}`) with Line / Circle / dashboard graph and indicator inside.
+{status}`) with Line / Circle / dashboard / multiple-circle graph and
+indicator inside.
 -}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
@@ -147,13 +169,13 @@ view theme opts children =
          , Element.htmlAttribute (HA.attribute "aria-valuemax" "100")
          , Element.htmlAttribute (HA.attribute "aria-valuemin" "0")
          , Element.htmlAttribute
-            (HA.attribute "aria-valuenow" (String.fromFloat opts.percentage))
+            (HA.attribute "aria-valuenow" (rootValuenow opts))
          ]
             ++ opts.attributes
         )
         (case opts.type_ of
             MultipleCircle ->
-                []
+                [ multipleCircle opts children ]
 
             Circle ->
                 [ circle opts children ]
@@ -174,6 +196,19 @@ rootRole type_ =
 
         _ ->
             "progressbar"
+
+
+{-| `aria-valuenow` from `Progress.tsx`: the single `percentage` for one graph,
+but the comma-joined list for `multiple-circle` (Vue stringifies the array
+prop).
+-}
+rootValuenow : Options msg -> String
+rootValuenow opts =
+    if opts.type_ == MultipleCircle then
+        String.join "," (List.map String.fromFloat opts.percentages)
+
+    else
+        String.fromFloat opts.percentage
 
 
 typeName : ProgressType -> String
@@ -514,6 +549,203 @@ transformPairs degree =
 
     else
         []
+
+
+
+-- MULTIPLE CIRCLE (`MultipleCircle.tsx`)
+
+
+{-| The concentric-rings graph: one rail / fill `<path>` pair per entry in
+`percentages`, each ring inset by `strokeWidth / 2 * (1 + 2i) + circleGap * i`.
+The default slot becomes the centre indicator, but only when a child is given —
+unlike `Circle`, the built-in text / icon indicators never render. Gradient
+colours (`{ stops }`) are not ported, so `colors` / `railColors` are plain
+colour strings.
+-}
+multipleCircle : Options msg -> List (Element msg) -> Element msg
+multipleCircle opts children =
+    let
+        graphCircle =
+            Element.el
+                [ I.classes [ "n-progress-graph-circle" ] ]
+                (Element.html (multipleCircleSvg opts))
+
+        graph =
+            Element.el
+                [ I.classes [ "n-progress-graph" ]
+                , Element.htmlAttribute (HA.attribute "aria-hidden" "true")
+                ]
+                graphCircle
+
+        indicator =
+            if opts.showIndicator && not (List.isEmpty children) then
+                [ multipleIndicator children ]
+
+            else
+                []
+    in
+    Element.column
+        [ I.classes [ "n-progress-content" ]
+        , Element.htmlAttribute (HA.attribute "role" "none")
+        ]
+        (graph :: indicator)
+
+
+{-| `<svg viewBox="0 0 {viewBoxWidth} {viewBoxWidth}">` with one `<g>` per
+percentage.
+-}
+multipleCircleSvg : Options msg -> Svg msg
+multipleCircleSvg opts =
+    let
+        size =
+            String.fromFloat opts.viewBoxWidth
+    in
+    Svg.svg
+        [ SvgA.viewBox ("0 0 " ++ size ++ " " ++ size) ]
+        (List.indexedMap (multipleCircleRings opts) opts.percentages)
+
+
+{-| One ring: a rail `<path>` (full circle, per-circle rail colour) and a fill
+`<path>` (arc at `percent`, per-circle colour) sharing the same `d`.
+-}
+multipleCircleRings : Options msg -> Int -> Float -> Svg msg
+multipleCircleRings opts index percent =
+    let
+        pathD =
+            multipleCirclePath opts index
+
+        rail =
+            Svg.path
+                [ SvgA.class "n-progress-graph-circle-rail"
+                , SvgA.d pathD
+                , SvgA.strokeWidth (String.fromFloat opts.strokeWidth)
+                , SvgA.strokeLinecap "round"
+                , SvgA.fill "none"
+                , SvgA.style
+                    (inlineStyle
+                        (( "stroke-dashoffset", "0" )
+                            :: optional "stroke" (nth index opts.railColors)
+                        )
+                    )
+                ]
+                []
+
+        fillClasses =
+            String.join " "
+                ([ "n-progress-graph-circle-fill" ]
+                    ++ I.classIf (percent == 0) "n-progress-graph-circle-fill--empty"
+                )
+
+        fill =
+            Svg.path
+                [ SvgA.class fillClasses
+                , SvgA.d pathD
+                , SvgA.strokeWidth (String.fromFloat opts.strokeWidth)
+                , SvgA.strokeLinecap "round"
+                , SvgA.fill "none"
+                , SvgA.style
+                    (inlineStyle
+                        (( "stroke-dasharray", multipleDasharray opts index percent )
+                            :: ( "stroke-dashoffset", "0" )
+                            :: optional "stroke" (nth index opts.colors)
+                        )
+                    )
+                ]
+                []
+    in
+    Svg.g [] [ rail, fill ]
+
+
+{-| `circlePath(r, strokeWidth, viewBoxWidth)` from `MultipleCircle.tsx`:
+`m {vw/2} {vw/2 - r} a {r} {r} 0 1 1 0 {2r} a {r} {r} 0 1 1 0 -{2r}`.
+-}
+multipleCirclePath : Options msg -> Int -> String
+multipleCirclePath opts index =
+    let
+        r =
+            multipleCircleRadius opts index
+
+        half =
+            String.fromFloat (opts.viewBoxWidth / 2)
+
+        top =
+            String.fromFloat (opts.viewBoxWidth / 2 - r)
+
+        radius =
+            String.fromFloat r
+
+        diameter =
+            String.fromFloat (2 * r)
+    in
+    "m "
+        ++ half
+        ++ " "
+        ++ top
+        ++ " a "
+        ++ radius
+        ++ " "
+        ++ radius
+        ++ " 0 1 1 0 "
+        ++ diameter
+        ++ " a "
+        ++ radius
+        ++ " "
+        ++ radius
+        ++ " 0 1 1 0 -"
+        ++ diameter
+
+
+{-| The ring radius: `viewBoxWidth / 2 - (strokeWidth / 2) * (1 + 2i) -
+circleGap * i`.
+-}
+multipleCircleRadius : Options msg -> Int -> Float
+multipleCircleRadius opts index =
+    let
+        i =
+            toFloat index
+    in
+    opts.viewBoxWidth
+        / 2
+        - (opts.strokeWidth / 2)
+        * (1 + 2 * i)
+        - opts.circleGap
+        * i
+
+
+{-| The fill `stroke-dasharray`: the visible arc `(pi * percent / 100) * r * 2`
+followed by the blank span `viewBoxWidth * 8`. Unlike `Circle`, upstream emits
+this comma-separated and unit-less.
+-}
+multipleDasharray : Options msg -> Int -> Float -> String
+multipleDasharray opts index percent =
+    String.fromFloat (((pi * percent) / 100) * multipleCircleRadius opts index * 2)
+        ++ ", "
+        ++ String.fromFloat (opts.viewBoxWidth * 8)
+
+
+{-| The multiple-circle indicator: the default slot inside a classless `<div>` /
+`.n-progress-text` pair (no `role`, unlike the circle's built-in text). Custom
+slot content needs an elm-ui host, so `flex-basis` / `line-height` are restored
+inline the way `indicatorNode` does.
+-}
+multipleIndicator : List (Element msg) -> Element msg
+multipleIndicator children =
+    Element.el
+        [ Element.htmlAttribute (HA.style "flex-basis" "auto")
+        , Element.htmlAttribute (HA.style "line-height" "inherit")
+        ]
+        (Element.row
+            [ I.classes [ "n-progress-text" ] ]
+            children
+        )
+
+
+{-| `List.get` by index — the per-circle colour arrays may be shorter than
+`percentages` (Vue leaves the rest `undefined`, which drops the `stroke`).
+-}
+nth : Int -> List a -> Maybe a
+nth index items =
+    items |> List.drop index |> List.head
 
 
 

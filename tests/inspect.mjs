@@ -361,6 +361,116 @@ dTrue(
   progCircle ? 'indicator ok' : 'missing'
 )
 
+// Progress: multiple-circle --------------------------------------------------
+const progMulti = doc.querySelector('#live-progress-multiple .n-progress')
+dTrue(
+  'DOM: Progress multiple-circle renders .n-progress--multiple-circle + role=none',
+  !!progMulti &&
+    progMulti.classList.contains('n-progress--multiple-circle') &&
+    progMulti.getAttribute('role') === 'none' &&
+    progMulti.getAttribute('aria-valuenow') === '80,70',
+  progMulti ? progMulti.getAttribute('class') : 'missing'
+)
+const progMultiStyle = progMulti ? progMulti.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: Progress multiple-circle --n-fill-color (Default = info #2080f0)',
+  progMultiStyle.includes('--n-fill-color:#2080f0'),
+  progMultiStyle
+)
+
+const multiSvg = doc.querySelector('#live-progress-multiple .n-progress-graph-circle svg')
+dEq(
+  'DOM: Progress multiple-circle svg viewBox = 0 0 100 100',
+  '0 0 100 100',
+  multiSvg ? multiSvg.getAttribute('viewBox') : null
+)
+const multiRail = doc.querySelectorAll('#live-progress-multiple .n-progress-graph-circle-rail')
+const multiFill = doc.querySelectorAll('#live-progress-multiple .n-progress-graph-circle-fill')
+dEq('DOM: Progress multiple-circle renders two rail paths', 2, multiRail.length)
+dEq('DOM: Progress multiple-circle renders two fill paths', 2, multiFill.length)
+
+// circlePath: r = vw/2 - (sw/2) * (1 + 2i) - gap * i
+const mcR = (i) => 100 / 2 - (10 / 2) * (1 + 2 * i) - 10 * i
+const mcPath = (i) => {
+  const r = mcR(i)
+  return `m ${100 / 2} ${100 / 2 - r} a ${r} ${r} 0 1 1 0 ${2 * r} a ${r} ${r} 0 1 1 0 -${2 * r}`
+}
+dEq(
+  'DOM: Progress multiple-circle rail[0] d = outer circle path',
+  mcPath(0),
+  multiRail[0] ? multiRail[0].getAttribute('d') : null
+)
+dEq(
+  'DOM: Progress multiple-circle rail[1] d = inner circle path',
+  mcPath(1),
+  multiRail[1] ? multiRail[1].getAttribute('d') : null
+)
+dTrue(
+  'DOM: Progress multiple-circle stroke-width = 10 on rail',
+  !!multiRail[0] && multiRail[0].getAttribute('stroke-width') === '10',
+  multiRail[0] ? multiRail[0].getAttribute('stroke-width') : 'missing'
+)
+
+// strokeDasharray: (pi * v / 100) * r * 2, viewBoxWidth * 8
+const mcDash = (i, v) => `${((Math.PI * v) / 100) * mcR(i) * 2}, ${100 * 8}`
+const multiFill0Style = multiFill[0] ? multiFill[0].getAttribute('style') || '' : ''
+const multiFill1Style = multiFill[1] ? multiFill[1].getAttribute('style') || '' : ''
+dTrue(
+  'DOM: Progress multiple-circle fill[0] stroke-dasharray = 80% of outer arc + blank span',
+  multiFill0Style.includes(`stroke-dasharray:${mcDash(0, 80)}`),
+  multiFill0Style
+)
+dTrue(
+  'DOM: Progress multiple-circle fill[1] stroke-dasharray = 70% of inner arc + blank span',
+  multiFill1Style.includes(`stroke-dasharray:${mcDash(1, 70)}`),
+  multiFill1Style
+)
+dTrue(
+  'DOM: Progress multiple-circle fill[0] stroke = per-circle colour',
+  multiFill0Style.includes('stroke:#2080f0'),
+  multiFill0Style
+)
+const multiRail0Style = multiRail[0] ? multiRail[0].getAttribute('style') || '' : ''
+dTrue(
+  'DOM: Progress multiple-circle rail[0] stroke = per-circle rail colour + dashoffset 0',
+  multiRail0Style.includes('stroke:#2080f0') && multiRail0Style.includes('stroke-dashoffset:0'),
+  multiRail0Style
+)
+const multiText = doc.querySelector('#live-progress-multiple .n-progress-text')
+dEq(
+  'DOM: Progress multiple-circle indicator wraps the default slot in .n-progress-text',
+  'Circle racing!',
+  multiText ? multiText.textContent : null
+)
+
+// Progress: multiple-circle, no default slot --------------------------------
+const progMultiPlainGraph = doc.querySelector(
+  '#live-progress-multiple-plain .n-progress-graph-circle'
+)
+dTrue(
+  'DOM: Progress multiple-circle (no slot) still renders the graph',
+  !!progMultiPlainGraph,
+  progMultiPlainGraph ? 'graph ok' : 'missing'
+)
+const plainFills = doc.querySelectorAll(
+  '#live-progress-multiple-plain .n-progress-graph-circle-fill'
+)
+dTrue(
+  'DOM: Progress multiple-circle fill at 0% carries --empty',
+  !!plainFills[0] && plainFills[0].classList.contains('n-progress-graph-circle-fill--empty'),
+  plainFills[0] ? plainFills[0].getAttribute('class') : 'missing'
+)
+dTrue(
+  'DOM: Progress multiple-circle fill at 60% is not --empty',
+  !!plainFills[1] && !plainFills[1].classList.contains('n-progress-graph-circle-fill--empty'),
+  plainFills[1] ? plainFills[1].getAttribute('class') : 'missing'
+)
+dEq(
+  'DOM: Progress multiple-circle renders no indicator without a default slot',
+  0,
+  doc.querySelectorAll('#live-progress-multiple-plain .n-progress-text').length
+)
+
 // Result ---------------------------------------------------------------------
 const result = doc.querySelector('#live-result .n-result')
 dTrue(
