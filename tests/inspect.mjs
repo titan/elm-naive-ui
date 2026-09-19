@@ -225,11 +225,11 @@ dTrue(
 )
 const badgeSup = doc.querySelector('#live-badge-num .n-badge-sup')
 dTrue(
-  'DOM: Badge sup.n-badge-sup carries the offset transform + title',
+  'DOM: Badge sup.n-badge-sup omits the inline transform without offset (CSS base applies) + title',
   !!badgeSup &&
     badgeSup.tagName.toLowerCase() === 'sup' &&
     badgeSup.classList.contains('n-badge-sup') &&
-    (badgeSup.getAttribute('style') || '').includes('transform:') &&
+    !(badgeSup.getAttribute('style') || '').includes('transform:') &&
     badgeSup.getAttribute('title') === '20',
   badgeSup ? badgeSup.getAttribute('style') : 'missing'
 )
@@ -742,9 +742,23 @@ dClass('DOM: Tag rtl adds n-tag--rtl', '#live-rtl-tag .n-tag', 'n-tag--rtl')
 dClass('DOM: Badge rtl adds n-badge--rtl', '#live-rtl-badge .n-badge', 'n-badge--rtl')
 const rtlBadgeSup = doc.querySelector('#live-rtl-badge .n-badge-sup')
 dTrue(
-  'DOM: Badge rtl mirrors the sup offset base to translateX(50%)',
-  !!rtlBadgeSup && (rtlBadgeSup.getAttribute('style') || '').includes('translateX(50%)'),
+  'DOM: Badge rtl offset uses the mirrored 50% base',
+  !!rtlBadgeSup &&
+    (rtlBadgeSup.getAttribute('style') || '').includes('translate(calc(50% + 2px), 3px)'),
   rtlBadgeSup ? rtlBadgeSup.getAttribute('style') : 'missing'
+)
+const offsetBadgeSup = doc.querySelector('#live-badge-offset .n-badge-sup')
+dTrue(
+  'DOM: Badge offset uses the -50% base',
+  !!offsetBadgeSup &&
+    (offsetBadgeSup.getAttribute('style') || '').includes('translate(calc(-50% + 4px), -2px)'),
+  offsetBadgeSup ? offsetBadgeSup.getAttribute('style') : 'missing'
+)
+const dotBadgeSup = doc.querySelector('#live-badge-dot .n-badge-sup')
+dTrue(
+  'DOM: Badge --as-is (dot) sup omits the inline transform (CSS translateX(0) applies)',
+  !!dotBadgeSup && !(dotBadgeSup.getAttribute('style') || '').includes('transform:'),
+  dotBadgeSup ? dotBadgeSup.getAttribute('style') : 'missing'
 )
 
 // --- report -----------------------------------------------------------------

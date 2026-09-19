@@ -451,7 +451,16 @@ rtlBadgeOpts =
         d =
             Badge.defaults
     in
-    { d | rtl = True, value = Just (Badge.Number 5) }
+    { d | rtl = True, value = Just (Badge.Number 5), offset = Just ( 2, 3 ) }
+
+
+badgeOffsetOpts : Badge.Options msg
+badgeOffsetOpts =
+    let
+        d =
+            Badge.defaults
+    in
+    { d | value = Just (Badge.Number 5), offset = Just ( 4, -2 ) }
 
 
 resultLiveOpts : Result.Options msg
@@ -1049,6 +1058,8 @@ liveNodes =
                     (Tag.view Theme.default rtlTagOpts [ Element.text "RTL" ])
                 , Element.el [ Element.htmlAttribute (HA.id "live-rtl-badge") ]
                     (Badge.view Theme.default rtlBadgeOpts [ Element.text "Mail" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-badge-offset") ]
+                    (Badge.view Theme.default badgeOffsetOpts [ Element.text "Mail" ])
                 ]
             )
         ]

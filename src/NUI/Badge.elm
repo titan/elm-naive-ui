@@ -163,9 +163,8 @@ supElement opts =
     if showBadge opts || isLeaving opts.transition then
         [ Element.html
             (Html.sup
-                ([ HA.class (supClasses opts)
-                 , HA.style "transform" (offsetTransform opts.rtl opts.offset)
-                 ]
+                ([ HA.class (supClasses opts) ]
+                    ++ offsetStyle opts
                     ++ titleAttributes opts.value
                 )
                 (List.concat
@@ -288,34 +287,46 @@ titleAttributes maybeValue =
             []
 
 
-{-| The sup's offset transform. Naive UI only computes it when `offset` is
-set (the stylesheet carries the `translateX(-50%)` base, and the RTL rule flips
-it to `translateX(50%)`); we attach it always so the default and offset forms
-are uniform, using the RTL base so the inline value matches what the stylesheet
-would have applied.
+{-| The sup's `transform`. Naive UI only computes it when `offset` is set —
+otherwise the stylesheet's base applies: `translateX(-50%)` normally,
+`translateX(0)` for `n-badge--as-is` (no default slot), and `translateX(50%)`
+under `n-badge--rtl`. So we must NOT attach an inline transform when `offset`
+is absent (it would override those).
 -}
-offsetTransform : Bool -> Maybe ( Float, Float ) -> String
-offsetTransform rtl offset =
-    let
-        base =
-            if rtl then
-                "50%"
+offsetStyle : Options msg -> List (Html.Attribute msg)
+offsetStyle opts =
+    case offsetTransform opts.rtl opts.offset of
+        Just transform ->
+            [ HA.style "transform" transform ]
 
-            else
-                "-50%"
-    in
+        Nothing ->
+            []
+
+
+{-| The inline offset transform, only when `offset` is set: `translate(calc({base} +
+{x}px), {y}px)`, where `base` is `50%` under RTL and `-50%` otherwise.
+-}
+offsetTransform : Bool -> Maybe ( Float, Float ) -> Maybe String
+offsetTransform rtl offset =
     case offset of
         Nothing ->
-            "translateX(" ++ base ++ ")"
+            Nothing
 
         Just ( x, y ) ->
-            "translate(calc("
-                ++ base
-                ++ " + "
-                ++ String.fromFloat x
-                ++ "px), "
-                ++ String.fromFloat y
-                ++ "px)"
+            Just
+                ("translate(calc("
+                    ++ (if rtl then
+                            "50%"
+
+                        else
+                            "-50%"
+                       )
+                    ++ " + "
+                    ++ String.fromFloat x
+                    ++ "px), "
+                    ++ String.fromFloat y
+                    ++ "px)"
+                )
 
 
 {-| `NBaseSlotMachine`. Numbers render the digits (and the trailing `+` when the
