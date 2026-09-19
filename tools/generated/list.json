@@ -1,0 +1,30 @@
+{
+  "light": {
+    "textColor": "rgb(51, 54, 57)",
+    "color": "#fff",
+    "colorHover": "rgb(243, 243, 245)",
+    "colorModal": "#fff",
+    "colorHoverModal": "rgba(243, 243, 245, 1)",
+    "colorPopover": "#fff",
+    "colorHoverPopover": "rgba(243, 243, 245, 1)",
+    "borderColor": "rgb(239, 239, 245)",
+    "borderColorModal": "rgba(239, 239, 245, 1)",
+    "borderColorPopover": "rgba(239, 239, 245, 1)",
+    "borderRadius": "3px",
+    "fontSize": "14px"
+  },
+  "dark": {
+    "textColor": "rgba(255, 255, 255, 0.82)",
+    "color": "rgb(24, 24, 28)",
+    "colorHover": "rgba(255, 255, 255, 0.09)",
+    "colorModal": "rgb(44, 44, 50)",
+    "colorHoverModal": "rgba(63, 63, 68, 1)",
+    "colorPopover": "rgb(72, 72, 78)",
+    "colorHoverPopover": "rgba(88, 88, 94, 1)",
+    "borderColor": "rgba(255, 255, 255, 0.09)",
+    "borderColorModal": "rgba(63, 63, 68, 1)",
+    "borderColorPopover": "rgba(88, 88, 94, 1)",
+    "borderRadius": "3px",
+    "fontSize": "14px"
+  }
+}

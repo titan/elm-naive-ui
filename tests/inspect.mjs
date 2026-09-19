@@ -1045,6 +1045,103 @@ dTrue(
   tlLarge ? tlLarge.getAttribute('class') : 'missing'
 )
 
+// Thing ----------------------------------------------------------------------
+const textAt = (sel) => {
+  const el = doc.querySelector(sel)
+  return el ? el.textContent : null
+}
+
+const thing = doc.querySelector('#live-thing .n-thing')
+dTrue(
+  'DOM: Thing renders .n-thing',
+  !!thing && thing.classList.contains('n-thing'),
+  thing ? thing.getAttribute('class') : 'missing'
+)
+const thingStyle = thing ? thing.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: Thing carries --n-title-text-color',
+  thingStyle.includes('--n-title-text-color:'),
+  thingStyle
+)
+dTrue(
+  'DOM: Thing avatar leads the avatar-header-wrapper',
+  !!doc.querySelector('#live-thing .n-thing-avatar-header-wrapper .n-thing-avatar'),
+  'ok'
+)
+dEq('DOM: Thing header title renders', 'Title', textAt('#live-thing .n-thing-header__title'))
+dEq('DOM: Thing header extra renders', 'Extra', textAt('#live-thing .n-thing-header__extra'))
+dEq('DOM: Thing content renders', 'Body', textAt('#live-thing .n-thing-main__content'))
+
+// Marquee --------------------------------------------------------------------
+const marquee = doc.querySelector('#live-marquee .n-marquee')
+dTrue(
+  'DOM: Marquee renders .n-marquee.n-marquee--auto-fill',
+  !!marquee &&
+    marquee.classList.contains('n-marquee') &&
+    marquee.classList.contains('n-marquee--auto-fill'),
+  marquee ? marquee.getAttribute('class') : 'missing'
+)
+const marqueeStyle = marquee ? marquee.getAttribute('style') || '' : ''
+dTrue('DOM: Marquee --n-duration:5s', marqueeStyle.includes('--n-duration:5s'), marqueeStyle)
+dTrue('DOM: Marquee --n-play:running', marqueeStyle.includes('--n-play:running'), marqueeStyle)
+dEq(
+  'DOM: Marquee renders two __group containers',
+  2,
+  doc.querySelectorAll('#live-marquee .n-marquee__group').length
+)
+dEq(
+  'DOM: Marquee auto-fill group 1 = original + (repeat-1) items',
+  2,
+  doc.querySelectorAll('#live-marquee .n-marquee__group:first-child .n-marquee__item').length
+)
+dEq(
+  'DOM: Marquee auto-fill group 2 = repeat items',
+  2,
+  doc.querySelectorAll('#live-marquee .n-marquee__group:last-child .n-marquee__item').length
+)
+dEq(
+  'DOM: Marquee renders exactly one __original-item',
+  1,
+  doc.querySelectorAll('#live-marquee .n-marquee__original-item').length
+)
+
+// List -----------------------------------------------------------------------
+const list = doc.querySelector('#live-list .n-list')
+dTrue(
+  'DOM: List renders .n-list--bordered.n-list--hoverable.n-list--show-divider',
+  !!list &&
+    list.classList.contains('n-list') &&
+    list.classList.contains('n-list--bordered') &&
+    list.classList.contains('n-list--hoverable') &&
+    list.classList.contains('n-list--show-divider'),
+  list ? list.getAttribute('class') : 'missing'
+)
+dEq('DOM: List renders 2 items', 2, doc.querySelectorAll('#live-list .n-list-item').length)
+dEq(
+  'DOM: List show-divider renders a divider per item',
+  2,
+  doc.querySelectorAll('#live-list .n-list-item__divider').length
+)
+dEq('DOM: List item prefix renders', '*', textAt('#live-list .n-list-item__prefix'))
+dEq('DOM: List item suffix renders', '!', textAt('#live-list .n-list-item__suffix'))
+
+// PageHeader -----------------------------------------------------------------
+const ph = doc.querySelector('#live-page-header .n-page-header-wrapper')
+dTrue(
+  'DOM: PageHeader renders .n-page-header-wrapper',
+  !!ph && ph.classList.contains('n-page-header-wrapper'),
+  ph ? ph.getAttribute('class') : 'missing'
+)
+dTrue(
+  'DOM: PageHeader back control renders the default arrow icon in .n-base-icon',
+  !!doc.querySelector('#live-page-header .n-page-header__back .n-base-icon svg'),
+  'ok'
+)
+dEq('DOM: PageHeader title renders', 'Title', textAt('#live-page-header .n-page-header__title'))
+dEq('DOM: PageHeader subtitle renders', 'Sub', textAt('#live-page-header .n-page-header__subtitle'))
+dEq('DOM: PageHeader extra renders', 'Extra', textAt('#live-page-header .n-page-header__extra'))
+dEq('DOM: PageHeader content renders', 'Body', textAt('#live-page-header .n-page-header-content'))
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

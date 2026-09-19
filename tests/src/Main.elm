@@ -31,6 +31,9 @@ import NUI.Empty as Empty
 import NUI.GradientText as GradientText
 import NUI.Input as Input
 import NUI.Internal as Internal
+import NUI.List as NList
+import NUI.Marquee as Marquee
+import NUI.PageHeader as PageHeader
 import NUI.Progress as Progress
 import NUI.Radio as Radio
 import NUI.Result as Result
@@ -43,6 +46,7 @@ import NUI.Theme as Theme
 import NUI.Theme.Button as ButtonTheme
 import NUI.Theme.Color as Color
 import NUI.Theme.Tag as TagTheme
+import NUI.Thing as Thing
 import NUI.Timeline as Timeline
 import NUI.Types as T
 
@@ -679,6 +683,62 @@ timelineLargeOpts =
     { d | size = Timeline.Large, iconSize = Just 20 }
 
 
+thingLiveOpts : Thing.Options msg
+thingLiveOpts =
+    let
+        d =
+            Thing.defaults
+    in
+    { d
+        | avatar = Just (Element.text "A")
+        , title = Just "Title"
+        , titleExtra = Just "Extra"
+        , description = Just "Desc"
+    }
+
+
+marqueeLiveOpts : Marquee.Options msg
+marqueeLiveOpts =
+    let
+        d =
+            Marquee.defaults
+    in
+    { d | duration = 5, autoFill = True, repeat = 2 }
+
+
+nlistLiveOpts : NList.Options msg
+nlistLiveOpts =
+    let
+        d =
+            NList.defaults
+    in
+    { d | bordered = True, hoverable = True }
+
+
+nlistLiveItems : List (NList.Item msg)
+nlistLiveItems =
+    let
+        i =
+            NList.item
+    in
+    [ { i | content = [ Element.text "One" ] }
+    , { i
+        | prefix = Just (Element.text "*")
+        , content = [ Element.text "Two" ]
+        , suffix = Just (Element.text "!")
+      }
+    ]
+
+
+pageHeaderLiveOpts : PageHeader.Options Msg
+pageHeaderLiveOpts =
+    let
+        d =
+            PageHeader.defaults
+    in
+    { d | title = Just "Title", subtitle = Just "Sub", extra = Just "Extra", onBack = Just NoOp }
+
+
 
 -- CHECKS -----------------------------------------------------------------------
 
@@ -893,6 +953,22 @@ checks =
 
         tlIconSizeVars =
             Timeline.cssVarsFor light { tlD | iconSize = Just 20 } tlItemD
+
+        thingVars =
+            Thing.cssVarsFor light
+
+        marqueeVars =
+            Marquee.cssVarsFor Marquee.defaults
+
+        marqueePausedVars =
+            Marquee.cssVarsFor
+                { duration = 2.5, play = False, autoFill = False, repeat = 1, attributes = [] }
+
+        nlistVars =
+            NList.cssVarsFor light
+
+        pageHeaderVars =
+            PageHeader.cssVarsFor light
     in
     [ -- 1. NUI.Theme -------------------------------------------------------------
       eq "Theme.default == Theme.light" True (Theme.default == Theme.light)
@@ -1223,6 +1299,69 @@ checks =
     , eq "timeline iconSize 20 -> 20px" (Just "20px") (lookup "--n-icon-size" tlIconSizeVars)
     , eq "timeline --n-title-margin (medium)" (Just "0 0 6px 0") (lookup "--n-title-margin" tlDefaultVars)
     , eq "timeline --n-line-color = railColor" (Just common.railColor) (lookup "--n-line-color" tlDefaultVars)
+
+    -- 18. NUI.Thing cssVarsFor --------------------------------------------------
+    , eq "thing cssVarsFor has 5 vars" 5 (List.length thingVars)
+    , eq "thing cssVarsFor exact --n-* names"
+        [ "--n-bezier", "--n-font-size", "--n-text-color", "--n-title-font-weight", "--n-title-text-color" ]
+        (varKeys thingVars)
+    , eq "thing --n-font-size" (Just common.fontSize) (lookup "--n-font-size" thingVars)
+    , eq "thing --n-text-color" (Just common.textColor2) (lookup "--n-text-color" thingVars)
+    , eq "thing --n-title-text-color" (Just common.textColor1) (lookup "--n-title-text-color" thingVars)
+    , eq "thing --n-title-font-weight" (Just common.fontWeightStrong) (lookup "--n-title-font-weight" thingVars)
+
+    -- 19. NUI.Marquee cssVarsFor ------------------------------------------------
+    , eq "marquee cssVarsFor has 6 vars" 6 (List.length marqueeVars)
+    , eq "marquee cssVarsFor exact --n-* names"
+        [ "--n-play", "--n-direction", "--n-duration", "--n-delay", "--n-iteration-count", "--n-min-width" ]
+        (varKeys marqueeVars)
+    , eq "marquee --n-play default = running" (Just "running") (lookup "--n-play" marqueeVars)
+    , eq "marquee --n-duration default = 0s" (Just "0s") (lookup "--n-duration" marqueeVars)
+    , eq "marquee --n-iteration-count" (Just "infinite") (lookup "--n-iteration-count" marqueeVars)
+    , eq "marquee --n-play paused" (Just "paused") (lookup "--n-play" marqueePausedVars)
+    , eq "marquee --n-duration 2.5 -> 2.5s" (Just "2.5s") (lookup "--n-duration" marqueePausedVars)
+
+    -- 20. NUI.List cssVarsFor ----------------------------------------------------
+    , eq "list cssVarsFor has 13 vars" 13 (List.length nlistVars)
+    , eq "list cssVarsFor exact --n-* names"
+        [ "--n-font-size"
+        , "--n-bezier"
+        , "--n-text-color"
+        , "--n-color"
+        , "--n-border-radius"
+        , "--n-border-color"
+        , "--n-border-color-modal"
+        , "--n-border-color-popover"
+        , "--n-color-modal"
+        , "--n-color-popover"
+        , "--n-color-hover"
+        , "--n-color-hover-modal"
+        , "--n-color-hover-popover"
+        ]
+        (varKeys nlistVars)
+    , eq "list --n-text-color" (Just common.textColor2) (lookup "--n-text-color" nlistVars)
+    , eq "list --n-color" (Just common.tableColor) (lookup "--n-color" nlistVars)
+    , eq "list --n-color-hover-modal" (Just "rgba(243, 243, 245, 1)") (lookup "--n-color-hover-modal" nlistVars)
+
+    -- 21. NUI.PageHeader cssVarsFor ----------------------------------------------
+    , eq "page-header cssVarsFor has 10 vars" 10 (List.length pageHeaderVars)
+    , eq "page-header cssVarsFor exact --n-* names"
+        [ "--n-title-text-color"
+        , "--n-title-font-size"
+        , "--n-title-font-weight"
+        , "--n-font-size"
+        , "--n-back-size"
+        , "--n-subtitle-text-color"
+        , "--n-back-color"
+        , "--n-back-color-hover"
+        , "--n-back-color-pressed"
+        , "--n-bezier"
+        ]
+        (varKeys pageHeaderVars)
+    , eq "page-header --n-title-font-size" (Just "18px") (lookup "--n-title-font-size" pageHeaderVars)
+    , eq "page-header --n-back-size" (Just common.heightTiny) (lookup "--n-back-size" pageHeaderVars)
+    , eq "page-header --n-back-color" (Just common.textColor2) (lookup "--n-back-color" pageHeaderVars)
+    , eq "page-header --n-back-color-hover" (Just common.primaryColorHover) (lookup "--n-back-color-hover" pageHeaderVars)
     ]
 
 
@@ -1424,6 +1563,14 @@ liveNodes =
                     (Timeline.view Theme.default timelineLiveOpts timelineLiveItems)
                 , Element.el [ Element.htmlAttribute (HA.id "live-timeline-large") ]
                     (Timeline.view Theme.default timelineLargeOpts [ Timeline.item ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-thing") ]
+                    (Thing.view Theme.default thingLiveOpts [ Element.text "Body" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-marquee") ]
+                    (Marquee.view Theme.default marqueeLiveOpts [ Element.text "Scroll" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-list") ]
+                    (NList.view Theme.default nlistLiveOpts nlistLiveItems)
+                , Element.el [ Element.htmlAttribute (HA.id "live-page-header") ]
+                    (PageHeader.view Theme.default pageHeaderLiveOpts [ Element.text "Body" ])
                 ]
             )
         ]

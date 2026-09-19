@@ -1,0 +1,14 @@
+{
+  "light": {
+    "fontSize": "14px",
+    "titleTextColor": "rgb(31, 34, 37)",
+    "textColor": "rgb(51, 54, 57)",
+    "titleFontWeight": "500"
+  },
+  "dark": {
+    "fontSize": "14px",
+    "titleTextColor": "rgba(255, 255, 255, 0.9)",
+    "textColor": "rgba(255, 255, 255, 0.82)",
+    "titleFontWeight": "500"
+  }
+}

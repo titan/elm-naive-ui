@@ -22,6 +22,9 @@ const ALLOW = new Set([
   'n-text--delete', // Text.tsx emits it; the <del> tag carries the look
   'n-input--stateful',
   'n-space', // Space has no stylesheet at all (pure flex layout)
+  'n-marquee__original-item', // emitted by Marquee.tsx; no rule targets it
+  'n-thing-header__extra', // emitted by Thing.tsx; no rule targets it
+  'n-page-header__extra', // emitted by PageHeader.tsx; no rule targets it
   // Harmless extras: not upstream class names, but the CSS targets the tag /
   // descendant, so rendering is unaffected.
   'n-avatar__img', // upstream CSS targets `.n-avatar img`

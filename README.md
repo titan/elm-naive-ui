@@ -80,6 +80,9 @@ bridge, tests).
 | `NUI.Empty`       | ✅ |
 | `NUI.GradientText`| ✅ |
 | `NUI.Input`       | ✅ |
+| `NUI.List`        | ✅ |
+| `NUI.Marquee`     | ✅ |
+| `NUI.PageHeader`  | ✅ |
 | `NUI.Progress`    | ✅ |
 | `NUI.Radio`       | ✅ |
 | `NUI.Result`      | ✅ |
@@ -89,6 +92,7 @@ bridge, tests).
 | `NUI.Statistic`   | ✅ |
 | `NUI.Switch`      | ✅ |
 | `NUI.Tag`         | ✅ |
+| `NUI.Thing`       | ✅ |
 | `NUI.Timeline`    | ✅ |
 | `NUI.Typography`  | ✅ |
 

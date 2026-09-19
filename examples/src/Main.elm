@@ -21,6 +21,9 @@ import NUI.Divider as Divider
 import NUI.Empty as Empty
 import NUI.GradientText as GradientText
 import NUI.Input as Input
+import NUI.List as NList
+import NUI.Marquee as Marquee
+import NUI.PageHeader as PageHeader
 import NUI.Progress as Progress
 import NUI.Radio as Radio
 import NUI.Result as Result
@@ -31,6 +34,7 @@ import NUI.Statistic as Statistic
 import NUI.Switch as Switch
 import NUI.Tag as Tag
 import NUI.Theme as Theme exposing (Theme)
+import NUI.Thing as Thing
 import NUI.Timeline as Timeline
 import NUI.Types as T
 import NUI.Typography as Typo
@@ -189,6 +193,31 @@ tlItem =
     Timeline.item
 
 
+thingD : Thing.Options msg
+thingD =
+    Thing.defaults
+
+
+marqueeD : Marquee.Options msg
+marqueeD =
+    Marquee.defaults
+
+
+nlistD : NList.Options msg
+nlistD =
+    NList.defaults
+
+
+nlistItem : NList.Item msg
+nlistItem =
+    NList.item
+
+
+pageHeaderD : PageHeader.Options msg
+pageHeaderD =
+    PageHeader.defaults
+
+
 {-| A distinct colour per showcase avatar (the group's slot path uses the
 `src` as a label).
 -}
@@ -272,6 +301,10 @@ body =
     , statisticSection
     , breadcrumbSection
     , timelineSection
+    , thingSection
+    , marqueeSection
+    , listSection
+    , pageHeaderSection
     , rtlSection
     , themeSection
     ]
@@ -922,6 +955,84 @@ timelineSection =
         , Timeline.view theme
             { tlD | itemPlacement = Timeline.Right }
             [ { tlItem | time = Just "1", content = [ Element.text "Right aligned" ] } ]
+        ]
+
+
+thingSection : Element msg
+thingSection =
+    section "Thing" "A flexible content block (avatar + header + body)." <|
+        [ demoRow "With avatar"
+            [ Element.el [ Element.width (Element.px 320) ]
+                (Thing.view theme
+                    { thingD
+                        | avatar = Just (Avatar.view theme Avatar.defaults [ Element.text "N" ])
+                        , title = Just "naive-ui"
+                        , titleExtra = Just "v2"
+                        , description = Just "A Vue 3 component library."
+                    }
+                    [ Element.text "Content sits under the header." ]
+                )
+            ]
+        , demoRow "Indented content"
+            [ Element.el [ Element.width (Element.px 320) ]
+                (Thing.view theme
+                    { thingD
+                        | avatar = Just (Avatar.view theme Avatar.defaults [ Element.text "I" ])
+                        , contentIndented = True
+                        , title = Just "Indented"
+                    }
+                    [ Element.text "The avatar sits above the block." ]
+                )
+            ]
+        ]
+
+
+marqueeSection : Element msg
+marqueeSection =
+    section "Marquee" "Scrolling content (duration is caller-owned)." <|
+        [ Element.el [ Element.width (Element.px 360) ]
+            (Marquee.view theme
+                { marqueeD | duration = 8, autoFill = True, repeat = 2 }
+                [ Tag.view theme { tagD | kind = T.Primary } [ Element.text "Naive UI" ]
+                , Element.text "  ·  scrolling text  ·  "
+                , Tag.view theme { tagD | kind = T.Success } [ Element.text "Elm" ]
+                ]
+            )
+        ]
+
+
+listSection : Element msg
+listSection =
+    section "List" "Bordered, hoverable item lists." <|
+        [ Element.el [ Element.width (Element.px 360) ]
+            (NList.view theme
+                { nlistD | bordered = True, hoverable = True }
+                [ { nlistItem | content = [ Element.text "First item" ] }
+                , { nlistItem
+                    | prefix = Just (Element.text "•")
+                    , content = [ Element.text "Second item" ]
+                    , suffix = Just (Element.text "→")
+                  }
+                , { nlistItem | content = [ Element.text "Third item" ] }
+                ]
+            )
+        ]
+
+
+pageHeaderSection : Element msg
+pageHeaderSection =
+    section "Page Header"
+        "Title, subtitle and extra (pass `onBack` to add the back control)."
+    <|
+        [ Element.el [ Element.width Element.fill ]
+            (PageHeader.view theme
+                { pageHeaderD
+                    | title = Just "Page title"
+                    , subtitle = Just "Second level"
+                    , extra = Just "Extra"
+                }
+                [ Element.text "The page body sits below the header." ]
+            )
         ]
 
 

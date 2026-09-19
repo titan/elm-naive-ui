@@ -42,7 +42,11 @@ const targets = {
   '.n-gradient-text': true,
   '.n-statistic': true,
   '.n-breadcrumb': true,
-  '.n-timeline': false
+  '.n-timeline': false,
+  '.n-thing': true,
+  '.n-marquee': true,
+  '.n-list': true,
+  '.n-page-header-wrapper': true
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {

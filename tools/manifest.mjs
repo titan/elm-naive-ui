@@ -138,5 +138,21 @@ export const components = {
   timeline: {
     cssr: ['timeline/src/styles/index.cssr.ts'],
     theme: 'timeline/styles/light.ts'
+  },
+  thing: {
+    cssr: ['thing/src/styles/index.cssr.ts', 'thing/src/styles/rtl.cssr.ts'],
+    theme: 'thing/styles/light.ts'
+  },
+  marquee: {
+    cssr: ['marquee/src/styles/index.cssr.ts'],
+    theme: null
+  },
+  'page-header': {
+    cssr: ['page-header/src/styles/index.cssr.ts', 'page-header/src/styles/rtl.cssr.ts'],
+    theme: 'page-header/styles/light.ts'
+  },
+  list: {
+    cssr: ['list/src/styles/index.cssr.ts', 'list/src/styles/rtl.cssr.ts'],
+    theme: 'list/styles/light.ts'
   }
 }
