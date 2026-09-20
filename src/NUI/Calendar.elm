@@ -3,9 +3,12 @@ module NUI.Calendar exposing
     , Locale
     , Options
     , Panel
+    , addMonthsPanel
     , cssVarsFor
     , defaults
     , enUS
+    , panelOf
+    , todayPanel
     , view
     )
 
@@ -233,19 +236,12 @@ nextButton theme opts =
 todayButton : Theme -> Options msg -> Element msg
 todayButton theme opts =
     let
-        nowPanel =
-            panelOf opts.now
-
         base =
             Button.defaults
 
         -- upstream fires onPanelChange only when the panel actually changes
         onPress =
-            if nowPanel /= opts.panel then
-                panelMsg opts nowPanel
-
-            else
-                Nothing
+            Maybe.andThen (panelMsg opts) (todayPanel opts)
     in
     Button.view theme
         { base
@@ -253,6 +249,23 @@ todayButton theme opts =
             , onPress = onPress
         }
         [ Element.text opts.locale.today ]
+
+
+{-| The panel the Today button jumps to — `Just` the month of `now`, or
+`Nothing` when the panel already shows it. Upstream fires `onPanelChange` only
+when the panel actually changes (`oldYear !== newYear || oldMonth !== newMonth`).
+-}
+todayPanel : Options msg -> Maybe Panel
+todayPanel opts =
+    let
+        nowPanel =
+            panelOf opts.now
+    in
+    if nowPanel /= opts.panel then
+        Just nowPanel
+
+    else
+        Nothing
 
 
 panelMsg : Options msg -> Panel -> Maybe msg

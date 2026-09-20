@@ -1414,6 +1414,10 @@ checks =
 
         calTheme =
             CalendarTheme.vars light
+
+        calDefaults : Calendar.Options ()
+        calDefaults =
+            Calendar.defaults
     in
     [ -- 1. NUI.Theme -------------------------------------------------------------
       eq "Theme.default == Theme.light" True (Theme.default == Theme.light)
@@ -2033,6 +2037,19 @@ checks =
     , eq "calendar --n-cell-color-hover-modal = theme cellColorHoverModal" (Just calTheme.cellColorHoverModal) (lookup "--n-cell-color-hover-modal" calVars)
     , eq "calendar --n-cell-color-hover-popover = theme cellColorHoverPopover" (Just calTheme.cellColorHoverPopover) (lookup "--n-cell-color-hover-popover" calVars)
     , eq "calendar --n-bar-color = common.primaryColor" (Just common.primaryColor) (lookup "--n-bar-color" calVars)
+
+    -- 33. NUI.Calendar panel helpers ---------------------------------------------
+    , eq "calendar panelOf keeps the month" { year = 2024, month = 6 } (Calendar.panelOf { year = 2024, month = 6, day = 20 })
+    , eq "calendar panelOf keeps leap Feb" { year = 2024, month = 2 } (Calendar.panelOf { year = 2024, month = 2, day = 29 })
+    , eq "calendar addMonthsPanel -1 wraps Jan -> prev Dec" { year = 2023, month = 12 } (Calendar.addMonthsPanel { year = 2024, month = 1 } -1)
+    , eq "calendar addMonthsPanel +1 wraps Dec -> next Jan" { year = 2025, month = 1 } (Calendar.addMonthsPanel { year = 2024, month = 12 } 1)
+    , eq "calendar addMonthsPanel within a year" { year = 2024, month = 7 } (Calendar.addMonthsPanel { year = 2024, month = 6 } 1)
+    , eq "calendar todayPanel is Nothing when panel == now month"
+        Nothing
+        (Calendar.todayPanel { calDefaults | panel = { year = 2024, month = 6 }, now = { year = 2024, month = 6, day = 15 } })
+    , eq "calendar todayPanel is Just now-month when they differ"
+        (Just { year = 2024, month = 6 })
+        (Calendar.todayPanel { calDefaults | panel = { year = 2024, month = 3 }, now = { year = 2024, month = 6, day = 15 } })
     ]
 
 

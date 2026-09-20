@@ -40,9 +40,10 @@ multi-character (paste / autofill) distribution across slots and the
 the caller: slot focus movement (`focusOnChar`, arrow keys, the auto-advance
 after input — needs DOM focus, i.e. ports), upstream's `onFinish` (derive it
 from `onUpdateValue`: every slot non-empty) and the paste / keydown handlers
-(`NUI.Input` exposes no such hooks). An `onUpdateValue` message may carry the
-unchanged list when `allowInput` rejects the character — upstream skips the
-callback in that case; ignore no-op messages if that matters.
+(`NUI.Input` exposes no such hooks). On rejection by `allowInput` the browser
+fires no `input` event, so no message is emitted (matching upstream); a no-op
+`onUpdateValue` is only emitted when an already-empty slot is re-input, which
+upstream fires and then swallows via a shallow-equality check.
 
 The children argument models upstream's typed default slot: element _i_
 replaces the built-in input of slot _i_ (pass `[]` for the built-in inputs).
