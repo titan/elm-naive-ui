@@ -205,5 +205,28 @@ export const components = {
   calendar: {
     cssr: ['calendar/src/styles/index.cssr.ts'],
     theme: 'calendar/styles/light.ts'
+  },
+  pagination: {
+    cssr: [
+      'pagination/src/styles/index.cssr.ts',
+      'pagination/src/styles/rtl.cssr.ts'
+    ],
+    theme: 'pagination/styles/light.ts'
+  },
+  'input-number': {
+    cssr: [
+      'input-number/src/styles/input-number.cssr.ts',
+      'input-number/src/styles/rtl.cssr.ts'
+    ],
+    theme: 'input-number/styles/light.ts'
+  },
+  layout: {
+    cssr: [
+      'layout/src/styles/layout.cssr.ts',
+      'layout/src/styles/layout-header.cssr.ts',
+      'layout/src/styles/layout-footer.cssr.ts',
+      'layout/src/styles/layout-sider.cssr.ts'
+    ],
+    theme: 'layout/styles/light.ts'
   }
 }

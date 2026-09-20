@@ -1,0 +1,26 @@
+{
+  "light": {
+    "iconColorDisabled": "rgba(194, 194, 194, 1)"
+  },
+  "dark": {
+    "iconColorDisabled": "rgba(255, 255, 255, 0.38)"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "iconColorDisabled": "textColorDisabled"
+      },
+      "seen": [
+        "iconColorDisabled"
+      ]
+    },
+    "dark": {
+      "refs": {
+        "iconColorDisabled": "textColorDisabled"
+      },
+      "seen": [
+        "iconColorDisabled"
+      ]
+    }
+  }
+}
