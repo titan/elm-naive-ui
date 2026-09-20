@@ -58,7 +58,15 @@ const targets = {
   '.n-qr-code': true,
   '.n-collapse': true,
   '.n-rate': true,
-  '.n-float-button': true
+  '.n-float-button': true,
+  '.n-pagination': true,
+  // InputNumber's root carries no --n-* vars upstream (they live on the inner
+  // NInput / NButton), so only the bridge is asserted.
+  '.n-input-number': false,
+  '.n-layout': true,
+  '.n-layout-header': true,
+  '.n-layout-footer': true,
+  '.n-layout-sider': true
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {

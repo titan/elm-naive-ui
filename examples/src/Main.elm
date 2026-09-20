@@ -29,10 +29,16 @@ import NUI.Empty as Empty
 import NUI.FloatButton as FloatButton
 import NUI.GradientText as GradientText
 import NUI.Input as Input
+import NUI.InputNumber as InputNumber
 import NUI.InputOtp as InputOtp
+import NUI.Layout as Layout
+import NUI.LayoutFooter as LayoutFooter
+import NUI.LayoutHeader as LayoutHeader
+import NUI.LayoutSider as LayoutSider
 import NUI.List as NList
 import NUI.Marquee as Marquee
 import NUI.PageHeader as PageHeader
+import NUI.Pagination as Pagination
 import NUI.Progress as Progress
 import NUI.QrCode as QrCode
 import NUI.Radio as Radio
@@ -149,6 +155,36 @@ bgD =
 calD : Calendar.Options msg
 calD =
     Calendar.defaults
+
+
+pgD : Pagination.Options msg
+pgD =
+    Pagination.defaults
+
+
+inD : InputNumber.Options msg
+inD =
+    InputNumber.defaults
+
+
+layD : Layout.Options msg
+layD =
+    Layout.defaults
+
+
+lhD : LayoutHeader.Options msg
+lhD =
+    LayoutHeader.defaults
+
+
+lfD : LayoutFooter.Options msg
+lfD =
+    LayoutFooter.defaults
+
+
+lsD : LayoutSider.Options msg
+lsD =
+    LayoutSider.defaults
 
 
 cardD : Card.Options msg
@@ -377,6 +413,8 @@ body =
     , inputOtpSection
     , dynamicTagsSection
     , calendarSection
+    , paginationSection
+    , inputNumberSection
     , selectionSection
     , dividerSection
     , avatarSection
@@ -399,6 +437,7 @@ body =
     , affixSection
     , countdownSection
     , splitSection
+    , layoutSection
     , stepsSection
     , ellipsisSection
     , backTopSection
@@ -615,6 +654,44 @@ calendarSection =
                     , value = Just { year = 2024, month = 6, day = 20 }
                 }
             )
+        ]
+
+
+paginationSection : Element msg
+paginationSection =
+    section "Pagination" "Page windows (the page, the page size and the jumper text are caller-owned)." <|
+        [ Pagination.view theme { pgD | itemCount = Just 153, currentPage = 2 } []
+        , Pagination.view theme { pgD | itemCount = Just 153, currentPage = 6 } []
+        , Pagination.view theme { pgD | itemCount = Just 42, currentPage = 3, simple = True } []
+        , Pagination.view theme
+            { pgD
+                | itemCount = Just 500
+                , currentPage = 12
+                , showQuickJumper = True
+                , jumperValue = "12"
+                , suffix = Just (Element.text "items")
+            }
+            []
+        , Pagination.view theme { pgD | itemCount = Just 90, currentPage = 4, disabled = True } []
+        ]
+
+
+inputNumberSection : Element msg
+inputNumberSection =
+    section "Input Number" "Numeric entry (the text buffer is caller-owned)." <|
+        [ InputNumber.view theme { inD | value = Just 3 } []
+        , InputNumber.view theme
+            { inD
+                | value = Just 0.5
+                , min = Just 0
+                , max = Just 1
+                , step = 0.01
+                , precision = Just 2
+            }
+            []
+        , InputNumber.view theme { inD | value = Just 42, buttonPlacement = InputNumber.Both } []
+        , InputNumber.view theme { inD | value = Nothing, placeholder = Just "Enter a number" } []
+        , InputNumber.view theme { inD | value = Just 7, disabled = True } []
         ]
 
 
@@ -1389,6 +1466,49 @@ floatButtonSection =
                 }
                 [ Element.text "+" ]
             ]
+        ]
+
+
+layoutSection : Element msg
+layoutSection =
+    section "Layout" "App shell — header, sider, content and footer (the sider's collapsed state is caller-owned)." <|
+        [ Element.el [ Element.width Element.fill ]
+            (Layout.view theme
+                layD
+                [ LayoutHeader.view theme { lhD | bordered = True } [ Element.text "Header" ]
+                , Layout.view theme
+                    { layD | hasSider = True }
+                    [ LayoutSider.view theme
+                        { lsD | bordered = True, showTrigger = LayoutSider.ArrowCircle }
+                        [ Element.text "Sider" ]
+                    , Layout.content theme layD [ Element.text "Content" ]
+                    ]
+                , LayoutFooter.view theme { lfD | bordered = True } [ Element.text "Footer" ]
+                ]
+            )
+        , Element.el [ Element.width Element.fill ]
+            (Layout.view theme
+                { layD | hasSider = True }
+                [ LayoutSider.view theme
+                    { lsD
+                        | collapsed = True
+                        , width = "200px"
+                        , collapsedWidth = "48px"
+                        , showCollapsedContent = True
+                        , showTrigger = LayoutSider.Bar
+                        , placement = LayoutSider.Right
+                    }
+                    [ Element.text "Collapsed" ]
+                , Layout.content theme layD [ Element.text "Content" ]
+                ]
+            )
+        , Element.el [ Element.width Element.fill ]
+            (Layout.view theme
+                { layD | embedded = True }
+                [ LayoutHeader.view theme lhD [ Element.text "Embedded header" ]
+                , Layout.content theme layD [ Element.text "Embedded content" ]
+                ]
+            )
         ]
 
 

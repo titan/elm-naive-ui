@@ -32,6 +32,12 @@ const ALLOW = new Set([
   // Upstream emits it next to --disabled; no rule targets it (the --disabled
   // rules carry the styles).
   'n-calendar-cell--not-allowed',
+  // Pagination emits it on page items whose click would be a no-op; the item's
+  // look comes from --active/--hover/--disabled, never from this class.
+  'n-pagination-item--clickable',
+  // Layout's content variant: `createLayoutComponent(true)` adds it, but no rule
+  // targets it (the box comes from `.n-layout`).
+  'n-layout-content',
   // Harmless extras: not upstream class names, but the CSS targets the tag /
   // descendant, so rendering is unaffected.
   'n-avatar__img', // upstream CSS targets `.n-avatar img`
