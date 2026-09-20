@@ -8,6 +8,7 @@
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { fromElmField } from '../elm-name.mjs'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const root = path.resolve(here, '..', '..')
@@ -60,7 +61,9 @@ for (const f of files) {
     }
     for (const [rawField, expr] of Object.entries(mod[mode])) {
       const field = rawField.replace(/_$/, '')
-      const expected = json[mode][field]
+      const upstreamKey = fromElmField(field, Object.keys(json[mode]))
+      const label = upstreamKey ?? field
+      const expected = json[mode][label]
       const cm = expr.match(/^common\.([A-Za-z_]\w*)$/)
       let actual
       if (cm) actual = resolveCommon(mode, cm[1].replace(/_$/, ''))
@@ -69,11 +72,11 @@ for (const f of files) {
         actual = lm ? unesc(lm[1]) : expr
       }
       checked++
-      if (actual === undefined) problems.push(`${name}.${mode}.${field}: cannot resolve ${expr}`)
-      else if (expected === undefined) problems.push(`${name}.${mode}.${field}: not in upstream values`)
+      if (actual === undefined) problems.push(`${name}.${mode}.${label}: cannot resolve ${expr}`)
+      else if (expected === undefined) problems.push(`${name}.${mode}.${label}: not in upstream values`)
       else if (actual !== expected)
         problems.push(
-          `${name}.${mode}.${field}: ${expr} => ${JSON.stringify(actual)} != upstream ${JSON.stringify(expected)}`
+          `${name}.${mode}.${label}: ${expr} => ${JSON.stringify(actual)} != upstream ${JSON.stringify(expected)}`
         )
     }
   }

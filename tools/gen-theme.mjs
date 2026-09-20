@@ -8,6 +8,7 @@
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { toElmField as fieldName } from './elm-name.mjs'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const root = path.resolve(here, '..')
@@ -22,15 +23,6 @@ const esc = s =>
     .replace(/\r/g, '')
     .replace(/\n/g, '\\n')
     .replace(/\t/g, '\\t')
-
-const ELM_RESERVED = new Set([
-  'type', 'if', 'then', 'else', 'case', 'of', 'let', 'in', 'as', 'port',
-  'module', 'import', 'exposing', 'where', 'infix', 'alias'
-])
-const fieldName = k => {
-  if (ELM_RESERVED.has(k)) return k + '_'
-  return k
-}
 
 const header = (moduleName, exposing) =>
   `module ${moduleName} exposing (${exposing})\n\n\n`
