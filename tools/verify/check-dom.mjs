@@ -68,7 +68,13 @@ const targets = {
   '.n-layout-footer': true,
   '.n-layout-sider': true,
   '.n-flex': false,
-  '.n-grid': false
+  '.n-grid': false,
+  '.n-float-button-group': true,
+  '.n-icon': true,
+  '.n-icon-wrapper': true,
+  // Highlight ships no stylesheet rule at all; the root span carries the class
+  // and no --n-* vars.
+  '.n-highlight': false
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {

@@ -7,6 +7,7 @@ import Element exposing (Element)
 import Element.Background as Bg
 import Element.Font as Font
 import Html
+import Html.Attributes as HA
 import NUI.Affix as Affix
 import NUI.Alert as Alert
 import NUI.Avatar as Avatar
@@ -28,8 +29,12 @@ import NUI.Ellipsis as Ellipsis
 import NUI.Empty as Empty
 import NUI.Flex as Flex
 import NUI.FloatButton as FloatButton
+import NUI.FloatButtonGroup as FloatButtonGroup
 import NUI.GradientText as GradientText
 import NUI.Grid as Grid
+import NUI.Highlight as Highlight
+import NUI.Icon as Icon
+import NUI.IconWrapper as IconWrapper
 import NUI.Input as Input
 import NUI.InputNumber as InputNumber
 import NUI.InputOtp as InputOtp
@@ -39,6 +44,7 @@ import NUI.LayoutHeader as LayoutHeader
 import NUI.LayoutSider as LayoutSider
 import NUI.List as NList
 import NUI.Marquee as Marquee
+import NUI.NumberAnimation as NumberAnimation
 import NUI.PageHeader as PageHeader
 import NUI.Pagination as Pagination
 import NUI.Progress as Progress
@@ -344,6 +350,31 @@ floatButtonD =
     FloatButton.defaults
 
 
+floatButtonGroupD : FloatButtonGroup.Options msg
+floatButtonGroupD =
+    FloatButtonGroup.defaults
+
+
+highlightD : Highlight.Options msg
+highlightD =
+    Highlight.defaults
+
+
+iconD : Icon.Options msg
+iconD =
+    Icon.defaults
+
+
+iconWrapperD : IconWrapper.Options msg
+iconWrapperD =
+    IconWrapper.defaults
+
+
+numberAnimationD : NumberAnimation.Options msg
+numberAnimationD =
+    NumberAnimation.defaults
+
+
 flexD : Flex.Options msg
 flexD =
     Flex.defaults
@@ -464,6 +495,10 @@ body =
     , collapseSection
     , rateSection
     , floatButtonSection
+    , floatButtonGroupSection
+    , iconSection
+    , highlightSection
+    , numberAnimationSection
     , rtlSection
     , themeSection
     ]
@@ -1501,7 +1536,9 @@ rateSection =
 
 floatButtonSection : Element msg
 floatButtonSection =
-    section "Float Button" "A floating action button (position and offsets are caller-owned)." <|
+    section "Float Button"
+        "A floating action button (position and offsets are caller-owned)."
+    <|
         [ demoRow "Shapes & types"
             [ FloatButton.view theme { floatButtonD | position = FloatButton.Relative } [ Element.text "+" ]
             , FloatButton.view theme
@@ -1579,6 +1616,103 @@ layoutSection =
         ]
 
 
+floatButtonGroupSection : Element msg
+floatButtonGroupSection =
+    section "Float Button Group"
+        "A group of float buttons (shape, position and offsets are caller-owned)."
+    <|
+        [ demoRow "Circle"
+            [ FloatButtonGroup.view theme
+                { floatButtonGroupD | position = FloatButton.Relative, shape = FloatButton.Circle }
+                [ FloatButton.view theme { floatButtonD | position = FloatButton.Relative } [ Element.text "+" ]
+                , FloatButton.view theme { floatButtonD | position = FloatButton.Relative } [ Element.text "?" ]
+                ]
+            ]
+        , demoRow "Square"
+            [ FloatButtonGroup.view theme
+                { floatButtonGroupD | position = FloatButton.Relative, shape = FloatButton.Square }
+                [ FloatButton.view theme { floatButtonD | position = FloatButton.Relative, shape = FloatButton.Square } [ Element.text "A" ]
+                , FloatButton.view theme { floatButtonD | position = FloatButton.Relative, shape = FloatButton.Square } [ Element.text "B" ]
+                ]
+            ]
+        ]
+
+
+iconSection : Element msg
+iconSection =
+    section "Icon"
+        "Naive UI's icon primitive (`.n-icon`) and its rounded wrapper (`.n-icon-wrapper`). Pass the glyph as the child."
+    <|
+        [ demoRow "Icon"
+            [ Icon.view theme iconD [ starIcon ]
+            , Icon.view theme { iconD | size = Just (Icon.Px 32) } [ starIcon ]
+            , Icon.view theme { iconD | depth = Just Icon.Depth2 } [ starIcon ]
+            ]
+        , demoRow "Wrapper"
+            [ IconWrapper.view theme iconWrapperD [ Icon.view theme iconD [ starIcon ] ]
+            , IconWrapper.view theme
+                { iconWrapperD | color = Just "#18a058", iconColor = Just "#fff" }
+                [ Icon.view theme iconD [ starIcon ] ]
+            ]
+        ]
+
+
+highlightSection : Element msg
+highlightSection =
+    section "Highlight"
+        "Plain text with every pattern occurrence wrapped in a `mark` (no stylesheet of its own)."
+    <|
+        [ Highlight.view theme
+            { highlightD | text = "Naive UI is awesome", patterns = [ "Naive", "UI" ] }
+            []
+        , Highlight.view theme
+            { highlightD
+                | text = "naive-ui is written in TypeScript"
+                , patterns = [ "naive", "typescript" ]
+                , caseSensitive = False
+            }
+            []
+        , Highlight.view theme
+            { highlightD
+                | text = "Price: $100.99 and $5"
+                , patterns = [ "$1", "$5" ]
+                , highlightStyle = [ ( "color", "red" ) ]
+            }
+            []
+        ]
+
+
+numberAnimationSection : Element msg
+numberAnimationSection =
+    section "Number Animation"
+        "A tweened number (the clock is caller-owned — pass `elapsed`). No classes or variables of its own."
+    <|
+        [ demoRow "Grouped"
+            [ NumberAnimation.view theme
+                { numberAnimationD
+                    | from = 0
+                    , to = 1234567.5
+                    , precision = 2
+                    , showSeparator = True
+                    , duration = 2000
+                    , elapsed = 2000
+                }
+                []
+            ]
+        , demoRow "Precision"
+            [ NumberAnimation.view theme
+                { numberAnimationD
+                    | from = 10
+                    , to = 110
+                    , precision = 1
+                    , duration = 3000
+                    , elapsed = 1500
+                }
+                []
+            ]
+        ]
+
+
 rtlSection : Element msg
 rtlSection =
     section "RTL"
@@ -1649,6 +1783,24 @@ demoRow label items =
 chip : String -> Element msg
 chip label =
     Tag.view theme { tagD | bordered = False } [ Element.text label ]
+
+
+{-| A small inline SVG glyph for the icon showcase.
+-}
+starIcon : Element msg
+starIcon =
+    Element.html
+        (Html.node "svg"
+            [ HA.attribute "viewBox" "0 0 24 24"
+            , HA.attribute "aria-hidden" "true"
+            ]
+            [ Html.node "path"
+                [ HA.attribute "fill" "currentColor"
+                , HA.attribute "d" "M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"
+                ]
+                []
+            ]
+        )
 
 
 capitalize : String -> String

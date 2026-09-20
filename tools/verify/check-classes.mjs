@@ -44,6 +44,10 @@ const ALLOW = new Set([
   // Layout's content variant: `createLayoutComponent(true)` adds it, but no rule
   // targets it (the box comes from `.n-layout`).
   'n-layout-content',
+  // Highlight has no stylesheet at all (no cssr source upstream): the root span
+  // and the `mark` tag carry classes, but nothing targets them.
+  'n-highlight',
+  'n-highlight__mark',
   // Harmless extras: not upstream class names, but the CSS targets the tag /
   // descendant, so rendering is unaffected.
   'n-avatar__img', // upstream CSS targets `.n-avatar img`
