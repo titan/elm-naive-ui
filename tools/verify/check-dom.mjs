@@ -72,6 +72,8 @@ const targets = {
   '.n-float-button-group': true,
   '.n-icon': true,
   '.n-icon-wrapper': true,
+  // Heatmap's root carries the full --n-* var set (incl. the loading colors).
+  '.n-heatmap': true,
   // Highlight ships no stylesheet rule at all; the root span carries the class
   // and no --n-* vars.
   '.n-highlight': false

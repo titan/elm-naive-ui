@@ -32,6 +32,7 @@ import NUI.FloatButton as FloatButton
 import NUI.FloatButtonGroup as FloatButtonGroup
 import NUI.GradientText as GradientText
 import NUI.Grid as Grid
+import NUI.Heatmap as Heatmap
 import NUI.Highlight as Highlight
 import NUI.Icon as Icon
 import NUI.IconWrapper as IconWrapper
@@ -65,6 +66,7 @@ import NUI.Thing as Thing
 import NUI.Timeline as Timeline
 import NUI.Types as T
 import NUI.Typography as Typo
+import Time
 
 
 
@@ -370,6 +372,11 @@ iconWrapperD =
     IconWrapper.defaults
 
 
+heatmapD : Heatmap.Options msg
+heatmapD =
+    Heatmap.defaults
+
+
 numberAnimationD : NumberAnimation.Options msg
 numberAnimationD =
     NumberAnimation.defaults
@@ -499,6 +506,7 @@ body =
     , iconSection
     , highlightSection
     , numberAnimationSection
+    , heatmapSection
     , rtlSection
     , themeSection
     ]
@@ -1711,6 +1719,56 @@ numberAnimationSection =
                 []
             ]
         ]
+
+
+heatmapSection : Element msg
+heatmapSection =
+    section "Heatmap"
+        "GitHub-style contribution calendar: a real `table` of day rects coloured by `value / maxValue`, with week/month labels and a less/more indicator. Time is caller-owned (`zone`/`now`)."
+    <|
+        [ demoRow "Default"
+            [ Heatmap.view theme { heatmapD | data = heatmapSample, now = sampleNow } []
+            ]
+        , demoRow "Loading"
+            [ Heatmap.view theme
+                { heatmapD | loading = True, loadingData = Just [], now = sampleNow }
+                []
+            ]
+        , demoRow "Small + custom palette + gaps filled"
+            [ Heatmap.view theme
+                { heatmapD
+                    | data = heatmapSample
+                    , size = Heatmap.Small
+                    , activeColors = Just [ "#e0e7ff", "#a5b4fc", "#6366f1", "#4338ca", "#312e81" ]
+                    , fillCalendarLeading = True
+                    , now = sampleNow
+                }
+                []
+            ]
+        ]
+
+
+{-| Deterministic demo data (UTC midnights, ~10 weeks, some gaps and zeros).
+-}
+heatmapSample : List Heatmap.HeatmapDataItem
+heatmapSample =
+    List.indexedMap
+        (\i v ->
+            { timestamp = Time.millisToPosix (1704067200000 + i * 86400000)
+            , value =
+                if modBy 5 i == 0 then
+                    Just 0
+
+                else
+                    Just (toFloat (modBy 11 (i * 7 + 3)))
+            }
+        )
+        (List.repeat 70 ())
+
+
+sampleNow : Time.Posix
+sampleNow =
+    Time.millisToPosix 1710086400000
 
 
 rtlSection : Element msg

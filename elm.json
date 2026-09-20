@@ -29,6 +29,7 @@
     "NUI.Flex",
     "NUI.GradientText",
     "NUI.Grid",
+    "NUI.Heatmap",
     "NUI.Highlight",
     "NUI.Icon",
     "NUI.IconWrapper",

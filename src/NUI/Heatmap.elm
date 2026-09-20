@@ -815,7 +815,7 @@ calendarTable opts ws labels matrix =
     Html.table
         [ HA.class "n-heatmap__calendar-table" ]
         (monthHeader opts labels
-            ++ List.map (bodyRow opts ws matrix) (List.range 0 6)
+            ++ [ Html.tbody [] (List.map (bodyRow opts ws matrix) (List.range 0 6)) ]
         )
 
 
