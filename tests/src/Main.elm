@@ -37,8 +37,12 @@ import NUI.Ellipsis as Ellipsis
 import NUI.Empty as Empty
 import NUI.Flex as Flex
 import NUI.FloatButton as FloatButton
+import NUI.FloatButtonGroup as FloatButtonGroup
 import NUI.GradientText as GradientText
 import NUI.Grid as Grid
+import NUI.Highlight as Highlight
+import NUI.Icon as Icon
+import NUI.IconWrapper as IconWrapper
 import NUI.Input as Input
 import NUI.InputNumber as InputNumber
 import NUI.InputOtp as InputOtp
@@ -49,6 +53,7 @@ import NUI.LayoutHeader as LayoutHeader
 import NUI.LayoutSider as LayoutSider
 import NUI.List as NList
 import NUI.Marquee as Marquee
+import NUI.NumberAnimation as NumberAnimation
 import NUI.PageHeader as PageHeader
 import NUI.Pagination as Pagination
 import NUI.Progress as Progress
@@ -69,6 +74,9 @@ import NUI.Theme.Button as ButtonTheme
 import NUI.Theme.Calendar as CalendarTheme
 import NUI.Theme.Color as Color
 import NUI.Theme.DynamicTags as DynamicTagsTheme
+import NUI.Theme.FloatButtonGroup as FloatButtonGroupTheme
+import NUI.Theme.Icon as IconTheme
+import NUI.Theme.IconWrapper as IconWrapperTheme
 import NUI.Theme.InputOtp as InputOtpTheme
 import NUI.Theme.Layout as LayoutTheme
 import NUI.Theme.Tag as TagTheme
@@ -1142,6 +1150,97 @@ floatButtonPercentOpts =
     { d | width = FloatButton.Custom "50%" }
 
 
+
+-- Highlight / NumberAnimation / Icon / IconWrapper / FloatButtonGroup ------------
+
+
+highlightLiveOpts : Highlight.Options msg
+highlightLiveOpts =
+    let
+        d =
+            Highlight.defaults
+    in
+    { d | text = "Hello world, hello again", patterns = [ "hello" ] }
+
+
+highlightEscapedOpts : Highlight.Options msg
+highlightEscapedOpts =
+    let
+        d =
+            Highlight.defaults
+    in
+    { d
+        | text = "Price: $100.99"
+        , patterns = [ "$100.99" ]
+        , highlightClass = Just "custom-mark"
+        , highlightStyle = [ ( "color", "red" ) ]
+    }
+
+
+highlightEmptyOpts : Highlight.Options msg
+highlightEmptyOpts =
+    let
+        d =
+            Highlight.defaults
+    in
+    { d | text = "plain text", patterns = [] }
+
+
+numberAnimationLiveOpts : NumberAnimation.Options msg
+numberAnimationLiveOpts =
+    let
+        d =
+            NumberAnimation.defaults
+    in
+    { d | from = 1234567.5, to = 1234567.5, precision = 2, showSeparator = True }
+
+
+numberAnimationMidOpts : NumberAnimation.Options msg
+numberAnimationMidOpts =
+    let
+        d =
+            NumberAnimation.defaults
+    in
+    { d | from = 10, to = 110, duration = 1000, elapsed = 500 }
+
+
+iconDepthOpts : Icon.Options msg
+iconDepthOpts =
+    let
+        d =
+            Icon.defaults
+    in
+    { d | depth = Just Icon.Depth2, size = Just (Icon.Px 40), color = Just "rgb(14, 122, 13)" }
+
+
+iconWrapperStyledOpts : IconWrapper.Options msg
+iconWrapperStyledOpts =
+    let
+        d =
+            IconWrapper.defaults
+    in
+    { d
+        | size = IconWrapper.Px 18
+        , borderRadius = IconWrapper.Px 10
+        , color = Just "red"
+        , iconColor = Just "red"
+    }
+
+
+floatButtonGroupSquareOpts : FloatButtonGroup.Options msg
+floatButtonGroupSquareOpts =
+    let
+        d =
+            FloatButtonGroup.defaults
+    in
+    { d
+        | shape = FloatButton.Square
+        , position = FloatButton.Absolute
+        , right = Just (FloatButton.Px 40)
+        , bottom = Just (FloatButton.Px 40)
+    }
+
+
 inputOtpLiveOpts : InputOtp.Options msg
 inputOtpLiveOpts =
     let
@@ -2035,6 +2134,45 @@ checks =
 
         nCtxStep =
             { min = Nothing, max = Nothing, step = 0.25, precision = Nothing, displayedValue = "1" }
+
+        hlD =
+            Highlight.defaults
+
+        naD =
+            NumberAnimation.defaults
+
+        iconD =
+            Icon.defaults
+
+        iconWrapperD =
+            IconWrapper.defaults
+
+        fbGroupD =
+            FloatButtonGroup.defaults
+
+        iconDefaultVars =
+            Icon.cssVarsFor light iconD
+
+        iconDepthVars =
+            Icon.cssVarsFor light { iconD | depth = Just Icon.Depth2 }
+
+        iconDarkVars =
+            Icon.cssVarsFor dark { iconD | depth = Just Icon.Depth1 }
+
+        iconWrapperVars =
+            IconWrapper.cssVarsFor light
+
+        iconWrapperDarkVars =
+            IconWrapper.cssVarsFor dark
+
+        fbGroupVars =
+            FloatButtonGroup.cssVarsFor light
+
+        fbGroupDarkVars =
+            FloatButtonGroup.cssVarsFor dark
+
+        vIconWrapperLight =
+            IconWrapperTheme.vars light
     in
     [ -- 1. NUI.Theme -------------------------------------------------------------
       eq "Theme.default == Theme.light" True (Theme.default == Theme.light)
@@ -3086,6 +3224,274 @@ checks =
     , eq "flex defaults inline = False" False flexDefaults.inline
     , eq "flex defaults reverse = False" False flexDefaults.reverse
     , eq "flex defaults rtl = False" False flexDefaults.rtl
+
+    -- 49. NUI.Highlight helpers --------------------------------------------------
+    , eq "highlight escapeRegExp prefixes every regexp metacharacter with a backslash"
+        "\\.\\*\\+\\?\\^\\$\\{\\}\\(\\)\\|\\[\\]\\\\"
+        (Highlight.escapeRegExp ".*+?^${}()|[]\\")
+    , eq "highlight escapeRegExp leaves ordinary characters untouched"
+        "abc123 -_/@#%&,"
+        (Highlight.escapeRegExp "abc123 -_/@#%&,")
+    , eq "highlight escapeRegExp keeps ordinary chars and escapes metachars in place"
+        "a\\.b\\*c\\(9\\)"
+        (Highlight.escapeRegExp "a.b*c(9)")
+    , eq "highlight splitAndMarkByRegex case-sensitive marks only the exact case"
+        [ { text = "a", isMatch = False }, { text = "bc", isMatch = True }, { text = "ABC", isMatch = False } ]
+        (Highlight.splitAndMarkByRegex "abcABC" [ "bc" ] True True)
+    , eq "highlight splitAndMarkByRegex case-insensitive marks every case"
+        [ { text = "a", isMatch = False }
+        , { text = "bc", isMatch = True }
+        , { text = "A", isMatch = False }
+        , { text = "BC", isMatch = True }
+        ]
+        (Highlight.splitAndMarkByRegex "abcABC" [ "bc" ] False True)
+    , eq "highlight splitAndMarkByRegex autoEscape=True treats \"a.c\" literally (no match)"
+        [ { text = "aXc", isMatch = False } ]
+        (Highlight.splitAndMarkByRegex "aXc" [ "a.c" ] False True)
+    , eq "highlight splitAndMarkByRegex autoEscape=False lets \"a.c\" match \"aXc\""
+        [ { text = "aXc", isMatch = True } ]
+        (Highlight.splitAndMarkByRegex "aXc" [ "a.c" ] False False)
+    , eq "highlight splitAndMarkByRegex [] patterns -> one unmarked chunk"
+        [ { text = "anything", isMatch = False } ]
+        (Highlight.splitAndMarkByRegex "anything" [] False True)
+    , eq "highlight splitAndMarkByRegex empty text -> []"
+        []
+        (Highlight.splitAndMarkByRegex "" [ "a" ] False True)
+    , eq "highlight splitAndMarkByRegex no match -> one unmarked chunk"
+        [ { text = "Hello world", isMatch = False } ]
+        (Highlight.splitAndMarkByRegex "Hello world" [ "xyz" ] False True)
+    , eq "highlight splitAndMarkByRegex multi-word alternation mirrors upstream"
+        [ { text = "The ", isMatch = False }
+        , { text = "quick", isMatch = True }
+        , { text = " brown ", isMatch = False }
+        , { text = "fox", isMatch = True }
+        , { text = " jumps over the ", isMatch = False }
+        , { text = "lazy", isMatch = True }
+        , { text = " dog", isMatch = False }
+        ]
+        (Highlight.splitAndMarkByRegex "The quick brown fox jumps over the lazy dog" [ "quick", "fox", "lazy" ] False True)
+    , eq "highlight splitAndMarkByRegex match at the start"
+        [ { text = "hello", isMatch = True }, { text = " world", isMatch = False } ]
+        (Highlight.splitAndMarkByRegex "hello world" [ "hello" ] True True)
+    , eq "highlight splitAndMarkByRegex match at the end leaves no trailing empty chunk"
+        [ { text = "hello ", isMatch = False }, { text = "world", isMatch = True } ]
+        (Highlight.splitAndMarkByRegex "hello world" [ "world" ] True True)
+    , eq "highlight splitAndMarkByRegex whole-string match -> a single marked chunk"
+        [ { text = "hello", isMatch = True } ]
+        (Highlight.splitAndMarkByRegex "hello" [ "hello" ] True True)
+    , eq "highlight splitAndMarkByRegex escaped \"$\" matches a literal dollar sign"
+        [ { text = "Price: ", isMatch = False }, { text = "$100.99", isMatch = True } ]
+        (Highlight.splitAndMarkByRegex "Price: $100.99" [ "$100.99" ] True True)
+    , eq "highlight splitAndMarkByRegex unicode alternation"
+        [ { text = "你好", isMatch = True }
+        , { text = "世界 ", isMatch = False }
+        , { text = "hello", isMatch = True }
+        , { text = " world", isMatch = False }
+        ]
+        (Highlight.splitAndMarkByRegex "你好世界 hello world" [ "你好", "hello" ] True True)
+    , eq "highlight splitAndMarkByRegex invalid pattern (unescaped) -> one unmarked chunk"
+        [ { text = "abc", isMatch = False } ]
+        (Highlight.splitAndMarkByRegex "abc" [ "(" ] False False)
+    , eq "highlight defaults (text)" "" hlD.text
+    , eq "highlight defaults (patterns)" [] hlD.patterns
+    , eq "highlight defaults (caseSensitive)" False hlD.caseSensitive
+    , eq "highlight defaults (autoEscape)" True hlD.autoEscape
+    , eq "highlight defaults (highlightTag)" "mark" hlD.highlightTag
+    , eq "highlight defaults (highlightClass)" Nothing hlD.highlightClass
+    , eq "highlight defaults (highlightStyle)" [] hlD.highlightStyle
+
+    -- 50. NUI.NumberAnimation helpers --------------------------------------------
+    , eq "number-animation easeOut 0 = 0" 0 (NumberAnimation.easeOut 0)
+    , eq "number-animation easeOut 1 = 1" 1 (NumberAnimation.easeOut 1)
+    , eq "number-animation easeOut 0.5 = 1 - 0.5^5 = 0.96875"
+        0.96875
+        (NumberAnimation.easeOut 0.5)
+    , eq "number-animation tweenValue elapsed 0 = from"
+        10
+        (NumberAnimation.tweenValue { from = 10, to = 110, duration = 1000, elapsed = 0 })
+    , eq "number-animation tweenValue elapsed = duration = exactly to"
+        110
+        (NumberAnimation.tweenValue { from = 10, to = 110, duration = 1000, elapsed = 1000 })
+    , eq "number-animation tweenValue elapsed past duration = exactly to"
+        110
+        (NumberAnimation.tweenValue { from = 10, to = 110, duration = 1000, elapsed = 2500 })
+    , eq "number-animation tweenValue duration 0 finishes at once at to"
+        110
+        (NumberAnimation.tweenValue { from = 10, to = 110, duration = 0, elapsed = 0 })
+    , eq "number-animation tweenValue half way = from + (to - from) * easeOut 0.5"
+        106.875
+        (NumberAnimation.tweenValue { from = 10, to = 110, duration = 1000, elapsed = 500 })
+    , eq "number-animation roundTo 2 1.005 = 1.01 (lodash string shift)"
+        1.01
+        (NumberAnimation.roundTo 2 1.005)
+    , eq "number-animation roundTo 0 1234.5678 = 1235"
+        1235
+        (NumberAnimation.roundTo 0 1234.5678)
+    , eq "number-animation roundTo 2 1234.5678 = 1234.57"
+        1234.57
+        (NumberAnimation.roundTo 2 1234.5678)
+    , eq "number-animation roundTo -2 1234 = 1200 (negative precision)"
+        1200
+        (NumberAnimation.roundTo -2 1234)
+    , eq "number-animation roundTo 0 -1.5 = -1 (ties toward +Infinity)"
+        -1
+        (NumberAnimation.roundTo 0 -1.5)
+    , eq "number-animation formatToFixed 0 1234.5678 = \"1235\""
+        "1235"
+        (NumberAnimation.formatToFixed 0 1234.5678)
+    , eq "number-animation formatToFixed 2 1234.5678 = \"1234.57\""
+        "1234.57"
+        (NumberAnimation.formatToFixed 2 1234.5678)
+    , eq "number-animation formatToFixed 2 0 = \"0.00\""
+        "0.00"
+        (NumberAnimation.formatToFixed 2 0)
+    , eq "number-animation formatToFixed 3 0.0005 = \"0.001\""
+        "0.001"
+        (NumberAnimation.formatToFixed 3 0.0005)
+    , eq "number-animation formatToFixed 7 1e-7 = \"0.0000001\" (no exponent form)"
+        "0.0000001"
+        (NumberAnimation.formatToFixed 7 1.0e-7)
+    , eq "number-animation groupDigits \",\" \"1234567\" = \"1,234,567\""
+        "1,234,567"
+        (NumberAnimation.groupDigits "," "1234567")
+    , eq "number-animation groupDigits keeps the leading minus"
+        "-1,234,567"
+        (NumberAnimation.groupDigits "," "-1234567")
+    , eq "number-animation groupDigits leaves three digits ungrouped"
+        "123"
+        (NumberAnimation.groupDigits "," "123")
+    , eq "number-animation groupDigits uses the caller separator"
+        "1.234.567"
+        (NumberAnimation.groupDigits "." "1234567")
+    , eq "number-animation format record shape (precision 2)"
+        { integer = "16", decimal = Just "50", decimalSeparator = "." }
+        (NumberAnimation.format { naD | to = 16.5, precision = 2, elapsed = 2000 })
+    , eq "number-animation format decimal = Nothing at precision 0"
+        { integer = "10", decimal = Nothing, decimalSeparator = "." }
+        (NumberAnimation.format { naD | from = 10, to = 10, precision = 0 })
+    , eq "number-animation format groups the integer and keeps a Just decimal"
+        { integer = "1,234,567", decimal = Just "50", decimalSeparator = "." }
+        (NumberAnimation.format { naD | from = 1234567.5, to = 1234567.5, precision = 2, showSeparator = True })
+    , eq "number-animation format carries the caller decimal separator"
+        { integer = "10", decimal = Just "00", decimalSeparator = "," }
+        (NumberAnimation.format { naD | from = 10, to = 10, precision = 2, decimalSeparator = "," })
+
+    -- 51. NUI.Icon cssVarsFor ----------------------------------------------------
+    , eq "icon cssVarsFor (depth Nothing) keys = bezier + color + opacity"
+        [ "--n-bezier", "--n-color", "--n-opacity" ]
+        (varKeys iconDefaultVars)
+    , eq "icon cssVarsFor depth Nothing keeps --n-bezier"
+        (Just light.common.cubicBezierEaseInOut)
+        (lookup "--n-bezier" iconDefaultVars)
+    , eq "icon cssVarsFor depth Nothing empties --n-color"
+        (Just "")
+        (lookup "--n-color" iconDefaultVars)
+    , eq "icon cssVarsFor depth Nothing empties --n-opacity"
+        (Just "")
+        (lookup "--n-opacity" iconDefaultVars)
+    , eq "icon cssVarsFor depth Just Depth2 --n-color = icon colour (#000)"
+        (Just "#000")
+        (lookup "--n-color" iconDepthVars)
+    , eq "icon cssVarsFor depth Just Depth2 --n-opacity = v.opacity2Depth"
+        (Just (IconTheme.vars light).opacity2Depth)
+        (lookup "--n-opacity" iconDepthVars)
+    , eq "icon cssVarsFor depth Just Depth2 --n-opacity = 0.72"
+        (Just "0.72")
+        (lookup "--n-opacity" iconDepthVars)
+    , eq "icon cssVarsFor depth Just Depth2 keeps --n-bezier"
+        (Just "cubic-bezier(.4, 0, .2, 1)")
+        (lookup "--n-bezier" iconDepthVars)
+    , eq "icon cssVarsFor dark depth Just Depth1 --n-color = #fff"
+        (Just "#fff")
+        (lookup "--n-color" iconDarkVars)
+    , eq "icon cssVarsFor dark depth Just Depth1 --n-opacity = 0.9"
+        (Just "0.9")
+        (lookup "--n-opacity" iconDarkVars)
+    , eq "icon cssVarsFor exact list (depth Nothing)"
+        [ ( "--n-bezier", "cubic-bezier(.4, 0, .2, 1)" ), ( "--n-color", "" ), ( "--n-opacity", "" ) ]
+        (Icon.cssVarsFor light iconD)
+    , eq "icon cssVarsFor Depth1 opacity = 0.82"
+        (Just "0.82")
+        (lookup "--n-opacity" (Icon.cssVarsFor light { iconD | depth = Just Icon.Depth1 }))
+    , eq "icon cssVarsFor Depth3 opacity = 0.38"
+        (Just "0.38")
+        (lookup "--n-opacity" (Icon.cssVarsFor light { iconD | depth = Just Icon.Depth3 }))
+    , eq "icon cssVarsFor Depth4 opacity = 0.24"
+        (Just "0.24")
+        (lookup "--n-opacity" (Icon.cssVarsFor light { iconD | depth = Just Icon.Depth4 }))
+    , eq "icon cssVarsFor Depth5 opacity = 0.18"
+        (Just "0.18")
+        (lookup "--n-opacity" (Icon.cssVarsFor light { iconD | depth = Just Icon.Depth5 }))
+    , eq "icon defaults depth = Nothing" Nothing iconD.depth
+    , eq "icon defaults size = Nothing" Nothing iconD.size
+    , eq "icon defaults color = Nothing" Nothing iconD.color
+
+    -- 52. NUI.IconWrapper cssVarsFor ---------------------------------------------
+    , eq "icon-wrapper cssVarsFor keys = bezier + color + icon-color"
+        [ "--n-bezier", "--n-color", "--n-icon-color" ]
+        (varKeys iconWrapperVars)
+    , eq "icon-wrapper cssVarsFor --n-bezier = common.easeInOut"
+        (Just "cubic-bezier(.4, 0, .2, 1)")
+        (lookup "--n-bezier" iconWrapperVars)
+    , eq "icon-wrapper cssVarsFor --n-color = primary (#18a058)"
+        (Just "#18a058")
+        (lookup "--n-color" iconWrapperVars)
+    , eq "icon-wrapper cssVarsFor --n-color = vIconWrapperLight.color"
+        (Just vIconWrapperLight.color)
+        (lookup "--n-color" iconWrapperVars)
+    , eq "icon-wrapper cssVarsFor --n-icon-color = baseColor (#FFF)"
+        (Just "#FFF")
+        (lookup "--n-icon-color" iconWrapperVars)
+    , eq "icon-wrapper cssVarsFor dark --n-color = #63e2b7"
+        (Just "#63e2b7")
+        (lookup "--n-color" iconWrapperDarkVars)
+    , eq "icon-wrapper cssVarsFor dark --n-icon-color = #000"
+        (Just "#000")
+        (lookup "--n-icon-color" iconWrapperDarkVars)
+    , eq "icon-wrapper defaults size = Px 24" (IconWrapper.Px 24) iconWrapperD.size
+    , eq "icon-wrapper defaults borderRadius = Px 6" (IconWrapper.Px 6) iconWrapperD.borderRadius
+    , eq "icon-wrapper defaults color = Nothing" Nothing iconWrapperD.color
+    , eq "icon-wrapper defaults iconColor = Nothing" Nothing iconWrapperD.iconColor
+
+    -- 53. NUI.FloatButtonGroup cssVarsFor -----------------------------------------
+    , eq "float-button-group cssVarsFor keys"
+        [ "--n-bezier", "--n-box-shadow", "--n-color", "--n-button-border-color", "--n-border-radius-square" ]
+        (varKeys fbGroupVars)
+    , eq "float-button-group cssVarsFor --n-bezier"
+        (Just "cubic-bezier(.4, 0, .2, 1)")
+        (lookup "--n-bezier" fbGroupVars)
+    , eq "float-button-group cssVarsFor --n-box-shadow"
+        (Just "0 2px 8px 0px rgba(0, 0, 0, .12)")
+        (lookup "--n-box-shadow" fbGroupVars)
+    , eq "float-button-group cssVarsFor --n-color = popoverColor (#fff)"
+        (Just "#fff")
+        (lookup "--n-color" fbGroupVars)
+    , eq "float-button-group cssVarsFor --n-button-border-color = dividerColor"
+        (Just "rgb(239, 239, 245)")
+        (lookup "--n-button-border-color" fbGroupVars)
+    , eq "float-button-group cssVarsFor --n-border-radius-square = borderRadius (3px)"
+        (Just "3px")
+        (lookup "--n-border-radius-square" fbGroupVars)
+    , eq "float-button-group cssVarsFor dark --n-color = rgb(72, 72, 78)"
+        (Just "rgb(72, 72, 78)")
+        (lookup "--n-color" fbGroupDarkVars)
+    , eq "float-button-group cssVarsFor dark --n-button-border-color"
+        (Just "rgba(255, 255, 255, 0.09)")
+        (lookup "--n-button-border-color" fbGroupDarkVars)
+    , eq "float-button-group cssVarsFor exact list (light)"
+        [ ( "--n-bezier", "cubic-bezier(.4, 0, .2, 1)" )
+        , ( "--n-box-shadow", "0 2px 8px 0px rgba(0, 0, 0, .12)" )
+        , ( "--n-color", "#fff" )
+        , ( "--n-button-border-color", "rgb(239, 239, 245)" )
+        , ( "--n-border-radius-square", "3px" )
+        ]
+        (FloatButtonGroup.cssVarsFor light)
+    , eq "float-button-group defaults shape = Circle" FloatButton.Circle fbGroupD.shape
+    , eq "float-button-group defaults position = Fixed" FloatButton.Fixed fbGroupD.position
+    , eq "float-button-group defaults left = Nothing" Nothing fbGroupD.left
+    , eq "float-button-group defaults right = Nothing" Nothing fbGroupD.right
+    , eq "float-button-group defaults top = Nothing" Nothing fbGroupD.top
+    , eq "float-button-group defaults bottom = Nothing" Nothing fbGroupD.bottom
     ]
 
 
@@ -3473,6 +3879,34 @@ liveNodes =
                         [ { gridItemBase | span = Grid.Number 0, attributes = [ Element.htmlAttribute (HA.id "grid-zero-a") ], content = [ Element.text "Z" ] }
                         , { gridItemBase | span = Grid.Number 12, attributes = [ Element.htmlAttribute (HA.id "grid-zero-b") ], content = [ Element.text "B" ] }
                         ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-highlight") ]
+                    (Highlight.view Theme.default highlightLiveOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-highlight-escaped") ]
+                    (Highlight.view Theme.default highlightEscapedOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-highlight-empty") ]
+                    (Highlight.view Theme.default highlightEmptyOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-number-animation") ]
+                    (NumberAnimation.view Theme.default numberAnimationLiveOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-number-animation-mid") ]
+                    (NumberAnimation.view Theme.default numberAnimationMidOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-icon-default") ]
+                    (Icon.view Theme.default Icon.defaults [ Element.text "I" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-icon-depth") ]
+                    (Icon.view Theme.default iconDepthOpts [ Element.text "I" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-icon-wrapper") ]
+                    (IconWrapper.view Theme.default IconWrapper.defaults [ Element.text "I" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-icon-wrapper-styled") ]
+                    (IconWrapper.view Theme.default iconWrapperStyledOpts [ Element.text "I" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-float-button-group") ]
+                    (FloatButtonGroup.view Theme.default
+                        FloatButtonGroup.defaults
+                        [ FloatButton.view Theme.default FloatButton.defaults [ Element.text "+" ] ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-float-button-group-square") ]
+                    (FloatButtonGroup.view Theme.default
+                        floatButtonGroupSquareOpts
+                        [ FloatButton.view Theme.default floatButtonSquareOpts [ Element.text "+" ] ]
                     )
                 ]
             )
