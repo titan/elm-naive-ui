@@ -17,17 +17,35 @@
   },
   "refs": {
     "light": {
-      "refs": {},
+      "refs": {
+        "heightSmall": "heightSmall",
+        "heightMedium": "heightMedium",
+        "heightLarge": "heightLarge",
+        "borderRadius": "borderRadius"
+      },
       "seen": [
         "color",
-        "colorEnd"
+        "colorEnd",
+        "heightSmall",
+        "heightMedium",
+        "heightLarge",
+        "borderRadius"
       ]
     },
     "dark": {
-      "refs": {},
+      "refs": {
+        "borderRadius": "borderRadius",
+        "heightSmall": "heightSmall",
+        "heightMedium": "heightMedium",
+        "heightLarge": "heightLarge"
+      },
       "seen": [
         "color",
-        "colorEnd"
+        "colorEnd",
+        "borderRadius",
+        "heightSmall",
+        "heightMedium",
+        "heightLarge"
       ]
     }
   }

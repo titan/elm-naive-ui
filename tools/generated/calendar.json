@@ -55,7 +55,10 @@
         "cellColor": "cardColor",
         "cellColorModal": "modalColor",
         "cellColorPopover": "popoverColor",
-        "barColor": "primaryColor"
+        "barColor": "primaryColor",
+        "borderRadius": "borderRadius",
+        "fontSize": "fontSize",
+        "lineHeight": "lineHeight"
       },
       "seen": [
         "borderColor",
@@ -74,15 +77,21 @@
         "cellColorModal",
         "cellColorPopover",
         "barColor",
+        "borderRadius",
+        "fontSize",
+        "lineHeight",
         "titleFontSize"
       ]
     },
     "dark": {
       "refs": {
+        "borderRadius": "borderRadius",
         "textColor": "textColor2",
         "titleFontWeight": "fontWeightStrong",
         "titleTextColor": "textColor1",
         "dayTextColor": "textColorDisabled",
+        "fontSize": "fontSize",
+        "lineHeight": "lineHeight",
         "dateColorCurrent": "primaryColor",
         "dateTextColorCurrent": "baseColor",
         "cellColor": "cardColor",
@@ -92,6 +101,7 @@
       },
       "seen": [
         "titleFontSize",
+        "borderRadius",
         "borderColor",
         "borderColorModal",
         "borderColorPopover",
@@ -99,6 +109,8 @@
         "titleFontWeight",
         "titleTextColor",
         "dayTextColor",
+        "fontSize",
+        "lineHeight",
         "dateColorCurrent",
         "dateTextColorCurrent",
         "cellColorHover",

@@ -74,7 +74,11 @@
         "checkMarkColor": "baseColor",
         "checkMarkColorDisabled": "textColorDisabled",
         "checkMarkColorDisabledChecked": "textColorDisabled",
-        "textColor": "textColor2"
+        "textColor": "textColor2",
+        "textColorDisabled": "textColorDisabled",
+        "fontSizeSmall": "fontSizeSmall",
+        "fontSizeMedium": "fontSizeMedium",
+        "fontSizeLarge": "fontSizeLarge"
       },
       "seen": [
         "labelLineHeight",
@@ -96,6 +100,10 @@
         "borderFocus",
         "boxShadowFocus",
         "textColor",
+        "textColorDisabled",
+        "fontSizeSmall",
+        "fontSizeMedium",
+        "fontSizeLarge",
         "sizeSmall",
         "sizeMedium",
         "sizeLarge",
@@ -106,6 +114,9 @@
     "dark": {
       "refs": {
         "labelLineHeight": "lineHeight",
+        "fontSizeSmall": "fontSizeSmall",
+        "fontSizeMedium": "fontSizeMedium",
+        "fontSizeLarge": "fontSizeLarge",
         "borderRadius": "borderRadiusSmall",
         "colorChecked": "primaryColor",
         "colorDisabled": "inputColorDisabled",
@@ -116,7 +127,8 @@
         "checkMarkColor": "cardColor",
         "checkMarkColorDisabled": "textColorDisabled",
         "checkMarkColorDisabledChecked": "textColorDisabled",
-        "textColor": "textColor2"
+        "textColor": "textColor2",
+        "textColorDisabled": "textColorDisabled"
       },
       "seen": [
         "sizeSmall",
@@ -125,6 +137,9 @@
         "labelPadding",
         "labelFontWeight",
         "labelLineHeight",
+        "fontSizeSmall",
+        "fontSizeMedium",
+        "fontSizeLarge",
         "borderRadius",
         "color",
         "colorChecked",
@@ -142,7 +157,8 @@
         "borderChecked",
         "borderFocus",
         "boxShadowFocus",
-        "textColor"
+        "textColor",
+        "textColorDisabled"
       ]
     }
   }

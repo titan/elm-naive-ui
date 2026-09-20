@@ -29,7 +29,8 @@
         "backColor": "textColor2",
         "backColorHover": "primaryColorHover",
         "backColorPressed": "primaryColorPressed",
-        "subtitleTextColor": "textColor3"
+        "subtitleTextColor": "textColor3",
+        "fontSize": "fontSize"
       },
       "seen": [
         "titleFontWeight",
@@ -38,6 +39,7 @@
         "backColorHover",
         "backColorPressed",
         "subtitleTextColor",
+        "fontSize",
         "titleFontSize",
         "backSize"
       ]
@@ -45,6 +47,7 @@
     "dark": {
       "refs": {
         "titleFontWeight": "fontWeightStrong",
+        "fontSize": "fontSize",
         "titleTextColor": "textColor1",
         "backColor": "textColor2",
         "backColorHover": "primaryColorHover",
@@ -55,6 +58,7 @@
         "titleFontSize",
         "backSize",
         "titleFontWeight",
+        "fontSize",
         "titleTextColor",
         "backColor",
         "backColorHover",

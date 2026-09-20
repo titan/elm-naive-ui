@@ -41,13 +41,13 @@ light common =
     , iconSizeMedium = "40px"
     , iconSizeLarge = "46px"
     , iconSizeHuge = "52px"
-    , fontSizeTiny = common.fontSizeMini
-    , fontSizeSmall = common.fontSize
-    , fontSizeMedium = common.fontSize
+    , fontSizeTiny = common.fontSizeTiny
+    , fontSizeSmall = common.fontSizeSmall
+    , fontSizeMedium = common.fontSizeMedium
     , fontSizeLarge = common.fontSizeLarge
     , fontSizeHuge = common.fontSizeHuge
     , textColor = common.textColorDisabled
-    , iconColor = common.textColorDisabled
+    , iconColor = common.iconColor
     , extraTextColor = common.textColor2
     }
 
@@ -59,12 +59,12 @@ dark common =
     , iconSizeMedium = "40px"
     , iconSizeLarge = "46px"
     , iconSizeHuge = "52px"
-    , fontSizeTiny = common.fontSizeMini
-    , fontSizeSmall = common.fontSize
-    , fontSizeMedium = common.fontSize
+    , fontSizeTiny = common.fontSizeTiny
+    , fontSizeSmall = common.fontSizeSmall
+    , fontSizeMedium = common.fontSizeMedium
     , fontSizeLarge = common.fontSizeLarge
     , fontSizeHuge = common.fontSizeHuge
     , textColor = common.textColorDisabled
-    , iconColor = common.textColorDisabled
+    , iconColor = common.iconColor
     , extraTextColor = common.textColor2
     }

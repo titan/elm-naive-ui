@@ -52,7 +52,8 @@
         "iconColorError": "errorColor",
         "iconColorSuccess": "successColor",
         "iconColorInfo": "infoColor",
-        "iconColorWarning": "warningColor"
+        "iconColorWarning": "warningColor",
+        "lineHeight": "lineHeight"
       },
       "seen": [
         "titleFontWeight",
@@ -62,6 +63,7 @@
         "iconColorSuccess",
         "iconColorInfo",
         "iconColorWarning",
+        "lineHeight",
         "titleFontSizeSmall",
         "titleFontSizeMedium",
         "titleFontSizeLarge",
@@ -82,6 +84,7 @@
     },
     "dark": {
       "refs": {
+        "lineHeight": "lineHeight",
         "titleFontWeight": "fontWeightStrong",
         "titleTextColor": "textColor1",
         "textColor": "textColor2",
@@ -107,6 +110,7 @@
         "iconColor404",
         "iconColor403",
         "iconColor500",
+        "lineHeight",
         "titleFontWeight",
         "titleTextColor",
         "textColor",

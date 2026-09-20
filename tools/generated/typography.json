@@ -167,7 +167,8 @@
         "textColorSuccess": "successColor",
         "textColorWarning": "warningColor",
         "textColorError": "errorColor",
-        "codeTextColor": "textColor2"
+        "codeTextColor": "textColor2",
+        "codeColor": "codeColor"
       },
       "seen": [
         "aTextColor",
@@ -205,6 +206,7 @@
         "textColorError",
         "codeTextColor",
         "codeBorder",
+        "codeColor",
         "headerFontSize1",
         "headerFontSize2",
         "headerFontSize3",
@@ -270,7 +272,8 @@
         "textColorSuccess": "successColor",
         "textColorWarning": "warningColor",
         "textColorError": "errorColor",
-        "codeTextColor": "textColor2"
+        "codeTextColor": "textColor2",
+        "codeColor": "codeColor"
       },
       "seen": [
         "headerFontSize1",
@@ -335,6 +338,7 @@
         "textColorWarning",
         "textColorError",
         "codeTextColor",
+        "codeColor",
         "codeBorder"
       ]
     }

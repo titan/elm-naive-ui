@@ -27,18 +27,48 @@
   },
   "refs": {
     "light": {
-      "refs": {},
+      "refs": {
+        "borderRadius": "borderRadius",
+        "fontSize": "fontSize",
+        "heightTiny": "heightTiny",
+        "heightSmall": "heightSmall",
+        "heightMedium": "heightMedium",
+        "heightLarge": "heightLarge",
+        "heightHuge": "heightHuge"
+      },
       "seen": [
         "border",
         "color",
         "colorModal",
-        "colorPopover"
+        "colorPopover",
+        "borderRadius",
+        "fontSize",
+        "heightTiny",
+        "heightSmall",
+        "heightMedium",
+        "heightLarge",
+        "heightHuge"
       ]
     },
     "dark": {
-      "refs": {},
+      "refs": {
+        "borderRadius": "borderRadius",
+        "fontSize": "fontSize",
+        "heightTiny": "heightTiny",
+        "heightSmall": "heightSmall",
+        "heightMedium": "heightMedium",
+        "heightLarge": "heightLarge",
+        "heightHuge": "heightHuge"
+      },
       "seen": [
+        "borderRadius",
+        "fontSize",
         "border",
+        "heightTiny",
+        "heightSmall",
+        "heightMedium",
+        "heightLarge",
+        "heightHuge",
         "color",
         "colorModal",
         "colorPopover"

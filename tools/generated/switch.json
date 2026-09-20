@@ -74,7 +74,8 @@
         "railBorderRadiusLarge": "borderRadius",
         "buttonBorderRadiusSmall": "borderRadius",
         "buttonBorderRadiusMedium": "borderRadius",
-        "buttonBorderRadiusLarge": "borderRadius"
+        "buttonBorderRadiusLarge": "borderRadius",
+        "opacityDisabled": "opacityDisabled"
       },
       "seen": [
         "iconColor",
@@ -91,6 +92,7 @@
         "buttonBorderRadiusMedium",
         "buttonBorderRadiusLarge",
         "boxShadowFocus",
+        "opacityDisabled",
         "buttonHeightSmall",
         "buttonHeightMedium",
         "buttonHeightLarge",
@@ -113,6 +115,7 @@
         "iconColor": "baseColor",
         "textColor": "textColor2",
         "loadingColor": "primaryColorSuppl",
+        "opacityDisabled": "opacityDisabled",
         "railColorActive": "primaryColorSuppl",
         "railBorderRadiusSmall": "borderRadius",
         "railBorderRadiusMedium": "borderRadius",
@@ -140,6 +143,7 @@
         "iconColor",
         "textColor",
         "loadingColor",
+        "opacityDisabled",
         "railColor",
         "railColorActive",
         "buttonBoxShadow",

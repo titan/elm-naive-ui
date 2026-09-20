@@ -31,7 +31,8 @@
         "sizeLarge": "heightLarge",
         "sizeHuge": "heightHuge",
         "color": "primaryColor",
-        "opacitySpinning": "opacityDisabled"
+        "opacitySpinning": "opacityDisabled",
+        "fontSize": "fontSize"
       },
       "seen": [
         "textColor",
@@ -41,11 +42,13 @@
         "sizeLarge",
         "sizeHuge",
         "color",
-        "opacitySpinning"
+        "opacitySpinning",
+        "fontSize"
       ]
     },
     "dark": {
       "refs": {
+        "fontSize": "fontSize",
         "textColor": "primaryColor",
         "sizeTiny": "heightTiny",
         "sizeSmall": "heightSmall",
@@ -56,6 +59,7 @@
         "opacitySpinning": "opacityDisabled"
       },
       "seen": [
+        "fontSize",
         "textColor",
         "sizeTiny",
         "sizeSmall",

@@ -16,21 +16,25 @@
       "refs": {
         "titleTextColor": "textColor1",
         "textColor": "textColor2",
-        "titleFontWeight": "fontWeightStrong"
+        "titleFontWeight": "fontWeightStrong",
+        "fontSize": "fontSize"
       },
       "seen": [
         "titleTextColor",
         "textColor",
-        "titleFontWeight"
+        "titleFontWeight",
+        "fontSize"
       ]
     },
     "dark": {
       "refs": {
+        "fontSize": "fontSize",
         "titleTextColor": "textColor1",
         "textColor": "textColor2",
         "titleFontWeight": "fontWeightStrong"
       },
       "seen": [
+        "fontSize",
         "titleTextColor",
         "textColor",
         "titleFontWeight"

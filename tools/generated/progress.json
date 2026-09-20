@@ -61,7 +61,8 @@
         "fillColorInfo": "infoColor",
         "fillColorSuccess": "successColor",
         "fillColorWarning": "warningColor",
-        "fillColorError": "errorColor"
+        "fillColorError": "errorColor",
+        "fontSize": "fontSize"
       },
       "seen": [
         "fontSizeCircle",
@@ -83,11 +84,13 @@
         "fillColorSuccess",
         "fillColorWarning",
         "fillColorError",
-        "lineBgProcessing"
+        "lineBgProcessing",
+        "fontSize"
       ]
     },
     "dark": {
       "refs": {
+        "fontSize": "fontSize",
         "fontWeightCircle": "fontWeight",
         "railColor": "progressRailColor",
         "iconColor": "infoColor",
@@ -104,6 +107,7 @@
         "fillColorError": "errorColor"
       },
       "seen": [
+        "fontSize",
         "fontSizeCircle",
         "fontWeightCircle",
         "railColor",

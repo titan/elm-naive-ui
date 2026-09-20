@@ -20,6 +20,28 @@ async function dumpCommon() {
   return (await loadModuleAt(RESOLVE_DIR, path.join(RESOLVE_DIR, '_styles/common/index.ts'), src)).default
 }
 
+// The bodies of every `return { ... }` literal in the file, brace-matched so nested
+// objects and spreads do not truncate them.
+function returnedLiterals(src) {
+  const out = []
+  for (const m of src.matchAll(/return\s*\{/g)) {
+    const start = m.index + m[0].length - 1
+    let depth = 0
+    let i = start
+    for (; i < src.length; i++) {
+      if (src[i] === '{') depth++
+      else if (src[i] === '}') {
+        depth--
+        if (depth === 0) break
+      }
+    }
+    out.push(src.slice(start + 1, i))
+  }
+  return out
+}
+
+const escapeRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
 // Parse a theme source file and report, per returned field, whether its RHS is a
 // common variable destructured from `vars` (`field: railColor`) — and whether the
 // field name was seen at all. gen-theme uses this so that a *literal* whose value
@@ -60,6 +82,24 @@ function parseVarRefs(src) {
   for (const m of src.matchAll(/([A-Za-z_$][\w$]*)\s*:\s*([^,\n}]+)/g)) record(m[1], m[2].trim())
   // dark themes that build on light's `self` override via `result.field = value`
   for (const m of src.matchAll(/\.([A-Za-z_$][\w$]*)\s*=\s*([^\n;]+)/g)) record(m[1], m[2].trim())
+  // Shorthand object entries: `{ ..., fontSizeTiny, ... }`, where the local name was
+  // destructured from `vars`. These pass the common variable straight through, but
+  // there is no `key: value` for the passes above to see — so without this the key
+  // looks unseen and gen-theme falls back to value-matching, which binds it to the
+  // *first* common var with an equal value. Several common vars are value-equal in
+  // both modes (fontSize = fontSizeSmall = fontSizeMedium = '14px'; iconColor =
+  // textColorDisabled = placeholderColor = clearColor = 'rgba(194,194,194,1)'), so
+  // that silently bound `Empty.iconColor` to `common.textColorDisabled` etc. The
+  // values rendered fine, but overriding `common.iconColor` then did nothing.
+  // Runs last, and only for names no earlier pass explained, so an explicit
+  // `name: <literal>` (or a dark `result.name = ...`) still wins.
+  for (const lit of returnedLiterals(src)) {
+    for (const name of names) {
+      if (seen.has(name)) continue
+      if (new RegExp(`(?:^|[{,])\\s*${escapeRe(name)}(?=\\s*[,}]|\\s*$)`, 'm').test(lit))
+        record(name, name)
+    }
+  }
   return { refs, seen: [...seen] }
 }
 

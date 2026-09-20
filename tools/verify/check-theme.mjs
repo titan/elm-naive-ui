@@ -1,8 +1,19 @@
-// Theme-value check: every expression emitted in `src/NUI/Theme/*.elm` must resolve
-// (in both modes) to the SAME value the extractor executed from upstream
-// (`tools/generated/*.json`). The generator emits either a literal or `common.<field>`;
-// a wrong `common.<field>` (right value, wrong var) silently changes override
-// semantics, and a wrong literal changes the rendered default. This catches both.
+// Theme-value AND provenance check.
+//
+// 1. VALUE: every expression emitted in `src/NUI/Theme/*.elm` must resolve (in both
+//    modes) to the SAME value the extractor executed from upstream
+//    (`tools/generated/*.json`). A wrong literal changes the rendered default.
+//
+// 2. PROVENANCE: every `common.<field>` binding must be backed by the extractor's
+//    provenance record (`<name>.json` -> `refs.<mode>.refs[<key>]`). The generator
+//    binds a field to `common.X` either because upstream *referenced* `X` (correct —
+//    overriding `X` propagates) or because it could not trace the key and
+//    value-matched against a common var of equal value. The latter silently picks
+//    the WRONG var whenever several common vars are value-equal (fontSize =
+//    fontSizeSmall = fontSizeMedium = '14px'; iconColor = textColorDisabled =
+//    placeholderColor = clearColor = 'rgba(194,194,194,1)'), which the value check
+//    above cannot see at all. This step is why the generator may not fall back to
+//    value-matching: a field bound to a common var it never referenced fails here.
 //
 // Requires the generated JSON to be fresh (`cd tools && npm run extract`).
 import fs from 'fs'
@@ -46,6 +57,7 @@ const jsonNameFor = name => name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerC
 const files = fs.readdirSync(themeDir).filter(f => f.endsWith('.elm') && f !== 'Common.elm')
 
 let checked = 0
+let provenanced = 0
 const problems = []
 for (const f of files) {
   const name = f.replace(/\.elm$/, '')
@@ -59,6 +71,7 @@ for (const f of files) {
       problems.push(`${name}.${mode}: no record parsed`)
       continue
     }
+    const refs = ((json.refs || {})[mode] || {}).refs || {}
     for (const [rawField, expr] of Object.entries(mod[mode])) {
       const field = rawField.replace(/_$/, '')
       const upstreamKey = fromElmField(field, Object.keys(json[mode]))
@@ -78,14 +91,35 @@ for (const f of files) {
         problems.push(
           `${name}.${mode}.${label}: ${expr} => ${JSON.stringify(actual)} != upstream ${JSON.stringify(expected)}`
         )
+
+      // Provenance: a `common.X` binding must be recorded as a reference to X. When
+      // it is not, the value check above passed only by coincidence (X and the
+      // intended var are value-equal), and overrides for the intended var are dead.
+      if (cm) {
+        provenanced++
+        const boundTo = cm[1].replace(/_$/, '')
+        const recorded = refs[label]
+        if (!recorded)
+          problems.push(
+            `${name}.${mode}.${label}: bound to ${expr} with no provenance record ` +
+              `(value-matched — override propagation for the intended var is broken)`
+          )
+        else if (recorded !== boundTo)
+          problems.push(
+            `${name}.${mode}.${label}: bound to ${expr} but provenance says common.${recorded}`
+          )
+      }
     }
   }
 }
 
-console.log(`resolved ${checked} field values across ${files.length} theme modules`)
+console.log(
+  `resolved ${checked} field values (${provenanced} common.* bindings) across ${files.length} theme modules`
+)
 if (problems.length) {
-  console.log(`\n${problems.length} theme value(s) diverge from upstream:`)
+  console.log(`\n${problems.length} theme problem(s):`)
   problems.forEach(p => console.log('  ' + p))
   process.exit(1)
 }
-console.log('\nOK: every emitted theme value equals the executed upstream value')
+console.log('\nOK: every emitted theme value equals the executed upstream value,')
+console.log('    and every common.* binding is backed by a provenance record')

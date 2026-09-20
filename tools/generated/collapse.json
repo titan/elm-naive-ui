@@ -34,7 +34,9 @@
         "titleTextColorDisabled": "textColorDisabled",
         "textColor": "textColor2",
         "arrowColor": "textColor2",
-        "arrowColorDisabled": "textColorDisabled"
+        "arrowColorDisabled": "textColorDisabled",
+        "dividerColor": "dividerColor",
+        "fontSize": "fontSize"
       },
       "seen": [
         "titleFontSize",
@@ -45,15 +47,19 @@
         "arrowColor",
         "arrowColorDisabled",
         "itemMargin",
-        "titlePadding"
+        "titlePadding",
+        "dividerColor",
+        "fontSize"
       ]
     },
     "dark": {
       "refs": {
         "titleFontSize": "fontSize",
         "titleFontWeight": "fontWeight",
+        "dividerColor": "dividerColor",
         "titleTextColor": "textColor1",
         "titleTextColorDisabled": "textColorDisabled",
+        "fontSize": "fontSize",
         "textColor": "textColor2",
         "arrowColor": "textColor2",
         "arrowColorDisabled": "textColorDisabled"
@@ -61,8 +67,10 @@
       "seen": [
         "titleFontSize",
         "titleFontWeight",
+        "dividerColor",
         "titleTextColor",
         "titleTextColorDisabled",
+        "fontSize",
         "textColor",
         "arrowColor",
         "arrowColorDisabled",

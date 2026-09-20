@@ -35,7 +35,8 @@
         "itemBorderRadius": "borderRadius",
         "itemColorHover": "buttonColor2Hover",
         "itemColorPressed": "buttonColor2Pressed",
-        "separatorColor": "textColor3"
+        "separatorColor": "textColor3",
+        "fontSize": "fontSize"
       },
       "seen": [
         "itemLineHeight",
@@ -47,11 +48,13 @@
         "itemColorHover",
         "itemColorPressed",
         "separatorColor",
+        "fontSize",
         "fontWeightActive"
       ]
     },
     "dark": {
       "refs": {
+        "fontSize": "fontSize",
         "itemTextColor": "textColor3",
         "itemTextColorHover": "textColor2",
         "itemTextColorPressed": "textColor2",
@@ -63,6 +66,7 @@
       },
       "seen": [
         "fontWeightActive",
+        "fontSize",
         "itemLineHeight",
         "itemTextColor",
         "itemTextColorHover",

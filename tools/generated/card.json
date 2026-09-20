@@ -92,7 +92,15 @@
         "fontSizeMedium": "fontSize",
         "fontSizeLarge": "fontSize",
         "fontSizeHuge": "fontSize",
-        "boxShadow": "boxShadow1"
+        "boxShadow": "boxShadow1",
+        "borderRadius": "borderRadius",
+        "lineHeight": "lineHeight",
+        "closeIconColor": "closeIconColor",
+        "closeIconColorHover": "closeIconColorHover",
+        "closeIconColorPressed": "closeIconColorPressed",
+        "closeColorHover": "closeColorHover",
+        "closeColorPressed": "closeColorPressed",
+        "actionColor": "actionColor"
       },
       "seen": [
         "color",
@@ -112,6 +120,14 @@
         "fontSizeLarge",
         "fontSizeHuge",
         "boxShadow",
+        "borderRadius",
+        "lineHeight",
+        "closeIconColor",
+        "closeIconColorHover",
+        "closeIconColorPressed",
+        "closeColorHover",
+        "closeColorPressed",
+        "actionColor",
         "paddingSmall",
         "paddingMedium",
         "paddingLarge",
@@ -126,6 +142,7 @@
     },
     "dark": {
       "refs": {
+        "lineHeight": "lineHeight",
         "color": "cardColor",
         "colorModal": "modalColor",
         "colorPopover": "popoverColor",
@@ -136,13 +153,20 @@
         "textColor": "textColor2",
         "titleTextColor": "textColor1",
         "borderColor": "dividerColor",
+        "actionColor": "actionColor",
         "titleFontWeight": "fontWeightStrong",
+        "closeColorHover": "closeColorHover",
+        "closeColorPressed": "closeColorPressed",
         "closeBorderRadius": "borderRadius",
+        "closeIconColor": "closeIconColor",
+        "closeIconColorHover": "closeIconColorHover",
+        "closeIconColorPressed": "closeIconColorPressed",
         "fontSizeSmall": "fontSize",
         "fontSizeMedium": "fontSize",
         "fontSizeLarge": "fontSize",
         "fontSizeHuge": "fontSize",
-        "boxShadow": "boxShadow1"
+        "boxShadow": "boxShadow1",
+        "borderRadius": "borderRadius"
       },
       "seen": [
         "paddingSmall",
@@ -155,6 +179,7 @@
         "titleFontSizeHuge",
         "closeIconSize",
         "closeSize",
+        "lineHeight",
         "color",
         "colorModal",
         "colorPopover",
@@ -165,13 +190,20 @@
         "textColor",
         "titleTextColor",
         "borderColor",
+        "actionColor",
         "titleFontWeight",
+        "closeColorHover",
+        "closeColorPressed",
         "closeBorderRadius",
+        "closeIconColor",
+        "closeIconColorHover",
+        "closeIconColorPressed",
         "fontSizeSmall",
         "fontSizeMedium",
         "fontSizeLarge",
         "fontSizeHuge",
-        "boxShadow"
+        "boxShadow",
+        "borderRadius"
       ]
     }
   }
