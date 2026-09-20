@@ -25,6 +25,7 @@
     "NUI.Ellipsis",
     "NUI.Empty",
     "NUI.FloatButton",
+    "NUI.FloatButtonGroup",
     "NUI.Flex",
     "NUI.GradientText",
     "NUI.Grid",
