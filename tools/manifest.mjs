@@ -237,5 +237,17 @@ export const components = {
     cssr: ['flex/src/styles/rtl.cssr.ts'],
     theme: 'flex/styles/light.ts',
     rename: { space: 'flex' }
+  },
+  'float-button-group': {
+    cssr: ['float-button-group/src/styles/index.cssr.ts'],
+    theme: 'float-button-group/styles/light.ts'
+  },
+  icon: {
+    cssr: ['icon/src/styles/index.cssr.ts'],
+    theme: 'icon/styles/light.ts'
+  },
+  'icon-wrapper': {
+    cssr: ['icon-wrapper/src/styles/index.cssr.ts'],
+    theme: 'icon-wrapper/styles/light.ts'
   }
 }

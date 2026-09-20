@@ -4129,6 +4129,75 @@ transition: none!important;}.nui-root.nui-root .n-pagination .n-pagination-quick
 
     direction: rtl;}
 
+/* ===== naive-ui: float-button-group ===== */
+.nui-root.nui-root .n-float-button-group .n-float-button {
+
+    position: relative;}.nui-root.nui-root .n-float-button-group.n-float-button-group--square-shape {
+
+    background-color: var(--n-color);
+    cursor: pointer;
+    display: flex;
+    width: fit-content;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--n-border-radius-square);
+    flex-direction: column;
+    box-shadow: var(--n-box-shadow);
+    transition:
+      color .3s var(--n-bezier),
+      box-shadow .3s var(--n-bezier),
+      background-color .3s var(--n-bezier);}.nui-root.nui-root .n-float-button-group.n-float-button-group--square-shape .n-float-button {
+
+      background-color: unset;
+      border-radius: 0;
+      box-shadow: none;
+      box-sizing: content-box;}.nui-root.nui-root .n-float-button-group.n-float-button-group--square-shape .n-float-button:not(:last-child) {
+
+        border-bottom: 1px solid var(--n-button-border-color);}.nui-root.nui-root .n-float-button-group.n-float-button-group--square-shape .n-float-button:first-child {
+
+        border-top-left-radius: 4px;
+        border-top-right-radius: 4px;}.nui-root.nui-root .n-float-button-group.n-float-button-group--square-shape .n-float-button:last-child {
+
+        border-bottom-left-radius: 4px;
+        border-bottom-right-radius: 4px;}.nui-root.nui-root .n-float-button-group.n-float-button-group--square-shape .n-float-button .n-float-button__fill {
+
+        top: 4px;
+        right: 4px;
+        bottom: 4px;
+        left: 4px;
+        border-radius: var(--n-border-radius-square);}.nui-root.nui-root .n-float-button-group.n-float-button-group--circle-shape >:not(:last-child) {
+
+      margin-bottom: 16px;}
+
+/* ===== naive-ui: icon ===== */
+.nui-root.nui-root .n-icon {
+
+  height: 1em;
+  width: 1em;
+  line-height: 1em;
+  text-align: center;
+  display: inline-block;
+  position: relative;
+  fill: currentColor;}.nui-root.nui-root .n-icon.n-icon--color-transition {
+  transition: color .3s var(--n-bezier);}.nui-root.nui-root .n-icon.n-icon--depth {
+  color: var(--n-color);}.nui-root.nui-root .n-icon.n-icon--depth svg {
+  opacity: var(--n-opacity);
+  transition: opacity .3s var(--n-bezier);}.nui-root.nui-root .n-icon svg {
+  height: 1em;
+  width: 1em;}
+
+/* ===== naive-ui: icon-wrapper ===== */
+.nui-root.nui-root .n-icon-wrapper {
+
+  transition:
+    color .3s var(--n-bezier),
+    background-color .3s var(--n-bezier);
+  background-color: var(--n-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--n-icon-color);}
+
 /* ===== elm-ui bridge =====
  *
  * Components are built from elm-ui elements, and elm-ui styles its own helper classes

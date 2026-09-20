@@ -1,0 +1,32 @@
+{
+  "light": {
+    "color": "#18a058",
+    "iconColor": "#FFF"
+  },
+  "dark": {
+    "color": "#63e2b7",
+    "iconColor": "#000"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "color": "primaryColor",
+        "iconColor": "baseColor"
+      },
+      "seen": [
+        "color",
+        "iconColor"
+      ]
+    },
+    "dark": {
+      "refs": {
+        "color": "primaryColor",
+        "iconColor": "baseColor"
+      },
+      "seen": [
+        "color",
+        "iconColor"
+      ]
+    }
+  }
+}

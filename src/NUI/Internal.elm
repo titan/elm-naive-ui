@@ -106,8 +106,12 @@ classes =
     Element.htmlAttribute << HA.class << String.join " "
 
 
-{-| Attach an inline `style` attribute built from `--n-*` custom properties.
-`initial` values (Naive UI's "unset" marker) are dropped.
+{-| Attach an inline `style` attribute from a list of declarations —
+`--n-*` custom properties in the common case. Naive UI sometimes merges the
+themed vars with literal declarations into one `style` attribute on the same
+element (Icon's `font-size`/`color`, IconWrapper's `height`/`width`/…); pass them
+in the same list rather than adding a second `style` attribute, which the DOM
+clobbers. `initial` values (Naive UI's "unset" marker) and empties are dropped.
 -}
 cssVars : List ( String, String ) -> Attribute msg
 cssVars vars =

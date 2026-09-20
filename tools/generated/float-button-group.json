@@ -1,0 +1,42 @@
+{
+  "light": {
+    "color": "#fff",
+    "buttonBorderColor": "rgb(239, 239, 245)",
+    "borderRadiusSquare": "3px",
+    "boxShadow": "0 2px 8px 0px rgba(0, 0, 0, .12)"
+  },
+  "dark": {
+    "color": "rgb(72, 72, 78)",
+    "buttonBorderColor": "rgba(255, 255, 255, 0.09)",
+    "borderRadiusSquare": "3px",
+    "boxShadow": "0 2px 8px 0px rgba(0, 0, 0, .12)"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "color": "popoverColor",
+        "buttonBorderColor": "dividerColor",
+        "borderRadiusSquare": "borderRadius"
+      },
+      "seen": [
+        "color",
+        "buttonBorderColor",
+        "borderRadiusSquare",
+        "boxShadow"
+      ]
+    },
+    "dark": {
+      "refs": {
+        "color": "popoverColor",
+        "buttonBorderColor": "dividerColor",
+        "borderRadiusSquare": "borderRadius"
+      },
+      "seen": [
+        "color",
+        "buttonBorderColor",
+        "borderRadiusSquare",
+        "boxShadow"
+      ]
+    }
+  }
+}

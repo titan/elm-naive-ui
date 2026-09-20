@@ -1,0 +1,56 @@
+{
+  "light": {
+    "color": "#000",
+    "opacity1Depth": "0.82",
+    "opacity2Depth": "0.72",
+    "opacity3Depth": "0.38",
+    "opacity4Depth": "0.24",
+    "opacity5Depth": "0.18"
+  },
+  "dark": {
+    "color": "#fff",
+    "opacity1Depth": "0.9",
+    "opacity2Depth": "0.82",
+    "opacity3Depth": "0.52",
+    "opacity4Depth": "0.38",
+    "opacity5Depth": "0.28"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "color": "textColorBase",
+        "opacity1Depth": "opacity1",
+        "opacity2Depth": "opacity2",
+        "opacity3Depth": "opacity3",
+        "opacity4Depth": "opacity4",
+        "opacity5Depth": "opacity5"
+      },
+      "seen": [
+        "color",
+        "opacity1Depth",
+        "opacity2Depth",
+        "opacity3Depth",
+        "opacity4Depth",
+        "opacity5Depth"
+      ]
+    },
+    "dark": {
+      "refs": {
+        "color": "textColorBase",
+        "opacity1Depth": "opacity1",
+        "opacity2Depth": "opacity2",
+        "opacity3Depth": "opacity3",
+        "opacity4Depth": "opacity4",
+        "opacity5Depth": "opacity5"
+      },
+      "seen": [
+        "color",
+        "opacity1Depth",
+        "opacity2Depth",
+        "opacity3Depth",
+        "opacity4Depth",
+        "opacity5Depth"
+      ]
+    }
+  }
+}
