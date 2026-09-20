@@ -190,5 +190,20 @@ export const components = {
   'float-button': {
     cssr: ['float-button/src/styles/index.cssr.ts'],
     theme: 'float-button/styles/light.ts'
+  },
+  'input-otp': {
+    cssr: [
+      'input-otp/src/styles/index.cssr.ts',
+      'input-otp/src/styles/input-otp-rtl.cssr.ts'
+    ],
+    theme: 'input-otp/styles/light.ts'
+  },
+  'dynamic-tags': {
+    cssr: ['dynamic-tags/src/styles/index.cssr.ts'],
+    theme: 'dynamic-tags/styles/light.ts'
+  },
+  calendar: {
+    cssr: ['calendar/src/styles/index.cssr.ts'],
+    theme: 'calendar/styles/light.ts'
   }
 }
