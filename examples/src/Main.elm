@@ -22,6 +22,7 @@ import NUI.Collapse as Collapse
 import NUI.Countdown as Countdown
 import NUI.Css as Css
 import NUI.Divider as Divider
+import NUI.DynamicTags as DynamicTags
 import NUI.Ellipsis as Ellipsis
 import NUI.Empty as Empty
 import NUI.FloatButton as FloatButton
@@ -122,6 +123,11 @@ radioGD =
 divD : Divider.Options msg
 divD =
     Divider.defaults
+
+
+dtagsD : DynamicTags.Options msg
+dtagsD =
+    DynamicTags.defaults
 
 
 avD : Avatar.Options msg
@@ -363,6 +369,7 @@ body =
     , alertSection
     , inputSection
     , inputOtpSection
+    , dynamicTagsSection
     , selectionSection
     , dividerSection
     , avatarSection
@@ -563,6 +570,25 @@ inputOtpSection =
             ]
         , demoRow "RTL"
             [ InputOtp.view theme { iotpD | rtl = True, length = 6, value = [ "8", "8", "8" ] } []
+            ]
+        ]
+
+
+dynamicTagsSection : Element msg
+dynamicTagsSection =
+    section "Dynamic Tags" "Editable tag lists (the tags, input and draft are caller-owned)." <|
+        [ demoRow "Tags"
+            [ DynamicTags.view theme
+                { dtagsD | value = [ "Naive UI", "Elm", "elm-ui" ] }
+                []
+            , DynamicTags.view theme
+                { dtagsD | value = [ "small", "medium" ], size = T.Small, round = True }
+                []
+            ]
+        , demoRow "Input shown (caller owns the draft)"
+            [ DynamicTags.view theme
+                { dtagsD | value = [ "one", "two" ], showInput = True, inputValue = "thr" }
+                []
             ]
         ]
 

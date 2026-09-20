@@ -81,6 +81,7 @@ bridge, tests).
 | `NUI.Collapse`    | ✅ |
 | `NUI.Countdown`   | ✅ |
 | `NUI.Divider`     | ✅ |
+| `NUI.DynamicTags` | ✅ |
 | `NUI.Ellipsis`    | ✅ |
 | `NUI.Empty`       | ✅ |
 | `NUI.FloatButton` | ✅ |

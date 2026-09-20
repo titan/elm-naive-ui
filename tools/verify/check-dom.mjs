@@ -28,6 +28,7 @@ const targets = {
   '.n-switch': true,
   '.n-radio': true,
   '.n-divider': false,
+  '.n-dynamic-tags': true,
   '.n-text': true,
   '.n-h1': true,
   '.n-avatar': true,
