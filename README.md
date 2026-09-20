@@ -147,6 +147,7 @@ cd examples && ELM_HOME=/tmp/elm-home elm make src/Main.elm --output=index.html
 node ../tools/verify/check-dom.mjs index.html        # bridge + --n-* vars per component
 node ../tools/verify/check-classes.mjs                # emitted classes exist in the CSS
 node ../tools/verify/check-theme.mjs                  # emitted theme values match upstream
+node ../tools/verify/check-exposure.mjs               # elm.json exposes every module
 bash ../tests/run.sh                                  # theme + DOM assertions
 
 # regenerate the CSS + theme modules from a Naive UI checkout

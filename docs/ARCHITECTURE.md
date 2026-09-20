@@ -54,6 +54,12 @@ src/
 Generated theme modules map each component variable either to a `common` field (so theme
 overrides propagate) or to a literal. Regenerate everything with `cd tools && npm run extract`.
 
+Upstream theme keys that are not legal Elm record fields are mapped by
+`tools/elm-name.mjs` (shared by the generator and `check-theme.mjs`): a keyword gets a `_`
+suffix, and a leading-underscore name (`__invertScrollbar`, naive-ui's marker for an
+internal non-CSS-var value) has the prefix stripped. Adding a component also means adding
+it to `elm.json`'s `exposed-modules` — `check-exposure.mjs` enforces that in the gate.
+
 ## Component conventions
 
 Model each component on `src/NUI/Button.elm`.
@@ -125,12 +131,16 @@ That runs, in order:
 2.  `tools/verify/check-theme.mjs` — every value emitted in `src/NUI/Theme/*.elm`
     resolves to the same value the extractor executed from upstream (static; catches a
     wrong `common.<field>` or literal in the generated theme modules).
-3.  `elm make` — the library compiles.
-4.  `elm make src/Main.elm` — the example page compiles.
-5.  `tools/verify/check-dom.mjs` — renders the example in jsdom and asserts each component
+3.  `tools/verify/check-exposure.mjs` — `elm.json`'s `exposed-modules` lists every
+    module under `src/` (except `NUI.Css.Generated` and `NUI.Qrcodegen`, which are
+    deliberately private). Package-mode `elm make` silently *skips* unexposed modules,
+    so a stale list ships a component uncompiled and blocks consumers from importing it.
+4.  `elm make` — the library compiles.
+5.  `elm make src/Main.elm` — the example page compiles.
+6.  `tools/verify/check-dom.mjs` — renders the example in jsdom and asserts each component
     root has `flex-basis: auto` (the bridge works) and carries its `--n-*` variables.
-6.  `tests/run.sh` — DOM + theme assertions over theme maths, `cssVars`, and live DOM output.
-7.  `elm-format --validate`.
+7.  `tests/run.sh` — DOM + theme assertions over theme maths, `cssVars`, and live DOM output.
+8.  `elm-format --validate`.
 
 ```bash
 # library only
