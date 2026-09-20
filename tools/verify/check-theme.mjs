@@ -54,6 +54,17 @@ const resolveCommon = (mode, ref) => {
 }
 
 const jsonNameFor = name => name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
+
+// Parse an Elm list-of-strings literal `[ "a", "b" ]` into a JS array.
+const parseListLiteral = expr => {
+  const lm = expr.match(/^\[\s*([\s\S]*?)\s*\]$/)
+  if (!lm) return undefined
+  const out = []
+  const re = /"((?:[^"\\]|\\.)*)"/g
+  let m
+  while ((m = re.exec(lm[1]))) out.push(unesc(m[1]))
+  return out
+}
 const files = fs.readdirSync(themeDir).filter(f => f.endsWith('.elm') && f !== 'Common.elm')
 
 let checked = 0
@@ -80,6 +91,7 @@ for (const f of files) {
       const cm = expr.match(/^common\.([A-Za-z_]\w*)$/)
       let actual
       if (cm) actual = resolveCommon(mode, cm[1].replace(/_$/, ''))
+      else if (Array.isArray(expected)) actual = parseListLiteral(expr)
       else {
         const lm = expr.match(/^"([\s\S]*)"$/)
         actual = lm ? unesc(lm[1]) : expr
@@ -87,7 +99,7 @@ for (const f of files) {
       checked++
       if (actual === undefined) problems.push(`${name}.${mode}.${label}: cannot resolve ${expr}`)
       else if (expected === undefined) problems.push(`${name}.${mode}.${label}: not in upstream values`)
-      else if (actual !== expected)
+      else if (JSON.stringify(actual) !== JSON.stringify(expected))
         problems.push(
           `${name}.${mode}.${label}: ${expr} => ${JSON.stringify(actual)} != upstream ${JSON.stringify(expected)}`
         )

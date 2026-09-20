@@ -249,5 +249,9 @@ export const components = {
   'icon-wrapper': {
     cssr: ['icon-wrapper/src/styles/index.cssr.ts'],
     theme: 'icon-wrapper/styles/light.ts'
+  },
+  heatmap: {
+    cssr: ['heatmap/src/styles/index.cssr.ts', 'heatmap/src/styles/rtl.cssr.ts'],
+    theme: 'heatmap/styles/light.ts'
   }
 }

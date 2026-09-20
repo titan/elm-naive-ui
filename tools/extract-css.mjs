@@ -18,25 +18,25 @@ const SRC = process.env.NAIVE_UI_SRC || '/home/titan/Works/elm/naive-ui'
 const SCOPE = '.nui-root.nui-root '
 
 // Prefix every rule selector with SCOPE, skipping at-rules and @keyframes bodies.
+// A nested `&`-rule inside a declaration block (upstream relies on browser-native
+// CSS nesting, e.g. heatmap's `&:has(> :only-child)`) is FLATTENED: `&` is replaced
+// with the parent's scoped selector and the block is hoisted after the parent rule.
 function scopeCss(css, scope) {
-  let out = ''
-  let buf = ''
-  const stack = [] // 'at' | 'keyframes' | 'rule'
-  let i = 0
   const isKf = sel => /^@(?:-\w+-)?keyframes/.test(sel)
 
-  const flushSelector = sel => {
+  const flushSelector = (sel, parentSel) => {
     const trimmed = sel.trim()
     if (!trimmed) return ''
-    const parent = stack[stack.length - 1]
-    if (trimmed.startsWith('@')) return trimmed
-    if (parent === 'keyframes') return trimmed
-    return trimmed
-      .split(',')
-      .map(s => `${scope}${s.trim().replace(/\s+/g, ' ')}`)
-      .join(',\n')
+    const parts = trimmed.split(',').map(s => s.trim().replace(/\s+/g, ' '))
+    if (parentSel) return parts.map(s => s.replace(/&/g, parentSel)).join(',\n')
+    return parts.map(s => `${scope}${s}`).join(',\n')
   }
 
+  const rootFrame = { kind: 'root', out: '' }
+  let frame = rootFrame
+  let buf = ''
+
+  let i = 0
   while (i < css.length) {
     const ch = css[i]
     if (ch === '"' || ch === "'") {
@@ -55,26 +55,42 @@ function scopeCss(css, scope) {
       buf = ''
       const trimmed = sel.trim()
       if (trimmed.startsWith('@')) {
-        stack.push(isKf(trimmed) ? 'keyframes' : 'at')
-        out += trimmed + ' {'
+        frame.out += trimmed + ' {'
+        frame = { kind: isKf(trimmed) ? 'keyframes' : 'at', out: '', parent: frame }
+      } else if (frame.kind === 'rule') {
+        // Nested rule inside a declaration block: capture, hoist on close.
+        frame = { kind: 'nested', out: '', sel: trimmed, hostRule: frame }
+      } else if (frame.kind === 'keyframes') {
+        frame.out += trimmed + ' {'
+        frame = { kind: 'kfblock', out: '', parent: frame }
       } else {
-        out += flushSelector(sel) + ' {'
-        stack.push('rule')
+        const scoped = flushSelector(sel)
+        frame.out += scoped + ' {'
+        frame = { kind: 'rule', out: '', scopedSel: scoped, pending: [], parent: frame }
       }
     } else if (ch === '}') {
-      stack.pop()
       buf = ''
-      out += '}'
+      const f = frame
+      if (f.kind === 'nested') {
+        frame = f.hostRule
+        f.hostRule.pending.push(flushSelector(f.sel, f.hostRule.scopedSel) + ' {' + f.out + '}')
+      } else if (f.kind === 'rule') {
+        frame = f.parent
+        f.parent.out += f.out + '}' + (f.pending.length ? '\n' + f.pending.join('\n') : '')
+      } else {
+        frame = f.parent
+        f.parent.out += f.out + '}'
+      }
     } else if (ch === ';') {
-      out += buf + ';'
+      frame.out += buf + ';'
       buf = ''
     } else {
       buf += ch
     }
     i++
   }
-  out += buf
-  return out
+  rootFrame.out += buf
+  return rootFrame.out
 }
 
 const banner = name => `\n/* ===== naive-ui: ${name} ===== */\n`

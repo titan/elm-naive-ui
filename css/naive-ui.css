@@ -4198,6 +4198,100 @@ transition: none!important;}.nui-root.nui-root .n-pagination .n-pagination-quick
   justify-content: center;
   color: var(--n-icon-color);}
 
+/* ===== naive-ui: heatmap ===== */
+.nui-root.nui-root .n-heatmap {
+
+    display: flex;
+    flex-direction: column;
+    max-width: fit-content;
+    font-size: var(--n-font-size);}.nui-root.nui-root .n-heatmap .n-heatmap__content {
+
+      display: block;}.nui-root.nui-root .n-heatmap .n-heatmap__calendar-table {
+
+      border-collapse: separate;
+      border-spacing: var(--n-y-gap) var(--n-x-gap);
+      font-size: var(--n-font-size);}.nui-root.nui-root .n-heatmap .n-heatmap__week-header-cell {
+
+      width: 27px;
+      padding: 0;
+      border: none;
+      font-size: var(--n-font-size);}.nui-root.nui-root .n-heatmap .n-heatmap__month-label-cell {
+
+      font-size: var(--n-font-size);
+      color: var(--n-text-color);
+      text-align: left;
+      height: 15px;
+      line-height: 15px;
+      font-weight: var(--n-font-weight);
+      padding: 0 2px 8px;
+      vertical-align: bottom;
+      transition: color .3s var(--n-bezier);}.nui-root.nui-root .n-heatmap .n-heatmap__week-label-cell {
+
+      font-size: var(--n-font-size);
+      color: var(--n-text-color);
+      text-align: right;
+      width: 27px;
+      height: 11px;
+      line-height: 11px;
+      padding: 0 4px 0 0;
+      border: none;
+      vertical-align: middle;
+      white-space: nowrap;
+      font-weight: var(--n-font-weight);
+      transition: color .3s var(--n-bezier);}.nui-root.nui-root .n-heatmap .n-heatmap__day-cell {
+
+      width: var(--n-rect-size);
+      height: var(--n-rect-size);
+      padding: 0;
+      border: none;
+      vertical-align: middle;
+      transition: color .3s var(--n-bezier);}.nui-root.nui-root .n-heatmap .n-heatmap__empty-cell {
+
+      width: var(--n-rect-size);
+      height: var(--n-rect-size);
+      border-radius: var(--n-border-radius);}.nui-root.nui-root .n-heatmap .n-heatmap__footer {
+
+      display: flex;
+      justify-content: space-between;
+      margin-left: 17px;
+      align-items: center;
+      margin-top: 8px;}
+.nui-root.nui-root .n-heatmap .n-heatmap__footer:has(> :only-child) {
+        justify-content: flex-end;}.nui-root.nui-root .n-heatmap .n-heatmap__indicator {
+
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;}.nui-root.nui-root .n-heatmap-rect {
+
+    width: var(--n-rect-size);
+    height: var(--n-rect-size);
+    border-radius: var(--n-border-radius);
+    background-color: var(--n-rect-color);
+    transition: background-color .3s var(--n-bezier);}.nui-root.nui-root .n-heatmap-rect.n-heatmap-rect--loading {
+
+      cursor: default;
+      background: var(--n-loading-color-start);}.nui-root.nui-root .n-heatmap-color-indicator {
+
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    font-size: var(--n-font-size);}.nui-root.nui-root .n-heatmap-color-indicator .n-heatmap-color-indicator__cells {
+
+      display: flex;
+      gap: var(--n-x-gap);}.nui-root.nui-root .n-heatmap-color-indicator .n-heatmap-color-indicator__cell {
+
+      width: var(--n-rect-size);
+      height: var(--n-rect-size);
+      border-radius: var(--n-border-radius);
+      transition: background-color .3s var(--n-bezier);}.nui-root.nui-root .n-heatmap-color-indicator .n-heatmap-color-indicator__label {
+
+      font-size: var(--n-font-size);
+      color: var(--n-text-color);
+      transition: color .3s var(--n-bezier);}.nui-root.nui-root .n-heatmap.n-heatmap--rtl {
+
+    direction: rtl;}
+
 /* ===== elm-ui bridge =====
  *
  * Components are built from elm-ui elements, and elm-ui styles its own helper classes
@@ -4248,4 +4342,32 @@ transition: none!important;}.nui-root.nui-root .n-pagination .n-pagination-quick
 
 .nui-root.nui-root .n-button.n-button {
   white-space: nowrap;
+}
+
+/* 4. Heatmap loading keyframes (port-added)
+ *
+ * Upstream mounts this stylesheet at runtime (src/heatmap/src/animationStyle.ts):
+ * a `heatmap-loading-<hash>` class whose name hashes the two loading colors, plus
+ * matching keyframes. The colors are theme vars (`--n-loading-color-start/end`),
+ * so the port replaces the hashed pair with one static rule on the existing
+ * `--loading` modifier. Values are verbatim from upstream: 2s, infinite,
+ * cubic-bezier(0.36, 0, 0.64, 1), keyframe stops 0/40/80/100%.
+ */
+.nui-root.nui-root .n-heatmap-rect.n-heatmap-rect--loading {
+  animation: 2s n-heatmap-loading infinite cubic-bezier(0.36, 0, 0.64, 1);
+}
+
+@keyframes n-heatmap-loading {
+  0% {
+    background: var(--n-loading-color-start);
+  }
+  40% {
+    background: var(--n-loading-color-end);
+  }
+  80% {
+    background: var(--n-loading-color-start);
+  }
+  100% {
+    background: var(--n-loading-color-start);
+  }
 }

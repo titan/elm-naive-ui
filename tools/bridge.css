@@ -49,3 +49,31 @@
 .nui-root.nui-root .n-button.n-button {
   white-space: nowrap;
 }
+
+/* 4. Heatmap loading keyframes (port-added)
+ *
+ * Upstream mounts this stylesheet at runtime (src/heatmap/src/animationStyle.ts):
+ * a `heatmap-loading-<hash>` class whose name hashes the two loading colors, plus
+ * matching keyframes. The colors are theme vars (`--n-loading-color-start/end`),
+ * so the port replaces the hashed pair with one static rule on the existing
+ * `--loading` modifier. Values are verbatim from upstream: 2s, infinite,
+ * cubic-bezier(0.36, 0, 0.64, 1), keyframe stops 0/40/80/100%.
+ */
+.nui-root.nui-root .n-heatmap-rect.n-heatmap-rect--loading {
+  animation: 2s n-heatmap-loading infinite cubic-bezier(0.36, 0, 0.64, 1);
+}
+
+@keyframes n-heatmap-loading {
+  0% {
+    background: var(--n-loading-color-start);
+  }
+  40% {
+    background: var(--n-loading-color-end);
+  }
+  80% {
+    background: var(--n-loading-color-start);
+  }
+  100% {
+    background: var(--n-loading-color-start);
+  }
+}

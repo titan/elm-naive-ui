@@ -24,6 +24,13 @@ const esc = s =>
     .replace(/\n/g, '\\n')
     .replace(/\t/g, '\\t')
 
+// Upstream self() values are strings, except a handful of array-valued vars
+// (e.g. heatmap's activeColors). Arrays become `List String` fields.
+const isList = v => Array.isArray(v)
+const literal = v =>
+  isList(v) ? `[ ${v.map(x => `"${esc(x)}"`).join(', ')} ]` : `"${esc(v)}"`
+const elmType = v => (isList(v) ? 'List String' : 'String')
+
 const header = (moduleName, exposing) =>
   `module ${moduleName} exposing (${exposing})\n\n\n`
 
@@ -33,19 +40,19 @@ const readJson = name => JSON.parse(fs.readFileSync(path.join(genDir, `${name}.j
 const common = readJson('common')
 const commonKeys = Object.keys(common.light)
 
-const typeAlias = (name, keys) =>
+const typeAlias = (name, keys, values) =>
   `type alias ${name} =\n    { ` +
-  keys.map(k => `${fieldName(k)} : String`).join('\n    , ') +
+  keys.map(k => `${fieldName(k)} : ${elmType(values[k])}`).join('\n    , ') +
   `\n    }\n`
 
 const recordLiteral = (keys, values) =>
   `    { ` +
-  keys.map(k => `${fieldName(k)} = "${esc(values[k])}"`).join('\n    , ') +
+  keys.map(k => `${fieldName(k)} = ${literal(values[k])}`).join('\n    , ') +
   `\n    }\n`
 
 let out = header('NUI.Theme.Common', 'Common, dark, light')
 out += '{-| Naive UI common theme variables (exact values extracted from naive-ui).\n-}\n\n\n'
-out += typeAlias('Common', commonKeys)
+out += typeAlias('Common', commonKeys, common.light)
 out += '\nlight : Common\nlight =\n'
 out += recordLiteral(commonKeys, common.light)
 out += '\n\ndark : Common\ndark =\n'
@@ -86,11 +93,11 @@ for (const name of componentFiles) {
       if (seenSet.has(k)) {
         // Provenance known: honour whether the source referenced a common var, so a
         // literal that merely equals a common value stays a literal.
-        value = refs[k] ? `common.${fieldName(refs[k])}` : `"${esc(themedValues[k])}"`
+        value = refs[k] ? `common.${fieldName(refs[k])}` : literal(themedValues[k])
       } else {
         // Unknown shape (e.g. dark reuses light's `self`): fall back to value-matching.
         const cf = commonReverse.get(data.light[k] + '\u0000' + data.dark[k])
-        value = cf ? `common.${cf}` : `"${esc(themedValues[k])}"`
+        value = cf ? `common.${cf}` : literal(themedValues[k])
       }
       return `        ${fieldName(k)} = ${value}`
     })
@@ -102,7 +109,7 @@ for (const name of componentFiles) {
   let mod = header(`NUI.Theme.${moduleName}`, 'Vars, vars')
   mod += `{-| Naive UI ${name} theme variables.\n-}\n\n\n`
   mod += `import NUI.Theme as Theme exposing (Theme)\nimport NUI.Theme.Common exposing (Common)\n\n\n`
-  mod += typeAlias('Vars', keys)
+  mod += typeAlias('Vars', keys, data.light)
   mod += `\n\nvars : Theme -> Vars\nvars theme =\n    case theme.mode of\n        Theme.Light ->\n            light theme.common\n\n        Theme.Dark ->\n            dark theme.common\n`
   mod += buildFn('light', 'light')
   mod += buildFn('dark', 'dark')
