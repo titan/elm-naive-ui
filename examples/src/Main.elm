@@ -26,8 +26,10 @@ import NUI.Divider as Divider
 import NUI.DynamicTags as DynamicTags
 import NUI.Ellipsis as Ellipsis
 import NUI.Empty as Empty
+import NUI.Flex as Flex
 import NUI.FloatButton as FloatButton
 import NUI.GradientText as GradientText
+import NUI.Grid as Grid
 import NUI.Input as Input
 import NUI.InputNumber as InputNumber
 import NUI.InputOtp as InputOtp
@@ -342,6 +344,21 @@ floatButtonD =
     FloatButton.defaults
 
 
+flexD : Flex.Options msg
+flexD =
+    Flex.defaults
+
+
+gridD : Grid.Options msg
+gridD =
+    Grid.defaults
+
+
+gridItem : Grid.Item msg
+gridItem =
+    Grid.item
+
+
 {-| A distinct colour per showcase avatar (the group's slot path uses the
 `src` as a label).
 -}
@@ -438,6 +455,8 @@ body =
     , countdownSection
     , splitSection
     , layoutSection
+    , flexSection
+    , gridSection
     , stepsSection
     , ellipsisSection
     , backTopSection
@@ -1309,6 +1328,54 @@ splitSection =
                     , pane2 = [ Element.el [ Element.padding 8 ] (Element.text "Pane 2") ]
                 }
             )
+        ]
+
+
+flexSection : Element msg
+flexSection =
+    section "Flex"
+        "Naive UI's flexbox primitive — an inline flex container (no stylesheet rule; the layout is inline `display`/`gap`)."
+    <|
+        [ Flex.view theme
+            flexD
+            [ chip "One", chip "Two", chip "Three" ]
+        , Flex.view theme
+            { flexD | justify = Flex.SpaceBetween, size = Flex.Number 16 }
+            [ chip "Left", chip "Right" ]
+        , Flex.view theme
+            { flexD | direction = Flex.Vertical, size = Flex.Number 8, align = Just Flex.Center }
+            [ chip "Top", chip "Middle", chip "Bottom" ]
+        , Flex.view theme
+            { flexD | inline = True, size = Flex.Number2 4 12, reverse = True }
+            [ chip "A", chip "B", chip "C" ]
+        ]
+
+
+gridSection : Element msg
+gridSection =
+    section "Grid"
+        "A 24-column CSS grid (inline `display:grid`, no stylesheet rule); span/offset and the responsive collapse algorithm are caller-driven."
+    <|
+        [ Grid.view
+            { gridD | cols = Grid.Number 12, xGap = Grid.Number 16, yGap = Grid.Number 16 }
+            [ { gridItem | span = Grid.Number 6, content = [ chip "span 6" ] }
+            , { gridItem | span = Grid.Number 6, content = [ chip "span 6" ] }
+            , { gridItem | span = Grid.Number 4, content = [ chip "span 4" ] }
+            , { gridItem | span = Grid.Number 8, content = [ chip "span 8" ] }
+            ]
+        , Grid.view
+            { gridD
+                | cols = Grid.Number 12
+                , xGap = Grid.Number 12
+                , collapsed = True
+                , collapsedRows = 1
+            }
+            [ { gridItem | span = Grid.Number 4, content = [ chip "4" ] }
+            , { gridItem | span = Grid.Number 4, content = [ chip "4" ] }
+            , { gridItem | span = Grid.Number 4, content = [ chip "4" ] }
+            , { gridItem | span = Grid.Number 4, content = [ chip "hidden" ] }
+            , { gridItem | suffix = True, content = [ Element.text "…" ] }
+            ]
         ]
 
 

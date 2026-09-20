@@ -66,7 +66,9 @@ const targets = {
   '.n-layout': true,
   '.n-layout-header': true,
   '.n-layout-footer': true,
-  '.n-layout-sider': true
+  '.n-layout-sider': true,
+  '.n-flex': false,
+  '.n-grid': false
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {

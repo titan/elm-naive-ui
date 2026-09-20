@@ -91,8 +91,10 @@ bridge, tests).
 | `NUI.DynamicTags` | ✅ |
 | `NUI.Ellipsis`    | ✅ |
 | `NUI.Empty`       | ✅ |
+| `NUI.Flex`        | ✅ |
 | `NUI.FloatButton` | ✅ |
 | `NUI.GradientText`| ✅ |
+| `NUI.Grid`        | ✅ |
 | `NUI.Input`       | ✅ |
 | `NUI.InputNumber` | ✅ |
 | `NUI.InputOtp`    | ✅ |
