@@ -2240,6 +2240,199 @@ dTrue(
   styleOf('#grid-zero-b')
 )
 
+// Highlight ------------------------------------------------------------------
+const highlightRoot = doc.querySelector('#live-highlight .n-highlight')
+dTrue(
+  'DOM: Highlight renders a raw span.n-highlight',
+  !!highlightRoot && highlightRoot.tagName.toLowerCase() === 'span',
+  highlightRoot ? highlightRoot.tagName : 'missing'
+)
+const highlightMarks = doc.querySelectorAll('#live-highlight .n-highlight > mark.n-highlight__mark')
+dEq('DOM: Highlight marks both case-insensitive occurrences', 2, highlightMarks.length)
+dEq(
+  'DOM: Highlight mark[0] text is "Hello"',
+  'Hello',
+  highlightMarks[0] ? highlightMarks[0].textContent : null
+)
+dEq(
+  'DOM: Highlight mark[1] text is "hello"',
+  'hello',
+  highlightMarks[1] ? highlightMarks[1].textContent : null
+)
+dEq(
+  'DOM: Highlight text content is unchanged',
+  'Hello world, hello again',
+  highlightRoot ? highlightRoot.textContent : null
+)
+
+// Highlight: escaped pattern + custom class + inline style --------------------
+const escapedRoot = doc.querySelector('#live-highlight-escaped .n-highlight')
+const escapedMarks = doc.querySelectorAll('#live-highlight-escaped .n-highlight__mark')
+dEq('DOM: Highlight escaped "$100.99" matches one literal mark', 1, escapedMarks.length)
+dEq(
+  'DOM: Highlight escaped mark text is the literal "$100.99"',
+  '$100.99',
+  escapedMarks[0] ? escapedMarks[0].textContent : null
+)
+dTrue(
+  'DOM: Highlight mark carries n-highlight__mark + the custom class',
+  !!escapedMarks[0] &&
+    escapedMarks[0].classList.contains('n-highlight__mark') &&
+    escapedMarks[0].classList.contains('custom-mark'),
+  escapedMarks[0] ? escapedMarks[0].getAttribute('class') : 'missing'
+)
+dTrue(
+  'DOM: Highlight mark applies highlightStyle inline',
+  !!escapedMarks[0] && (escapedMarks[0].getAttribute('style') || '').includes('color: red'),
+  escapedMarks[0] ? escapedMarks[0].getAttribute('style') : 'missing'
+)
+dEq(
+  'DOM: Highlight escaped text content is unchanged',
+  'Price: $100.99',
+  escapedRoot ? escapedRoot.textContent : null
+)
+
+// Highlight: empty patterns -> bare text, no mark ----------------------------
+const emptyHighlight = doc.querySelector('#live-highlight-empty .n-highlight')
+dTrue(
+  'DOM: Highlight empty patterns renders bare text with no mark',
+  !!emptyHighlight &&
+    emptyHighlight.querySelectorAll('mark').length === 0 &&
+    emptyHighlight.textContent === 'plain text',
+  emptyHighlight ? emptyHighlight.outerHTML : 'missing'
+)
+
+// NumberAnimation ------------------------------------------------------------
+dEq(
+  'DOM: NumberAnimation grouped text = "1,234,567.50"',
+  '1,234,567.50',
+  doc.getElementById('live-number-animation')
+    ? doc.getElementById('live-number-animation').textContent
+    : null
+)
+dEq(
+  'DOM: NumberAnimation mid-tween text = "107"',
+  '107',
+  doc.getElementById('live-number-animation-mid')
+    ? doc.getElementById('live-number-animation-mid').textContent
+    : null
+)
+
+// Icon -----------------------------------------------------------------------
+const iconDefault = doc.querySelector('#live-icon-default .n-icon')
+dTrue(
+  'DOM: Icon default renders .n-icon with role="img" and no depth classes',
+  !!iconDefault &&
+    iconDefault.classList.contains('n-icon') &&
+    iconDefault.getAttribute('role') === 'img' &&
+    !iconDefault.classList.contains('n-icon--depth') &&
+    !iconDefault.classList.contains('n-icon--color-transition'),
+  iconDefault ? iconDefault.getAttribute('class') : 'missing'
+)
+const iconDefaultStyle = iconDefault ? iconDefault.getAttribute('style') || '' : ''
+dEq(
+  'DOM: Icon default keeps --n-bezier and drops the empty --n-color/--n-opacity',
+  '--n-bezier:cubic-bezier(.4, 0, .2, 1)',
+  iconDefaultStyle
+)
+const iconDepth = doc.querySelector('#live-icon-depth .n-icon')
+dTrue(
+  'DOM: Icon with depth adds n-icon--depth + n-icon--color-transition',
+  !!iconDepth &&
+    iconDepth.classList.contains('n-icon--depth') &&
+    iconDepth.classList.contains('n-icon--color-transition'),
+  iconDepth ? iconDepth.getAttribute('class') : 'missing'
+)
+const iconDepthStyle = iconDepth ? iconDepth.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: Icon with depth inline --n-color:#000 + --n-opacity:0.72',
+  iconDepthStyle.includes('--n-color:#000') && iconDepthStyle.includes('--n-opacity:0.72'),
+  iconDepthStyle
+)
+dTrue(
+  'DOM: Icon size/color become inline font-size:40px + color:rgb(14, 122, 13)',
+  iconDepthStyle.includes('font-size:40px') && iconDepthStyle.includes('color:rgb(14, 122, 13)'),
+  iconDepthStyle
+)
+
+// IconWrapper ----------------------------------------------------------------
+const iconWrapper = doc.querySelector('#live-icon-wrapper .n-icon-wrapper')
+dTrue(
+  'DOM: IconWrapper renders .n-icon-wrapper',
+  !!iconWrapper && iconWrapper.classList.contains('n-icon-wrapper'),
+  iconWrapper ? iconWrapper.getAttribute('class') : 'missing'
+)
+const iconWrapperStyle = iconWrapper ? iconWrapper.getAttribute('style') || '' : ''
+dEq(
+  'DOM: IconWrapper exact default inline style (size/border-radius + vars)',
+  '--n-bezier:cubic-bezier(.4, 0, .2, 1);--n-color:#18a058;--n-icon-color:#FFF;height:24px;width:24px;border-radius:6px',
+  iconWrapperStyle
+)
+const iconWrapperStyled = doc.querySelector('#live-icon-wrapper-styled .n-icon-wrapper')
+const iconWrapperStyledStyle = iconWrapperStyled ? iconWrapperStyled.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: IconWrapper styled height/width 18px + border-radius 10px',
+  iconWrapperStyledStyle.includes('height:18px') &&
+    iconWrapperStyledStyle.includes('width:18px') &&
+    iconWrapperStyledStyle.includes('border-radius:10px'),
+  iconWrapperStyledStyle
+)
+dTrue(
+  'DOM: IconWrapper background-color/color only appear when set',
+  iconWrapperStyledStyle.includes('background-color:red') &&
+    iconWrapperStyledStyle.endsWith('color:red') &&
+    !iconWrapperStyle.includes('background-color'),
+  iconWrapperStyledStyle
+)
+
+// FloatButtonGroup -----------------------------------------------------------
+const fbGroup = doc.querySelector('#live-float-button-group .n-float-button-group')
+dTrue(
+  'DOM: FloatButtonGroup renders .n-float-button-group--circle-shape with role="group"',
+  !!fbGroup &&
+    fbGroup.classList.contains('n-float-button-group') &&
+    fbGroup.classList.contains('n-float-button-group--circle-shape') &&
+    fbGroup.getAttribute('role') === 'group',
+  fbGroup ? fbGroup.getAttribute('class') : 'missing'
+)
+const fbGroupStyle = fbGroup ? fbGroup.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: FloatButtonGroup default inline position:fixed with no offsets',
+  fbGroupStyle.includes('position:fixed') &&
+    !fbGroupStyle.includes('left:') &&
+    !fbGroupStyle.includes('right:') &&
+    !fbGroupStyle.includes('top:') &&
+    !fbGroupStyle.includes('bottom:'),
+  fbGroupStyle
+)
+dTrue(
+  'DOM: FloatButtonGroup carries the --n-* vars',
+  fbGroupStyle.includes('--n-color:#fff') &&
+    fbGroupStyle.includes('--n-button-border-color:rgb(239, 239, 245)') &&
+    fbGroupStyle.includes('--n-border-radius-square:3px') &&
+    fbGroupStyle.includes('--n-box-shadow:0 2px 8px 0px rgba(0, 0, 0, .12)'),
+  fbGroupStyle
+)
+const fbGroupSquare = doc.querySelector('#live-float-button-group-square .n-float-button-group')
+dTrue(
+  'DOM: FloatButtonGroup square shape class',
+  !!fbGroupSquare && fbGroupSquare.classList.contains('n-float-button-group--square-shape'),
+  fbGroupSquare ? fbGroupSquare.getAttribute('class') : 'missing'
+)
+const fbGroupSquareStyle = fbGroupSquare ? fbGroupSquare.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: FloatButtonGroup square inline position:absolute + right/bottom 40px',
+  fbGroupSquareStyle.includes('position:absolute') &&
+    fbGroupSquareStyle.includes('right:40px') &&
+    fbGroupSquareStyle.includes('bottom:40px'),
+  fbGroupSquareStyle
+)
+dTrue(
+  'DOM: FloatButtonGroup square leaves left/top unset',
+  !fbGroupSquareStyle.includes('left:') && !fbGroupSquareStyle.includes('top:'),
+  fbGroupSquareStyle
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
