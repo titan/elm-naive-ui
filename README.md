@@ -76,6 +76,7 @@ bridge, tests).
 | `NUI.Breadcrumb`  | ✅ |
 | `NUI.Button`      | ✅ |
 | `NUI.ButtonGroup` | ✅ |
+| `NUI.Calendar`    | ✅ |
 | `NUI.Card`        | ✅ |
 | `NUI.Checkbox`    | ✅ |
 | `NUI.Collapse`    | ✅ |

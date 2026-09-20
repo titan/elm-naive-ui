@@ -57,7 +57,7 @@ react to the panel), and the default cell slot is `cell : Maybe (Date -> …)`
 Two deliberate divergences, both invisible in the browser: upstream's
 `DateItem.month` is 0-based while `Date` here is 1-based; and upstream also
 emits `n-calendar-cell--not-allowed` next to `--disabled`, a marker class no
-CSS rule targets (omitted here — `--disabled` carries the same styles).
+CSS rule targets (both are emitted here; `--disabled` carries the styles).
 
 -}
 
@@ -275,6 +275,7 @@ cellEl opts index cell =
         classes =
             [ "n-calendar-cell" ]
                 ++ I.classIf disabled "n-calendar-cell--disabled"
+                ++ I.classIf disabled "n-calendar-cell--not-allowed"
                 ++ I.classIf notInCurrentMonth "n-calendar-cell--other-month"
                 ++ I.classIf cell.isCurrentDate "n-calendar-cell--current"
                 ++ I.classIf cell.selected "n-calendar-cell--selected"

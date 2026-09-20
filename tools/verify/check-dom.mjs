@@ -22,6 +22,7 @@ const targets = {
   '.n-input': true,
   '.n-input-otp': true,
   '.n-card': true,
+  '.n-calendar': true,
   '.n-tag': true,
   '.n-alert': true,
   '.n-checkbox': true,

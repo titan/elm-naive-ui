@@ -16,6 +16,7 @@ import NUI.Badge as Badge
 import NUI.Breadcrumb as Breadcrumb
 import NUI.Button as Button
 import NUI.ButtonGroup as ButtonGroup
+import NUI.Calendar as Calendar
 import NUI.Card as Card
 import NUI.Checkbox as Checkbox
 import NUI.Collapse as Collapse
@@ -143,6 +144,11 @@ agD =
 bgD : ButtonGroup.Options msg
 bgD =
     ButtonGroup.defaults
+
+
+calD : Calendar.Options msg
+calD =
+    Calendar.defaults
 
 
 cardD : Card.Options msg
@@ -370,6 +376,7 @@ body =
     , inputSection
     , inputOtpSection
     , dynamicTagsSection
+    , calendarSection
     , selectionSection
     , dividerSection
     , avatarSection
@@ -590,6 +597,24 @@ dynamicTagsSection =
                 { dtagsD | value = [ "one", "two" ], showInput = True, inputValue = "thr" }
                 []
             ]
+        ]
+
+
+calendarSection : Element msg
+calendarSection =
+    section "Calendar" "A month view (the panel, value and locale are caller-owned)." <|
+        [ Element.el [ Element.width (Element.px 420) ]
+            (Calendar.view theme
+                { calD | panel = { year = 2024, month = 6 }, now = { year = 2024, month = 6, day = 15 } }
+            )
+        , Element.el [ Element.width (Element.px 420) ]
+            (Calendar.view theme
+                { calD
+                    | panel = { year = 2024, month = 6 }
+                    , now = { year = 2024, month = 6, day = 15 }
+                    , value = Just { year = 2024, month = 6, day = 20 }
+                }
+            )
         ]
 
 

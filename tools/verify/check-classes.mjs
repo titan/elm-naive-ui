@@ -29,6 +29,9 @@ const ALLOW = new Set([
   // upstream emits n-step--show-description on the step, but the CSS :not is on
   // .n-steps--show-description (Steps cssr) — a modifier mismatch, kept faithful
   'n-step--show-description',
+  // Upstream emits it next to --disabled; no rule targets it (the --disabled
+  // rules carry the styles).
+  'n-calendar-cell--not-allowed',
   // Harmless extras: not upstream class names, but the CSS targets the tag /
   // descendant, so rendering is unaffected.
   'n-avatar__img', // upstream CSS targets `.n-avatar img`
