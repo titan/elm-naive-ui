@@ -38,11 +38,17 @@ import NUI.Empty as Empty
 import NUI.FloatButton as FloatButton
 import NUI.GradientText as GradientText
 import NUI.Input as Input
+import NUI.InputNumber as InputNumber
 import NUI.InputOtp as InputOtp
 import NUI.Internal as Internal
+import NUI.Layout as Layout
+import NUI.LayoutFooter as LayoutFooter
+import NUI.LayoutHeader as LayoutHeader
+import NUI.LayoutSider as LayoutSider
 import NUI.List as NList
 import NUI.Marquee as Marquee
 import NUI.PageHeader as PageHeader
+import NUI.Pagination as Pagination
 import NUI.Progress as Progress
 import NUI.QrCode as QrCode
 import NUI.Qrcodegen as Qrcodegen
@@ -62,6 +68,7 @@ import NUI.Theme.Calendar as CalendarTheme
 import NUI.Theme.Color as Color
 import NUI.Theme.DynamicTags as DynamicTagsTheme
 import NUI.Theme.InputOtp as InputOtpTheme
+import NUI.Theme.Layout as LayoutTheme
 import NUI.Theme.Tag as TagTheme
 import NUI.Thing as Thing
 import NUI.Timeline as Timeline
@@ -111,6 +118,160 @@ lookup key vars =
 varKeys : List ( String, String ) -> List String
 varKeys vars =
     List.map Tuple.first vars
+
+
+{-| NaN-tolerant equality for float assertions (Elm's `==` says NaN /= NaN).
+-}
+nanEq : Float -> Float -> Bool
+nanEq a b =
+    (Basics.isNaN a && Basics.isNaN b) || a == b
+
+
+maybeFloatEq : Maybe Float -> Maybe Float -> Bool
+maybeFloatEq a b =
+    case ( a, b ) of
+        ( Just x, Just y ) ->
+            nanEq x y
+
+        ( Nothing, Nothing ) ->
+            True
+
+        _ ->
+            False
+
+
+{-| `eq` for `Maybe Float`, treating NaN as equal to NaN.
+-}
+eqNaN : String -> Maybe Float -> Maybe Float -> Check
+eqNaN name expected actual =
+    { name = name
+    , ok = maybeFloatEq expected actual
+    , detail =
+        "expected "
+            ++ Debug.toString expected
+            ++ ", got "
+            ++ Debug.toString actual
+    }
+
+
+{-| A page-window item rendered as a stable label (a fast item by its kind).
+-}
+pageItemLabel : Pagination.PageItem -> String
+pageItemLabel item =
+    case item of
+        Pagination.Page { label } ->
+            String.fromInt label
+
+        Pagination.FastBackward _ ->
+            "fast-backward"
+
+        Pagination.FastForward _ ->
+            "fast-forward"
+
+
+pageLabels : Pagination.PageItemsInfo -> List String
+pageLabels info =
+    List.map pageItemLabel info.items
+
+
+{-| The label of the single `active` page item, if any.
+-}
+activeLabel : Pagination.PageItemsInfo -> Maybe Int
+activeLabel info =
+    info.items
+        |> List.filterMap
+            (\item ->
+                case item of
+                    Pagination.Page { label, active } ->
+                        if active then
+                            Just label
+
+                        else
+                            Nothing
+
+                    _ ->
+                        Nothing
+            )
+        |> List.head
+
+
+{-| `mayBeFastBackward` of the page item with this label.
+-}
+mayBeFastBackwardOf : Int -> Pagination.PageItemsInfo -> Maybe Bool
+mayBeFastBackwardOf label info =
+    info.items
+        |> List.filterMap
+            (\item ->
+                case item of
+                    Pagination.Page p ->
+                        if p.label == label then
+                            Just p.mayBeFastBackward
+
+                        else
+                            Nothing
+
+                    _ ->
+                        Nothing
+            )
+        |> List.head
+
+
+mayBeFastForwardOf : Int -> Pagination.PageItemsInfo -> Maybe Bool
+mayBeFastForwardOf label info =
+    info.items
+        |> List.filterMap
+            (\item ->
+                case item of
+                    Pagination.Page p ->
+                        if p.label == label then
+                            Just p.mayBeFastForward
+
+                        else
+                            Nothing
+
+                    _ ->
+                        Nothing
+            )
+        |> List.head
+
+
+fastBackwardOptions : Pagination.PageItemsInfo -> Maybe (List { label : String, value : Int })
+fastBackwardOptions info =
+    info.items
+        |> List.filterMap
+            (\item ->
+                case item of
+                    Pagination.FastBackward { options } ->
+                        Just options
+
+                    _ ->
+                        Nothing
+            )
+        |> List.head
+        |> Maybe.withDefault Nothing
+
+
+fastForwardOptions : Pagination.PageItemsInfo -> Maybe (List { label : String, value : Int })
+fastForwardOptions info =
+    info.items
+        |> List.filterMap
+            (\item ->
+                case item of
+                    Pagination.FastForward { options } ->
+                        Just options
+
+                    _ ->
+                        Nothing
+            )
+        |> List.head
+        |> Maybe.withDefault Nothing
+
+
+{-| An independent `createRange(from, to)` reimplementation for expectations.
+-}
+rangeOptions : Int -> Int -> List { label : String, value : Int }
+rangeOptions from to =
+    List.range from to |> List.map (\i -> { label = String.fromInt i, value = i })
 
 
 
@@ -1048,6 +1209,222 @@ calendarSixWeekOpts =
 
 
 
+-- PAGINATION OPTION SETS -------------------------------------------------------
+
+
+paginationLiveOpts : Pagination.Options Msg
+paginationLiveOpts =
+    let
+        d =
+            Pagination.defaults
+    in
+    { d | itemCount = Just 153, currentPage = 6, pageSize = Just 10, onUpdatePage = Just (\_ -> NoOp) }
+
+
+paginationSimpleOpts : Pagination.Options msg
+paginationSimpleOpts =
+    let
+        d =
+            Pagination.defaults
+    in
+    { d | itemCount = Just 30, currentPage = 2, pageSize = Just 10, simple = True }
+
+
+paginationDisabledOpts : Pagination.Options msg
+paginationDisabledOpts =
+    let
+        d =
+            Pagination.defaults
+    in
+    { d | itemCount = Just 30, currentPage = 2, disabled = True }
+
+
+paginationRtlOpts : Pagination.Options msg
+paginationRtlOpts =
+    let
+        d =
+            Pagination.defaults
+    in
+    { d | rtl = True }
+
+
+
+-- INPUT NUMBER OPTION SETS -----------------------------------------------------
+
+
+inputNumberLiveOpts : InputNumber.Options Msg
+inputNumberLiveOpts =
+    let
+        d =
+            InputNumber.defaults
+    in
+    { d | value = Just 5, onChange = Just (\_ -> NoOp), onInput = Just (\_ -> NoOp) }
+
+
+inputNumberBothOpts : InputNumber.Options Msg
+inputNumberBothOpts =
+    let
+        d =
+            InputNumber.defaults
+    in
+    { d
+        | value = Just 5
+        , buttonPlacement = InputNumber.Both
+        , onChange = Just (\_ -> NoOp)
+        , onInput = Just (\_ -> NoOp)
+    }
+
+
+inputNumberNoButtonOpts : InputNumber.Options Msg
+inputNumberNoButtonOpts =
+    let
+        d =
+            InputNumber.defaults
+    in
+    { d | value = Just 5, showButton = False, onChange = Just (\_ -> NoOp), onInput = Just (\_ -> NoOp) }
+
+
+inputNumberRtlOpts : InputNumber.Options Msg
+inputNumberRtlOpts =
+    let
+        d =
+            InputNumber.defaults
+    in
+    { d | value = Just 5, rtl = True, onChange = Just (\_ -> NoOp), onInput = Just (\_ -> NoOp) }
+
+
+
+-- LAYOUT OPTION SETS -----------------------------------------------------------
+
+
+layoutPlainOpts : Layout.Options msg
+layoutPlainOpts =
+    Layout.defaults
+
+
+layoutSiderOpts : Layout.Options msg
+layoutSiderOpts =
+    let
+        d =
+            Layout.defaults
+    in
+    { d | hasSider = True }
+
+
+layoutAbsoluteOpts : Layout.Options msg
+layoutAbsoluteOpts =
+    let
+        d =
+            Layout.defaults
+    in
+    { d | position = Layout.Absolute }
+
+
+layoutEmbeddedOpts : Layout.Options msg
+layoutEmbeddedOpts =
+    let
+        d =
+            Layout.defaults
+    in
+    { d | embedded = True }
+
+
+siderOpts : LayoutSider.Options msg
+siderOpts =
+    let
+        d =
+            LayoutSider.defaults
+    in
+    { d | bordered = True }
+
+
+siderArrowOpts : LayoutSider.Options msg
+siderArrowOpts =
+    let
+        d =
+            LayoutSider.defaults
+    in
+    { d | showTrigger = LayoutSider.ArrowCircle }
+
+
+siderBarOpts : LayoutSider.Options msg
+siderBarOpts =
+    let
+        d =
+            LayoutSider.defaults
+    in
+    { d | showTrigger = LayoutSider.Bar }
+
+
+siderRightCollapsedOpts : LayoutSider.Options msg
+siderRightCollapsedOpts =
+    let
+        d =
+            LayoutSider.defaults
+    in
+    { d | placement = LayoutSider.Right, collapsed = True }
+
+
+siderCollapsedNoContentOpts : LayoutSider.Options msg
+siderCollapsedNoContentOpts =
+    let
+        d =
+            LayoutSider.defaults
+    in
+    { d | collapsed = True, showCollapsedContent = False }
+
+
+siderInvertedOpts : LayoutSider.Options msg
+siderInvertedOpts =
+    let
+        d =
+            LayoutSider.defaults
+    in
+    { d | inverted = True }
+
+
+siderNoBorderOpts : LayoutSider.Options msg
+siderNoBorderOpts =
+    LayoutSider.defaults
+
+
+layoutHeaderOpts : LayoutHeader.Options msg
+layoutHeaderOpts =
+    let
+        d =
+            LayoutHeader.defaults
+    in
+    { d | bordered = True }
+
+
+layoutHeaderInvertedOpts : LayoutHeader.Options msg
+layoutHeaderInvertedOpts =
+    let
+        d =
+            LayoutHeader.defaults
+    in
+    { d | inverted = True }
+
+
+layoutFooterOpts : LayoutFooter.Options msg
+layoutFooterOpts =
+    let
+        d =
+            LayoutFooter.defaults
+    in
+    { d | bordered = True }
+
+
+layoutFooterInvertedOpts : LayoutFooter.Options msg
+layoutFooterInvertedOpts =
+    let
+        d =
+            LayoutFooter.defaults
+    in
+    { d | inverted = True }
+
+
+
 -- QRCODEGEN PROBES -------------------------------------------------------------
 
 
@@ -1418,6 +1795,147 @@ checks =
         calDefaults : Calendar.Options ()
         calDefaults =
             Calendar.defaults
+
+        pgD =
+            Pagination.defaults
+
+        pgDefaultVars =
+            Pagination.cssVarsFor light pgD
+
+        pgSmallVars =
+            Pagination.cssVarsFor light { pgD | size = T.Small }
+
+        pgLargeVars =
+            Pagination.cssVarsFor light { pgD | size = T.Large }
+
+        pgTinyVars =
+            Pagination.cssVarsFor light { pgD | size = T.Tiny }
+
+        pg1 =
+            Pagination.pageItems { currentPage = 1, pageCount = 1, pageSlot = 9, showQuickJumpDropdown = True }
+
+        pg2a =
+            Pagination.pageItems { currentPage = 1, pageCount = 2, pageSlot = 9, showQuickJumpDropdown = True }
+
+        pg2b =
+            Pagination.pageItems { currentPage = 2, pageCount = 2, pageSlot = 9, showQuickJumpDropdown = True }
+
+        pgMid =
+            Pagination.pageItems { currentPage = 6, pageCount = 16, pageSlot = 9, showQuickJumpDropdown = True }
+
+        pgMidNoDrop =
+            Pagination.pageItems { currentPage = 6, pageCount = 16, pageSlot = 9, showQuickJumpDropdown = False }
+
+        pgFirst =
+            Pagination.pageItems { currentPage = 1, pageCount = 16, pageSlot = 9, showQuickJumpDropdown = True }
+
+        pgLast =
+            Pagination.pageItems { currentPage = 16, pageCount = 16, pageSlot = 9, showQuickJumpDropdown = True }
+
+        pgSlot7 =
+            Pagination.pageItems { currentPage = 6, pageCount = 16, pageSlot = 7, showQuickJumpDropdown = True }
+
+        pgSlot8 =
+            Pagination.pageItems { currentPage = 6, pageCount = 16, pageSlot = 8, showQuickJumpDropdown = True }
+
+        layoutD =
+            Layout.defaults
+
+        layoutVars =
+            Layout.cssVarsFor light layoutD
+
+        layoutEmbeddedVars =
+            Layout.cssVarsFor light { layoutD | embedded = True }
+
+        layoutTheme =
+            LayoutTheme.vars light
+
+        siderD =
+            LayoutSider.defaults
+
+        siderDefaultVars =
+            LayoutSider.cssVarsFor light siderD
+
+        siderInvertedVars =
+            LayoutSider.cssVarsFor light { siderD | inverted = True }
+
+        headerD =
+            LayoutHeader.defaults
+
+        headerDefaultVars =
+            LayoutHeader.cssVarsFor light headerD
+
+        headerInvertedVars =
+            LayoutHeader.cssVarsFor light { headerD | inverted = True }
+
+        footerD =
+            LayoutFooter.defaults
+
+        footerDefaultVars =
+            LayoutFooter.cssVarsFor light footerD
+
+        footerInvertedVars =
+            LayoutFooter.cssVarsFor light { footerD | inverted = True }
+
+        inNumDefaults =
+            InputNumber.defaults
+
+        inNum5 =
+            { inNumDefaults | value = Just 5 }
+
+        inNumMaxed =
+            { inNumDefaults | value = Just 10, max = Just 10 }
+
+        inNum1 =
+            { inNumDefaults | value = Just 1 }
+
+        inNum1NoLive =
+            { inNumDefaults | value = Just 1, updateValueOnInput = False }
+
+        inNum1Prec =
+            { inNumDefaults | value = Just 1, precision = Just 2 }
+
+        inNum5Prec2 =
+            { inNumDefaults | value = Just 5, precision = Just 2 }
+
+        inNumOverflow =
+            { inNumDefaults | value = Just 1.2345, precision = Just 2 }
+
+        inNumMin3 =
+            { inNumDefaults | min = Just 3 }
+
+        inNumMinNeg5 =
+            { inNumDefaults | min = Just -5 }
+
+        inNumMaxNeg2 =
+            { inNumDefaults | max = Just -2 }
+
+        inNumMax5 =
+            { inNumDefaults | max = Just 5 }
+
+        nCtxMax =
+            { min = Nothing, max = Just 10, step = 1, precision = Nothing, displayedValue = "20" }
+
+        nCtxMin =
+            { min = Just 5, max = Nothing, step = 1, precision = Nothing, displayedValue = "1" }
+
+        nCtxPlain =
+            { min = Nothing, max = Nothing, step = 1, precision = Nothing, displayedValue = "5" }
+
+        nCtxEmpty =
+            { min = Nothing, max = Nothing, step = 1, precision = Nothing, displayedValue = "" }
+
+        nCtxNaN =
+            { min = Nothing, max = Nothing, step = 1, precision = Nothing, displayedValue = "abc" }
+
+        nCtxPrec =
+            { min = Nothing, max = Nothing, step = 1, precision = Just 2, displayedValue = "1.234" }
+
+        nCtxWip =
+            { min = Nothing, max = Nothing, step = 1, precision = Nothing, displayedValue = "0." }
+
+        nCtxStep =
+            { min = Nothing, max = Nothing, step = 0.25, precision = Nothing, displayedValue = "1" }
     in
     [ -- 1. NUI.Theme -------------------------------------------------------------
       eq "Theme.default == Theme.light" True (Theme.default == Theme.light)
@@ -2050,6 +2568,336 @@ checks =
     , eq "calendar todayPanel is Just now-month when they differ"
         (Just { year = 2024, month = 6 })
         (Calendar.todayPanel { calDefaults | panel = { year = 2024, month = 3 }, now = { year = 2024, month = 6, day = 15 } })
+
+    -- 34. NUI.Pagination pageItems (upstream createPageItemsInfo) -----------------
+    , eq "pagination pageCount 1 -> [1]" [ "1" ] (pageLabels pg1)
+    , eq "pagination pageCount 1 hasFastBackward False" False pg1.hasFastBackward
+    , eq "pagination pageCount 1 hasFastForward False" False pg1.hasFastForward
+    , eq "pagination pageCount 1 fastBackwardTo 1" 1 pg1.fastBackwardTo
+    , eq "pagination pageCount 1 fastForwardTo 1" 1 pg1.fastForwardTo
+    , eq "pagination pageCount 2 -> [1,2]" [ "1", "2" ] (pageLabels pg2a)
+    , eq "pagination pageCount 2 page 1 active" (Just 1) (activeLabel pg2a)
+    , eq "pagination pageCount 2 page 2 active" (Just 2) (activeLabel pg2b)
+    , eq "pagination pageCount 2 page 2 mayBeFastBackward" (Just True) (mayBeFastBackwardOf 2 pg2a)
+    , eq "pagination pageCount 2 page 2 mayBeFastForward" (Just False) (mayBeFastForwardOf 2 pg2a)
+    , eq "pagination middle labels (1, fast-backward, 4..8, fast-forward, 16)"
+        [ "1", "fast-backward", "4", "5", "6", "7", "8", "fast-forward", "16" ]
+        (pageLabels pgMid)
+    , eq "pagination middle active label 6" (Just 6) (activeLabel pgMid)
+    , eq "pagination middle hasFastBackward True" True pgMid.hasFastBackward
+    , eq "pagination middle hasFastForward True" True pgMid.hasFastForward
+    , eq "pagination middle fastBackwardTo 3" 3 pgMid.fastBackwardTo
+    , eq "pagination middle fastForwardTo 9" 9 pgMid.fastForwardTo
+    , eq "pagination middle backward options = range 2..3" (Just (rangeOptions 2 3)) (fastBackwardOptions pgMid)
+    , eq "pagination middle forward options = range 9..15" (Just (rangeOptions 9 15)) (fastForwardOptions pgMid)
+    , eq "pagination middle no left split at page 1 -> [1,2,3..7]"
+        [ "1", "2", "3", "4", "5", "6", "7" ]
+        (List.take 7 (pageLabels pgFirst))
+    , eq "pagination first-page labels (no fast-backward; fast-forward + 16)"
+        [ "1", "2", "3", "4", "5", "6", "7", "fast-forward", "16" ]
+        (pageLabels pgFirst)
+    , eq "pagination first-page hasFastBackward False" False pgFirst.hasFastBackward
+    , eq "pagination first-page fastBackwardTo 1" 1 pgFirst.fastBackwardTo
+    , eq "pagination first-page hasFastForward True" True pgFirst.hasFastForward
+    , eq "pagination first-page fastForwardTo 8" 8 pgFirst.fastForwardTo
+    , eq "pagination first-page page 2 mayBeFastBackward" (Just True) (mayBeFastBackwardOf 2 pgFirst)
+    , eq "pagination last-page labels (fast-backward, no fast-forward, 16)"
+        [ "1", "fast-backward", "10", "11", "12", "13", "14", "15", "16" ]
+        (pageLabels pgLast)
+    , eq "pagination last-page active label 16" (Just 16) (activeLabel pgLast)
+    , eq "pagination last-page hasFastBackward True" True pgLast.hasFastBackward
+    , eq "pagination last-page fastBackwardTo 9" 9 pgLast.fastBackwardTo
+    , eq "pagination last-page hasFastForward False" False pgLast.hasFastForward
+    , eq "pagination last-page fastForwardTo 16" 16 pgLast.fastForwardTo
+    , eq "pagination last-page page 15 mayBeFastForward" (Just True) (mayBeFastForwardOf 15 pgLast)
+    , eq "pagination last-page backward options = range 2..9" (Just (rangeOptions 2 9)) (fastBackwardOptions pgLast)
+    , eq "pagination showQuickJumpDropdown False -> backward options Nothing" Nothing (fastBackwardOptions pgMidNoDrop)
+    , eq "pagination showQuickJumpDropdown False -> forward options Nothing" Nothing (fastForwardOptions pgMidNoDrop)
+    , eq "pagination showQuickJumpDropdown False keeps the window labels"
+        [ "1", "fast-backward", "4", "5", "6", "7", "8", "fast-forward", "16" ]
+        (pageLabels pgMidNoDrop)
+    , eq "pagination showQuickJumpDropdown False still hasFastBackward" True pgMidNoDrop.hasFastBackward
+    , eq "pagination showQuickJumpDropdown False still hasFastForward" True pgMidNoDrop.hasFastForward
+    , eq "pagination pageSlot 7 labels (odd slot)"
+        [ "1", "fast-backward", "5", "6", "7", "fast-forward", "16" ]
+        (pageLabels pgSlot7)
+    , eq "pagination pageSlot 7 fastBackwardTo 4" 4 pgSlot7.fastBackwardTo
+    , eq "pagination pageSlot 7 fastForwardTo 8" 8 pgSlot7.fastForwardTo
+    , eq "pagination pageSlot 7 backward options = range 2..4" (Just (rangeOptions 2 4)) (fastBackwardOptions pgSlot7)
+    , eq "pagination pageSlot 8 labels (even slot)"
+        [ "1", "fast-backward", "5", "6", "7", "8", "fast-forward", "16" ]
+        (pageLabels pgSlot8)
+    , eq "pagination pageSlot 8 fastBackwardTo 4" 4 pgSlot8.fastBackwardTo
+    , eq "pagination pageSlot 8 fastForwardTo 9" 9 pgSlot8.fastForwardTo
+    , eq "pagination pageSlot 8 forward options = range 9..15" (Just (rangeOptions 9 15)) (fastForwardOptions pgSlot8)
+
+    -- 35. NUI.Pagination pageCount / getDefaultPageSize ---------------------------
+    , eq "pagination pageCount 0 items -> 1" 1 (Pagination.pageCount { itemCount = 0, pageSize = 10 })
+    , eq "pagination pageCount 1 item -> 1" 1 (Pagination.pageCount { itemCount = 1, pageSize = 10 })
+    , eq "pagination pageCount 10 items -> 1" 1 (Pagination.pageCount { itemCount = 10, pageSize = 10 })
+    , eq "pagination pageCount 11 items -> 2 (float division)" 2 (Pagination.pageCount { itemCount = 11, pageSize = 10 })
+    , eq "pagination pageCount 99 items -> 10" 10 (Pagination.pageCount { itemCount = 99, pageSize = 10 })
+    , eq "pagination pageCount 100 items -> 10" 10 (Pagination.pageCount { itemCount = 100, pageSize = 10 })
+    , eq "pagination pageCount 153 items -> 16" 16 (Pagination.pageCount { itemCount = 153, pageSize = 10 })
+    , eq "pagination pageCount 20 items / 6 -> 4" 4 (Pagination.pageCount { itemCount = 20, pageSize = 6 })
+    , eq "pagination getDefaultPageSize defaultPageSize wins"
+        20
+        (Pagination.getDefaultPageSize { defaultPageSize = Just 20, pageSizes = [ Pagination.PageSizeNumber 50 ] })
+    , eq "pagination getDefaultPageSize number entry 10"
+        10
+        (Pagination.getDefaultPageSize { defaultPageSize = Nothing, pageSizes = [ Pagination.PageSizeNumber 10 ] })
+    , eq "pagination getDefaultPageSize number entry 50"
+        50
+        (Pagination.getDefaultPageSize { defaultPageSize = Nothing, pageSizes = [ Pagination.PageSizeNumber 50 ] })
+    , eq "pagination getDefaultPageSize number 0 returned as-is (falsy trap)"
+        0
+        (Pagination.getDefaultPageSize { defaultPageSize = Nothing, pageSizes = [ Pagination.PageSizeNumber 0 ] })
+    , eq "pagination getDefaultPageSize option value 20"
+        20
+        (Pagination.getDefaultPageSize { defaultPageSize = Nothing, pageSizes = [ Pagination.PageSizeOption { label = "20 / page", value = 20 } ] })
+    , eq "pagination getDefaultPageSize option value 0 falls back to 10 (JS ||)"
+        10
+        (Pagination.getDefaultPageSize { defaultPageSize = Nothing, pageSizes = [ Pagination.PageSizeOption { label = "0", value = 0 } ] })
+    , eq "pagination getDefaultPageSize empty pageSizes -> 10"
+        10
+        (Pagination.getDefaultPageSize { defaultPageSize = Nothing, pageSizes = [] })
+
+    -- 36. NUI.Pagination cssVarsFor -----------------------------------------------
+    , eq "pagination cssVarsFor has 43 vars" 43 (List.length pgDefaultVars)
+    , eq "pagination cssVarsFor exact --n-* names (order)"
+        [ "--n-prefix-margin"
+        , "--n-suffix-margin"
+        , "--n-item-font-size"
+        , "--n-select-width"
+        , "--n-select-margin"
+        , "--n-input-width"
+        , "--n-input-margin"
+        , "--n-input-margin-rtl"
+        , "--n-item-size"
+        , "--n-item-text-color"
+        , "--n-item-text-color-disabled"
+        , "--n-item-text-color-hover"
+        , "--n-item-text-color-active"
+        , "--n-item-text-color-pressed"
+        , "--n-item-color"
+        , "--n-item-color-hover"
+        , "--n-item-color-disabled"
+        , "--n-item-color-active"
+        , "--n-item-color-active-hover"
+        , "--n-item-color-pressed"
+        , "--n-item-border"
+        , "--n-item-border-hover"
+        , "--n-item-border-disabled"
+        , "--n-item-border-active"
+        , "--n-item-border-pressed"
+        , "--n-item-padding"
+        , "--n-item-border-radius"
+        , "--n-bezier"
+        , "--n-jumper-font-size"
+        , "--n-jumper-text-color"
+        , "--n-jumper-text-color-disabled"
+        , "--n-item-margin"
+        , "--n-item-margin-rtl"
+        , "--n-button-icon-size"
+        , "--n-button-icon-color"
+        , "--n-button-icon-color-hover"
+        , "--n-button-icon-color-pressed"
+        , "--n-button-color-hover"
+        , "--n-button-color"
+        , "--n-button-color-pressed"
+        , "--n-button-border"
+        , "--n-button-border-hover"
+        , "--n-button-border-pressed"
+        ]
+        (varKeys pgDefaultVars)
+    , eq "pagination --n-bezier = common.cubicBezierEaseInOut" (Just common.cubicBezierEaseInOut) (lookup "--n-bezier" pgDefaultVars)
+    , eq "pagination --n-item-border-radius = common.borderRadius" (Just common.borderRadius) (lookup "--n-item-border-radius" pgDefaultVars)
+    , eq "pagination --n-item-text-color = common.textColor2" (Just common.textColor2) (lookup "--n-item-text-color" pgDefaultVars)
+    , eq "pagination --n-item-text-color-active = common.primaryColor (literal #18a058)" (Just "#18a058") (lookup "--n-item-text-color-active" pgDefaultVars)
+    , eq "pagination --n-item-text-color-hover = primaryColorHover (#36ad6a)" (Just "#36ad6a") (lookup "--n-item-text-color-hover" pgDefaultVars)
+    , eq "pagination --n-item-border-active literal #18a058" (Just "1px solid #18a058") (lookup "--n-item-border-active" pgDefaultVars)
+    , eq "pagination --n-item-font-size Medium = common.fontSizeSmall (14px)" (Just "14px") (lookup "--n-item-font-size" pgDefaultVars)
+    , eq "pagination --n-item-size Medium = common.heightSmall (28px)" (Just "28px") (lookup "--n-item-size" pgDefaultVars)
+    , eq "pagination --n-button-icon-size Medium = 16px" (Just "16px") (lookup "--n-button-icon-size" pgDefaultVars)
+    , eq "pagination --n-input-width = 60px" (Just "60px") (lookup "--n-input-width" pgDefaultVars)
+    , eq "pagination --n-item-size Small = 22px" (Just "22px") (lookup "--n-item-size" pgSmallVars)
+    , eq "pagination --n-button-icon-size Small = 14px" (Just "14px") (lookup "--n-button-icon-size" pgSmallVars)
+    , eq "pagination --n-item-size Large = common.heightMedium (34px)" (Just "34px") (lookup "--n-item-size" pgLargeVars)
+    , eq "pagination --n-button-icon-size Large = 18px" (Just "18px") (lookup "--n-button-icon-size" pgLargeVars)
+    , eq "pagination Tiny clamps to Small (item-size 22px)" (Just "22px") (lookup "--n-item-size" pgTinyVars)
+
+    -- 37. NUI.InputNumber parse / parseNumber ------------------------------------
+    , eqNaN "input-number parse \"\" -> Nothing" Nothing (InputNumber.parse "")
+    , eqNaN "input-number parse whitespace -> Nothing" Nothing (InputNumber.parse "   ")
+    , eqNaN "input-number parse \"abc\" -> Just NaN" (Just (0 / 0)) (InputNumber.parse "abc")
+    , eqNaN "input-number parse \"42\" -> Just 42" (Just 42) (InputNumber.parse "42")
+    , eqNaN "input-number parse \"3.14\" -> Just 3.14" (Just 3.14) (InputNumber.parse "3.14")
+    , eqNaN "input-number parse \" 12 \" trims -> Just 12" (Just 12) (InputNumber.parse " 12 ")
+    , eqNaN "input-number parse \"-3\" -> Just -3" (Just -3) (InputNumber.parse "-3")
+    , eqNaN "input-number parse \"0x10\" radix -> Just 16" (Just 16) (InputNumber.parse "0x10")
+    , eqNaN "input-number parseNumber \"\" -> Just 0 (JS Number(''))" (Just 0) (InputNumber.parseNumber "")
+    , eqNaN "input-number parseNumber \"abc\" -> Nothing" Nothing (InputNumber.parseNumber "abc")
+    , eqNaN "input-number parseNumber \"42\" -> Just 42" (Just 42) (InputNumber.parseNumber "42")
+    , eqNaN "input-number parseNumber \"1e3\" -> Just 1000" (Just 1000) (InputNumber.parseNumber "1e3")
+
+    -- 38. NUI.InputNumber isWipValue / validator ----------------------------------
+    , eq "input-number isWipValue \"0.\" True" True (InputNumber.isWipValue "0.")
+    , eq "input-number isWipValue \"-0\" True" True (InputNumber.isWipValue "-0")
+    , eq "input-number isWipValue \"-\" True" True (InputNumber.isWipValue "-")
+    , eq "input-number isWipValue \"1.0\" True" True (InputNumber.isWipValue "1.0")
+    , eq "input-number isWipValue \"1.20\" True" True (InputNumber.isWipValue "1.20")
+    , eq "input-number isWipValue \"0.1\" False" False (InputNumber.isWipValue "0.1")
+    , eq "input-number isWipValue \"1\" False" False (InputNumber.isWipValue "1")
+    , eq "input-number isWipValue \"12.34\" False" False (InputNumber.isWipValue "12.34")
+    , eq "input-number isWipValue \".\" False" False (InputNumber.isWipValue ".")
+    , eq "input-number validator Nothing True" True (InputNumber.validator Nothing)
+    , eq "input-number validator (Just 5) True" True (InputNumber.validator (Just 5))
+    , eq "input-number validator (Just NaN) False" False (InputNumber.validator (Just (0 / 0)))
+
+    -- 39. NUI.InputNumber format / toFixedJs --------------------------------------
+    , eq "input-number format Nothing Nothing -> \"\"" "" (InputNumber.format Nothing Nothing)
+    , eq "input-number format (Just 42) Nothing -> \"42\"" "42" (InputNumber.format (Just 42) Nothing)
+    , eq "input-number format (Just 42) (Just 2) -> \"42.00\"" "42.00" (InputNumber.format (Just 42) (Just 2))
+    , eq "input-number format (Just 3.14159) (Just 2) -> \"3.14\"" "3.14" (InputNumber.format (Just 3.14159) (Just 2))
+    , eq "input-number format (Just 1234.5678) Nothing -> full String(value)" "1234.5678" (InputNumber.format (Just 1234.5678) Nothing)
+    , eq "input-number format (Just 2.675) (Just 2) -> \"2.67\"" "2.67" (InputNumber.format (Just 2.675) (Just 2))
+    , eq "input-number format (Just 0.125) (Just 2) -> \"0.13\"" "0.13" (InputNumber.format (Just 0.125) (Just 2))
+    , eq "input-number format (Just 1.005) (Just 2) -> \"1.00\"" "1.00" (InputNumber.format (Just 1.005) (Just 2))
+    , eq "input-number toFixedJs 42 0 -> \"42\"" "42" (InputNumber.toFixedJs 42 0)
+    , eq "input-number toFixedJs 42 2 -> \"42.00\"" "42.00" (InputNumber.toFixedJs 42 2)
+    , eq "input-number toFixedJs 2.675 2 -> \"2.67\"" "2.67" (InputNumber.toFixedJs 2.675 2)
+    , eq "input-number toFixedJs 0.125 2 -> \"0.13\" (exact tie rounds away)" "0.13" (InputNumber.toFixedJs 0.125 2)
+    , eq "input-number toFixedJs -0 2 -> \"0.00\" (no sign for -0)" "0.00" (InputNumber.toFixedJs 0 2)
+
+    -- 40. NUI.InputNumber getPrecision / getMaxPrecision ---------------------------
+    , eq "input-number getPrecision 0.1 -> 1" 1 (InputNumber.getPrecision 0.1)
+    , eq "input-number getPrecision 1 -> 0" 0 (InputNumber.getPrecision 1)
+    , eq "input-number getPrecision 1.234 -> 3" 3 (InputNumber.getPrecision 1.234)
+    , eq "input-number getPrecision 100 -> 0" 0 (InputNumber.getPrecision 100)
+    , eq "input-number getPrecision 1e-7 -> 0 (exponent form)" 0 (InputNumber.getPrecision 1.0e-7)
+    , eq "input-number getMaxPrecision max of min/max/step/current"
+        5
+        (InputNumber.getMaxPrecision { min = Just 0.5, max = Just 10, step = 0.01, precision = Nothing, displayedValue = "" } 3.14159)
+    , eq "input-number getMaxPrecision all integers -> 0"
+        0
+        (InputNumber.getMaxPrecision { min = Nothing, max = Nothing, step = 1, precision = Nothing, displayedValue = "" } 2)
+    , eq "input-number getMaxPrecision min 1.5 only -> 1"
+        1
+        (InputNumber.getMaxPrecision { min = Just 1.5, max = Nothing, step = 1, precision = Nothing, displayedValue = "" } 2)
+
+    -- 41. NUI.InputNumber deriveValueFromDisplayedValue ---------------------------
+    , eq "input-number derive clamps 20 above max 10 (doUpdateIfValid)"
+        (InputNumber.NumberValue 10)
+        (InputNumber.deriveValueFromDisplayedValue nCtxMax { offset = 0, doUpdateIfValid = True, fixPrecision = False, isInputing = False })
+    , eq "input-number derive above max without doUpdateIfValid -> Invalid"
+        InputNumber.InvalidValue
+        (InputNumber.deriveValueFromDisplayedValue nCtxMax { offset = 0, doUpdateIfValid = False, fixPrecision = False, isInputing = False })
+    , eq "input-number derive clamps 1 below min 5 (doUpdateIfValid)"
+        (InputNumber.NumberValue 5)
+        (InputNumber.deriveValueFromDisplayedValue nCtxMin { offset = 0, doUpdateIfValid = True, fixPrecision = False, isInputing = False })
+    , eq "input-number derive below min without doUpdateIfValid -> Invalid"
+        InputNumber.InvalidValue
+        (InputNumber.deriveValueFromDisplayedValue nCtxMin { offset = 0, doUpdateIfValid = False, fixPrecision = False, isInputing = False })
+    , eq "input-number derive offset +1 of 5 -> 6"
+        (InputNumber.NumberValue 6)
+        (InputNumber.deriveValueFromDisplayedValue nCtxPlain { offset = 1, doUpdateIfValid = True, fixPrecision = True, isInputing = False })
+    , eq "input-number derive offset -1 of 5 -> 4"
+        (InputNumber.NumberValue 4)
+        (InputNumber.deriveValueFromDisplayedValue nCtxPlain { offset = -1, doUpdateIfValid = True, fixPrecision = True, isInputing = False })
+    , eq "input-number derive empty -> NullValue"
+        InputNumber.NullValue
+        (InputNumber.deriveValueFromDisplayedValue nCtxEmpty { offset = 0, doUpdateIfValid = False, fixPrecision = False, isInputing = False })
+    , eq "input-number derive \"abc\" (NaN) -> Invalid"
+        InputNumber.InvalidValue
+        (InputNumber.deriveValueFromDisplayedValue nCtxNaN { offset = 0, doUpdateIfValid = False, fixPrecision = False, isInputing = False })
+    , eq "input-number derive wip \"0.\" while inputing -> Invalid"
+        InputNumber.InvalidValue
+        (InputNumber.deriveValueFromDisplayedValue nCtxWip { offset = 0, doUpdateIfValid = True, fixPrecision = False, isInputing = True })
+    , eq "input-number derive precision gate blocks 1.234 at precision 2"
+        InputNumber.InvalidValue
+        (InputNumber.deriveValueFromDisplayedValue nCtxPrec { offset = 0, doUpdateIfValid = True, fixPrecision = False, isInputing = False })
+    , eq "input-number derive precision gate fixed -> 1.23"
+        (InputNumber.NumberValue 1.23)
+        (InputNumber.deriveValueFromDisplayedValue nCtxPrec { offset = 0, doUpdateIfValid = True, fixPrecision = True, isInputing = False })
+    , eq "input-number derive uses step precision when precision unset (offset 0.25 -> 1.25)"
+        (InputNumber.NumberValue 1.25)
+        (InputNumber.deriveValueFromDisplayedValue nCtxStep { offset = 0.25, doUpdateIfValid = True, fixPrecision = False, isInputing = False })
+
+    -- 42. NUI.InputNumber add / minus / createValidValue ---------------------------
+    , eq "input-number addable (value 5, step 1) True" True (InputNumber.addable (InputNumber.contextOf inNum5))
+    , eq "input-number minusable (value 5, step 1) True" True (InputNumber.minusable (InputNumber.contextOf inNum5))
+    , eq "input-number addUpdate (value 5) -> Just (Just 6)" (Just (Just 6)) (InputNumber.addUpdate inNum5)
+    , eq "input-number minusUpdate (value 5) -> Just (Just 4)" (Just (Just 4)) (InputNumber.minusUpdate inNum5)
+    , eq "input-number addable at max -> False" False (InputNumber.addable (InputNumber.contextOf inNumMaxed))
+    , eq "input-number addUpdate at max -> Nothing (button disabled)" Nothing (InputNumber.addUpdate inNumMaxed)
+    , eq "input-number addUpdate empty value -> Just (Just createValidValue 0)" (Just (Just 0)) (InputNumber.addUpdate inNumDefaults)
+    , eq "input-number createValidValue min 3 -> 3" 3 (InputNumber.createValidValue inNumMin3)
+    , eq "input-number createValidValue min -5 -> max 0 -5 = 0" 0 (InputNumber.createValidValue inNumMinNeg5)
+    , eq "input-number createValidValue max -2 -> min 0 -2 = -2" -2 (InputNumber.createValidValue inNumMaxNeg2)
+    , eq "input-number createValidValue max 5 -> 0" 0 (InputNumber.createValidValue inNumMax5)
+
+    -- 43. NUI.InputNumber inputUpdate / displayedValueFor -------------------------
+    , eq "input-number inputUpdate \"7\" -> Just (Just 7)" (Just (Just 7)) (InputNumber.inputUpdate inNum1 "7")
+    , eq "input-number inputUpdate wip \"0.\" -> Nothing" Nothing (InputNumber.inputUpdate inNum1 "0.")
+    , eq "input-number inputUpdate unparseable \"abc\" -> Nothing" Nothing (InputNumber.inputUpdate inNum1 "abc")
+    , eq "input-number inputUpdate with updateValueOnInput False -> Nothing" Nothing (InputNumber.inputUpdate inNum1NoLive "7")
+    , eq "input-number inputUpdate with precision set -> Nothing" Nothing (InputNumber.inputUpdate inNum1Prec "7")
+    , eq "input-number displayedValueFor no value -> \"\"" "" (InputNumber.displayedValueFor inNumDefaults)
+    , eq "input-number displayedValueFor value 5 -> \"5\"" "5" (InputNumber.displayedValueFor inNum5)
+    , eq "input-number displayedValueFor 5 precision 2 -> \"5.00\"" "5.00" (InputNumber.displayedValueFor inNum5Prec2)
+    , eq "input-number displayedValueFor 1.2345 precision 2 overflows -> full text" "1.2345" (InputNumber.displayedValueFor inNumOverflow)
+
+    -- 44. NUI.Layout positionClass / cssVarsFor -----------------------------------
+    , eq "layout positionClass Static = static" "static" (Layout.positionClass Layout.Static)
+    , eq "layout positionClass Absolute = absolute" "absolute" (Layout.positionClass Layout.Absolute)
+    , eq "layout cssVarsFor has 3 vars" 3 (List.length layoutVars)
+    , eq "layout cssVarsFor exact --n-* names" [ "--n-bezier", "--n-color", "--n-text-color" ] (varKeys layoutVars)
+    , eq "layout --n-bezier = common.cubicBezierEaseInOut" (Just common.cubicBezierEaseInOut) (lookup "--n-bezier" layoutVars)
+    , eq "layout --n-color = theme color (bodyColor #fff)" (Just "#fff") (lookup "--n-color" layoutVars)
+    , eq "layout --n-color = LayoutTheme.vars.color" (Just layoutTheme.color) (lookup "--n-color" layoutVars)
+    , eq "layout --n-text-color = theme textColor" (Just layoutTheme.textColor) (lookup "--n-text-color" layoutVars)
+    , eq "layout embedded --n-color = theme colorEmbedded" (Just layoutTheme.colorEmbedded) (lookup "--n-color" layoutEmbeddedVars)
+    , eq "layout embedded --n-color literal actionColor rgb(250, 250, 252)" (Just "rgb(250, 250, 252)") (lookup "--n-color" layoutEmbeddedVars)
+    , eq "layout embedded --n-color differs from plain" True (lookup "--n-color" layoutEmbeddedVars /= lookup "--n-color" layoutVars)
+
+    -- 45. NUI.LayoutSider cssVarsFor ----------------------------------------------
+    , eq "layout-sider cssVarsFor has 9 vars (non-inverted)" 9 (List.length siderDefaultVars)
+    , eq "layout-sider cssVarsFor exact --n-* names"
+        [ "--n-bezier"
+        , "--n-toggle-button-color"
+        , "--n-toggle-button-border"
+        , "--n-toggle-bar-color"
+        , "--n-toggle-bar-color-hover"
+        , "--n-color"
+        , "--n-text-color"
+        , "--n-border-color"
+        , "--n-toggle-button-icon-color"
+        ]
+        (varKeys siderDefaultVars)
+    , eq "layout-sider --n-color = theme siderColor (cardColor #fff)" (Just layoutTheme.siderColor) (lookup "--n-color" siderDefaultVars)
+    , eq "layout-sider --n-toggle-button-border literal" (Just "1px solid rgb(239, 239, 245)") (lookup "--n-toggle-button-border" siderDefaultVars)
+    , eq "layout-sider --n-toggle-bar-color literal rgba(191, 191, 191, 1)" (Just "rgba(191, 191, 191, 1)") (lookup "--n-toggle-bar-color" siderDefaultVars)
+    , eq "layout-sider --n-toggle-button-icon-color = theme icon color" (Just layoutTheme.siderToggleButtonIconColor) (lookup "--n-toggle-button-icon-color" siderDefaultVars)
+    , eq "layout-sider inverted --n-color = theme siderColorInverted" (Just layoutTheme.siderColorInverted) (lookup "--n-color" siderInvertedVars)
+    , eq "layout-sider inverted --n-color literal invertedColor rgb(0, 20, 40)" (Just "rgb(0, 20, 40)") (lookup "--n-color" siderInvertedVars)
+    , eq "layout-sider inverted --n-border-color differs from plain" True (lookup "--n-border-color" siderInvertedVars /= lookup "--n-border-color" siderDefaultVars)
+    , eq "layout-sider inverted var set differs from plain" True (siderInvertedVars /= siderDefaultVars)
+    , eq "layout-sider inverted --n-toggle-button-icon-color matches upstream (textColor2)" (Just common.textColor2) (lookup "--n-toggle-button-icon-color" siderInvertedVars)
+
+    -- 46. NUI.LayoutHeader / LayoutFooter cssVarsFor -------------------------------
+    , eq "layout-header cssVarsFor has 4 vars" 4 (List.length headerDefaultVars)
+    , eq "layout-header cssVarsFor exact --n-* names" [ "--n-bezier", "--n-color", "--n-text-color", "--n-border-color" ] (varKeys headerDefaultVars)
+    , eq "layout-header --n-color = theme headerColor (cardColor #fff)" (Just layoutTheme.headerColor) (lookup "--n-color" headerDefaultVars)
+    , eq "layout-header --n-border-color = theme headerBorderColor (dividerColor)" (Just layoutTheme.headerBorderColor) (lookup "--n-border-color" headerDefaultVars)
+    , eq "layout-header inverted --n-color = theme headerColorInverted" (Just layoutTheme.headerColorInverted) (lookup "--n-color" headerInvertedVars)
+    , eq "layout-header inverted --n-color literal invertedColor rgb(0, 20, 40)" (Just "rgb(0, 20, 40)") (lookup "--n-color" headerInvertedVars)
+    , eq "layout-header inverted --n-color differs from plain" True (lookup "--n-color" headerInvertedVars /= lookup "--n-color" headerDefaultVars)
+    , eq "layout-footer cssVarsFor has 4 vars" 4 (List.length footerDefaultVars)
+    , eq "layout-footer cssVarsFor exact --n-* names" [ "--n-bezier", "--n-color", "--n-text-color", "--n-border-color" ] (varKeys footerDefaultVars)
+    , eq "layout-footer --n-color = theme footerColor (actionColor)" (Just layoutTheme.footerColor) (lookup "--n-color" footerDefaultVars)
+    , eq "layout-footer --n-color literal actionColor rgb(250, 250, 252)" (Just "rgb(250, 250, 252)") (lookup "--n-color" footerDefaultVars)
+    , eq "layout-footer inverted --n-color = theme footerColorInverted" (Just layoutTheme.footerColorInverted) (lookup "--n-color" footerInvertedVars)
+    , eq "layout-footer inverted --n-color literal invertedColor rgb(0, 20, 40)" (Just "rgb(0, 20, 40)") (lookup "--n-color" footerInvertedVars)
     ]
 
 
@@ -2318,6 +3166,63 @@ liveNodes =
                     (Calendar.view Theme.default calendarLiveOpts)
                 , Element.el [ Element.htmlAttribute (HA.id "live-calendar-6wk") ]
                     (Calendar.view Theme.default calendarSixWeekOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-pagination") ]
+                    (Pagination.view Theme.default paginationLiveOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-pagination-simple") ]
+                    (Pagination.view Theme.default paginationSimpleOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-pagination-disabled") ]
+                    (Pagination.view Theme.default paginationDisabledOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-pagination-rtl") ]
+                    (Pagination.view Theme.default paginationRtlOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-input-number") ]
+                    (InputNumber.view Theme.default
+                        inputNumberLiveOpts
+                        [ Element.text "P", Element.text "S" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-input-number-both") ]
+                    (InputNumber.view Theme.default
+                        inputNumberBothOpts
+                        [ Element.text "P", Element.text "S" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-input-number-nobutton") ]
+                    (InputNumber.view Theme.default
+                        inputNumberNoButtonOpts
+                        [ Element.text "P", Element.text "S" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-input-number-rtl") ]
+                    (InputNumber.view Theme.default inputNumberRtlOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-layout") ]
+                    (Layout.view Theme.default layoutPlainOpts [ Element.text "C" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-layout-sider") ]
+                    (Layout.view Theme.default layoutSiderOpts [ Element.text "C" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-layout-absolute") ]
+                    (Layout.view Theme.default layoutAbsoluteOpts [ Element.text "C" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-layout-embedded") ]
+                    (Layout.view Theme.default layoutEmbeddedOpts [ Element.text "C" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-layout-content") ]
+                    (Layout.content Theme.default layoutPlainOpts [ Element.text "C" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-layout-sider-root") ]
+                    (LayoutSider.view Theme.default siderOpts [ Element.text "Side" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-layout-sider-arrow") ]
+                    (LayoutSider.view Theme.default siderArrowOpts [ Element.text "Side" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-layout-sider-bar") ]
+                    (LayoutSider.view Theme.default siderBarOpts [ Element.text "Side" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-layout-sider-right") ]
+                    (LayoutSider.view Theme.default siderRightCollapsedOpts [ Element.text "Side" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-layout-sider-collapsed-nocontent") ]
+                    (LayoutSider.view Theme.default siderCollapsedNoContentOpts [ Element.text "Side" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-layout-sider-inverted") ]
+                    (LayoutSider.view Theme.default siderInvertedOpts [ Element.text "Side" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-layout-sider-noborder") ]
+                    (LayoutSider.view Theme.default siderNoBorderOpts [ Element.text "Side" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-layout-header") ]
+                    (LayoutHeader.view Theme.default layoutHeaderOpts [ Element.text "H" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-layout-header-inverted") ]
+                    (LayoutHeader.view Theme.default layoutHeaderInvertedOpts [ Element.text "H" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-layout-footer") ]
+                    (LayoutFooter.view Theme.default layoutFooterOpts [ Element.text "F" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-layout-footer-inverted") ]
+                    (LayoutFooter.view Theme.default layoutFooterInvertedOpts [ Element.text "F" ])
                 ]
             )
         ]

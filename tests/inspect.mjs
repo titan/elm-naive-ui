@@ -1657,6 +1657,395 @@ dEq(
   calDisabled ? (calDisabled.querySelector('.n-calendar-date__date') || {}).textContent : null
 )
 
+// Pagination -----------------------------------------------------------------
+const pagination = doc.querySelector('#live-pagination .n-pagination')
+dTrue(
+  'DOM: Pagination renders .n-pagination',
+  !!pagination && pagination.classList.contains('n-pagination'),
+  pagination ? pagination.getAttribute('class') : 'missing'
+)
+const paginationStyle = pagination ? pagination.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: Pagination inline --n-item-font-size:14px (Medium)',
+  paginationStyle.includes('--n-item-font-size:14px'),
+  paginationStyle
+)
+dTrue(
+  'DOM: Pagination inline --n-item-size:28px (Medium)',
+  paginationStyle.includes('--n-item-size:28px'),
+  paginationStyle
+)
+dTrue(
+  'DOM: Pagination inline --n-bezier',
+  paginationStyle.includes('--n-bezier:cubic-bezier(.4, 0, .2, 1)'),
+  paginationStyle
+)
+dEq(
+  'DOM: Pagination 6/16 -> 11 .n-pagination-item (1 + fast + 5 pages + fast + 1 + prev/next)',
+  11,
+  doc.querySelectorAll('#live-pagination .n-pagination-item').length
+)
+dEq(
+  'DOM: Pagination renders two ellipsis fast items (.n-base-icon svg viewBox 0 0 16 16)',
+  2,
+  doc.querySelectorAll('#live-pagination .n-pagination-item .n-base-icon svg[viewBox="0 0 16 16"]').length
+)
+dEq(
+  'DOM: Pagination renders prev/next chevrons (.n-pagination-item--button svg viewBox 0 0 20 20)',
+  2,
+  doc.querySelectorAll('#live-pagination .n-pagination-item--button .n-base-icon svg[viewBox="0 0 20 20"]').length
+)
+const pgActive = doc.querySelector('#live-pagination .n-pagination-item--active')
+dTrue(
+  'DOM: Pagination active item is the current page 6 and carries no click handler (upstream guard)',
+  !!pgActive && pgActive.textContent === '6' && pgActive.getAttribute('role') === null,
+  pgActive ? `${pgActive.textContent}/${pgActive.getAttribute('role')}` : 'missing'
+)
+const pgClickable = doc.querySelector('#live-pagination .n-pagination-item--clickable[role="button"]')
+dTrue(
+  'DOM: Pagination non-active page item is clickable (role=button tabindex=0)',
+  !!pgClickable && pgClickable.getAttribute('tabindex') === '0',
+  pgClickable ? `${pgClickable.textContent}/${pgClickable.getAttribute('tabindex')}` : 'missing'
+)
+const pgSimple = doc.querySelector('#live-pagination-simple .n-pagination')
+dTrue(
+  'DOM: Pagination simple adds .n-pagination--simple',
+  !!pgSimple && pgSimple.classList.contains('n-pagination--simple'),
+  pgSimple ? pgSimple.getAttribute('class') : 'missing'
+)
+dEq(
+  'DOM: Pagination simple renders only the prev/next items',
+  2,
+  doc.querySelectorAll('#live-pagination-simple .n-pagination-item').length
+)
+dTrue(
+  'DOM: Pagination simple renders the quick-jumper input + page-count text',
+  !!doc.querySelector('#live-pagination-simple .n-pagination-quick-jumper .n-input') &&
+    /\/\s*3/.test(pgSimple ? pgSimple.textContent : ''),
+  'ok'
+)
+const pgDisabled = doc.querySelector('#live-pagination-disabled .n-pagination')
+dTrue(
+  'DOM: Pagination disabled adds .n-pagination--disabled',
+  !!pgDisabled && pgDisabled.classList.contains('n-pagination--disabled'),
+  pgDisabled ? pgDisabled.getAttribute('class') : 'missing'
+)
+dEq(
+  'DOM: Pagination disabled marks prev/next items --disabled',
+  2,
+  doc.querySelectorAll(
+    '#live-pagination-disabled .n-pagination-item--button.n-pagination-item--disabled'
+  ).length
+)
+const pgRtl = doc.querySelector('#live-pagination-rtl .n-pagination')
+dTrue(
+  'DOM: Pagination rtl adds .n-pagination--rtl',
+  !!pgRtl && pgRtl.classList.contains('n-pagination--rtl'),
+  pgRtl ? pgRtl.getAttribute('class') : 'missing'
+)
+
+// InputNumber ----------------------------------------------------------------
+const inpNum = doc.querySelector('#live-input-number .n-input-number')
+dTrue(
+  'DOM: InputNumber renders .n-input-number wrapping an .n-input',
+  !!inpNum && inpNum.classList.contains('n-input-number') && !!inpNum.querySelector('.n-input'),
+  inpNum ? inpNum.getAttribute('class') : 'missing'
+)
+dEq(
+  'DOM: InputNumber right placement -> both buttons in .n-input__suffix',
+  2,
+  doc.querySelectorAll('#live-input-number .n-input__suffix .n-button').length
+)
+dEq(
+  'DOM: InputNumber right placement -> no .n-input-number-prefix span',
+  0,
+  doc.querySelectorAll('#live-input-number .n-input-number-prefix').length
+)
+dEq(
+  'DOM: InputNumber right placement -> wrapped .n-input-number-suffix span',
+  1,
+  doc.querySelectorAll('#live-input-number .n-input-number-suffix').length
+)
+dEq(
+  'DOM: InputNumber renders the add/minus glyphs as .n-base-icon svg',
+  2,
+  doc.querySelectorAll('#live-input-number .n-button .n-base-icon svg').length
+)
+dEq(
+  'DOM: InputNumber add icon is an svg path',
+  1,
+  doc.querySelectorAll('#live-input-number .n-button .n-base-icon svg path').length
+)
+dEq(
+  'DOM: InputNumber minus icon is an svg line',
+  1,
+  doc.querySelectorAll('#live-input-number .n-button .n-base-icon svg line').length
+)
+dEq(
+  'DOM: InputNumber shows the value 5 in the inner input',
+  '5',
+  (() => {
+    const i = doc.querySelector('#live-input-number .n-input__input-el')
+    return i ? i.value : null
+  })()
+)
+dEq(
+  'DOM: InputNumber both placement -> minus in .n-input__prefix',
+  1,
+  doc.querySelectorAll('#live-input-number-both .n-input__prefix .n-button').length
+)
+dEq(
+  'DOM: InputNumber both placement -> wrapped .n-input-number-prefix span',
+  1,
+  doc.querySelectorAll('#live-input-number-both .n-input-number-prefix').length
+)
+dEq(
+  'DOM: InputNumber both placement -> add in .n-input__suffix',
+  1,
+  doc.querySelectorAll('#live-input-number-both .n-input__suffix .n-button').length
+)
+dEq(
+  'DOM: InputNumber both placement -> wrapped .n-input-number-suffix span',
+  1,
+  doc.querySelectorAll('#live-input-number-both .n-input-number-suffix').length
+)
+dEq(
+  'DOM: InputNumber showButton false -> no .n-button',
+  0,
+  doc.querySelectorAll('#live-input-number-nobutton .n-button').length
+)
+dEq(
+  'DOM: InputNumber showButton false -> no slot wrapper spans',
+  0,
+  doc.querySelectorAll(
+    '#live-input-number-nobutton .n-input-number-prefix, #live-input-number-nobutton .n-input-number-suffix'
+  ).length
+)
+const inpNumRtl = doc.querySelector('#live-input-number-rtl .n-input-number')
+dTrue(
+  'DOM: InputNumber rtl adds .n-input-number--rtl',
+  !!inpNumRtl && inpNumRtl.classList.contains('n-input-number--rtl'),
+  inpNumRtl ? inpNumRtl.getAttribute('class') : 'missing'
+)
+
+// Layout ---------------------------------------------------------------------
+const layout = doc.querySelector('#live-layout .n-layout')
+dTrue(
+  'DOM: Layout renders .n-layout.n-layout--static-positioned + scroll container',
+  !!layout &&
+    layout.classList.contains('n-layout') &&
+    layout.classList.contains('n-layout--static-positioned') &&
+    !!layout.querySelector('.n-layout-scroll-container'),
+  layout ? layout.getAttribute('class') : 'missing'
+)
+const layoutStyle = layout ? layout.getAttribute('style') || '' : ''
+dTrue('DOM: Layout inline --n-color:#fff (bodyColor)', layoutStyle.includes('--n-color:#fff'), layoutStyle)
+dTrue(
+  'DOM: Layout inline --n-bezier',
+  layoutStyle.includes('--n-bezier:cubic-bezier(.4, 0, .2, 1)'),
+  layoutStyle
+)
+const layoutPlainScroll = doc.querySelector('#live-layout .n-layout-scroll-container')
+dTrue(
+  'DOM: Layout without hasSider leaves the scroll container unstyled',
+  !!layoutPlainScroll && !(layoutPlainScroll.getAttribute('style') || '').includes('display:flex'),
+  layoutPlainScroll ? JSON.stringify(layoutPlainScroll.getAttribute('style')) : 'missing'
+)
+const layoutSiderScroll = doc.querySelector('#live-layout-sider .n-layout-scroll-container')
+const layoutSiderScrollStyle = layoutSiderScroll ? layoutSiderScroll.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: Layout hasSider puts display:flex on the scroll container',
+  !!layoutSiderScroll && layoutSiderScrollStyle.includes('display:flex'),
+  layoutSiderScrollStyle
+)
+dTrue(
+  'DOM: Layout hasSider scroll container sets flex-direction:row + width:100%',
+  layoutSiderScrollStyle.includes('flex-direction:row') && layoutSiderScrollStyle.includes('width:100%'),
+  layoutSiderScrollStyle
+)
+const layoutAbs = doc.querySelector('#live-layout-absolute .n-layout')
+dTrue(
+  'DOM: Layout absolute -> .n-layout--absolute-positioned',
+  !!layoutAbs && layoutAbs.classList.contains('n-layout--absolute-positioned'),
+  layoutAbs ? layoutAbs.getAttribute('class') : 'missing'
+)
+const layoutEmbedded = doc.querySelector('#live-layout-embedded .n-layout')
+dTrue(
+  'DOM: Layout embedded --n-color = colorEmbedded (rgb(250, 250, 252))',
+  !!layoutEmbedded &&
+    (layoutEmbedded.getAttribute('style') || '').includes('--n-color:rgb(250, 250, 252)'),
+  layoutEmbedded ? layoutEmbedded.getAttribute('style') : 'missing'
+)
+const layoutContent = doc.querySelector('#live-layout-content .n-layout')
+dTrue(
+  'DOM: Layout.content adds .n-layout-content on top of .n-layout',
+  !!layoutContent &&
+    layoutContent.classList.contains('n-layout') &&
+    layoutContent.classList.contains('n-layout-content'),
+  layoutContent ? layoutContent.getAttribute('class') : 'missing'
+)
+
+// LayoutSider ----------------------------------------------------------------
+const siderRoot = doc.querySelector('#live-layout-sider-root .n-layout-sider')
+dTrue(
+  'DOM: LayoutSider renders .n-layout-sider--left-placement--static-positioned',
+  !!siderRoot &&
+    siderRoot.classList.contains('n-layout-sider') &&
+    siderRoot.classList.contains('n-layout-sider--left-placement') &&
+    siderRoot.classList.contains('n-layout-sider--static-positioned'),
+  siderRoot ? siderRoot.getAttribute('class') : 'missing'
+)
+dTrue(
+  'DOM: LayoutSider bordered adds .n-layout-sider--bordered',
+  !!siderRoot && siderRoot.classList.contains('n-layout-sider--bordered'),
+  siderRoot ? siderRoot.getAttribute('class') : 'missing'
+)
+dTrue(
+  'DOM: LayoutSider not collapsed adds .n-layout-sider--show-content',
+  !!siderRoot && siderRoot.classList.contains('n-layout-sider--show-content'),
+  siderRoot ? siderRoot.getAttribute('class') : 'missing'
+)
+dTrue(
+  'DOM: LayoutSider bordered renders .n-layout-sider__border',
+  !!doc.querySelector('#live-layout-sider-root .n-layout-sider__border'),
+  'ok'
+)
+dEq(
+  'DOM: LayoutSider NoTrigger renders no toggle button/bar',
+  0,
+  doc.querySelectorAll(
+    '#live-layout-sider-root .n-layout-toggle-button, #live-layout-sider-root .n-layout-toggle-bar'
+  ).length
+)
+const siderStyle = siderRoot ? siderRoot.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: LayoutSider inline max-width:272px + width:272px',
+  siderStyle.includes('max-width:272px') && siderStyle.includes('width:272px'),
+  siderStyle
+)
+dTrue(
+  'DOM: LayoutSider inline --n-toggle-button-color:#fff + --n-toggle-bar-color',
+  siderStyle.includes('--n-toggle-button-color:#FFF') &&
+    siderStyle.includes('--n-toggle-bar-color:rgba(191, 191, 191, 1)'),
+  siderStyle
+)
+const siderArrow = doc.querySelector('#live-layout-sider-arrow .n-layout-toggle-button')
+dTrue(
+  'DOM: LayoutSider ArrowCircle -> .n-layout-toggle-button role=button tabindex=0 with chevron',
+  !!siderArrow &&
+    siderArrow.getAttribute('role') === 'button' &&
+    siderArrow.getAttribute('tabindex') === '0' &&
+    !!siderArrow.querySelector('.n-base-icon svg'),
+  siderArrow ? siderArrow.getAttribute('class') : 'missing'
+)
+const siderArrowSvg = doc.querySelector('#live-layout-sider-arrow .n-layout-toggle-button .n-base-icon svg')
+dEq(
+  'DOM: LayoutSider chevron svg viewBox 0 0 16 16',
+  '0 0 16 16',
+  siderArrowSvg ? siderArrowSvg.getAttribute('viewBox') : null
+)
+const siderBar = doc.querySelector('#live-layout-sider-bar .n-layout-toggle-bar')
+dTrue(
+  'DOM: LayoutSider Bar -> .n-layout-toggle-bar role=button tabindex=0',
+  !!siderBar &&
+    siderBar.getAttribute('role') === 'button' &&
+    siderBar.getAttribute('tabindex') === '0',
+  siderBar ? siderBar.getAttribute('class') : 'missing'
+)
+dEq(
+  'DOM: LayoutSider toggle bar renders __top',
+  1,
+  doc.querySelectorAll('#live-layout-sider-bar .n-layout-toggle-bar__top').length
+)
+dEq(
+  'DOM: LayoutSider toggle bar renders __bottom',
+  1,
+  doc.querySelectorAll('#live-layout-sider-bar .n-layout-toggle-bar__bottom').length
+)
+const siderRight = doc.querySelector('#live-layout-sider-right .n-layout-sider')
+dTrue(
+  'DOM: LayoutSider right placement -> .n-layout-sider--right-placement',
+  !!siderRight && siderRight.classList.contains('n-layout-sider--right-placement'),
+  siderRight ? siderRight.getAttribute('class') : 'missing'
+)
+dTrue(
+  'DOM: LayoutSider collapsed adds .n-layout-sider--collapsed',
+  !!siderRight && siderRight.classList.contains('n-layout-sider--collapsed'),
+  siderRight ? siderRight.getAttribute('class') : 'missing'
+)
+dTrue(
+  'DOM: LayoutSider collapsed + showCollapsedContent keeps --show-content',
+  !!siderRight && siderRight.classList.contains('n-layout-sider--show-content'),
+  siderRight ? siderRight.getAttribute('class') : 'missing'
+)
+const siderNoContent = doc.querySelector('#live-layout-sider-collapsed-nocontent .n-layout-sider')
+dTrue(
+  'DOM: LayoutSider collapsed + showCollapsedContent false -> --collapsed',
+  !!siderNoContent && siderNoContent.classList.contains('n-layout-sider--collapsed'),
+  siderNoContent ? siderNoContent.getAttribute('class') : 'missing'
+)
+dTrue(
+  'DOM: LayoutSider collapsed + showCollapsedContent false -> NO --show-content',
+  !!siderNoContent && !siderNoContent.classList.contains('n-layout-sider--show-content'),
+  siderNoContent ? siderNoContent.getAttribute('class') : 'missing'
+)
+const siderInverted = doc.querySelector('#live-layout-sider-inverted .n-layout-sider')
+dTrue(
+  'DOM: LayoutSider inverted --n-color = invertedColor (rgb(0, 20, 40))',
+  !!siderInverted &&
+    (siderInverted.getAttribute('style') || '').includes('--n-color:rgb(0, 20, 40)'),
+  siderInverted ? siderInverted.getAttribute('style') : 'missing'
+)
+dEq(
+  'DOM: LayoutSider not bordered renders no __border',
+  0,
+  doc.querySelectorAll('#live-layout-sider-noborder .n-layout-sider__border').length
+)
+
+// LayoutHeader / LayoutFooter ------------------------------------------------
+const layoutHeader = doc.querySelector('#live-layout-header .n-layout-header')
+dTrue(
+  'DOM: LayoutHeader renders .n-layout-header--static-positioned--bordered',
+  !!layoutHeader &&
+    layoutHeader.classList.contains('n-layout-header') &&
+    layoutHeader.classList.contains('n-layout-header--static-positioned') &&
+    layoutHeader.classList.contains('n-layout-header--bordered'),
+  layoutHeader ? layoutHeader.getAttribute('class') : 'missing'
+)
+dTrue(
+  'DOM: LayoutHeader inline --n-color:#fff (headerColor)',
+  !!layoutHeader && (layoutHeader.getAttribute('style') || '').includes('--n-color:#fff'),
+  layoutHeader ? layoutHeader.getAttribute('style') : 'missing'
+)
+const layoutHeaderInv = doc.querySelector('#live-layout-header-inverted .n-layout-header')
+dTrue(
+  'DOM: LayoutHeader inverted --n-color = invertedColor',
+  !!layoutHeaderInv &&
+    (layoutHeaderInv.getAttribute('style') || '').includes('--n-color:rgb(0, 20, 40)'),
+  layoutHeaderInv ? layoutHeaderInv.getAttribute('style') : 'missing'
+)
+const layoutFooter = doc.querySelector('#live-layout-footer .n-layout-footer')
+dTrue(
+  'DOM: LayoutFooter renders .n-layout-footer--bordered',
+  !!layoutFooter &&
+    layoutFooter.classList.contains('n-layout-footer') &&
+    layoutFooter.classList.contains('n-layout-footer--bordered'),
+  layoutFooter ? layoutFooter.getAttribute('class') : 'missing'
+)
+dTrue(
+  'DOM: LayoutFooter inline --n-color = actionColor (rgb(250, 250, 252))',
+  !!layoutFooter &&
+    (layoutFooter.getAttribute('style') || '').includes('--n-color:rgb(250, 250, 252)'),
+  layoutFooter ? layoutFooter.getAttribute('style') : 'missing'
+)
+const layoutFooterInv = doc.querySelector('#live-layout-footer-inverted .n-layout-footer')
+dTrue(
+  'DOM: LayoutFooter inverted --n-color = invertedColor',
+  !!layoutFooterInv &&
+    (layoutFooterInv.getAttribute('style') || '').includes('--n-color:rgb(0, 20, 40)'),
+  layoutFooterInv ? layoutFooterInv.getAttribute('style') : 'missing'
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
