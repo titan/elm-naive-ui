@@ -2433,6 +2433,191 @@ dTrue(
   fbGroupSquareStyle
 )
 
+// Heatmap --------------------------------------------------------------------
+const heatmapRoot = doc.querySelector('#live-heatmap .n-heatmap')
+const heatmapRootStyle = heatmapRoot ? heatmapRoot.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: Heatmap renders div.n-heatmap with the --n-* vars',
+  !!heatmapRoot &&
+    heatmapRoot.classList.contains('n-heatmap') &&
+    heatmapRootStyle.includes('--n-rect-size:11px') &&
+    heatmapRootStyle.includes('--n-bezier:cubic-bezier(.4, 0, .2, 1)'),
+  heatmapRoot ? heatmapRoot.getAttribute('class') : 'missing'
+)
+dEq(
+  'DOM: Heatmap default root style = the 11 --n-* vars (medium)',
+  '--n-bezier:cubic-bezier(.4, 0, .2, 1);--n-font-size:12px;--n-font-weight:400;--n-text-color:rgb(51, 54, 57);--n-border-radius:2px;--n-border-color:#fff;--n-loading-color-start:rgba(0, 0, 0, 0.06);--n-loading-color-end:rgba(0, 0, 0, 0.12);--n-rect-size:11px;--n-x-gap:3px;--n-y-gap:3px',
+  heatmapRootStyle
+)
+const heatmapTable = doc.querySelector('#live-heatmap table.n-heatmap__calendar-table')
+dEq(
+  'DOM: Heatmap calendar table has exactly thead + tbody',
+  'THEAD,TBODY',
+  heatmapTable ? [...heatmapTable.children].map((c) => c.tagName).join(',') : null
+)
+const heatmapTbody = heatmapTable ? heatmapTable.querySelector('tbody') : null
+dEq('DOM: Heatmap tbody has 7 tr', 7, heatmapTbody ? heatmapTbody.children.length : null)
+const heatmapTr0 = heatmapTbody ? heatmapTbody.children[0] : null
+dEq(
+  'DOM: Heatmap tr0 has 11 td (week label + 10 day cells)',
+  11,
+  heatmapTr0 ? heatmapTr0.children.length : null
+)
+dTrue(
+  'DOM: Heatmap tr0 first td is the week-label cell',
+  !!heatmapTr0 && heatmapTr0.children[0].classList.contains('n-heatmap__week-label-cell'),
+  heatmapTr0 ? heatmapTr0.children[0].getAttribute('class') : 'missing'
+)
+const heatmapThs = doc.querySelectorAll('#live-heatmap thead th')
+dEq('DOM: Heatmap thead th count = week-header + 2 month cells', 3, heatmapThs.length)
+dTrue(
+  'DOM: Heatmap thead first th is the week-header cell',
+  heatmapThs[0] && heatmapThs[0].classList.contains('n-heatmap__week-header-cell'),
+  heatmapThs[0] ? heatmapThs[0].getAttribute('class') : 'missing'
+)
+dEq(
+  'DOM: Heatmap month cells Jan(colspan 5) + Feb(colspan 4); >=3 rule drops Mar (1 col)',
+  'Jan:5,Feb:4',
+  [...heatmapThs].slice(1).map((th) => `${th.textContent}:${th.getAttribute('colspan')}`).join(',')
+)
+dEq(
+  'DOM: Heatmap month-label colspans sum to 9',
+  '9',
+  String([...heatmapThs].slice(1).reduce((a, th) => a + Number(th.getAttribute('colspan')), 0))
+)
+const heatmapDayCellRect = (row, col) => {
+  const tr = heatmapTbody ? heatmapTbody.children[row] : null
+  const tds = tr ? tr.querySelectorAll('.n-heatmap__day-cell') : []
+  return tds[col] ? tds[col].querySelector('.n-heatmap-rect') : null
+}
+const styleAt = (el) => (el ? el.getAttribute('style') : null)
+dEq(
+  'DOM: Heatmap zero-value day (Jan 1) paints the minimum colour',
+  '--n-rect-color:rgba(46, 51, 56, .09)',
+  styleAt(heatmapDayCellRect(0, 0))
+)
+dEq(
+  'DOM: Heatmap max-value day (Jan 2, value 10) paints the last green colour',
+  '--n-rect-color:#216e39',
+  styleAt(heatmapDayCellRect(1, 0))
+)
+const heatmapWeekLabelText = (row) => {
+  const tr = heatmapTbody ? heatmapTbody.children[row] : null
+  const cell = tr ? tr.querySelector('.n-heatmap__week-label-cell') : null
+  return cell ? cell.textContent : null
+}
+dEq(
+  'DOM: Heatmap week labels only on odd rows (ws=Mon -> Tue/Thu/Sat)',
+  ',Tue,,Thu,,Sat,',
+  [0, 1, 2, 3, 4, 5, 6].map(heatmapWeekLabelText).join(',')
+)
+const heatmapIndicator = doc.querySelector('#live-heatmap .n-heatmap-color-indicator')
+dEq(
+  'DOM: Heatmap indicator labels are less/more',
+  'less,more',
+  heatmapIndicator
+    ? [...heatmapIndicator.querySelectorAll('.n-heatmap-color-indicator__label')]
+        .map((l) => l.textContent)
+        .join(',')
+    : null
+)
+const heatmapIndicatorCells = doc.querySelectorAll('#live-heatmap .n-heatmap-color-indicator__cell')
+dEq('DOM: Heatmap indicator has 5 cells (minimum + 4 active)', 5, heatmapIndicatorCells.length)
+dEq(
+  'DOM: Heatmap indicator first/last cell backgrounds span the merged palette',
+  'background-color:rgba(46, 51, 56, .09),background-color:#216e39',
+  [heatmapIndicatorCells[0], heatmapIndicatorCells[4]].map(styleAt).join(',')
+)
+
+// Heatmap: loading (loadingData = Just []) ------------------------------------
+dEq(
+  'DOM: Heatmap loading matrix renders 7x53 = 371 rects',
+  371,
+  doc.querySelectorAll('#live-heatmap-loading .n-heatmap-rect').length
+)
+dEq(
+  'DOM: Heatmap loading rects all carry n-heatmap-rect--loading',
+  371,
+  doc.querySelectorAll('#live-heatmap-loading .n-heatmap-rect--loading').length
+)
+dEq(
+  'DOM: Heatmap loading rects are dead black',
+  '--n-rect-color:#000000',
+  styleAt(doc.querySelector('#live-heatmap-loading .n-heatmap-rect'))
+)
+const heatmapLoadingTr0 = doc.querySelector('#live-heatmap-loading tbody tr')
+dEq(
+  'DOM: Heatmap loading tr has 54 td (week label + 53 days)',
+  54,
+  heatmapLoadingTr0 ? heatmapLoadingTr0.children.length : null
+)
+const heatmapLoadingThs = doc.querySelectorAll('#live-heatmap-loading thead th')
+dEq('DOM: Heatmap loading thead has 2 th (week-header + 1 month)', 2, heatmapLoadingThs.length)
+dEq(
+  'DOM: Heatmap loading (data=[]) still derives one data month label from now (Mar, colspan 53)',
+  'Mar:53',
+  [...heatmapLoadingThs].slice(1).map((th) => `${th.textContent}:${th.getAttribute('colspan')}`).join(',')
+)
+
+// Heatmap: small + custom palette ---------------------------------------------
+const heatmapSmallRoot = doc.querySelector('#live-heatmap-small .n-heatmap')
+const heatmapSmallRootStyle = heatmapSmallRoot ? heatmapSmallRoot.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: Heatmap small root --n-rect-size:10px + --n-x-gap:2px',
+  heatmapSmallRootStyle.includes('--n-rect-size:10px') &&
+    heatmapSmallRootStyle.includes('--n-x-gap:2px'),
+  heatmapSmallRootStyle
+)
+dEq(
+  'DOM: Heatmap small renders 70 rects (Jan 1 is already the week start, so fill is a no-op)',
+  70,
+  doc.querySelectorAll('#live-heatmap-small .n-heatmap-rect').length
+)
+dEq(
+  'DOM: Heatmap small has no empty cells (dense data)',
+  0,
+  doc.querySelectorAll('#live-heatmap-small .n-heatmap__empty-cell').length
+)
+dTrue(
+  'DOM: Heatmap small max-value rect uses the custom palette top colour (#312e81)',
+  [...doc.querySelectorAll('#live-heatmap-small .n-heatmap-rect')].some(
+    (r) => r.getAttribute('style') === '--n-rect-color:#312e81'
+  ),
+  'palette scan'
+)
+const heatmapSmallCells = doc.querySelectorAll('#live-heatmap-small .n-heatmap-color-indicator__cell')
+dEq('DOM: Heatmap small indicator has 6 cells (minimum + 5 active)', 6, heatmapSmallCells.length)
+dEq(
+  'DOM: Heatmap small activeColors reach the indicator pipeline',
+  'background-color:rgba(46, 51, 56, .09),background-color:#e0e7ff,background-color:#312e81',
+  [heatmapSmallCells[0], heatmapSmallCells[1], heatmapSmallCells[5]].map(styleAt).join(',')
+)
+
+// Heatmap: fillCalendarLeading ------------------------------------------------
+dEq(
+  'DOM: Heatmap fillCalendarLeading pads the leading week -> 9 rects',
+  9,
+  doc.querySelectorAll('#live-heatmap-leading .n-heatmap-rect').length
+)
+dEq(
+  'DOM: Heatmap fillCalendarLeading -> 5 trailing empty cells',
+  5,
+  doc.querySelectorAll('#live-heatmap-leading .n-heatmap__empty-cell').length
+)
+dEq(
+  'DOM: Heatmap without fillCalendarLeading -> 7 rects + 7 empty cells',
+  '7,7',
+  [
+    doc.querySelectorAll('#live-heatmap-no-fill .n-heatmap-rect').length,
+    doc.querySelectorAll('#live-heatmap-no-fill .n-heatmap__empty-cell').length
+  ].join(',')
+)
+dEq(
+  'DOM: Heatmap no-fill thead keeps the empty week-header row (no month reaches 3 cols)',
+  1,
+  doc.querySelectorAll('#live-heatmap-no-fill thead th').length
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
