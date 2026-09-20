@@ -35,8 +35,10 @@ import NUI.Css as Css
 import NUI.DynamicTags as DynamicTags
 import NUI.Ellipsis as Ellipsis
 import NUI.Empty as Empty
+import NUI.Flex as Flex
 import NUI.FloatButton as FloatButton
 import NUI.GradientText as GradientText
+import NUI.Grid as Grid
 import NUI.Input as Input
 import NUI.InputNumber as InputNumber
 import NUI.InputOtp as InputOtp
@@ -1422,6 +1424,103 @@ layoutFooterInvertedOpts =
             LayoutFooter.defaults
     in
     { d | inverted = True }
+
+
+
+-- FLEX / GRID PROBES -----------------------------------------------------------
+
+
+flexDefaults : Flex.Options msg
+flexDefaults =
+    Flex.defaults
+
+
+flexInlineOpts : Flex.Options msg
+flexInlineOpts =
+    { flexDefaults | inline = True }
+
+
+flexVerticalOpts : Flex.Options msg
+flexVerticalOpts =
+    { flexDefaults | direction = Flex.Vertical }
+
+
+flexReverseOpts : Flex.Options msg
+flexReverseOpts =
+    { flexDefaults | reverse = True }
+
+
+flexReverseVerticalOpts : Flex.Options msg
+flexReverseVerticalOpts =
+    { flexDefaults | direction = Flex.Vertical, reverse = True }
+
+
+flexAlignCenterOpts : Flex.Options msg
+flexAlignCenterOpts =
+    { flexDefaults | align = Just Flex.Center }
+
+
+flexSpaceBetweenOpts : Flex.Options msg
+flexSpaceBetweenOpts =
+    { flexDefaults | justify = Flex.SpaceBetween }
+
+
+flexNumberGapOpts : Flex.Options msg
+flexNumberGapOpts =
+    { flexDefaults | size = Flex.Number 5 }
+
+
+flexNumber2GapOpts : Flex.Options msg
+flexNumber2GapOpts =
+    { flexDefaults | size = Flex.Number2 3 9 }
+
+
+flexRtlOpts : Flex.Options msg
+flexRtlOpts =
+    { flexDefaults | rtl = True }
+
+
+gridDefaults : Grid.Options msg
+gridDefaults =
+    Grid.defaults
+
+
+{-| A bindable copy of `Grid.item` — record-update syntax needs a variable, not a
+qualified name.
+-}
+gridItemBase : Grid.Item msg
+gridItemBase =
+    Grid.item
+
+
+gridCollapseOpts : Grid.Options msg
+gridCollapseOpts =
+    { gridDefaults | cols = Grid.Number 12, collapsed = True, collapsedRows = 1 }
+
+
+gridSuffixOpts : Grid.Options msg
+gridSuffixOpts =
+    { gridDefaults | collapsed = True, collapsedRows = 1 }
+
+
+gridLayoutShiftOpts : Grid.Options msg
+gridLayoutShiftOpts =
+    { gridDefaults | layoutShiftDisabled = True, xGap = Grid.Number 16, yGap = Grid.Number 8 }
+
+
+{-| `n` items each spanning 12 columns.
+-}
+gridHalfItems : Int -> List (Grid.Item msg)
+gridHalfItems n =
+    List.repeat n { gridItemBase | span = Grid.Number 12 }
+
+
+{-| The grid-level `overflow` flag from `viewWithOverflow` (the pure half of the
+collapse algorithm).
+-}
+gridOverflow : Grid.Options msg -> List (Grid.Item msg) -> Bool
+gridOverflow opts items =
+    Tuple.second (Grid.viewWithOverflow opts items)
 
 
 
@@ -2898,6 +2997,95 @@ checks =
     , eq "layout-footer --n-color literal actionColor rgb(250, 250, 252)" (Just "rgb(250, 250, 252)") (lookup "--n-color" footerDefaultVars)
     , eq "layout-footer inverted --n-color = theme footerColorInverted" (Just layoutTheme.footerColorInverted) (lookup "--n-color" footerInvertedVars)
     , eq "layout-footer inverted --n-color literal invertedColor rgb(0, 20, 40)" (Just "rgb(0, 20, 40)") (lookup "--n-color" footerInvertedVars)
+
+    -- 47. NUI.Grid responsive helpers --------------------------------------------
+    , eq "grid parse Number 24 / NoQuery -> Just \"24\""
+        (Just "24")
+        (Grid.parseResponsivePropValue (Grid.Number 24) Grid.NoQuery)
+    , eq "grid parse Custom \"1 s:2 m:3\" / NoQuery -> default Just \"1\""
+        (Just "1")
+        (Grid.parseResponsivePropValue (Grid.Custom "1 s:2 m:3") Grid.NoQuery)
+    , eq "grid parse ByKeys [s,m] -> widest active key wins, Just \"3\""
+        (Just "3")
+        (Grid.parseResponsivePropValue (Grid.Custom "1 s:2 m:3") (Grid.ByKeys [ "s", "m" ]))
+    , eq "grid parse ByKeys [xs,s] -> Just \"2\""
+        (Just "2")
+        (Grid.parseResponsivePropValue (Grid.Custom "1 s:2 m:3") (Grid.ByKeys [ "xs", "s" ]))
+    , eq "grid parse ByKeys [] -> falls back to the default Just \"1\""
+        (Just "1")
+        (Grid.parseResponsivePropValue (Grid.Custom "1 s:2 m:3") (Grid.ByKeys []))
+    , eq "grid parse ByKeys unmatched key -> default Just \"1\""
+        (Just "1")
+        (Grid.parseResponsivePropValue (Grid.Custom "1 s:2 m:3") (Grid.ByKeys [ "zz" ]))
+    , eq "grid parse ByWidth 800 on \"2 768:3\" -> largest numeric key <= width Just \"3\""
+        (Just "3")
+        (Grid.parseResponsivePropValue (Grid.Custom "2 768:3") (Grid.ByWidth 800))
+    , eq "grid parse ByWidth 100 on \"2 768:3\" -> bare token (key 0) Just \"2\""
+        (Just "2")
+        (Grid.parseResponsivePropValue (Grid.Custom "2 768:3") (Grid.ByWidth 100))
+    , eq "grid parse ByWidth 768 on \"2 768:3\" -> boundary matches Just \"3\""
+        (Just "3")
+        (Grid.parseResponsivePropValue (Grid.Custom "2 768:3") (Grid.ByWidth 768))
+    , eq "grid parse ByWidth with no default and nothing <= width -> Nothing"
+        Nothing
+        (Grid.parseResponsivePropValue (Grid.Custom "768:3") (Grid.ByWidth 100))
+    , eq "grid parse Custom with no default / NoQuery -> Nothing"
+        Nothing
+        (Grid.parseResponsivePropValue (Grid.Custom "s:2") Grid.NoQuery)
+    , eq "grid parse later token overwrites earlier for the same key (Just \"2\")"
+        (Just "2")
+        (Grid.parseResponsivePropValue (Grid.Custom "s:1 s:2") (Grid.ByKeys [ "s" ]))
+    , eq "grid breakpointKeys default 0 -> [xs]"
+        [ "xs" ]
+        (Grid.breakpointKeys Grid.defaultBreakpoints 0)
+    , eq "grid breakpointKeys default 639 -> [xs]"
+        [ "xs" ]
+        (Grid.breakpointKeys Grid.defaultBreakpoints 639)
+    , eq "grid breakpointKeys default 640 -> [xs,s]"
+        [ "xs", "s" ]
+        (Grid.breakpointKeys Grid.defaultBreakpoints 640)
+    , eq "grid breakpointKeys default 1023 -> [xs,s]"
+        [ "xs", "s" ]
+        (Grid.breakpointKeys Grid.defaultBreakpoints 1023)
+    , eq "grid breakpointKeys default 1920 -> all six ascending"
+        [ "xs", "s", "m", "l", "xl", "xxl" ]
+        (Grid.breakpointKeys Grid.defaultBreakpoints 1920)
+    , eq "grid defaultBreakpoints = the 6 upstream pairs"
+        [ ( "xs", 0 ), ( "s", 640 ), ( "m", 1024 ), ( "l", 1280 ), ( "xl", 1536 ), ( "xxl", 1920 ) ]
+        Grid.defaultBreakpoints
+    , eq "grid defaultCols = 24" 24 Grid.defaultCols
+    , eq "grid defaultSpan = 1" 1 Grid.defaultSpan
+    , eq "grid defaults cols = Number 24" (Grid.Number 24) gridDefaults.cols
+    , eq "grid defaults query = NoQuery" Grid.NoQuery gridDefaults.query
+    , eq "grid defaults breakpoints = defaultBreakpoints" Grid.defaultBreakpoints gridDefaults.breakpoints
+    , eq "grid defaults collapsedRows = 1" 1 gridDefaults.collapsedRows
+    , eq "grid defaults itemResponsive = False" False gridDefaults.itemResponsive
+    , eq "grid item span default = Number 1" (Grid.Number 1) Grid.item.span
+    , eq "grid item offset default = Number 0" (Grid.Number 0) Grid.item.offset
+    , eq "grid item suffix default = False" False Grid.item.suffix
+    , eq "grid item show default = True" True Grid.item.show
+    , eq "grid viewWithOverflow 3x span12 / cols24 (no collapse) -> no overflow"
+        False
+        (gridOverflow gridDefaults (gridHalfItems 3))
+    , eq "grid viewWithOverflow collapsed cols12 4x span6 -> overflow"
+        True
+        (gridOverflow gridCollapseOpts (gridHalfItems 4))
+    , eq "grid viewWithOverflow collapsed cols12 2x span6 -> no overflow"
+        False
+        (gridOverflow gridCollapseOpts (gridHalfItems 2))
+    , eq "grid viewWithOverflow layoutShiftDisabled -> never overflows"
+        False
+        (gridOverflow gridLayoutShiftOpts (gridHalfItems 10))
+
+    -- 48. NUI.Flex defaults ------------------------------------------------------
+    , eq "flex defaults direction = Horizontal" Flex.Horizontal flexDefaults.direction
+    , eq "flex defaults size = Medium" Flex.Medium flexDefaults.size
+    , eq "flex defaults justify = JustifyStart" Flex.JustifyStart flexDefaults.justify
+    , eq "flex defaults wrap = True" True flexDefaults.wrap
+    , eq "flex defaults align = Nothing" Nothing flexDefaults.align
+    , eq "flex defaults inline = False" False flexDefaults.inline
+    , eq "flex defaults reverse = False" False flexDefaults.reverse
+    , eq "flex defaults rtl = False" False flexDefaults.rtl
     ]
 
 
@@ -3223,6 +3411,69 @@ liveNodes =
                     (LayoutFooter.view Theme.default layoutFooterOpts [ Element.text "F" ])
                 , Element.el [ Element.htmlAttribute (HA.id "live-layout-footer-inverted") ]
                     (LayoutFooter.view Theme.default layoutFooterInvertedOpts [ Element.text "F" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-flex-default") ]
+                    (Flex.view Theme.default flexDefaults [ Element.text "A", Element.text "B" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-flex-inline") ]
+                    (Flex.view Theme.default flexInlineOpts [ Element.text "A" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-flex-vertical") ]
+                    (Flex.view Theme.default flexVerticalOpts [ Element.text "A" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-flex-reverse") ]
+                    (Flex.view Theme.default flexReverseOpts [ Element.text "A" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-flex-reverse-vertical") ]
+                    (Flex.view Theme.default flexReverseVerticalOpts [ Element.text "A" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-flex-align") ]
+                    (Flex.view Theme.default flexAlignCenterOpts [ Element.text "A" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-flex-space-between") ]
+                    (Flex.view Theme.default flexSpaceBetweenOpts [ Element.text "A" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-flex-gap-number") ]
+                    (Flex.view Theme.default flexNumberGapOpts [ Element.text "A" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-flex-gap-number2") ]
+                    (Flex.view Theme.default flexNumber2GapOpts [ Element.text "A" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-flex-rtl") ]
+                    (Flex.view Theme.default flexRtlOpts [ Element.text "A" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-flex-empty") ]
+                    (Flex.view Theme.default flexDefaults [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-grid-basic") ]
+                    (Grid.view gridDefaults
+                        [ { gridItemBase | span = Grid.Number 12, attributes = [ Element.htmlAttribute (HA.id "grid-basic-a") ], content = [ Element.text "A" ] }
+                        , { gridItemBase | span = Grid.Number 12, attributes = [ Element.htmlAttribute (HA.id "grid-basic-b") ], content = [ Element.text "B" ] }
+                        ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-grid-offset") ]
+                    (Grid.view gridDefaults
+                        [ { gridItemBase | span = Grid.Number 6, offset = Grid.Number 3, attributes = [ Element.htmlAttribute (HA.id "grid-offset-a") ], content = [ Element.text "O" ] } ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-grid-layoutshift") ]
+                    (Grid.view gridLayoutShiftOpts
+                        [ { gridItemBase | span = Grid.Number 12, attributes = [ Element.htmlAttribute (HA.id "grid-ls-a") ], content = [ Element.text "L" ] } ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-grid-collapse") ]
+                    (Grid.view gridCollapseOpts
+                        [ { gridItemBase | span = Grid.Number 6, attributes = [ Element.htmlAttribute (HA.id "grid-collapse-0") ], content = [ Element.text "0" ] }
+                        , { gridItemBase | span = Grid.Number 6, attributes = [ Element.htmlAttribute (HA.id "grid-collapse-1") ], content = [ Element.text "1" ] }
+                        , { gridItemBase | span = Grid.Number 6, attributes = [ Element.htmlAttribute (HA.id "grid-collapse-2") ], content = [ Element.text "2" ] }
+                        , { gridItemBase | span = Grid.Number 6, attributes = [ Element.htmlAttribute (HA.id "grid-collapse-3") ], content = [ Element.text "3" ] }
+                        ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-grid-suffix") ]
+                    (Grid.view gridSuffixOpts
+                        [ { gridItemBase | span = Grid.Number 12, attributes = [ Element.htmlAttribute (HA.id "grid-suffix-0") ], content = [ Element.text "0" ] }
+                        , { gridItemBase | span = Grid.Number 12, attributes = [ Element.htmlAttribute (HA.id "grid-suffix-1") ], content = [ Element.text "1" ] }
+                        , { gridItemBase | suffix = True, span = Grid.Number 6, attributes = [ Element.htmlAttribute (HA.id "grid-suffix-s") ], content = [ Element.text "…" ] }
+                        ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-grid-show-false") ]
+                    (Grid.view gridDefaults
+                        [ { gridItemBase | show = False, attributes = [ Element.htmlAttribute (HA.id "grid-hide-a") ], content = [ Element.text "H" ] }
+                        , { gridItemBase | span = Grid.Number 12, attributes = [ Element.htmlAttribute (HA.id "grid-hide-b") ], content = [ Element.text "V" ] }
+                        ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-grid-span-zero") ]
+                    (Grid.view gridDefaults
+                        [ { gridItemBase | span = Grid.Number 0, attributes = [ Element.htmlAttribute (HA.id "grid-zero-a") ], content = [ Element.text "Z" ] }
+                        , { gridItemBase | span = Grid.Number 12, attributes = [ Element.htmlAttribute (HA.id "grid-zero-b") ], content = [ Element.text "B" ] }
+                        ]
+                    )
                 ]
             )
         ]

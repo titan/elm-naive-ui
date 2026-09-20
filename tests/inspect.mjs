@@ -2046,6 +2046,200 @@ dTrue(
   layoutFooterInv ? layoutFooterInv.getAttribute('style') : 'missing'
 )
 
+// Flex -----------------------------------------------------------------------
+const styleOf = (sel) => {
+  const el = doc.querySelector(sel)
+  return el ? el.getAttribute('style') || '' : ''
+}
+const flexDefault = doc.querySelector('#live-flex-default .n-flex')
+const flexStyle = styleOf('#live-flex-default .n-flex')
+dTrue(
+  'DOM: Flex default renders .n-flex with role=none',
+  !!flexDefault && flexDefault.getAttribute('role') === 'none',
+  flexDefault ? flexDefault.getAttribute('class') : 'missing'
+)
+dTrue('DOM: Flex default display:flex', flexStyle.includes('display: flex'), flexStyle)
+dTrue(
+  'DOM: Flex default flex-direction:row',
+  flexStyle.includes('flex-direction: row'),
+  flexStyle
+)
+dTrue(
+  'DOM: Flex default justify-content:flex-start',
+  flexStyle.includes('justify-content: flex-start'),
+  flexStyle
+)
+dTrue('DOM: Flex default flex-wrap:wrap', flexStyle.includes('flex-wrap: wrap'), flexStyle)
+dTrue('DOM: Flex default gap Medium = 8px 12px', flexStyle.includes('gap: 8px 12px'), flexStyle)
+dTrue(
+  'DOM: Flex default omits align-items (align = Nothing)',
+  !flexStyle.includes('align-items'),
+  flexStyle
+)
+dTrue(
+  'DOM: Flex inline=True -> display:inline-flex',
+  styleOf('#live-flex-inline .n-flex').includes('display: inline-flex'),
+  styleOf('#live-flex-inline .n-flex')
+)
+const flexVerticalStyle = styleOf('#live-flex-vertical .n-flex')
+dTrue(
+  'DOM: Flex Vertical -> flex-direction:column + flex-wrap:nowrap',
+  flexVerticalStyle.includes('flex-direction: column') &&
+    flexVerticalStyle.includes('flex-wrap: nowrap'),
+  flexVerticalStyle
+)
+dTrue(
+  'DOM: Flex reverse=True -> row-reverse',
+  styleOf('#live-flex-reverse .n-flex').includes('flex-direction: row-reverse'),
+  styleOf('#live-flex-reverse .n-flex')
+)
+dTrue(
+  'DOM: Flex reverse + Vertical -> column-reverse',
+  styleOf('#live-flex-reverse-vertical .n-flex').includes('flex-direction: column-reverse'),
+  styleOf('#live-flex-reverse-vertical .n-flex')
+)
+dTrue(
+  'DOM: Flex align=Just Center -> align-items:center',
+  styleOf('#live-flex-align .n-flex').includes('align-items: center'),
+  styleOf('#live-flex-align .n-flex')
+)
+dTrue(
+  'DOM: Flex justify=SpaceBetween -> justify-content:space-between',
+  styleOf('#live-flex-space-between .n-flex').includes('justify-content: space-between'),
+  styleOf('#live-flex-space-between .n-flex')
+)
+dTrue(
+  'DOM: Flex size=Number 5 -> gap:5px 5px',
+  styleOf('#live-flex-gap-number .n-flex').includes('gap: 5px 5px'),
+  styleOf('#live-flex-gap-number .n-flex')
+)
+dTrue(
+  'DOM: Flex size=Number2 3 9 -> gap:3px 9px',
+  styleOf('#live-flex-gap-number2 .n-flex').includes('gap: 3px 9px'),
+  styleOf('#live-flex-gap-number2 .n-flex')
+)
+dClass('DOM: Flex rtl adds n-flex--rtl', '#live-flex-rtl .n-flex', 'n-flex--rtl')
+dEq(
+  'DOM: Flex empty children render nothing (no .n-flex)',
+  null,
+  doc.querySelector('#live-flex-empty .n-flex')
+)
+
+// Grid -----------------------------------------------------------------------
+const gridBasic = doc.querySelector('#live-grid-basic .n-grid')
+const gridBasicStyle = gridBasic ? gridBasic.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: Grid renders .n-grid container',
+  !!gridBasic && gridBasic.classList.contains('n-grid'),
+  gridBasic ? gridBasic.getAttribute('class') : 'missing'
+)
+dTrue('DOM: Grid container width:100%', gridBasicStyle.includes('width: 100%'), gridBasicStyle)
+dTrue('DOM: Grid container display:grid', gridBasicStyle.includes('display: grid'), gridBasicStyle)
+dTrue(
+  'DOM: Grid container grid-template-columns repeat(24, minmax(0, 1fr))',
+  gridBasicStyle.includes('grid-template-columns: repeat(24, minmax(0, 1fr))'),
+  gridBasicStyle
+)
+dTrue('DOM: Grid container column-gap 0px', gridBasicStyle.includes('column-gap: 0px'), gridBasicStyle)
+dTrue('DOM: Grid container row-gap 0px', gridBasicStyle.includes('row-gap: 0px'), gridBasicStyle)
+const gridBasicAStyle = styleOf('#grid-basic-a')
+dEq(
+  'DOM: Grid item span 12 -> grid-column "span 12 / span 12"',
+  'grid-column: span 12 / span 12',
+  gridBasicAStyle.replace(/;\s*$/, '')
+)
+dEq(
+  'DOM: Grid item span 12 / offset 0 -> no margin-left',
+  false,
+  gridBasicAStyle.includes('margin-left')
+)
+const gridOffsetAStyle = styleOf('#grid-offset-a')
+dTrue(
+  'DOM: Grid item offset 3 -> margin-left calc()',
+  /margin-left:\s*calc\(/.test(gridOffsetAStyle),
+  gridOffsetAStyle
+)
+dTrue(
+  'DOM: Grid offset item grid-column uses resolved span (6 + offset 3 = 9)',
+  gridOffsetAStyle.includes('grid-column: span 9 / span 9'),
+  gridOffsetAStyle
+)
+const gridLsStyle = styleOf('#live-grid-layoutshift .n-grid')
+dTrue(
+  'DOM: Grid layoutShiftDisabled container repeat(24,...) + column-gap 16px + row-gap 8px',
+  gridLsStyle.includes('grid-template-columns: repeat(24, minmax(0, 1fr))') &&
+    gridLsStyle.includes('column-gap: 16px') &&
+    gridLsStyle.includes('row-gap: 8px'),
+  gridLsStyle
+)
+dTrue(
+  'DOM: Grid layoutShiftDisabled item uses the raw span',
+  styleOf('#grid-ls-a').includes('grid-column: span 12 / span 12'),
+  styleOf('#grid-ls-a')
+)
+dEq(
+  'DOM: Grid collapsed item 0 stays visible',
+  false,
+  styleOf('#grid-collapse-0').includes('display: none')
+)
+dEq(
+  'DOM: Grid collapsed item 1 stays visible',
+  false,
+  styleOf('#grid-collapse-1').includes('display: none')
+)
+dEq(
+  'DOM: Grid collapsed item 2 (trips the row limit) is display:none',
+  true,
+  styleOf('#grid-collapse-2').includes('display: none')
+)
+dEq(
+  'DOM: Grid collapsed item 3 (after the limit) is display:none',
+  true,
+  styleOf('#grid-collapse-3').includes('display: none')
+)
+dTrue(
+  'DOM: Grid collapsed cols=12 container template repeat(12, ...)',
+  styleOf('#live-grid-collapse .n-grid').includes('grid-template-columns: repeat(12, minmax(0, 1fr))'),
+  styleOf('#live-grid-collapse .n-grid')
+)
+const gridSuffixSStyle = styleOf('#grid-suffix-s')
+dTrue(
+  'DOM: Grid suffix item pinned to grid-column "19 / span 6" (cols 24, span 6)',
+  gridSuffixSStyle.includes('grid-column: 19 / span 6'),
+  gridSuffixSStyle
+)
+dEq(
+  'DOM: Grid suffix pinned item stays visible',
+  false,
+  gridSuffixSStyle.includes('display: none')
+)
+dEq(
+  'DOM: Grid suffix item is preceded by a hidden item (grid-suffix-1)',
+  true,
+  styleOf('#grid-suffix-1').includes('display: none')
+)
+const gridHideAStyle = styleOf('#grid-hide-a')
+dTrue(
+  'DOM: Grid show=False item stays in flow with display:none',
+  gridHideAStyle.includes('display: none'),
+  gridHideAStyle
+)
+dEq(
+  'DOM: Grid show=False item still renders a node',
+  true,
+  !!doc.getElementById('grid-hide-a')
+)
+dEq(
+  'DOM: Grid span 0 item is dropped entirely (no node)',
+  null,
+  doc.getElementById('grid-zero-a')
+)
+dTrue(
+  'DOM: Grid keeps the following item after a dropped span-0 item',
+  styleOf('#grid-zero-b').includes('grid-column: span 12 / span 12'),
+  styleOf('#grid-zero-b')
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
