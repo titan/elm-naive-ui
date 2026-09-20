@@ -31,7 +31,6 @@
         "valueTextColor": "textColor2"
       },
       "seen": [
-        "vars",
         "labelFontSize",
         "labelFontWeight",
         "valueFontWeight",
@@ -39,14 +38,28 @@
         "labelTextColor",
         "valuePrefixTextColor",
         "valueSuffixTextColor",
-        "valueTextColor",
-        "statisticLight"
+        "valueTextColor"
       ]
     },
     "dark": {
-      "refs": {},
+      "refs": {
+        "labelFontSize": "fontSize",
+        "labelFontWeight": "fontWeight",
+        "valueFontWeight": "fontWeight",
+        "labelTextColor": "textColor3",
+        "valuePrefixTextColor": "textColor2",
+        "valueSuffixTextColor": "textColor2",
+        "valueTextColor": "textColor2"
+      },
       "seen": [
-        "statisticDark"
+        "labelFontSize",
+        "labelFontWeight",
+        "valueFontWeight",
+        "valueFontSize",
+        "labelTextColor",
+        "valuePrefixTextColor",
+        "valueSuffixTextColor",
+        "valueTextColor"
       ]
     }
   }

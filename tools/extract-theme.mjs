@@ -25,25 +25,41 @@ async function dumpCommon() {
 // field name was seen at all. gen-theme uses this so that a *literal* whose value
 // merely coincides with a common value (e.g. Rate `sizeSmall: '16px'`) is not
 // rewritten into `common.fontSizeHuge` (which would wrongly propagate overrides).
+//
+// Destructures may rename (`borderRadiusSmall: borderRadius`): we track the local
+// name -> original common name so a field that references the *local* alias still
+// resolves to the right common variable. The returned `refs`/`seen` are restricted
+// by the caller to the keys `self()` actually returns, which drops matches from the
+// destructure block / theme-object literal (e.g. a spurious `borderRadiusSmall`).
 function parseVarRefs(src) {
   const names = new Set()
+  const aliases = new Map()
   for (const m of src.matchAll(/const\s*\{([^}]*)\}\s*=\s*vars\b/g)) {
     for (const part of m[1].split(',')) {
-      const n = (part.split(':')[1] || part).trim()
-      if (/^[A-Za-z_$][\w$]*$/.test(n)) names.add(n)
+      const [orig, alias] = part.split(':')
+      const local = (alias || orig).trim()
+      if (/^[A-Za-z_$][\w$]*$/.test(local)) {
+        names.add(local)
+        if (alias) aliases.set(local, orig.trim())
+      }
     }
   }
   const refs = {}
   const seen = new Set()
-  for (const m of src.matchAll(/([A-Za-z_$][\w$]*)\s*:\s*([^,\n}]+)/g)) {
-    const key = m[1]
-    const rhs = m[2].trim()
-    if (key === 'name' || key === 'common' || key === 'self') continue
+  const record = (key, rhs) => {
+    if (key === 'name' || key === 'common' || key === 'self') return
     seen.add(key)
     const dotted = rhs.match(/^vars\.([A-Za-z_$][\w$]*)$/)
-    const v = dotted ? dotted[1] : (names.has(rhs) ? rhs : null)
-    if (v && !refs[key]) refs[key] = v
+    let v = dotted ? dotted[1] : (names.has(rhs) ? rhs : null)
+    if (v) {
+      v = aliases.get(v) || v
+      if (!refs[key]) refs[key] = v
+    }
   }
+  // object-literal entries: `field: value`
+  for (const m of src.matchAll(/([A-Za-z_$][\w$]*)\s*:\s*([^,\n}]+)/g)) record(m[1], m[2].trim())
+  // dark themes that build on light's `self` override via `result.field = value`
+  for (const m of src.matchAll(/\.([A-Za-z_$][\w$]*)\s*=\s*([^\n;]+)/g)) record(m[1], m[2].trim())
   return { refs, seen: [...seen] }
 }
 
@@ -52,6 +68,15 @@ function readRefs(rel) {
     return parseVarRefs(fs.readFileSync(path.join(RESOLVE_DIR, rel), 'utf8'))
   } catch {
     return { refs: {}, seen: [] }
+  }
+}
+
+// Keep only the fields `self()` actually returned.
+function restrictRefs(refs, keys) {
+  const kset = new Set(keys)
+  return {
+    refs: Object.fromEntries(Object.entries(refs.refs || {}).filter(([k]) => kset.has(k))),
+    seen: (refs.seen || []).filter(k => kset.has(k))
   }
 }
 
@@ -68,7 +93,26 @@ async function dumpComponent(rel) {
     `export default { light: pick(lightMod).self(commonLight), dark: pick(darkMod).self(commonDark) }`
   ].join('\n')
   const values = (await loadModuleAt(RESOLVE_DIR, path.join(RESOLVE_DIR, rel), src)).default
-  return { ...values, refs: { light: readRefs(rel), dark: readRefs(darkRel) } }
+  const lightKeys = Object.keys(values.light)
+  const darkKeys = Object.keys(values.dark)
+  const lightRefs = restrictRefs(readRefs(rel), lightKeys)
+  const darkOwn = restrictRefs(readRefs(darkRel), darkKeys)
+  // A dark theme reuses/extends light's `self`: fields it doesn't mention itself
+  // keep light's provenance (dark self delegates to light self for them). Per-field,
+  // dark's own description wins (so an override to a literal stays a literal).
+  const darkSeen = new Set(darkOwn.seen)
+  const lightSeen = new Set(lightRefs.seen)
+  const darkMerged = { refs: {}, seen: [] }
+  for (const k of darkKeys) {
+    if (darkSeen.has(k)) {
+      darkMerged.seen.push(k)
+      if (darkOwn.refs[k]) darkMerged.refs[k] = darkOwn.refs[k]
+    } else if (lightSeen.has(k)) {
+      darkMerged.seen.push(k)
+      if (lightRefs.refs[k]) darkMerged.refs[k] = lightRefs.refs[k]
+    }
+  }
+  return { ...values, refs: { light: lightRefs, dark: darkMerged } }
 }
 
 const write = (name, data) => {

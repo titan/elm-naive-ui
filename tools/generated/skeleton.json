@@ -19,16 +19,13 @@
     "light": {
       "refs": {},
       "seen": [
-        "vars",
         "color",
-        "colorEnd",
-        "skeletonLight"
+        "colorEnd"
       ]
     },
     "dark": {
       "refs": {},
       "seen": [
-        "skeletonDark",
         "color",
         "colorEnd"
       ]

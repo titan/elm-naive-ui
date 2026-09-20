@@ -38,11 +38,9 @@
         "colorEndSuccess": "successColor"
       },
       "seen": [
-        "vars",
         "fontWeight",
         "rotate",
         "colorStartPrimary",
-        "alpha",
         "colorEndPrimary",
         "colorStartInfo",
         "colorEndInfo",
@@ -51,8 +49,7 @@
         "colorStartError",
         "colorEndError",
         "colorStartSuccess",
-        "colorEndSuccess",
-        "gradientTextLight"
+        "colorEndSuccess"
       ]
     },
     "dark": {
@@ -70,7 +67,6 @@
         "colorEndSuccess": "successColorSuppl"
       },
       "seen": [
-        "gradientTextDark",
         "fontWeight",
         "rotate",
         "colorStartPrimary",

@@ -53,7 +53,7 @@ light common =
 dark : Common -> Vars
 dark common =
     { textColor = common.textColor2
-    , color = common.tableColor
+    , color = common.cardColor
     , colorHover = common.hoverColor
     , colorModal = common.modalColor
     , colorHoverModal = "rgba(63, 63, 68, 1)"

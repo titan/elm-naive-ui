@@ -12,15 +12,11 @@
   "refs": {
     "light": {
       "refs": {},
-      "seen": [
-        "spaceLight"
-      ]
+      "seen": []
     },
     "dark": {
       "refs": {},
-      "seen": [
-        "spaceDark"
-      ]
+      "seen": []
     }
   }
 }

@@ -63,7 +63,6 @@
         "lineColor": "railColor"
       },
       "seen": [
-        "vars",
         "contentFontSize",
         "titleFontWeight",
         "circleBorder",
@@ -79,8 +78,7 @@
         "titleTextColor",
         "contentTextColor",
         "metaTextColor",
-        "lineColor",
-        "timelineLight"
+        "lineColor"
       ]
     },
     "dark": {
@@ -98,7 +96,6 @@
         "lineColor": "railColor"
       },
       "seen": [
-        "timelineDark",
         "contentFontSize",
         "titleFontWeight",
         "circleBorder",

@@ -20,13 +20,11 @@
         "itemColor": "railColor"
       },
       "seen": [
-        "vars",
         "itemColor",
         "itemColorActive",
         "sizeSmall",
         "sizeMedium",
-        "sizeLarge",
-        "themeLight"
+        "sizeLarge"
       ]
     },
     "dark": {
@@ -34,7 +32,6 @@
         "itemColor": "railColor"
       },
       "seen": [
-        "rateDark",
         "itemColor",
         "itemColorActive",
         "itemSize",

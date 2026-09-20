@@ -19,17 +19,21 @@
         "titleFontWeight": "fontWeightStrong"
       },
       "seen": [
-        "vars",
         "titleTextColor",
         "textColor",
-        "titleFontWeight",
-        "thingLight"
+        "titleFontWeight"
       ]
     },
     "dark": {
-      "refs": {},
+      "refs": {
+        "titleTextColor": "textColor1",
+        "textColor": "textColor2",
+        "titleFontWeight": "fontWeightStrong"
+      },
       "seen": [
-        "thingDark"
+        "titleTextColor",
+        "textColor",
+        "titleFontWeight"
       ]
     }
   }

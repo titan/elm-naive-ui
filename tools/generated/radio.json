@@ -100,7 +100,6 @@
         "buttonBorderRadius": "borderRadius"
       },
       "seen": [
-        "vars",
         "labelLineHeight",
         "buttonHeightSmall",
         "buttonHeightMedium",
@@ -108,7 +107,6 @@
         "boxShadow",
         "boxShadowActive",
         "boxShadowFocus",
-        "alpha",
         "boxShadowHover",
         "boxShadowDisabled",
         "color",
@@ -128,8 +126,7 @@
         "buttonBoxShadowFocus",
         "buttonBoxShadowHover",
         "buttonBoxShadow",
-        "buttonBorderRadius",
-        "radioLight"
+        "buttonBorderRadius"
       ]
     },
     "dark": {
@@ -152,7 +149,6 @@
         "buttonBorderRadius": "borderRadius"
       },
       "seen": [
-        "radioDark",
         "labelLineHeight",
         "buttonHeightSmall",
         "buttonHeightMedium",
@@ -160,7 +156,6 @@
         "boxShadow",
         "boxShadowActive",
         "boxShadowFocus",
-        "alpha",
         "boxShadowHover",
         "boxShadowDisabled",
         "color",

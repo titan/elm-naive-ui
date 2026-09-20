@@ -37,7 +37,6 @@
         "arrowColorDisabled": "textColorDisabled"
       },
       "seen": [
-        "vars",
         "titleFontSize",
         "titleFontWeight",
         "titleTextColor",
@@ -46,14 +45,29 @@
         "arrowColor",
         "arrowColorDisabled",
         "itemMargin",
-        "titlePadding",
-        "collapseLight"
+        "titlePadding"
       ]
     },
     "dark": {
-      "refs": {},
+      "refs": {
+        "titleFontSize": "fontSize",
+        "titleFontWeight": "fontWeight",
+        "titleTextColor": "textColor1",
+        "titleTextColorDisabled": "textColorDisabled",
+        "textColor": "textColor2",
+        "arrowColor": "textColor2",
+        "arrowColorDisabled": "textColorDisabled"
+      },
       "seen": [
-        "collapseDark"
+        "titleFontSize",
+        "titleFontWeight",
+        "titleTextColor",
+        "titleTextColorDisabled",
+        "textColor",
+        "arrowColor",
+        "arrowColorDisabled",
+        "itemMargin",
+        "titlePadding"
       ]
     }
   }

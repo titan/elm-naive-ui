@@ -131,7 +131,8 @@ ELM_HOME=/tmp/elm-home elm make
 cd examples && ELM_HOME=/tmp/elm-home elm make src/Main.elm --output=index.html
 node ../tools/verify/check-dom.mjs index.html        # bridge + --n-* vars per component
 node ../tools/verify/check-classes.mjs                # emitted classes exist in the CSS
-bash ../tests/run.sh                                  # 89 assertions
+node ../tools/verify/check-theme.mjs                  # emitted theme values match upstream
+bash ../tests/run.sh                                  # theme + DOM assertions
 
 # regenerate the CSS + theme modules from a Naive UI checkout
 cd tools && npm install && npm run extract            # NAIVE_UI_SRC=/path/to/naive-ui

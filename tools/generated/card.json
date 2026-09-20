@@ -95,7 +95,6 @@
         "boxShadow": "boxShadow1"
       },
       "seen": [
-        "vars",
         "color",
         "colorModal",
         "colorPopover",
@@ -112,14 +111,47 @@
         "fontSizeMedium",
         "fontSizeLarge",
         "fontSizeHuge",
-        "boxShadow",
-        "cardLight"
+        "boxShadow"
       ]
     },
     "dark": {
-      "refs": {},
+      "refs": {
+        "color": "cardColor",
+        "colorModal": "modalColor",
+        "colorPopover": "popoverColor",
+        "colorTarget": "primaryColor",
+        "colorEmbedded": "cardColor",
+        "colorEmbeddedModal": "modalColor",
+        "colorEmbeddedPopover": "popoverColor",
+        "textColor": "textColor2",
+        "titleTextColor": "textColor1",
+        "borderColor": "dividerColor",
+        "titleFontWeight": "fontWeightStrong",
+        "closeBorderRadius": "borderRadius",
+        "fontSizeSmall": "fontSize",
+        "fontSizeMedium": "fontSize",
+        "fontSizeLarge": "fontSize",
+        "fontSizeHuge": "fontSize",
+        "boxShadow": "boxShadow1"
+      },
       "seen": [
-        "cardDark"
+        "color",
+        "colorModal",
+        "colorPopover",
+        "colorTarget",
+        "colorEmbedded",
+        "colorEmbeddedModal",
+        "colorEmbeddedPopover",
+        "textColor",
+        "titleTextColor",
+        "borderColor",
+        "titleFontWeight",
+        "closeBorderRadius",
+        "fontSizeSmall",
+        "fontSizeMedium",
+        "fontSizeLarge",
+        "fontSizeHuge",
+        "boxShadow"
       ]
     }
   }

@@ -34,7 +34,6 @@
         "opacitySpinning": "opacityDisabled"
       },
       "seen": [
-        "vars",
         "textColor",
         "sizeTiny",
         "sizeSmall",
@@ -42,14 +41,29 @@
         "sizeLarge",
         "sizeHuge",
         "color",
-        "opacitySpinning",
-        "spinLight"
+        "opacitySpinning"
       ]
     },
     "dark": {
-      "refs": {},
+      "refs": {
+        "textColor": "primaryColor",
+        "sizeTiny": "heightTiny",
+        "sizeSmall": "heightSmall",
+        "sizeMedium": "heightMedium",
+        "sizeLarge": "heightLarge",
+        "sizeHuge": "heightHuge",
+        "color": "primaryColor",
+        "opacitySpinning": "opacityDisabled"
+      },
       "seen": [
-        "spinDark"
+        "textColor",
+        "sizeTiny",
+        "sizeSmall",
+        "sizeMedium",
+        "sizeLarge",
+        "sizeHuge",
+        "color",
+        "opacitySpinning"
       ]
     }
   }

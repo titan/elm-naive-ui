@@ -32,20 +32,30 @@
         "subtitleTextColor": "textColor3"
       },
       "seen": [
-        "vars",
         "titleFontWeight",
         "titleTextColor",
         "backColor",
         "backColorHover",
         "backColorPressed",
-        "subtitleTextColor",
-        "pageHeaderLight"
+        "subtitleTextColor"
       ]
     },
     "dark": {
-      "refs": {},
+      "refs": {
+        "titleFontWeight": "fontWeightStrong",
+        "titleTextColor": "textColor1",
+        "backColor": "textColor2",
+        "backColorHover": "primaryColorHover",
+        "backColorPressed": "primaryColorPressed",
+        "subtitleTextColor": "textColor3"
+      },
       "seen": [
-        "pageHeaderDark"
+        "titleFontWeight",
+        "titleTextColor",
+        "backColor",
+        "backColorHover",
+        "backColorPressed",
+        "subtitleTextColor"
       ]
     }
   }

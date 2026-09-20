@@ -115,12 +115,15 @@ That runs, in order:
 
 1.  `tools/verify/check-classes.mjs` — every `n-*` class a component emits exists in the
     extracted stylesheet (static; catches typos).
-2.  `elm make` — the library compiles.
-3.  `elm make src/Main.elm` — the example page compiles.
-4.  `tools/verify/check-dom.mjs` — renders the example in jsdom and asserts each component
+2.  `tools/verify/check-theme.mjs` — every value emitted in `src/NUI/Theme/*.elm`
+    resolves to the same value the extractor executed from upstream (static; catches a
+    wrong `common.<field>` or literal in the generated theme modules).
+3.  `elm make` — the library compiles.
+4.  `elm make src/Main.elm` — the example page compiles.
+5.  `tools/verify/check-dom.mjs` — renders the example in jsdom and asserts each component
     root has `flex-basis: auto` (the bridge works) and carries its `--n-*` variables.
-5.  `tests/run.sh` — 89 assertions over theme maths, `cssVars`, and live DOM output.
-6.  `elm-format --validate`.
+6.  `tests/run.sh` — DOM + theme assertions over theme maths, `cssVars`, and live DOM output.
+7.  `elm-format --validate`.
 
 ```bash
 # library only

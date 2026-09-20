@@ -5,11 +5,12 @@
 #
 # Checks, in order:
 #   1. every emitted n-* class exists in the extracted stylesheet   (static)
-#   2. the library compiles                                          (elm make)
-#   3. the example page compiles                                     (elm make)
-#   4. every component root renders with the elm-ui bridge working   (jsdom)
-#   5. the foundation test suite passes                              (tests/run.sh)
-#   6. sources are elm-format clean
+#   2. every emitted theme value equals the executed upstream value  (static)
+#   3. the library compiles                                          (elm make)
+#   4. the example page compiles                                     (elm make)
+#   5. every component root renders with the elm-ui bridge working   (jsdom)
+#   6. the foundation test suite passes                              (tests/run.sh)
+#   7. sources are elm-format clean
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -21,22 +22,25 @@ if [ ! -d "$ELM_HOME/0.19.1/packages/mdgriffith/elm-ui" ]; then
   ./scripts/install-elm-packages.sh
 fi
 
-echo "== 1/6 class coverage =="
+echo "== 1/7 class coverage =="
 node tools/verify/check-classes.mjs
 
-echo "== 2/6 library build =="
+echo "== 2/7 theme values =="
+node tools/verify/check-theme.mjs
+
+echo "== 3/7 library build =="
 elm make
 
-echo "== 3/6 example build =="
+echo "== 4/7 example build =="
 ( cd examples && elm make src/Main.elm --output=index.html )
 
-echo "== 4/6 component DOM/bridge =="
+echo "== 5/7 component DOM/bridge =="
 node tools/verify/check-dom.mjs examples/index.html
 
-echo "== 5/6 foundation tests =="
+echo "== 6/7 foundation tests =="
 bash tests/run.sh
 
-echo "== 6/6 elm-format =="
+echo "== 7/7 elm-format =="
 elm-format --validate src examples tests
 
 echo

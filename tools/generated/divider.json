@@ -17,17 +17,21 @@
         "fontWeight": "fontWeightStrong"
       },
       "seen": [
-        "vars",
         "textColor",
         "color",
-        "fontWeight",
-        "dividerLight"
+        "fontWeight"
       ]
     },
     "dark": {
-      "refs": {},
+      "refs": {
+        "textColor": "textColor1",
+        "color": "dividerColor",
+        "fontWeight": "fontWeightStrong"
+      },
       "seen": [
-        "dividerDark"
+        "textColor",
+        "color",
+        "fontWeight"
       ]
     }
   }

@@ -77,7 +77,6 @@
         "buttonBorderRadiusLarge": "borderRadius"
       },
       "seen": [
-        "vars",
         "iconColor",
         "textColor",
         "loadingColor",
@@ -91,9 +90,7 @@
         "buttonBorderRadiusSmall",
         "buttonBorderRadiusMedium",
         "buttonBorderRadiusLarge",
-        "boxShadowFocus",
-        "alpha",
-        "switchLight"
+        "boxShadowFocus"
       ]
     },
     "dark": {
@@ -110,7 +107,6 @@
         "buttonBorderRadiusLarge": "borderRadius"
       },
       "seen": [
-        "switchDark",
         "iconColor",
         "textColor",
         "loadingColor",
@@ -124,8 +120,7 @@
         "buttonBorderRadiusSmall",
         "buttonBorderRadiusMedium",
         "buttonBorderRadiusLarge",
-        "boxShadowFocus",
-        "alpha"
+        "boxShadowFocus"
       ]
     }
   }

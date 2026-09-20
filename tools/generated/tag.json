@@ -178,8 +178,7 @@
   "refs": {
     "light": {
       "refs": {
-        "borderRadiusSmall": "borderRadius",
-        "closeBorderRadius": "borderRadius",
+        "closeBorderRadius": "borderRadiusSmall",
         "heightTiny": "heightMini",
         "heightSmall": "heightTiny",
         "heightMedium": "heightSmall",
@@ -221,8 +220,6 @@
         "closeIconColorPressedError": "errorColor"
       },
       "seen": [
-        "vars",
-        "borderRadiusSmall",
         "closeBorderRadius",
         "heightTiny",
         "heightSmall",
@@ -247,7 +244,6 @@
         "color",
         "colorBordered",
         "borderPrimary",
-        "alpha",
         "textColorPrimary",
         "colorPrimary",
         "colorBorderedPrimary",
@@ -291,14 +287,12 @@
         "closeIconColorHoverError",
         "closeIconColorPressedError",
         "closeColorHoverError",
-        "closeColorPressedError",
-        "tagLight"
+        "closeColorPressedError"
       ]
     },
     "dark": {
       "refs": {
-        "borderRadiusSmall": "borderRadius",
-        "closeBorderRadius": "borderRadius",
+        "closeBorderRadius": "borderRadiusSmall",
         "heightTiny": "heightMini",
         "heightSmall": "heightTiny",
         "heightMedium": "heightSmall",
@@ -325,8 +319,6 @@
         "textColorError": "errorColor"
       },
       "seen": [
-        "tagDark",
-        "borderRadiusSmall",
         "closeBorderRadius",
         "heightTiny",
         "heightSmall",
@@ -351,12 +343,10 @@
         "color",
         "colorBordered",
         "borderPrimary",
-        "alpha",
         "textColorPrimary",
         "colorPrimary",
         "colorBorderedPrimary",
         "closeIconColorPrimary",
-        "lightness",
         "closeIconColorHoverPrimary",
         "closeIconColorPressedPrimary",
         "closeColorHoverPrimary",

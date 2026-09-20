@@ -9,18 +9,13 @@
     "light": {
       "refs": {},
       "seen": [
-        "gap",
-        "avatarGroupLight",
-        "peers",
-        "Avatar"
+        "gap"
       ]
     },
     "dark": {
       "refs": {},
       "seen": [
-        "avatarGroupDark",
-        "peers",
-        "Avatar"
+        "gap"
       ]
     }
   }

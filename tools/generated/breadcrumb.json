@@ -38,7 +38,6 @@
         "separatorColor": "textColor3"
       },
       "seen": [
-        "vars",
         "itemLineHeight",
         "itemTextColor",
         "itemTextColorHover",
@@ -47,14 +46,30 @@
         "itemBorderRadius",
         "itemColorHover",
         "itemColorPressed",
-        "separatorColor",
-        "breadcrumbLight"
+        "separatorColor"
       ]
     },
     "dark": {
-      "refs": {},
+      "refs": {
+        "itemTextColor": "textColor3",
+        "itemTextColorHover": "textColor2",
+        "itemTextColorPressed": "textColor2",
+        "itemTextColorActive": "textColor2",
+        "itemBorderRadius": "borderRadius",
+        "itemColorHover": "buttonColor2Hover",
+        "itemColorPressed": "buttonColor2Pressed",
+        "separatorColor": "textColor3"
+      },
       "seen": [
-        "breadcrumbDark"
+        "itemLineHeight",
+        "itemTextColor",
+        "itemTextColorHover",
+        "itemTextColorPressed",
+        "itemTextColorActive",
+        "itemBorderRadius",
+        "itemColorHover",
+        "itemColorPressed",
+        "separatorColor"
       ]
     }
   }

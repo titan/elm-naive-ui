@@ -29,18 +29,19 @@
     "light": {
       "refs": {},
       "seen": [
-        "vars",
         "border",
         "color",
         "colorModal",
-        "colorPopover",
-        "avatarLight"
+        "colorPopover"
       ]
     },
     "dark": {
       "refs": {},
       "seen": [
-        "avatarDark"
+        "border",
+        "color",
+        "colorModal",
+        "colorPopover"
       ]
     }
   }

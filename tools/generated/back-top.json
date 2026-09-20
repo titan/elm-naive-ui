@@ -37,7 +37,6 @@
         "iconColorPressed": "primaryColorPressed"
       },
       "seen": [
-        "vars",
         "color",
         "textColor",
         "iconColor",
@@ -45,8 +44,7 @@
         "iconColorPressed",
         "boxShadow",
         "boxShadowHover",
-        "boxShadowPressed",
-        "backTopLight"
+        "boxShadowPressed"
       ]
     },
     "dark": {
@@ -58,7 +56,6 @@
         "iconColorPressed": "primaryColorPressed"
       },
       "seen": [
-        "backTopDark",
         "color",
         "textColor",
         "iconColor",

@@ -172,7 +172,6 @@
         "closeIconColorPressedError": "closeIconColorPressed"
       },
       "seen": [
-        "vars",
         "titleFontWeight",
         "border",
         "color",
@@ -181,7 +180,6 @@
         "contentTextColor",
         "closeBorderRadius",
         "borderInfo",
-        "alpha",
         "colorInfo",
         "titleTextColorInfo",
         "iconColorInfo",
@@ -220,8 +218,7 @@
         "closeColorPressedError",
         "closeIconColorError",
         "closeIconColorHoverError",
-        "closeIconColorPressedError",
-        "alertLight"
+        "closeIconColorPressedError"
       ]
     },
     "dark": {
@@ -266,7 +263,6 @@
         "closeIconColorPressedError": "closeIconColorPressed"
       },
       "seen": [
-        "alertDark",
         "titleFontWeight",
         "border",
         "color",
@@ -275,7 +271,6 @@
         "contentTextColor",
         "closeBorderRadius",
         "borderInfo",
-        "alpha",
         "colorInfo",
         "titleTextColorInfo",
         "iconColorInfo",

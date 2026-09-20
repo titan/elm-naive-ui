@@ -27,14 +27,12 @@
         "colorWarning": "warningColor"
       },
       "seen": [
-        "vars",
         "color",
         "colorInfo",
         "colorSuccess",
         "colorError",
         "colorWarning",
-        "fontSize",
-        "badgeLight"
+        "fontSize"
       ]
     },
     "dark": {
@@ -46,7 +44,6 @@
         "colorWarning": "warningColorSuppl"
       },
       "seen": [
-        "badgeDark",
         "color",
         "colorInfo",
         "colorSuccess",

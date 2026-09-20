@@ -36,16 +36,18 @@
         "extraTextColor": "textColor2"
       },
       "seen": [
-        "vars",
         "textColor",
-        "extraTextColor",
-        "emptyLight"
+        "extraTextColor"
       ]
     },
     "dark": {
-      "refs": {},
+      "refs": {
+        "textColor": "textColorDisabled",
+        "extraTextColor": "textColor2"
+      },
       "seen": [
-        "emptyDark"
+        "textColor",
+        "extraTextColor"
       ]
     }
   }

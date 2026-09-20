@@ -150,7 +150,6 @@
         "suffixTextColor": "textColor2"
       },
       "seen": [
-        "vars",
         "countTextColorDisabled",
         "countTextColor",
         "lineHeightTextarea",
@@ -170,7 +169,6 @@
         "borderDisabled",
         "borderFocus",
         "boxShadowFocus",
-        "alpha",
         "loadingColor",
         "loadingColorWarning",
         "borderWarning",
@@ -186,10 +184,7 @@
         "borderFocusError",
         "boxShadowFocusError",
         "caretColorError",
-        "suffixTextColor",
-        "inputLight",
-        "peers",
-        "Scrollbar"
+        "suffixTextColor"
       ]
     },
     "dark": {
@@ -213,7 +208,6 @@
         "suffixTextColor": "textColor2"
       },
       "seen": [
-        "vars",
         "countTextColorDisabled",
         "countTextColor",
         "lineHeightTextarea",
@@ -227,7 +221,6 @@
         "colorHover",
         "colorDisabled",
         "colorFocus",
-        "alpha",
         "groupLabelBorder",
         "border",
         "borderHover",
@@ -249,9 +242,7 @@
         "borderFocusError",
         "boxShadowFocusError",
         "caretColorError",
-        "suffixTextColor",
-        "peers",
-        "Scrollbar"
+        "suffixTextColor"
       ]
     }
   }

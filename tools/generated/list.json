@@ -38,7 +38,6 @@
         "borderColor": "dividerColor"
       },
       "seen": [
-        "vars",
         "textColor",
         "color",
         "colorHover",
@@ -48,14 +47,29 @@
         "colorHoverPopover",
         "borderColor",
         "borderColorModal",
-        "borderColorPopover",
-        "listLight"
+        "borderColorPopover"
       ]
     },
     "dark": {
-      "refs": {},
+      "refs": {
+        "textColor": "textColor2",
+        "color": "cardColor",
+        "colorHover": "hoverColor",
+        "colorModal": "modalColor",
+        "colorPopover": "popoverColor",
+        "borderColor": "dividerColor"
+      },
       "seen": [
-        "listDark"
+        "textColor",
+        "color",
+        "colorHover",
+        "colorModal",
+        "colorHoverModal",
+        "colorPopover",
+        "colorHoverPopover",
+        "borderColor",
+        "borderColorModal",
+        "borderColorPopover"
       ]
     }
   }

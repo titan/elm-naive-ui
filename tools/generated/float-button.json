@@ -40,7 +40,6 @@
         "borderRadiusSquare": "borderRadius"
       },
       "seen": [
-        "vars",
         "color",
         "colorHover",
         "colorPressed",
@@ -52,8 +51,7 @@
         "boxShadowHover",
         "boxShadowPressed",
         "textColorPrimary",
-        "borderRadiusSquare",
-        "themeLight"
+        "borderRadiusSquare"
       ]
     },
     "dark": {
@@ -69,7 +67,6 @@
         "borderRadiusSquare": "borderRadius"
       },
       "seen": [
-        "floatButtonDark",
         "color",
         "textColor",
         "boxShadow",

@@ -11,9 +11,7 @@
         "borderRadius": "borderRadius"
       },
       "seen": [
-        "vars",
-        "borderRadius",
-        "themeLight"
+        "borderRadius"
       ]
     },
     "dark": {
@@ -21,7 +19,6 @@
         "borderRadius": "borderRadius"
       },
       "seen": [
-        "qrcodeDark",
         "borderRadius"
       ]
     }
