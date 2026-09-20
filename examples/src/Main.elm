@@ -27,6 +27,7 @@ import NUI.Empty as Empty
 import NUI.FloatButton as FloatButton
 import NUI.GradientText as GradientText
 import NUI.Input as Input
+import NUI.InputOtp as InputOtp
 import NUI.List as NList
 import NUI.Marquee as Marquee
 import NUI.PageHeader as PageHeader
@@ -91,6 +92,11 @@ alertD =
 inputD : Input.Options msg
 inputD =
     Input.defaults
+
+
+iotpD : InputOtp.Options msg
+iotpD =
+    InputOtp.defaults
 
 
 cbD : Checkbox.Options msg
@@ -356,6 +362,7 @@ body =
     , tagSection
     , alertSection
     , inputSection
+    , inputOtpSection
     , selectionSection
     , dividerSection
     , avatarSection
@@ -543,6 +550,20 @@ inputSection =
                     , value = "A textarea.\nMultiple lines."
                 }
             )
+        ]
+
+
+inputOtpSection : Element msg
+inputOtpSection =
+    section "Input OTP" "One-time-code inputs (the value and focus are caller-owned)." <|
+        [ demoRow "Lengths & sizes"
+            [ InputOtp.view theme { iotpD | length = 4, value = [ "1", "2", "3", "4" ] } []
+            , InputOtp.view theme { iotpD | length = 6, size = InputOtp.Small, gap = Just (InputOtp.Px 6) } []
+            , InputOtp.view theme { iotpD | length = 6, mask = True } []
+            ]
+        , demoRow "RTL"
+            [ InputOtp.view theme { iotpD | rtl = True, length = 6, value = [ "8", "8", "8" ] } []
+            ]
         ]
 
 

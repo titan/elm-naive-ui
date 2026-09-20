@@ -86,6 +86,7 @@ bridge, tests).
 | `NUI.FloatButton` | ✅ |
 | `NUI.GradientText`| ✅ |
 | `NUI.Input`       | ✅ |
+| `NUI.InputOtp`    | ✅ |
 | `NUI.List`        | ✅ |
 | `NUI.Marquee`     | ✅ |
 | `NUI.PageHeader`  | ✅ |

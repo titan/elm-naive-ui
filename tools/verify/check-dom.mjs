@@ -20,6 +20,7 @@ const htmlPath = process.argv[2] || path.join(root, 'examples', 'index.html')
 const targets = {
   '.n-button': true,
   '.n-input': true,
+  '.n-input-otp': true,
   '.n-card': true,
   '.n-tag': true,
   '.n-alert': true,
