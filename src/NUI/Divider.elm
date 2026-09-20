@@ -7,10 +7,12 @@ module NUI.Divider exposing
 
 {-| Naive UI's `Divider`, rebuilt on elm-ui.
 
+    import NUI.Divider exposing (defaults)
+
     NUI.Divider.view theme NUI.Divider.defaults []
 
     NUI.Divider.view theme
-        { NUI.Divider.defaults
+        { defaults
             | titlePlacement = NUI.Divider.Left
         }
         [ Element.text "Title" ]

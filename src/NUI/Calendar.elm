@@ -14,8 +14,10 @@ module NUI.Calendar exposing
 
 {-| Naive UI's `Calendar`, rebuilt on elm-ui.
 
+    import NUI.Calendar exposing (defaults)
+
     NUI.Calendar.view theme
-        { NUI.Calendar.defaults
+        { defaults
             | panel = { year = 2026, month = 7 }
             , now = { year = 2026, month = 7, day = 15 }
             , value = Just { year = 2026, month = 7, day = 20 }

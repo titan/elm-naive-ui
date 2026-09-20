@@ -12,11 +12,13 @@ module NUI.Steps exposing
 
 {-| Naive UI's `Steps` and `Step`, rebuilt on elm-ui.
 
+    import NUI.Steps exposing (defaults, item)
+
     NUI.Steps.view theme
-        { NUI.Steps.defaults | current = Just 2 }
-        [ { NUI.Steps.item | title = Just "First", description = Just "Details" }
-        , { NUI.Steps.item | title = Just "Second" }
-        , { NUI.Steps.item | title = Just "Third" }
+        { defaults | current = Just 2 }
+        [ { item | title = Just "First", description = Just "Details" }
+        , { item | title = Just "Second" }
+        , { item | title = Just "Third" }
         ]
 
 The element carries the `.n-steps` / `.n-step` BEM classes and Naive UI's `--n-*`

@@ -9,11 +9,13 @@ module NUI.QrCode exposing
 
 {-| Naive UI's `QrCode`, rebuilt on elm-ui.
 
-    NUI.QrCode.view theme
-        { NUI.QrCode.defaults | value = "https://www.naiveui.com/" }
+    import NUI.QrCode exposing (defaults)
 
     NUI.QrCode.view theme
-        { NUI.QrCode.defaults
+        { defaults | value = "https://www.naiveui.com/" }
+
+    NUI.QrCode.view theme
+        { defaults
             | value = "https://www.naiveui.com/"
             , color = "#18a058"
             , backgroundColor = "#F5F5F5"

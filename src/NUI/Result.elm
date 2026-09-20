@@ -9,10 +9,12 @@ module NUI.Result exposing
 
 {-| Naive UI's `Result`, rebuilt on elm-ui.
 
+    import NUI.Result exposing (defaults)
+
     NUI.Result.view theme NUI.Result.defaults []
 
     NUI.Result.view theme
-        { NUI.Result.defaults
+        { defaults
             | status = NUI.Result.Code404
             , size = NUI.Result.Huge
             , title = Just "404"

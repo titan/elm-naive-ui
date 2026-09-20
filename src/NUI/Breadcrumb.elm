@@ -9,11 +9,13 @@ module NUI.Breadcrumb exposing
 
 {-| Naive UI's `Breadcrumb` and `BreadcrumbItem`, rebuilt on elm-ui.
 
+    import NUI.Breadcrumb exposing (item)
+
     NUI.Breadcrumb.view theme
         NUI.Breadcrumb.defaults
-        [ { NUI.Breadcrumb.item | content = [ Element.text "Home" ], href = Just "/" }
-        , { NUI.Breadcrumb.item | content = [ Element.text "Library" ], href = Just "/library" }
-        , { NUI.Breadcrumb.item | content = [ Element.text "Data" ] }
+        [ { item | content = [ Element.text "Home" ], href = Just "/" }
+        , { item | content = [ Element.text "Library" ], href = Just "/library" }
+        , { item | content = [ Element.text "Data" ] }
         ]
 
 The element carries the `.n-breadcrumb` BEM classes and Naive UI's `--n-*` custom

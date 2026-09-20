@@ -12,12 +12,14 @@ module NUI.Radio exposing
 
 {-| Naive UI's `Radio` and `RadioGroup`, rebuilt on elm-ui.
 
+    import NUI.Radio exposing (defaults, groupDefaults)
+
     NUI.Radio.view theme
-        { NUI.Radio.defaults | checked = True }
+        { defaults | checked = True }
         [ Element.text "歌单" ]
 
     NUI.Radio.group theme
-        { NUI.Radio.groupDefaults
+        { groupDefaults
             | value = Just model.city
             , onChange = Just SetCity
         }
@@ -28,7 +30,7 @@ module NUI.Radio exposing
 
     -- button group (Naive UI's `n-radio-button` children)
     NUI.Radio.group theme
-        { NUI.Radio.groupDefaults | value = Just model.size, onChange = Just SetSize }
+        { groupDefaults | value = Just model.size, onChange = Just SetSize }
         [ NUI.Radio.button "small" "小"
         , NUI.Radio.button "medium" "中"
         , NUI.Radio.button "large" "大"

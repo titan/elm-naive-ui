@@ -7,8 +7,10 @@ module NUI.Avatar exposing
 
 {-| Naive UI's `Avatar`, rebuilt on elm-ui.
 
+    import NUI.Avatar exposing (defaults)
+
     NUI.Avatar.view theme
-        { NUI.Avatar.defaults | src = Just "https://example.com/avatar.png" }
+        { defaults | src = Just "https://example.com/avatar.png" }
         []
 
     NUI.Avatar.view theme NUI.Avatar.defaults [ Element.text "N" ]

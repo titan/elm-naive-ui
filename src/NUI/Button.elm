@@ -9,11 +9,13 @@ module NUI.Button exposing
 
 {-| Naive UI's `Button`, rebuilt on elm-ui.
 
+    import NUI.Button exposing (defaults)
+
     NUI.Button.view theme NUI.Button.defaults
         [ Element.text "Default" ]
 
     NUI.Button.view theme
-        { NUI.Button.defaults | kind = NUI.Button.Primary }
+        { defaults | kind = NUI.Button.Primary }
         [ Element.text "Primary" ]
 
 The visual result is Naive UI's own: the element carries the `.n-button` BEM classes

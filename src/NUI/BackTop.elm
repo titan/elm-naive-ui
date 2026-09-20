@@ -7,8 +7,10 @@ module NUI.BackTop exposing
 
 {-| Naive UI's `BackTop`, rebuilt on elm-ui.
 
+    import NUI.BackTop exposing (defaults)
+
     NUI.BackTop.view theme
-        { NUI.BackTop.defaults | show = True, onClick = Just ScrollToTop }
+        { defaults | show = True, onClick = Just ScrollToTop }
         []
 
 The element carries the `.n-back-top` BEM classes and Naive UI's `--n-*` custom

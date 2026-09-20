@@ -9,15 +9,17 @@ module NUI.InputOtp exposing
 
 {-| Naive UI's `InputOtp`, rebuilt on elm-ui.
 
+    import NUI.InputOtp exposing (defaults)
+
     NUI.InputOtp.view theme
-        { NUI.InputOtp.defaults
+        { defaults
             | value = model.otp
             , onUpdateValue = Just GotOtp
         }
         []
 
     NUI.InputOtp.view theme
-        { NUI.InputOtp.defaults
+        { defaults
             | mask = True
             , size = NUI.InputOtp.Small
             , length = 4

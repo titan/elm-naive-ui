@@ -7,13 +7,15 @@ module NUI.Countdown exposing
 
 {-| Naive UI's `Countdown`, rebuilt on elm-ui.
 
+    import NUI.Countdown exposing (defaults)
+
     NUI.Countdown.view theme
-        { NUI.Countdown.defaults | distance = 90000, precision = 1 }
+        { defaults | distance = 90000, precision = 1 }
         []
 
     -- custom rendering
     NUI.Countdown.view theme
-        { NUI.Countdown.defaults
+        { defaults
             | distance = 5000
             , render = Just (\info -> Element.text (String.fromInt info.seconds ++ "s left"))
         }

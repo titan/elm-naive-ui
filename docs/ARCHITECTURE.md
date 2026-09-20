@@ -62,8 +62,15 @@ Model each component on `src/NUI/Button.elm`.
   `view : Theme -> Options msg -> List (Element msg) -> Element msg`.
 
   ```elm
-  NUI.Button.view theme { NUI.Button.defaults | kind = T.Primary } [ Element.text "Ok" ]
+  import NUI.Button exposing (defaults)
+
+  NUI.Button.view theme { defaults | kind = T.Primary } [ Element.text "Ok" ]
   ```
+
+  The `import … exposing (defaults)` line is part of the convention: Elm does **not**
+  allow a qualified name in a record update, so `{ NUI.Button.defaults | … }` is a parse
+  error. Bind `defaults` (or `item`) to a local first — every module docstring shows it
+  that way.
 
 - **Theme vars**: `NUI.Theme.<Comp>.vars theme` gives the component's `Vars`; read the
   exact fields Naive UI's `cssVars` uses. Port that logic faithfully from

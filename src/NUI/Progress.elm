@@ -11,10 +11,12 @@ module NUI.Progress exposing
 
 {-| Naive UI's `Progress`, rebuilt on elm-ui.
 
+    import NUI.Progress exposing (defaults)
+
     NUI.Progress.view theme NUI.Progress.defaults []
 
     NUI.Progress.view theme
-        { NUI.Progress.defaults
+        { defaults
             | type_ = NUI.Progress.Circle
             , percentage = 80
             , status = NUI.Progress.Success
@@ -22,7 +24,7 @@ module NUI.Progress exposing
         []
 
     NUI.Progress.view theme
-        { NUI.Progress.defaults
+        { defaults
             | percentage = 66
             , processing = True
             , height = Just 12
@@ -30,7 +32,7 @@ module NUI.Progress exposing
         []
 
     NUI.Progress.view theme
-        { NUI.Progress.defaults
+        { defaults
             | type_ = NUI.Progress.MultipleCircle
             , percentages = [ 80, 60 ]
             , colors = [ NUI.Progress.Solid "#2080f0", NUI.Progress.Solid "#18a058" ]

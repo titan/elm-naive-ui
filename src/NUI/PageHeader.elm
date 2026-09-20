@@ -7,8 +7,10 @@ module NUI.PageHeader exposing
 
 {-| Naive UI's `PageHeader`, rebuilt on elm-ui.
 
+    import NUI.PageHeader exposing (defaults)
+
     NUI.PageHeader.view theme
-        { NUI.PageHeader.defaults
+        { defaults
             | title = Just "Users"
             , subtitle = Just "Manage the team."
             , onBack = Just Back

@@ -2,17 +2,19 @@ module NUI.Switch exposing (Options, defaults, view)
 
 {-| Naive UI's `Switch`, rebuilt on elm-ui.
 
+    import NUI.Switch exposing (defaults)
+
     NUI.Switch.view theme NUI.Switch.defaults []
 
     NUI.Switch.view theme
-        { NUI.Switch.defaults
+        { defaults
             | value = model.active
             , onChange = Just Toggled
         }
         []
 
     NUI.Switch.view theme
-        { NUI.Switch.defaults
+        { defaults
             | checked = Element.text "Checked"
             , unchecked = Element.text "Unchecked"
         }

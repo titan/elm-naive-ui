@@ -7,8 +7,10 @@ module NUI.Thing exposing
 
 {-| Naive UI's `Thing`, rebuilt on elm-ui.
 
+    import NUI.Thing exposing (defaults)
+
     NUI.Thing.view theme
-        { NUI.Thing.defaults
+        { defaults
             | avatar = Just (Element.text "A")
             , title = Just "naive-ui"
             , titleExtra = Just "v2.0"

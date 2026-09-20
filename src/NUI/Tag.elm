@@ -2,10 +2,12 @@ module NUI.Tag exposing (Options, defaults, view)
 
 {-| Naive UI's `Tag`, rebuilt on elm-ui.
 
+    import NUI.Tag exposing (defaults)
+
     NUI.Tag.view theme NUI.Tag.defaults [ Element.text "Default" ]
 
     NUI.Tag.view theme
-        { NUI.Tag.defaults | kind = T.Primary, closable = True, onClose = Just Dismiss }
+        { defaults | kind = T.Primary, closable = True, onClose = Just Dismiss }
         [ Element.text "Primary" ]
 
 The visual result is Naive UI's own: the element carries the `.n-tag` BEM classes and

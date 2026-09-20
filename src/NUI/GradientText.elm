@@ -10,8 +10,10 @@ module NUI.GradientText exposing
 
 {-| Naive UI's `GradientText`, rebuilt on elm-ui.
 
+    import NUI.GradientText exposing (defaults)
+
     NUI.GradientText.view theme
-        { NUI.GradientText.defaults | type_ = NUI.GradientText.Success }
+        { defaults | type_ = NUI.GradientText.Success }
         [ Element.text "Wonderful" ]
 
 Upstream's `color` and `gradient` props are aliases for the same value; here they

@@ -12,10 +12,12 @@ module NUI.Collapse exposing
 
 {-| Naive UI's `Collapse` and `CollapseItem`, rebuilt on elm-ui.
 
+    import NUI.Collapse exposing (defaults, item)
+
     NUI.Collapse.view theme
-        { NUI.Collapse.defaults | expandedNames = [ "1" ] }
-        [ { NUI.Collapse.item | name = "1", title = Just "First" }
-        , { NUI.Collapse.item | name = "2", title = Just "Second" }
+        { defaults | expandedNames = [ "1" ] }
+        [ { item | name = "1", title = Just "First" }
+        , { item | name = "2", title = Just "Second" }
         ]
 
 The element carries the `.n-collapse` / `.n-collapse-item` BEM classes and Naive

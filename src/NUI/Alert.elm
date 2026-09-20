@@ -2,12 +2,14 @@ module NUI.Alert exposing (Options, defaults, view)
 
 {-| Naive UI's `Alert`, rebuilt on elm-ui.
 
+    import NUI.Alert exposing (defaults)
+
     NUI.Alert.view theme
         NUI.Alert.defaults
         [ Element.text "Just as in the original component." ]
 
     NUI.Alert.view theme
-        { NUI.Alert.defaults
+        { defaults
             | kind = T.Success
             , title = Just "Success"
             , closable = True

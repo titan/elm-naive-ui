@@ -2,8 +2,10 @@ module NUI.DynamicTags exposing (Options, cssVarsFor, defaults, view)
 
 {-| Naive UI's `DynamicTags`, rebuilt on elm-ui.
 
+    import NUI.DynamicTags exposing (defaults)
+
     NUI.DynamicTags.view theme
-        { NUI.DynamicTags.defaults
+        { defaults
             | value = [ "hello", "world" ]
             , onUpdateValue = Just SetTags
             , onActivate = Just ShowInput

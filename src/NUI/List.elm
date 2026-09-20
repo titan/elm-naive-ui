@@ -9,10 +9,12 @@ module NUI.List exposing
 
 {-| Naive UI's `List` and `ListItem`, rebuilt on elm-ui.
 
+    import NUI.List exposing (item)
+
     NUI.List.view theme
         NUI.List.defaults
-        [ { NUI.List.item | content = [ Element.text "First" ] }
-        , { NUI.List.item
+        [ { item | content = [ Element.text "First" ] }
+        , { item
             | prefix = Just (Element.text "•")
             , content = [ Element.text "Second" ]
             , suffix = Just (Element.text "→")

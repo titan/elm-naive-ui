@@ -5,16 +5,22 @@
 the **same display effect** as the original, not an "inspired by" approximation.
 
 ```elm
+import NUI.Button exposing (defaults)
+
+
 view model =
     NUI.Css.layout []
         (Element.column [ Element.spacing 12 ]
             [ NUI.Css.element
             , NUI.Button.view theme
-                { NUI.Button.defaults | kind = NUI.Types.Primary }
+                { defaults | kind = NUI.Types.Primary }
                 [ Element.text "Primary" ]
             ]
         )
 ```
+
+(`defaults` is bound to a local first because Elm does not allow a qualified name in a
+record update — `{ NUI.Button.defaults | … }` is a parse error.)
 
 ## How it works
 
@@ -88,10 +94,16 @@ bridge, tests).
 | `NUI.FloatButton` | ✅ |
 | `NUI.GradientText`| ✅ |
 | `NUI.Input`       | ✅ |
+| `NUI.InputNumber` | ✅ |
 | `NUI.InputOtp`    | ✅ |
+| `NUI.Layout`      | ✅ |
+| `NUI.LayoutFooter`| ✅ |
+| `NUI.LayoutHeader`| ✅ |
+| `NUI.LayoutSider` | ✅ |
 | `NUI.List`        | ✅ |
 | `NUI.Marquee`     | ✅ |
 | `NUI.PageHeader`  | ✅ |
+| `NUI.Pagination`  | ✅ |
 | `NUI.Progress`    | ✅ |
 | `NUI.QrCode`      | ✅ |
 | `NUI.Radio`       | ✅ |

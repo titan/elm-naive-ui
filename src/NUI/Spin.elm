@@ -8,10 +8,12 @@ module NUI.Spin exposing
 
 {-| Naive UI's `Spin`, rebuilt on elm-ui.
 
+    import NUI.Spin exposing (defaults)
+
     NUI.Spin.view theme NUI.Spin.defaults []
 
     NUI.Spin.view theme
-        { NUI.Spin.defaults
+        { defaults
             | description = Just (Element.text "Loading")
         }
         []

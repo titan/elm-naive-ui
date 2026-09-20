@@ -13,10 +13,12 @@ module NUI.Timeline exposing
 
 {-| Naive UI's `Timeline` and `TimelineItem`, rebuilt on elm-ui.
 
+    import NUI.Timeline exposing (item)
+
     NUI.Timeline.view theme
         NUI.Timeline.defaults
-        [ { NUI.Timeline.item | time = Just "2018-04-03 20:46", content = [ Element.text "Created" ] }
-        , { NUI.Timeline.item
+        [ { item | time = Just "2018-04-03 20:46", content = [ Element.text "Created" ] }
+        , { item
             | type_ = NUI.Timeline.Success
             , title = Just "Deployed"
             , content = [ Element.text "Shipped to production." ]

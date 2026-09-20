@@ -8,10 +8,12 @@ module NUI.Rate exposing
 
 {-| Naive UI's `Rate`, rebuilt on elm-ui.
 
-    NUI.Rate.view theme { NUI.Rate.defaults | value = Just 4 }
+    import NUI.Rate exposing (defaults)
+
+    NUI.Rate.view theme { defaults | value = Just 4 }
 
     NUI.Rate.view theme
-        { NUI.Rate.defaults | allowHalf = True, value = Just 3.5 }
+        { defaults | allowHalf = True, value = Just 3.5 }
 
 The element carries the `.n-rate` BEM classes and Naive UI's `--n-*` custom
 properties, and `NUI.Css` ships Naive UI's exact CSS.

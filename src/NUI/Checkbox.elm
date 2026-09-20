@@ -6,11 +6,13 @@ module NUI.Checkbox exposing
 
 {-| Naive UI's `Checkbox`, rebuilt on elm-ui.
 
+    import NUI.Checkbox exposing (defaults)
+
     NUI.Checkbox.view theme NUI.Checkbox.defaults
         [ Element.text "Banana" ]
 
     NUI.Checkbox.view theme
-        { NUI.Checkbox.defaults
+        { defaults
             | checked = True
             , onCheck = Just Toggled
         }

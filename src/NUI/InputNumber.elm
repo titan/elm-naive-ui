@@ -31,8 +31,10 @@ clamp-to-`min`/`max`, `precision` formatting and add / minus buttons (real
 `NUI.Button`s, rendered in the input's suffix — or split around it for
 `Both` — with Naive UI's add / remove base-icon glyphs).
 
+    import NUI.InputNumber exposing (defaults)
+
     NUI.InputNumber.view theme
-        { NUI.InputNumber.defaults
+        { defaults
             | value = model.number
             , onChange = Just SetNumber
             , onInput = Just NumberInput
@@ -40,7 +42,7 @@ clamp-to-`min`/`max`, `precision` formatting and add / minus buttons (real
         []
 
     NUI.InputNumber.view theme
-        { NUI.InputNumber.defaults
+        { defaults
             | min = Just 0
             , max = Just 10
             , step = 0.01
@@ -49,8 +51,6 @@ clamp-to-`min`/`max`, `precision` formatting and add / minus buttons (real
             , buttonPlacement = NUI.InputNumber.Both
         }
         []
-
-(`defaults` must be bound to a local name first — see `NUI.Input`.)
 
 **Caller-owned runtime** (same contract as `NUI.Calendar`'s `now` / `panel`).
 Upstream keeps a `displayedValueRef` text buffer and derives everything from

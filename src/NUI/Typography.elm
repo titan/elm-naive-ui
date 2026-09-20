@@ -20,17 +20,21 @@ module NUI.Typography exposing
 
 {-| Naive UI's `Typography` component set, rebuilt on elm-ui.
 
+    import NUI.Typography exposing (defaults)
+
 Every element carries the same BEM classes and the same `--n-*` custom properties
 Naive UI emits, so with `NUI.Css` in scope it renders using Naive UI's own CSS.
 
-    NUI.Typography.h1 theme NUI.Typography.defaults
+    NUI.Typography.h1 theme
+        NUI.Typography.defaults
         [ Element.text "Wonderful" ]
 
     NUI.Typography.text theme
-        { NUI.Typography.defaults | kind = T.Primary, strong = True }
+        { defaults | kind = T.Primary, strong = True }
         [ Element.text "primary and strong" ]
 
-    NUI.Typography.ul theme NUI.Typography.defaults
+    NUI.Typography.ul theme
+        NUI.Typography.defaults
         [ NUI.Typography.li [ Element.text "First" ]
         , NUI.Typography.li [ Element.text "Second" ]
         ]

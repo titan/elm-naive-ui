@@ -7,8 +7,10 @@ module NUI.Marquee exposing
 
 {-| Naive UI's `Marquee`, rebuilt on elm-ui.
 
+    import NUI.Marquee exposing (defaults)
+
     NUI.Marquee.view theme
-        { NUI.Marquee.defaults | duration = 12 }
+        { defaults | duration = 12 }
         [ Element.text "Scrolling text" ]
 
 The element carries the `.n-marquee` BEM classes and the animation `--n-*`

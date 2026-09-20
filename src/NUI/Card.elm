@@ -10,13 +10,15 @@ module NUI.Card exposing
 
 {-| Naive UI's `Card`, rebuilt on elm-ui.
 
+    import NUI.Card exposing (defaults)
+
     NUI.Card.view theme NUI.Card.defaults
         [ Element.text "Card Content" ]
 
     -- with options (bind `defaults` first: Elm has no qualified record update)
     myCard : NUI.Card.Options msg
     myCard =
-        { NUI.Card.defaults
+        { defaults
             | title = Just (Element.text "Card")
             , headerExtra = Just (Element.text "#header-extra")
             , footer = Just (Element.text "#footer")

@@ -7,8 +7,10 @@ module NUI.AvatarGroup exposing
 
 {-| Naive UI's `AvatarGroup`, rebuilt on elm-ui.
 
+    import NUI.AvatarGroup exposing (defaults)
+
     NUI.AvatarGroup.view theme
-        { NUI.AvatarGroup.defaults | max = Just 3 }
+        { defaults | max = Just 3 }
         [ { src = "https://example.com/a.png" }
         , { src = "https://example.com/b.png" }
         , { src = "https://example.com/c.png" }

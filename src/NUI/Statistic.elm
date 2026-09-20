@@ -7,13 +7,15 @@ module NUI.Statistic exposing
 
 {-| Naive UI's `Statistic`, rebuilt on elm-ui.
 
+    import NUI.Statistic exposing (defaults)
+
     NUI.Statistic.view theme
-        { NUI.Statistic.defaults | label = Just "Active users", value = Just "128" }
+        { defaults | label = Just "Active users", value = Just "128" }
         []
 
     -- a custom value (default slot) instead of the `value` string
     NUI.Statistic.view theme
-        { NUI.Statistic.defaults
+        { defaults
             | label = Just "Growth"
             , prefix = Just (Element.text "$")
             , suffix = Just (Element.text "USD")

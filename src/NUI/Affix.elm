@@ -7,8 +7,10 @@ module NUI.Affix exposing
 
 {-| Naive UI's `Affix`, rebuilt on elm-ui.
 
+    import NUI.Affix exposing (defaults)
+
     NUI.Affix.view theme
-        { NUI.Affix.defaults | affixed = True, top = Just 12 }
+        { defaults | affixed = True, top = Just 12 }
         [ NUI.Button.view theme NUI.Button.defaults [ Element.text "Sticky" ] ]
 
 The element carries the `.n-affix` BEM classes, and `NUI.Css` ships Naive UI's

@@ -8,10 +8,12 @@ module NUI.Empty exposing
 
 {-| Naive UI's `Empty`, rebuilt on elm-ui.
 
+    import NUI.Empty exposing (defaults)
+
     NUI.Empty.view theme NUI.Empty.defaults []
 
     NUI.Empty.view theme
-        { NUI.Empty.defaults
+        { defaults
             | description = Just "Nothing here"
             , size = NUI.Empty.Huge
         }

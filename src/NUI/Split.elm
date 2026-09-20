@@ -9,8 +9,10 @@ module NUI.Split exposing
 
 {-| Naive UI's `Split`, rebuilt on elm-ui.
 
+    import NUI.Split exposing (defaults)
+
     NUI.Split.view theme
-        { NUI.Split.defaults
+        { defaults
             | size = NUI.Split.Ratio 0.4
             , pane1 = [ Element.text "Left" ]
             , pane2 = [ Element.text "Right" ]

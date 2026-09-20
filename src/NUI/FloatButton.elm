@@ -12,12 +12,14 @@ module NUI.FloatButton exposing
 
 {-| Naive UI's `FloatButton`, rebuilt on elm-ui.
 
+    import NUI.FloatButton exposing (defaults)
+
     NUI.FloatButton.view theme
-        { NUI.FloatButton.defaults | type_ = NUI.FloatButton.Primary }
+        { defaults | type_ = NUI.FloatButton.Primary }
         [ Element.text "+" ]
 
     NUI.FloatButton.view theme
-        { NUI.FloatButton.defaults | menuTrigger = Just NUI.FloatButton.Click }
+        { defaults | menuTrigger = Just NUI.FloatButton.Click }
         [ Element.text "+" ]
 
 The element carries the `.n-float-button` BEM classes and Naive UI's `--n-*`

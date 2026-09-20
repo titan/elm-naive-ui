@@ -13,8 +13,10 @@ module NUI.Pagination exposing
 
 {-| Naive UI's `Pagination`, rebuilt on elm-ui.
 
+    import NUI.Pagination exposing (defaults)
+
     NUI.Pagination.view theme
-        { NUI.Pagination.defaults
+        { defaults
             | itemCount = Just 153
             , currentPage = model.page
             , onUpdatePage = Just GotPage

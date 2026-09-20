@@ -6,12 +6,14 @@ module NUI.Ellipsis exposing
 
 {-| Naive UI's `Ellipsis`, rebuilt on elm-ui.
 
+    import NUI.Ellipsis exposing (defaults)
+
     NUI.Ellipsis.view theme
-        { NUI.Ellipsis.defaults | lineClamp = Just 2 }
+        { defaults | lineClamp = Just 2 }
         [ Element.text "Long text that will be clamped to two lines…" ]
 
     NUI.Ellipsis.view theme
-        { NUI.Ellipsis.defaults | expandOnClick = True, onToggle = Just Toggle }
+        { defaults | expandOnClick = True, onToggle = Just Toggle }
         [ Element.text "Click to expand or collapse" ]
 
 The element carries the `.n-ellipsis` BEM classes and, and `NUI.Css` ships Naive
