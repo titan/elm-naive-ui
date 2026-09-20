@@ -26,6 +26,12 @@ const ALLOW = new Set([
   'n-thing-header__extra', // emitted by Thing.tsx; no rule targets it
   'n-page-header__extra', // emitted by PageHeader.tsx; no rule targets it
   'n-split__resize-trigger-wrapper', // emitted by Split.tsx; only the inner trigger is styled
+  // Flex ships no base stylesheet rule (pure inline flex layout, like Space); only
+  // its RTL rule is extracted (`.n-flex--rtl`).
+  'n-flex',
+  // Grid has no stylesheet at all (pure inline `display:grid`); it renders a bare
+  // `.n-grid` class with no rule.
+  'n-grid',
   // upstream emits n-step--show-description on the step, but the CSS :not is on
   // .n-steps--show-description (Steps cssr) — a modifier mismatch, kept faithful
   'n-step--show-description',

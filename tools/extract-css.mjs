@@ -98,6 +98,19 @@ async function renderCssr(rel) {
   return `/* no render: ${rel} */`
 }
 
+// Rename a BEM block in one component's CSS. Some upstream cssr files register a
+// rule under the wrong block (e.g. Flex's rtl.cssr targets `space`); a per-entry
+// `rename: { from: to }` in the manifest corrects it explicitly. Only whole block
+// tokens are matched, so `n-space` -> `n-flex` also rewrites `n-space--rtl` and
+// `.n-space`, but never a longer identifier like `n-spacing`.
+function renameBlocks(css, rename) {
+  let out = css
+  for (const [from, to] of Object.entries(rename)) {
+    out = out.replace(new RegExp(`n-${from}(?![a-zA-Z0-9])`, 'g'), `n-${to}`)
+  }
+  return out
+}
+
 const parts = []
 const elmChunks = []
 for (const [name, cfg] of Object.entries(components)) {
@@ -107,6 +120,7 @@ for (const [name, cfg] of Object.entries(components)) {
   }
   let css = chunks.filter(Boolean).join('\n')
   if (!css.trim()) continue
+  if (cfg.rename) css = renameBlocks(css, cfg.rename)
   // `global` targets body/html and must not be scoped.
   const finalCss = name === 'global' ? css : scopeCss(css, SCOPE)
   console.log(`  ${name}  ${finalCss.length} bytes`)

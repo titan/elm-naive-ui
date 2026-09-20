@@ -228,5 +228,14 @@ export const components = {
       'layout/src/styles/layout-sider.cssr.ts'
     ],
     theme: 'layout/styles/light.ts'
+  },
+  flex: {
+    // Upstream `flex/src/styles/rtl.cssr.ts` registers its rule under the `space`
+    // block name (a copy-paste bug), while Flex's DOM emits `n-flex--rtl`. Left
+    // faithful, the rule would never apply. We rename the block to `flex` so the
+    // ported `rtl` flag works and matches the class upstream actually renders.
+    cssr: ['flex/src/styles/rtl.cssr.ts'],
+    theme: 'flex/styles/light.ts',
+    rename: { space: 'flex' }
   }
 }

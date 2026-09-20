@@ -4124,6 +4124,11 @@ transition: none!important;}.nui-root.nui-root .n-pagination .n-pagination-quick
     top: 0;
     bottom: 0;}
 
+/* ===== naive-ui: flex ===== */
+.nui-root.nui-root .n-flex.n-flex--rtl {
+
+    direction: rtl;}
+
 /* ===== elm-ui bridge =====
  *
  * Components are built from elm-ui elements, and elm-ui styles its own helper classes
