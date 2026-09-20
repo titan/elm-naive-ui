@@ -1480,6 +1480,183 @@ dTrue(
   fbPercent ? fbPercent.getAttribute('style') : 'missing'
 )
 
+// InputOtp -------------------------------------------------------------------
+const otp = doc.querySelector('#live-input-otp .n-input-otp')
+dTrue(
+  'DOM: InputOtp renders .n-input-otp',
+  !!otp && otp.classList.contains('n-input-otp'),
+  otp ? otp.getAttribute('class') : 'missing'
+)
+const otpStyle = otp ? otp.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: InputOtp inline --n-gap:8px (Medium default)',
+  otpStyle.includes('--n-gap:8px'),
+  otpStyle
+)
+dTrue(
+  'DOM: InputOtp inline --n-input-width:30px (Medium default)',
+  otpStyle.includes('--n-input-width:30px'),
+  otpStyle
+)
+dEq(
+  'DOM: InputOtp length 4 renders 4 .n-input children',
+  4,
+  doc.querySelectorAll('#live-input-otp .n-input-otp > .n-input').length
+)
+dEq(
+  'DOM: InputOtp slot 1 renders the first value',
+  '1',
+  (() => {
+    const i = doc.querySelector('#live-input-otp .n-input__input-el')
+    return i ? i.value : null
+  })()
+)
+dTrue(
+  'DOM: InputOtp default inner input is type=text',
+  (() => {
+    const i = doc.querySelector('#live-input-otp .n-input__input-el')
+    return !!i && i.getAttribute('type') === 'text'
+  })(),
+  'expected type=text'
+)
+const otpRtl = doc.querySelector('#live-input-otp-rtl-block .n-input-otp')
+dTrue(
+  'DOM: InputOtp rtl adds .n-input-otp--rtl',
+  !!otpRtl && otpRtl.classList.contains('n-input-otp--rtl'),
+  otpRtl ? otpRtl.getAttribute('class') : 'missing'
+)
+dTrue(
+  'DOM: InputOtp block adds .n-input-otp--block',
+  !!otpRtl && otpRtl.classList.contains('n-input-otp--block'),
+  otpRtl ? otpRtl.getAttribute('class') : 'missing'
+)
+const otpMaskEl = doc.querySelector('#live-input-otp-mask .n-input__input-el')
+dTrue(
+  'DOM: InputOtp mask renders the inner input as type=password',
+  !!otp && !!otpMaskEl && otpMaskEl.getAttribute('type') === 'password',
+  otpMaskEl ? otpMaskEl.getAttribute('type') : 'missing'
+)
+
+// DynamicTags ----------------------------------------------------------------
+const dt = doc.querySelector('#live-dynamic-tags .n-dynamic-tags')
+dTrue(
+  'DOM: DynamicTags root renders .n-dynamic-tags.n-space',
+  !!dt && dt.classList.contains('n-dynamic-tags') && dt.classList.contains('n-space'),
+  dt ? dt.getAttribute('class') : 'missing'
+)
+const dtStyle = dt ? dt.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: DynamicTags inline --n-input-width:64px',
+  /--n-input-width:\s*64px/.test(dtStyle),
+  dtStyle
+)
+dEq(
+  'DOM: DynamicTags renders one .n-tag per value',
+  2,
+  doc.querySelectorAll('#live-dynamic-tags .n-tag').length
+)
+dEq(
+  'DOM: DynamicTags showInput=false renders the add trigger (.n-button)',
+  1,
+  doc.querySelectorAll('#live-dynamic-tags .n-button').length
+)
+dEq(
+  'DOM: DynamicTags showInput=false renders no .n-input',
+  0,
+  doc.querySelectorAll('#live-dynamic-tags .n-input').length
+)
+dEq(
+  'DOM: DynamicTags showInput=true renders one .n-input',
+  1,
+  doc.querySelectorAll('#live-dynamic-tags-input .n-input').length
+)
+dEq(
+  'DOM: DynamicTags showInput=true renders no add trigger',
+  0,
+  doc.querySelectorAll('#live-dynamic-tags-input .n-button').length
+)
+dEq(
+  'DOM: DynamicTags showInput=true keeps the tags',
+  1,
+  doc.querySelectorAll('#live-dynamic-tags-input .n-tag').length
+)
+
+// Calendar -------------------------------------------------------------------
+const cal = doc.querySelector('#live-calendar .n-calendar')
+dTrue(
+  'DOM: Calendar renders .n-calendar',
+  !!cal && cal.classList.contains('n-calendar'),
+  cal ? cal.getAttribute('class') : 'missing'
+)
+dEq(
+  'DOM: Calendar header title = "July 2026"',
+  'July 2026',
+  textAt('#live-calendar .n-calendar-header__title')
+)
+dTrue(
+  'DOM: Calendar renders .n-calendar-header__extra',
+  !!doc.querySelector('#live-calendar .n-calendar-header__extra'),
+  'ok'
+)
+const calPrev = doc.querySelector('#live-calendar .n-calendar-prev-btn')
+const calPrevIconSvg = calPrev ? calPrev.querySelector('svg') : null
+dTrue(
+  'DOM: Calendar prev button is .n-base-icon .n-calendar-prev-btn with the chevron svg',
+  !!calPrev &&
+    calPrev.classList.contains('n-base-icon') &&
+    !!calPrevIconSvg &&
+    calPrevIconSvg.getAttribute('viewBox') === '0 0 16 16',
+  calPrev ? calPrev.getAttribute('class') : 'missing'
+)
+const calPrevSvg = doc.querySelector('#live-calendar .n-calendar-prev-btn svg')
+dEq(
+  'DOM: Calendar prev button chevron svg viewBox 0 0 16 16',
+  '0 0 16 16',
+  calPrevSvg ? calPrevSvg.getAttribute('viewBox') : null
+)
+const calNextSvg = doc.querySelector('#live-calendar .n-calendar-next-btn svg')
+dEq(
+  'DOM: Calendar next button chevron svg viewBox 0 0 16 16',
+  '0 0 16 16',
+  calNextSvg ? calNextSvg.getAttribute('viewBox') : null
+)
+dTrue(
+  'DOM: Calendar renders .n-calendar-dates',
+  !!doc.querySelector('#live-calendar .n-calendar-dates'),
+  'ok'
+)
+dEq(
+  'DOM: Calendar July 2026 renders 35 cells (5 weeks)',
+  35,
+  doc.querySelectorAll('#live-calendar .n-calendar-cell').length
+)
+dEq(
+  'DOM: Calendar August 2026 renders 42 cells (6 weeks)',
+  42,
+  doc.querySelectorAll('#live-calendar-6wk .n-calendar-cell').length
+)
+const calSelected = doc.querySelector('#live-calendar .n-calendar-cell--selected')
+dTrue(
+  'DOM: Calendar selected cell is 2026-07-20',
+  !!calSelected &&
+    !!calSelected.querySelector('.n-calendar-date__date') &&
+    calSelected.querySelector('.n-calendar-date__date').textContent === '20',
+  calSelected ? calSelected.getAttribute('class') : 'missing'
+)
+const calDisabled = doc.querySelector('#live-calendar .n-calendar-cell--disabled')
+dTrue(
+  'DOM: Calendar disabled cell carries --disabled AND --not-allowed',
+  !!calDisabled &&
+    calDisabled.classList.contains('n-calendar-cell--disabled') &&
+    calDisabled.classList.contains('n-calendar-cell--not-allowed'),
+  calDisabled ? calDisabled.getAttribute('class') : 'missing'
+)
+dEq(
+  'DOM: Calendar disabled cell is 2026-07-10',
+  '10',
+  calDisabled ? (calDisabled.querySelector('.n-calendar-date__date') || {}).textContent : null
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

@@ -26,16 +26,19 @@ import NUI.Badge as Badge
 import NUI.Breadcrumb as Breadcrumb
 import NUI.Button as Button
 import NUI.ButtonGroup as ButtonGroup
+import NUI.Calendar as Calendar
 import NUI.Card as Card
 import NUI.Checkbox as Checkbox
 import NUI.Collapse as Collapse
 import NUI.Countdown as Countdown
 import NUI.Css as Css
+import NUI.DynamicTags as DynamicTags
 import NUI.Ellipsis as Ellipsis
 import NUI.Empty as Empty
 import NUI.FloatButton as FloatButton
 import NUI.GradientText as GradientText
 import NUI.Input as Input
+import NUI.InputOtp as InputOtp
 import NUI.Internal as Internal
 import NUI.List as NList
 import NUI.Marquee as Marquee
@@ -55,7 +58,10 @@ import NUI.Steps as Steps
 import NUI.Tag as Tag
 import NUI.Theme as Theme
 import NUI.Theme.Button as ButtonTheme
+import NUI.Theme.Calendar as CalendarTheme
 import NUI.Theme.Color as Color
+import NUI.Theme.DynamicTags as DynamicTagsTheme
+import NUI.Theme.InputOtp as InputOtpTheme
 import NUI.Theme.Tag as TagTheme
 import NUI.Thing as Thing
 import NUI.Timeline as Timeline
@@ -973,6 +979,74 @@ floatButtonPercentOpts =
     { d | width = FloatButton.Custom "50%" }
 
 
+inputOtpLiveOpts : InputOtp.Options msg
+inputOtpLiveOpts =
+    let
+        d =
+            InputOtp.defaults
+    in
+    { d | length = 4, value = [ "1", "2", "3", "4" ] }
+
+
+inputOtpRtlBlockOpts : InputOtp.Options msg
+inputOtpRtlBlockOpts =
+    let
+        d =
+            InputOtp.defaults
+    in
+    { d | length = 4, rtl = True, block = True }
+
+
+inputOtpMaskOpts : InputOtp.Options msg
+inputOtpMaskOpts =
+    let
+        d =
+            InputOtp.defaults
+    in
+    { d | length = 4, mask = True }
+
+
+dynamicTagsLiveOpts : DynamicTags.Options msg
+dynamicTagsLiveOpts =
+    let
+        d =
+            DynamicTags.defaults
+    in
+    { d | value = [ "hello", "world" ] }
+
+
+dynamicTagsInputOpts : DynamicTags.Options msg
+dynamicTagsInputOpts =
+    let
+        d =
+            DynamicTags.defaults
+    in
+    { d | value = [ "hello" ], showInput = True }
+
+
+calendarLiveOpts : Calendar.Options msg
+calendarLiveOpts =
+    let
+        d =
+            Calendar.defaults
+    in
+    { d
+        | panel = { year = 2026, month = 7 }
+        , now = { year = 2026, month = 7, day = 15 }
+        , value = Just { year = 2026, month = 7, day = 20 }
+        , isDateDisabled = Just (\date -> date == { year = 2026, month = 7, day = 10 })
+    }
+
+
+calendarSixWeekOpts : Calendar.Options msg
+calendarSixWeekOpts =
+    let
+        d =
+            Calendar.defaults
+    in
+    { d | panel = { year = 2026, month = 8 }, now = { year = 2026, month = 8, day = 1 } }
+
+
 
 -- QRCODEGEN PROBES -------------------------------------------------------------
 
@@ -1307,6 +1381,39 @@ checks =
 
         floatButtonPrimaryVars =
             FloatButton.cssVarsFor light { floatButtonD | type_ = FloatButton.Primary }
+
+        iotD =
+            InputOtp.defaults
+
+        iotVars =
+            InputOtp.cssVarsFor light iotD
+
+        iotSmallVars =
+            InputOtp.cssVarsFor light { iotD | size = InputOtp.Small }
+
+        iotLargeVars =
+            InputOtp.cssVarsFor light { iotD | size = InputOtp.Large }
+
+        iotPxVars =
+            InputOtp.cssVarsFor light { iotD | gap = Just (InputOtp.Px 16) }
+
+        iotCustomVars =
+            InputOtp.cssVarsFor light { iotD | gap = Just (InputOtp.Custom "1rem") }
+
+        iotTheme =
+            InputOtpTheme.vars light
+
+        dtVars =
+            DynamicTags.cssVarsFor light
+
+        dtTheme =
+            DynamicTagsTheme.vars light
+
+        calVars =
+            Calendar.cssVarsFor light
+
+        calTheme =
+            CalendarTheme.vars light
     in
     [ -- 1. NUI.Theme -------------------------------------------------------------
       eq "Theme.default == Theme.light" True (Theme.default == Theme.light)
@@ -1854,6 +1961,78 @@ checks =
     , eq "float-button --n-box-shadow" (Just "0 2px 8px 0px rgba(0, 0, 0, .16)") (lookup "--n-box-shadow" floatButtonDefaultVars)
     , eq "float-button --n-box-shadow-hover" (Just "0 2px 12px 0px rgba(0, 0, 0, .24)") (lookup "--n-box-shadow-hover" floatButtonDefaultVars)
     , eq "float-button --n-box-shadow-pressed" (Just "0 2px 12px 0px rgba(0, 0, 0, .24)") (lookup "--n-box-shadow-pressed" floatButtonDefaultVars)
+
+    -- 30. NUI.InputOtp cssVarsFor -----------------------------------------------
+    , eq "input-otp cssVarsFor has 2 vars" 2 (List.length iotVars)
+    , eq "input-otp cssVarsFor exact --n-* names" [ "--n-gap", "--n-input-width" ] (varKeys iotVars)
+    , eq "input-otp --n-gap default Medium = theme gapMedium" (Just iotTheme.gapMedium) (lookup "--n-gap" iotVars)
+    , eq "input-otp --n-gap default Small = theme gapSmall" (Just iotTheme.gapSmall) (lookup "--n-gap" iotSmallVars)
+    , eq "input-otp --n-gap default Large = theme gapLarge" (Just iotTheme.gapLarge) (lookup "--n-gap" iotLargeVars)
+    , eq "input-otp --n-gap Px 16 -> 16px" (Just "16px") (lookup "--n-gap" iotPxVars)
+    , eq "input-otp --n-gap Custom \"1rem\" passes through" (Just "1rem") (lookup "--n-gap" iotCustomVars)
+    , eq "input-otp --n-input-width Small = theme inputWidthSmall" (Just iotTheme.inputWidthSmall) (lookup "--n-input-width" iotSmallVars)
+    , eq "input-otp --n-input-width Medium = theme inputWidthMedium" (Just iotTheme.inputWidthMedium) (lookup "--n-input-width" iotVars)
+    , eq "input-otp --n-input-width Large = theme inputWidthLarge" (Just iotTheme.inputWidthLarge) (lookup "--n-input-width" iotLargeVars)
+    , eq "input-otp --n-input-width Small literal 24px" (Just "24px") (lookup "--n-input-width" iotSmallVars)
+    , eq "input-otp --n-input-width Medium literal 30px" (Just "30px") (lookup "--n-input-width" iotVars)
+    , eq "input-otp --n-input-width Large literal 36px" (Just "36px") (lookup "--n-input-width" iotLargeVars)
+    , eq "input-otp --n-input-width unaffected by gap override" (Just "30px") (lookup "--n-input-width" iotPxVars)
+
+    -- 31. NUI.DynamicTags cssVarsFor --------------------------------------------
+    , eq "dynamic-tags cssVarsFor has 1 var" 1 (List.length dtVars)
+    , eq "dynamic-tags cssVarsFor exact --n-* names" [ "--n-input-width" ] (varKeys dtVars)
+    , eq "dynamic-tags --n-input-width = theme inputWidth" (Just dtTheme.inputWidth) (lookup "--n-input-width" dtVars)
+    , eq "dynamic-tags --n-input-width literal 64px" (Just "64px") (lookup "--n-input-width" dtVars)
+
+    -- 32. NUI.Calendar cssVarsFor -----------------------------------------------
+    , eq "calendar cssVarsFor has 21 vars" 21 (List.length calVars)
+    , eq "calendar cssVarsFor exact --n-* names (order)"
+        [ "--n-bezier"
+        , "--n-border-color"
+        , "--n-border-color-modal"
+        , "--n-border-color-popover"
+        , "--n-border-radius"
+        , "--n-text-color"
+        , "--n-title-font-weight"
+        , "--n-title-font-size"
+        , "--n-title-text-color"
+        , "--n-day-text-color"
+        , "--n-font-size"
+        , "--n-line-height"
+        , "--n-date-color-current"
+        , "--n-date-text-color-current"
+        , "--n-cell-color"
+        , "--n-cell-color-modal"
+        , "--n-cell-color-popover"
+        , "--n-cell-color-hover"
+        , "--n-cell-color-hover-modal"
+        , "--n-cell-color-hover-popover"
+        , "--n-bar-color"
+        ]
+        (varKeys calVars)
+    , eq "calendar --n-bezier = common.cubicBezierEaseInOut" (Just common.cubicBezierEaseInOut) (lookup "--n-bezier" calVars)
+    , eq "calendar --n-border-color = theme borderColor" (Just calTheme.borderColor) (lookup "--n-border-color" calVars)
+    , eq "calendar --n-border-color literal rgba(239, 239, 245, 1)" (Just "rgba(239, 239, 245, 1)") (lookup "--n-border-color" calVars)
+    , eq "calendar --n-border-color-modal = theme borderColorModal" (Just calTheme.borderColorModal) (lookup "--n-border-color-modal" calVars)
+    , eq "calendar --n-border-color-popover = theme borderColorPopover" (Just calTheme.borderColorPopover) (lookup "--n-border-color-popover" calVars)
+    , eq "calendar --n-border-radius = common.borderRadius" (Just common.borderRadius) (lookup "--n-border-radius" calVars)
+    , eq "calendar --n-text-color = common.textColor2" (Just common.textColor2) (lookup "--n-text-color" calVars)
+    , eq "calendar --n-title-font-weight = common.fontWeightStrong" (Just common.fontWeightStrong) (lookup "--n-title-font-weight" calVars)
+    , eq "calendar --n-title-font-size = theme titleFontSize" (Just calTheme.titleFontSize) (lookup "--n-title-font-size" calVars)
+    , eq "calendar --n-title-font-size literal 22px" (Just "22px") (lookup "--n-title-font-size" calVars)
+    , eq "calendar --n-title-text-color = common.textColor1" (Just common.textColor1) (lookup "--n-title-text-color" calVars)
+    , eq "calendar --n-day-text-color = common.textColorDisabled" (Just common.textColorDisabled) (lookup "--n-day-text-color" calVars)
+    , eq "calendar --n-font-size = common.fontSize" (Just common.fontSize) (lookup "--n-font-size" calVars)
+    , eq "calendar --n-line-height = common.lineHeight" (Just common.lineHeight) (lookup "--n-line-height" calVars)
+    , eq "calendar --n-date-color-current = common.primaryColor" (Just common.primaryColor) (lookup "--n-date-color-current" calVars)
+    , eq "calendar --n-date-text-color-current = common.baseColor" (Just common.baseColor) (lookup "--n-date-text-color-current" calVars)
+    , eq "calendar --n-cell-color = common.cardColor" (Just common.cardColor) (lookup "--n-cell-color" calVars)
+    , eq "calendar --n-cell-color-modal = common.modalColor" (Just common.modalColor) (lookup "--n-cell-color-modal" calVars)
+    , eq "calendar --n-cell-color-popover = common.popoverColor" (Just common.popoverColor) (lookup "--n-cell-color-popover" calVars)
+    , eq "calendar --n-cell-color-hover = theme cellColorHover" (Just calTheme.cellColorHover) (lookup "--n-cell-color-hover" calVars)
+    , eq "calendar --n-cell-color-hover-modal = theme cellColorHoverModal" (Just calTheme.cellColorHoverModal) (lookup "--n-cell-color-hover-modal" calVars)
+    , eq "calendar --n-cell-color-hover-popover = theme cellColorHoverPopover" (Just calTheme.cellColorHoverPopover) (lookup "--n-cell-color-hover-popover" calVars)
+    , eq "calendar --n-bar-color = common.primaryColor" (Just common.primaryColor) (lookup "--n-bar-color" calVars)
     ]
 
 
@@ -2108,6 +2287,20 @@ liveNodes =
                     (FloatButton.view Theme.default floatButtonWidthOpts [ Element.text "+" ])
                 , Element.el [ Element.htmlAttribute (HA.id "live-float-button-percent") ]
                     (FloatButton.view Theme.default floatButtonPercentOpts [ Element.text "+" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-input-otp") ]
+                    (InputOtp.view Theme.default inputOtpLiveOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-input-otp-rtl-block") ]
+                    (InputOtp.view Theme.default inputOtpRtlBlockOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-input-otp-mask") ]
+                    (InputOtp.view Theme.default inputOtpMaskOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-dynamic-tags") ]
+                    (DynamicTags.view Theme.default dynamicTagsLiveOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-dynamic-tags-input") ]
+                    (DynamicTags.view Theme.default dynamicTagsInputOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-calendar") ]
+                    (Calendar.view Theme.default calendarLiveOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-calendar-6wk") ]
+                    (Calendar.view Theme.default calendarSixWeekOpts)
                 ]
             )
         ]
