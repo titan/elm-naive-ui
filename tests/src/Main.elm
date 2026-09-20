@@ -40,6 +40,7 @@ import NUI.FloatButton as FloatButton
 import NUI.FloatButtonGroup as FloatButtonGroup
 import NUI.GradientText as GradientText
 import NUI.Grid as Grid
+import NUI.Heatmap as Heatmap
 import NUI.Highlight as Highlight
 import NUI.Icon as Icon
 import NUI.IconWrapper as IconWrapper
@@ -75,6 +76,7 @@ import NUI.Theme.Calendar as CalendarTheme
 import NUI.Theme.Color as Color
 import NUI.Theme.DynamicTags as DynamicTagsTheme
 import NUI.Theme.FloatButtonGroup as FloatButtonGroupTheme
+import NUI.Theme.Heatmap as HeatmapTheme
 import NUI.Theme.Icon as IconTheme
 import NUI.Theme.IconWrapper as IconWrapperTheme
 import NUI.Theme.InputOtp as InputOtpTheme
@@ -83,6 +85,7 @@ import NUI.Theme.Tag as TagTheme
 import NUI.Thing as Thing
 import NUI.Timeline as Timeline
 import NUI.Types as T
+import Time
 
 
 main : Program () () Msg
@@ -282,6 +285,71 @@ fastForwardOptions info =
 rangeOptions : Int -> Int -> List { label : String, value : Int }
 rangeOptions from to =
     List.range from to |> List.map (\i -> { label = String.fromInt i, value = i })
+
+
+{-| A heatmap data item at UTC midnight of `day` (days since 1970-01-01).
+-}
+heatmapItem : Int -> Maybe Float -> Heatmap.HeatmapDataItem
+heatmapItem day value =
+    { timestamp = Time.millisToPosix (day * 86400000)
+    , value = value
+    }
+
+
+{-| A bare `DayRect` whose only meaningful fields are `timestamp`/`value` —
+enough for `dataMonthLabels` (which reads nothing else).
+-}
+heatmapDayRect : Int -> Maybe Float -> Heatmap.DayRect
+heatmapDayRect day value =
+    { timestamp = Time.millisToPosix (day * 86400000)
+    , value = value
+    , color = ""
+    , dayOfWeek = 0
+    , rowIndex = 0
+    , colIndex = 0
+    }
+
+
+heatmapValues : List Heatmap.HeatmapDataItem -> List (Maybe Float)
+heatmapValues items =
+    List.map .value items
+
+
+{-| Mirror `view`'s non-loading matrix path: create a `DayRect` per item against
+the first item as the grid start, then place them in a sparse 7-row matrix.
+-}
+heatmapMatrixOf :
+    Time.Zone
+    -> Int
+    -> List String
+    -> Float
+    -> List Heatmap.HeatmapDataItem
+    -> List (List (Maybe Heatmap.DayRect))
+heatmapMatrixOf zone weekStartsOn colors maxValue items =
+    case items of
+        [] ->
+            []
+
+        first :: _ ->
+            Heatmap.createSparseMatrix 7
+                (List.map
+                    (\item -> Heatmap.createDayRect zone item first.timestamp weekStartsOn colors maxValue)
+                    items
+                )
+                .rowIndex
+                .colIndex
+
+
+{-| The `.tag` of each non-`Nothing` cell of a `createSparseMatrix` result.
+-}
+sparseTags : List (List (Maybe { a | tag : Int })) -> List (List (Maybe Int))
+sparseTags =
+    List.map (List.map (Maybe.map .tag))
+
+
+listAt : Int -> List a -> Maybe a
+listAt index list =
+    List.drop index list |> List.head
 
 
 
@@ -1241,6 +1309,84 @@ floatButtonGroupSquareOpts =
     }
 
 
+
+-- Heatmap ---------------------------------------------------------------------
+
+
+heatmapD : Heatmap.Options msg
+heatmapD =
+    Heatmap.defaults
+
+
+{-| The examples page's deterministic demo data: 70 consecutive UTC midnights
+starting 2024-01-01, `Just 0` every fifth day and `modBy 11 (i * 7 + 3)`
+otherwise (max 10).
+-}
+heatmapSample : List Heatmap.HeatmapDataItem
+heatmapSample =
+    List.indexedMap
+        (\i _ ->
+            { timestamp = Time.millisToPosix (1704067200000 + i * 86400000)
+            , value =
+                if modBy 5 i == 0 then
+                    Just 0
+
+                else
+                    Just (toFloat (modBy 11 (i * 7 + 3)))
+            }
+        )
+        (List.repeat 70 ())
+
+
+{-| `Date.now()` stand-in (2024-03-10T16:00:00Z) — only feeds the loading
+matrix's dead timestamps and (through it) the derived month labels.
+-}
+heatmapNow : Time.Posix
+heatmapNow =
+    Time.millisToPosix 1710086400000
+
+
+heatmapLiveOpts : Heatmap.Options msg
+heatmapLiveOpts =
+    { heatmapD | data = heatmapSample, now = heatmapNow }
+
+
+heatmapLoadingOpts : Heatmap.Options msg
+heatmapLoadingOpts =
+    { heatmapD | loading = True, loadingData = Just [], now = heatmapNow }
+
+
+heatmapSmallOpts : Heatmap.Options msg
+heatmapSmallOpts =
+    { heatmapD
+        | data = heatmapSample
+        , size = Heatmap.Small
+        , activeColors = Just [ "#e0e7ff", "#a5b4fc", "#6366f1", "#4338ca", "#312e81" ]
+        , fillCalendarLeading = True
+        , now = heatmapNow
+    }
+
+
+{-| Starts mid-week (Wed 2024-01-03) so `fillCalendarLeading` visibly pads the
+week's leading days (Mon/Tue) with value-0 rects instead of empty cells.
+-}
+heatmapLeadingData : List Heatmap.HeatmapDataItem
+heatmapLeadingData =
+    [ { timestamp = Time.millisToPosix (19725 * 86400000), value = Just 5 }
+    , { timestamp = Time.millisToPosix (19731 * 86400000), value = Just 10 }
+    ]
+
+
+heatmapLeadingOpts : Heatmap.Options msg
+heatmapLeadingOpts =
+    { heatmapD | data = heatmapLeadingData, fillCalendarLeading = True, now = heatmapNow }
+
+
+heatmapNoFillOpts : Heatmap.Options msg
+heatmapNoFillOpts =
+    { heatmapD | data = heatmapLeadingData, fillCalendarLeading = False, now = heatmapNow }
+
+
 inputOtpLiveOpts : InputOtp.Options msg
 inputOtpLiveOpts =
     let
@@ -2173,6 +2319,105 @@ checks =
 
         vIconWrapperLight =
             IconWrapperTheme.vars light
+
+        heatmapColors4 =
+            [ "#a", "#b", "#c", "#d" ]
+
+        heatmapLoadNow =
+            Time.millisToPosix 1710086400000
+
+        heatmapData =
+            [ heatmapItem 19723 (Just 5), heatmapItem 19729 (Just 3) ]
+
+        heatmapNormUtc =
+            Heatmap.completeDataGaps Time.utc heatmapData 0 False
+
+        heatmapNormPrev =
+            Heatmap.completeDataGaps (Time.customZone -300 []) heatmapData 0 False
+
+        heatmapNormFill =
+            Heatmap.completeDataGaps Time.utc heatmapData 0 True
+
+        heatmapNormDup =
+            Heatmap.completeDataGaps Time.utc [ heatmapItem 19723 (Just 1), heatmapItem 19723 (Just 2) ] 0 False
+
+        heatmap42Matrix =
+            heatmapMatrixOf Time.utc
+                1
+                heatmapColors4
+                1
+                (Heatmap.completeDataGaps Time.utc
+                    (List.map (\i -> heatmapItem (19723 + i) (Just 1)) (List.range 0 41))
+                    1
+                    False
+                )
+
+        heatmapMonthRow =
+            [ heatmapDayRect 19723 (Just 0)
+            , heatmapDayRect 19730 (Just 0)
+            , heatmapDayRect 19754 (Just 0)
+            , heatmapDayRect 19758 (Just 0)
+            , heatmapDayRect 19762 (Just 0)
+            , heatmapDayRect 19783 (Just 0)
+            , heatmapDayRect 19786 (Just 0)
+            , heatmapDayRect 19790 (Just 0)
+            ]
+
+        heatmapHoleMatrix =
+            [ [ Nothing, Nothing, Nothing, Nothing ]
+            , [ Just (heatmapDayRect 19723 (Just 0))
+              , Just (heatmapDayRect 19730 (Just 0))
+              , Just (heatmapDayRect 19737 (Just 0))
+              , Just (heatmapDayRect 19754 (Just 0))
+              ]
+            ]
+
+        heatmapSparse =
+            Heatmap.createSparseMatrix 7
+                [ { row = 0, col = 0, tag = 1 }
+                , { row = 0, col = 2, tag = 2 }
+                , { row = 3, col = 1, tag = 3 }
+                ]
+                .row
+                .col
+                |> sparseTags
+
+        heatmapSparseDup =
+            Heatmap.createSparseMatrix 7
+                [ { row = 0, col = 1, tag = 1 }
+                , { row = 0, col = 1, tag = 2 }
+                ]
+                .row
+                .col
+                |> sparseTags
+
+        heatmapLoading =
+            Heatmap.createLoadingMatrix heatmapLoadNow 1
+
+        heatmapRectFeb =
+            Heatmap.createDayRect Time.utc
+                (heatmapItem 19758 (Just 6))
+                (Time.millisToPosix (19751 * 86400000))
+                0
+                heatmapColors4
+                10
+
+        heatmapRectWed =
+            Heatmap.createDayRect Time.utc
+                (heatmapItem 19753 (Just 0))
+                (Time.millisToPosix (19751 * 86400000))
+                0
+                heatmapColors4
+                10
+
+        heatmapVarsSmall =
+            Heatmap.cssVarsFor light { heatmapD | size = Heatmap.Small }
+
+        heatmapVarsLarge =
+            Heatmap.cssVarsFor light { heatmapD | size = Heatmap.Large }
+
+        heatmapVarsGap =
+            Heatmap.cssVarsFor light { heatmapD | xGap = Just 5, yGap = Just 8 }
     in
     [ -- 1. NUI.Theme -------------------------------------------------------------
       eq "Theme.default == Theme.light" True (Theme.default == Theme.light)
@@ -3492,6 +3737,217 @@ checks =
     , eq "float-button-group defaults right = Nothing" Nothing fbGroupD.right
     , eq "float-button-group defaults top = Nothing" Nothing fbGroupD.top
     , eq "float-button-group defaults bottom = Nothing" Nothing fbGroupD.bottom
+
+    -- 54. NUI.Heatmap pure core --------------------------------------------------
+    , eq "heatmap calcColorByValue maxValue 0 -> colors[0]"
+        "#a"
+        (Heatmap.calcColorByValue heatmapColors4 (Just 5) 0)
+    , eq "heatmap calcColorByValue Nothing -> colors[0]"
+        "#a"
+        (Heatmap.calcColorByValue heatmapColors4 Nothing 10)
+    , eq "heatmap calcColorByValue value 0 -> colors[0]"
+        "#a"
+        (Heatmap.calcColorByValue heatmapColors4 (Just 0) 10)
+    , eq "heatmap calcColorByValue value < 0 -> colors[0]"
+        "#a"
+        (Heatmap.calcColorByValue heatmapColors4 (Just -3) 10)
+    , eq "heatmap calcColorByValue ceil buckets 6/10 over 4 colours -> index 2"
+        "#c"
+        (Heatmap.calcColorByValue heatmapColors4 (Just 6) 10)
+    , eq "heatmap calcColorByValue ceil buckets 3/10 over 4 colours -> index 1 (floor -> 0)"
+        "#b"
+        (Heatmap.calcColorByValue heatmapColors4 (Just 3) 10)
+    , eq "heatmap calcColorByValue exact maxValue -> last colour"
+        "#d"
+        (Heatmap.calcColorByValue heatmapColors4 (Just 10) 10)
+    , eq "heatmap calcColorByValue value > maxValue clamps to last colour"
+        "#d"
+        (Heatmap.calcColorByValue heatmapColors4 (Just 99) 10)
+    , eq "heatmap calcColorByValue single-colour list -> that colour"
+        "#only"
+        (Heatmap.calcColorByValue [ "#only" ] (Just 5) 10)
+    , eq "heatmap calcColorByValue empty list -> \"\" (upstream undefined)"
+        ""
+        (Heatmap.calcColorByValue [] (Just 5) 10)
+    , eq "heatmap completeDataGaps [] -> []"
+        []
+        (Heatmap.completeDataGaps Time.utc [] 0 False)
+    , eq "heatmap completeDataGaps value list (utc: week padding -> Nothing)"
+        [ Nothing, Just 5, Just 0, Just 0, Just 0, Just 0, Just 0, Just 3, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing ]
+        (heatmapValues heatmapNormUtc)
+    , eq "heatmap completeDataGaps span length (utc) = 14"
+        14
+        (List.length heatmapNormUtc)
+    , eq "heatmap completeDataGaps first timestamp = week-start midnight (day-key alignment)"
+        (Time.millisToPosix (19722 * 86400000))
+        (List.head heatmapNormUtc |> Maybe.map .timestamp |> Maybe.withDefault (Time.millisToPosix -1))
+    , eq "heatmap completeDataGaps unsorted input -> same span as sorted"
+        (heatmapValues heatmapNormUtc)
+        (heatmapValues (Heatmap.completeDataGaps Time.utc (List.reverse heatmapData) 0 False))
+    , eq "heatmap completeDataGaps duplicate timestamps last-wins (same day -> no 0-fill)"
+        [ Nothing, Just 2, Nothing, Nothing, Nothing, Nothing, Nothing ]
+        (heatmapValues heatmapNormDup)
+    , eq "heatmap completeDataGaps fillCalendarLeading pads the week start with value 0"
+        (Just 0)
+        (List.head (heatmapValues heatmapNormFill) |> Maybe.withDefault Nothing)
+    , eq "heatmap completeDataGaps fillCalendarLeading leaves the trailing week as Nothing"
+        (List.repeat 6 Nothing)
+        (List.drop 8 (heatmapValues heatmapNormFill))
+    , eq "heatmap completeDataGaps local-day semantics: zone -300 span = 7"
+        7
+        (List.length heatmapNormPrev)
+    , eq "heatmap completeDataGaps local-day semantics: zone -300 shifts the first day onto the data"
+        [ Just 5, Just 0, Just 0, Just 0, Just 0, Just 0, Just 3 ]
+        (heatmapValues heatmapNormPrev)
+    , eq "heatmap createDayRect colIndex = floor(days / 7) across a month boundary"
+        1
+        heatmapRectFeb.colIndex
+    , eq "heatmap createDayRect rowIndex = (getDay - weekStartOn) mod 7"
+        1
+        heatmapRectFeb.rowIndex
+    , eq "heatmap createDayRect colour via calcColorByValue"
+        "#c"
+        heatmapRectFeb.color
+    , eq "heatmap createDayRect same-week item -> col 0"
+        0
+        heatmapRectWed.colIndex
+    , eq "heatmap createDayRect Wednesday rowIndex 3 (weekStartOn 0)"
+        3
+        heatmapRectWed.rowIndex
+    , eq "heatmap createDayRect value 0 -> colors[0]"
+        "#a"
+        heatmapRectWed.color
+    , eq "heatmap createSparseMatrix always 7 rows"
+        7
+        (List.length heatmapSparse)
+    , eq "heatmap createSparseMatrix row0 fills the gap with Nothing"
+        (Just [ Just 1, Nothing, Just 2 ])
+        (listAt 0 heatmapSparse)
+    , eq "heatmap createSparseMatrix empty row -> []"
+        (Just [])
+        (listAt 1 heatmapSparse)
+    , eq "heatmap createSparseMatrix row3 keeps a leading hole"
+        (Just [ Nothing, Just 3 ])
+        (listAt 3 heatmapSparse)
+    , eq "heatmap createSparseMatrix duplicate (row,col) last-wins"
+        (Just [ Nothing, Just 2 ])
+        (listAt 0 heatmapSparseDup)
+    , eq "heatmap createLoadingMatrix 7 rows"
+        7
+        (List.length heatmapLoading)
+    , eq "heatmap createLoadingMatrix 7 x 53"
+        (List.repeat 7 53)
+        (List.map List.length heatmapLoading)
+    , eq "heatmap createLoadingMatrix all cells dead (value 0, #000000, timestamp = now)"
+        True
+        (List.all
+            (\r -> List.all (\c -> c.value == Just 0 && c.color == "#000000" && c.timestamp == heatmapLoadNow) r)
+            heatmapLoading
+        )
+    , eq "heatmap createLoadingMatrix row dayOfWeek = (weekStartOn + row) mod 7"
+        (List.map (\row -> modBy 7 (1 + row)) (List.range 0 6))
+        (List.map (\r -> r |> List.head |> Maybe.map .dayOfWeek |> Maybe.withDefault -1) heatmapLoading)
+    , eq "heatmap createLoadingMatrix row0 colIndex = 0..52"
+        (List.range 0 52)
+        (List.map .colIndex (Maybe.withDefault [] (listAt 0 heatmapLoading)))
+    , eq "heatmap dataMonthLabels [] -> []"
+        []
+        (Heatmap.dataMonthLabels Time.utc [])
+    , eq "heatmap dataMonthLabels empty first row -> []"
+        []
+        (Heatmap.dataMonthLabels Time.utc [ [] ])
+    , eq "heatmap dataMonthLabels <3-column months dropped; colSpan + month sort"
+        [ { month = 2, colSpan = 3 }, { month = 3, colSpan = 3 } ]
+        (Heatmap.dataMonthLabels Time.utc [ List.map Just heatmapMonthRow ])
+    , eq "heatmap dataMonthLabels skips holes scanning down a column"
+        [ { month = 1, colSpan = 3 } ]
+        (Heatmap.dataMonthLabels Time.utc heatmapHoleMatrix)
+    , eq "heatmap dataMonthLabels 6-week range from Jan 1: Jan survives, Feb (1 col) dropped"
+        [ { month = 1, colSpan = 5 } ]
+        (Heatmap.dataMonthLabels Time.utc heatmap42Matrix)
+    , eq "heatmap 6-week pipeline matrix is 7 x 6"
+        (List.repeat 7 6)
+        (List.map List.length heatmap42Matrix)
+    , eq "heatmap loadingMonthLabels months 1..12"
+        (List.range 1 12)
+        (List.map .month Heatmap.loadingMonthLabels)
+    , eq "heatmap loadingMonthLabels fixed colSpans"
+        [ 5, 4, 5, 4, 5, 4, 5, 4, 4, 5, 4, 4 ]
+        (List.map .colSpan Heatmap.loadingMonthLabels)
+    , eq "heatmap loadingMonthLabels colSpans sum to 53 (matrix width)"
+        53
+        (List.sum (List.map .colSpan Heatmap.loadingMonthLabels))
+    , eq "heatmap cssVarsFor exact default list (11 vars, medium)"
+        [ ( "--n-bezier", "cubic-bezier(.4, 0, .2, 1)" )
+        , ( "--n-font-size", "12px" )
+        , ( "--n-font-weight", "400" )
+        , ( "--n-text-color", "rgb(51, 54, 57)" )
+        , ( "--n-border-radius", "2px" )
+        , ( "--n-border-color", "#fff" )
+        , ( "--n-loading-color-start", "rgba(0, 0, 0, 0.06)" )
+        , ( "--n-loading-color-end", "rgba(0, 0, 0, 0.12)" )
+        , ( "--n-rect-size", "11px" )
+        , ( "--n-x-gap", "3px" )
+        , ( "--n-y-gap", "3px" )
+        ]
+        (Heatmap.cssVarsFor light heatmapD)
+    , eq "heatmap cssVarsFor Small --n-rect-size 10px"
+        (Just "10px")
+        (lookup "--n-rect-size" heatmapVarsSmall)
+    , eq "heatmap cssVarsFor Large --n-rect-size 12px"
+        (Just "12px")
+        (lookup "--n-rect-size" heatmapVarsLarge)
+    , eq "heatmap cssVarsFor Small --n-x-gap 2px"
+        (Just "2px")
+        (lookup "--n-x-gap" heatmapVarsSmall)
+    , eq "heatmap cssVarsFor Small --n-y-gap 2px"
+        (Just "2px")
+        (lookup "--n-y-gap" heatmapVarsSmall)
+    , eq "heatmap cssVarsFor Small --n-font-size = fontSizeTiny 12px"
+        (Just "12px")
+        (lookup "--n-font-size" heatmapVarsSmall)
+    , eq "heatmap cssVarsFor Large --n-font-size = fontSizeSmall 14px"
+        (Just "14px")
+        (lookup "--n-font-size" heatmapVarsLarge)
+    , eq "heatmap cssVarsFor explicit xGap wins over the size default"
+        (Just "5px")
+        (lookup "--n-x-gap" heatmapVarsGap)
+    , eq "heatmap cssVarsFor explicit yGap wins over the size default"
+        (Just "8px")
+        (lookup "--n-y-gap" heatmapVarsGap)
+    , eq "heatmap cssVarsFor dark --n-text-color = dark textColor2"
+        (Just "rgba(255, 255, 255, 0.82)")
+        (lookup "--n-text-color" (Heatmap.cssVarsFor dark heatmapD))
+    , eq "heatmap cssVarsFor dark --n-loading-color-start"
+        (Just "rgba(255, 255, 255, 0.12)")
+        (lookup "--n-loading-color-start" (Heatmap.cssVarsFor dark heatmapD))
+    , eq "heatmap defaults data []"
+        []
+        heatmapD.data
+    , eq "heatmap defaults loadingData Nothing"
+        Nothing
+        heatmapD.loadingData
+    , eq "heatmap defaults size Medium"
+        Heatmap.Medium
+        heatmapD.size
+    , eq "heatmap defaults firstDayOfWeek 0"
+        0
+        heatmapD.firstDayOfWeek
+    , eq "heatmap defaults showColorIndicator True"
+        True
+        heatmapD.showColorIndicator
+    , eq "heatmap defaults minimumColor Nothing"
+        Nothing
+        heatmapD.minimumColor
+    , eq "heatmap defaults activeColors Nothing"
+        Nothing
+        heatmapD.activeColors
+    , eq "heatmap defaults colorTheme Nothing"
+        Nothing
+        heatmapD.colorTheme
+    , eq "heatmap defaults indicator labels"
+        ( "less", "more" )
+        ( heatmapD.indicatorLessText, heatmapD.indicatorMoreText )
     ]
 
 
@@ -3908,6 +4364,16 @@ liveNodes =
                         floatButtonGroupSquareOpts
                         [ FloatButton.view Theme.default floatButtonSquareOpts [ Element.text "+" ] ]
                     )
+                , Element.el [ Element.htmlAttribute (HA.id "live-heatmap") ]
+                    (Heatmap.view Theme.default heatmapLiveOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-heatmap-loading") ]
+                    (Heatmap.view Theme.default heatmapLoadingOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-heatmap-small") ]
+                    (Heatmap.view Theme.default heatmapSmallOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-heatmap-leading") ]
+                    (Heatmap.view Theme.default heatmapLeadingOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-heatmap-no-fill") ]
+                    (Heatmap.view Theme.default heatmapNoFillOpts [])
                 ]
             )
         ]
