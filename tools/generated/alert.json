@@ -218,7 +218,15 @@
         "closeColorPressedError",
         "closeIconColorError",
         "closeIconColorHoverError",
-        "closeIconColorPressedError"
+        "closeIconColorPressedError",
+        "iconMargin",
+        "iconMarginRtl",
+        "iconSize",
+        "closeIconSize",
+        "closeSize",
+        "closeMargin",
+        "closeMarginRtl",
+        "padding"
       ]
     },
     "dark": {
@@ -263,6 +271,14 @@
         "closeIconColorPressedError": "closeIconColorPressed"
       },
       "seen": [
+        "iconMargin",
+        "iconMarginRtl",
+        "iconSize",
+        "closeIconSize",
+        "closeSize",
+        "closeMargin",
+        "closeMarginRtl",
+        "padding",
         "titleFontWeight",
         "border",
         "color",

@@ -37,7 +37,9 @@
         "backColor",
         "backColorHover",
         "backColorPressed",
-        "subtitleTextColor"
+        "subtitleTextColor",
+        "titleFontSize",
+        "backSize"
       ]
     },
     "dark": {
@@ -50,6 +52,8 @@
         "subtitleTextColor": "textColor3"
       },
       "seen": [
+        "titleFontSize",
+        "backSize",
         "titleFontWeight",
         "titleTextColor",
         "backColor",

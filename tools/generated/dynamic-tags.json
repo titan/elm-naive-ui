@@ -1,0 +1,22 @@
+{
+  "light": {
+    "inputWidth": "64px"
+  },
+  "dark": {
+    "inputWidth": "64px"
+  },
+  "refs": {
+    "light": {
+      "refs": {},
+      "seen": [
+        "inputWidth"
+      ]
+    },
+    "dark": {
+      "refs": {},
+      "seen": [
+        "inputWidth"
+      ]
+    }
+  }
+}

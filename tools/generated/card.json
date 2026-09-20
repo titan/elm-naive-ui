@@ -111,7 +111,17 @@
         "fontSizeMedium",
         "fontSizeLarge",
         "fontSizeHuge",
-        "boxShadow"
+        "boxShadow",
+        "paddingSmall",
+        "paddingMedium",
+        "paddingLarge",
+        "paddingHuge",
+        "titleFontSizeSmall",
+        "titleFontSizeMedium",
+        "titleFontSizeLarge",
+        "titleFontSizeHuge",
+        "closeIconSize",
+        "closeSize"
       ]
     },
     "dark": {
@@ -135,6 +145,16 @@
         "boxShadow": "boxShadow1"
       },
       "seen": [
+        "paddingSmall",
+        "paddingMedium",
+        "paddingLarge",
+        "paddingHuge",
+        "titleFontSizeSmall",
+        "titleFontSizeMedium",
+        "titleFontSizeLarge",
+        "titleFontSizeHuge",
+        "closeIconSize",
+        "closeSize",
         "color",
         "colorModal",
         "colorPopover",

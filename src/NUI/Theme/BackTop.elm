@@ -37,7 +37,7 @@ light : Common -> Vars
 light common =
     { width = "44px"
     , height = "44px"
-    , borderRadius = common.heightTiny
+    , borderRadius = "22px"
     , iconSize = "26px"
     , color = common.popoverColor
     , textColor = common.textColor2
@@ -54,7 +54,7 @@ dark : Common -> Vars
 dark common =
     { width = "44px"
     , height = "44px"
-    , borderRadius = common.heightTiny
+    , borderRadius = "22px"
     , iconSize = "26px"
     , color = common.popoverColor
     , textColor = common.textColor2

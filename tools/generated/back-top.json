@@ -44,7 +44,11 @@
         "iconColorPressed",
         "boxShadow",
         "boxShadowHover",
-        "boxShadowPressed"
+        "boxShadowPressed",
+        "width",
+        "height",
+        "borderRadius",
+        "iconSize"
       ]
     },
     "dark": {
@@ -56,6 +60,10 @@
         "iconColorPressed": "primaryColorPressed"
       },
       "seen": [
+        "width",
+        "height",
+        "borderRadius",
+        "iconSize",
         "color",
         "textColor",
         "iconColor",

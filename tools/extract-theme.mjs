@@ -63,9 +63,50 @@ function parseVarRefs(src) {
   return { refs, seen: [...seen] }
 }
 
+// Resolve a relative import specifier (`./_common`) to a real file under RESOLVE_DIR.
+function resolveModuleFile(dir, spec) {
+  const base = path.join(dir, spec)
+  for (const cand of [`${base}.ts`, `${base}.js`, path.join(base, 'index.ts')]) {
+    if (fs.existsSync(path.join(RESOLVE_DIR, cand))) return cand
+  }
+  return null
+}
+
+// Parse `<file>` and, for every object spread of a locally imported module
+// (`...commonVariables` where `import commonVariables from './_common'`), merge that
+// module's fields. Spread fields are constants the file itself never writes as
+// `key: value`, so without this they look "unseen" and gen-theme falls back to
+// value-matching (which can pick a wrong, value-equal common var).
 function readRefs(rel) {
   try {
-    return parseVarRefs(fs.readFileSync(path.join(RESOLVE_DIR, rel), 'utf8'))
+    const src = fs.readFileSync(path.join(RESOLVE_DIR, rel), 'utf8')
+    const parsed = parseVarRefs(src)
+    const dir = path.dirname(rel)
+
+    const importMap = {}
+    for (const m of src.matchAll(/import\s+(?:([A-Za-z_$][\w$]*)\s*,?\s*)?(?:\{([^}]*)\})?\s*from\s*'(\.[^']+)'/g)) {
+      const [, def, named, spec] = m
+      if (def) importMap[def] = spec
+      if (named)
+        for (const part of named.split(',')) {
+          const local = (part.split(':')[1] || part).trim()
+          if (/^[A-Za-z_$][\w$]*$/.test(local)) importMap[local] = spec
+        }
+    }
+
+    const seen = new Set(parsed.seen)
+    for (const m of src.matchAll(/\.\.\.\s*([A-Za-z_$][\w$]*)/g)) {
+      const spec = importMap[m[1]]
+      if (!spec) continue
+      const sub = resolveModuleFile(dir, spec)
+      if (!sub) continue
+      const subParsed = parseVarRefs(fs.readFileSync(path.join(RESOLVE_DIR, sub), 'utf8'))
+      for (const k of subParsed.seen) {
+        seen.add(k)
+        if (!(k in parsed.refs) && subParsed.refs[k]) parsed.refs[k] = subParsed.refs[k]
+      }
+    }
+    return { refs: parsed.refs, seen: [...seen] }
   } catch {
     return { refs: {}, seen: [] }
   }

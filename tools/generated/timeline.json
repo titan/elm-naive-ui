@@ -78,7 +78,13 @@
         "titleTextColor",
         "contentTextColor",
         "metaTextColor",
-        "lineColor"
+        "lineColor",
+        "titleMarginMedium",
+        "titleMarginLarge",
+        "titleFontSizeMedium",
+        "titleFontSizeLarge",
+        "iconSizeMedium",
+        "iconSizeLarge"
       ]
     },
     "dark": {
@@ -96,6 +102,12 @@
         "lineColor": "railColor"
       },
       "seen": [
+        "titleMarginMedium",
+        "titleMarginLarge",
+        "titleFontSizeMedium",
+        "titleFontSizeLarge",
+        "iconSizeMedium",
+        "iconSizeLarge",
         "contentFontSize",
         "titleFontWeight",
         "circleBorder",

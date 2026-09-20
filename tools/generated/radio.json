@@ -126,7 +126,12 @@
         "buttonBoxShadowFocus",
         "buttonBoxShadowHover",
         "buttonBoxShadow",
-        "buttonBorderRadius"
+        "buttonBorderRadius",
+        "radioSizeSmall",
+        "radioSizeMedium",
+        "radioSizeLarge",
+        "labelPadding",
+        "labelFontWeight"
       ]
     },
     "dark": {
@@ -149,6 +154,11 @@
         "buttonBorderRadius": "borderRadius"
       },
       "seen": [
+        "radioSizeSmall",
+        "radioSizeMedium",
+        "radioSizeLarge",
+        "labelPadding",
+        "labelFontWeight",
         "labelLineHeight",
         "buttonHeightSmall",
         "buttonHeightMedium",

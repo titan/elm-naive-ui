@@ -287,7 +287,17 @@
         "closeIconColorHoverError",
         "closeIconColorPressedError",
         "closeColorHoverError",
-        "closeColorPressedError"
+        "closeColorPressedError",
+        "closeIconSizeTiny",
+        "closeIconSizeSmall",
+        "closeIconSizeMedium",
+        "closeIconSizeLarge",
+        "closeSizeTiny",
+        "closeSizeSmall",
+        "closeSizeMedium",
+        "closeSizeLarge",
+        "padding",
+        "closeMargin"
       ]
     },
     "dark": {
@@ -319,6 +329,16 @@
         "textColorError": "errorColor"
       },
       "seen": [
+        "closeIconSizeTiny",
+        "closeIconSizeSmall",
+        "closeIconSizeMedium",
+        "closeIconSizeLarge",
+        "closeSizeTiny",
+        "closeSizeSmall",
+        "closeSizeMedium",
+        "closeSizeLarge",
+        "padding",
+        "closeMargin",
         "closeBorderRadius",
         "heightTiny",
         "heightSmall",

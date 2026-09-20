@@ -37,7 +37,12 @@
       },
       "seen": [
         "textColor",
-        "extraTextColor"
+        "extraTextColor",
+        "iconSizeTiny",
+        "iconSizeSmall",
+        "iconSizeMedium",
+        "iconSizeLarge",
+        "iconSizeHuge"
       ]
     },
     "dark": {
@@ -46,6 +51,11 @@
         "extraTextColor": "textColor2"
       },
       "seen": [
+        "iconSizeTiny",
+        "iconSizeSmall",
+        "iconSizeMedium",
+        "iconSizeLarge",
+        "iconSizeHuge",
         "textColor",
         "extraTextColor"
       ]

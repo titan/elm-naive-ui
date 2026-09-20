@@ -36,10 +36,10 @@ vars theme =
 
 light : Common -> Vars
 light common =
-    { iconSizeTiny = common.heightSmall
-    , iconSizeSmall = common.heightMedium
-    , iconSizeMedium = common.heightLarge
-    , iconSizeLarge = common.heightHuge
+    { iconSizeTiny = "28px"
+    , iconSizeSmall = "34px"
+    , iconSizeMedium = "40px"
+    , iconSizeLarge = "46px"
     , iconSizeHuge = "52px"
     , fontSizeTiny = common.fontSizeMini
     , fontSizeSmall = common.fontSize
@@ -54,10 +54,10 @@ light common =
 
 dark : Common -> Vars
 dark common =
-    { iconSizeTiny = common.heightSmall
-    , iconSizeSmall = common.heightMedium
-    , iconSizeMedium = common.heightLarge
-    , iconSizeLarge = common.heightHuge
+    { iconSizeTiny = "28px"
+    , iconSizeSmall = "34px"
+    , iconSizeMedium = "40px"
+    , iconSizeLarge = "46px"
     , iconSizeHuge = "52px"
     , fontSizeTiny = common.fontSizeMini
     , fontSizeSmall = common.fontSize

@@ -120,7 +120,15 @@
         "descriptionTextColorProcess",
         "descriptionTextColorWait",
         "descriptionTextColorFinish",
-        "descriptionTextColorError"
+        "descriptionTextColorError",
+        "stepHeaderFontSizeSmall",
+        "stepHeaderFontSizeMedium",
+        "indicatorIndexFontSizeSmall",
+        "indicatorIndexFontSizeMedium",
+        "indicatorSizeSmall",
+        "indicatorSizeMedium",
+        "indicatorIconSizeSmall",
+        "indicatorIconSizeMedium"
       ]
     },
     "dark": {
@@ -149,6 +157,14 @@
         "descriptionTextColorError": "errorColor"
       },
       "seen": [
+        "stepHeaderFontSizeSmall",
+        "stepHeaderFontSizeMedium",
+        "indicatorIndexFontSizeSmall",
+        "indicatorIndexFontSizeMedium",
+        "indicatorSizeSmall",
+        "indicatorSizeMedium",
+        "indicatorIconSizeSmall",
+        "indicatorIconSizeMedium",
         "stepHeaderFontWeight",
         "indicatorTextColorProcess",
         "indicatorTextColorWait",

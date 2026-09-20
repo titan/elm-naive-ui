@@ -95,7 +95,12 @@
         "borderChecked",
         "borderFocus",
         "boxShadowFocus",
-        "textColor"
+        "textColor",
+        "sizeSmall",
+        "sizeMedium",
+        "sizeLarge",
+        "labelPadding",
+        "labelFontWeight"
       ]
     },
     "dark": {
@@ -114,6 +119,11 @@
         "textColor": "textColor2"
       },
       "seen": [
+        "sizeSmall",
+        "sizeMedium",
+        "sizeLarge",
+        "labelPadding",
+        "labelFontWeight",
         "labelLineHeight",
         "borderRadius",
         "color",

@@ -56,13 +56,13 @@ vars theme =
 
 light : Common -> Vars
 light common =
-    { stepHeaderFontSizeSmall = common.fontSize
-    , stepHeaderFontSizeMedium = common.fontSizeHuge
-    , indicatorIndexFontSizeSmall = common.fontSize
-    , indicatorIndexFontSizeMedium = common.fontSizeHuge
-    , indicatorSizeSmall = common.heightTiny
-    , indicatorSizeMedium = common.heightSmall
-    , indicatorIconSizeSmall = common.fontSize
+    { stepHeaderFontSizeSmall = "14px"
+    , stepHeaderFontSizeMedium = "16px"
+    , indicatorIndexFontSizeSmall = "14px"
+    , indicatorIndexFontSizeMedium = "16px"
+    , indicatorSizeSmall = "22px"
+    , indicatorSizeMedium = "28px"
+    , indicatorIconSizeSmall = "14px"
     , indicatorIconSizeMedium = "18px"
     , stepHeaderFontWeight = common.fontWeightStrong
     , indicatorTextColorProcess = common.baseColor
@@ -94,13 +94,13 @@ light common =
 
 dark : Common -> Vars
 dark common =
-    { stepHeaderFontSizeSmall = common.fontSize
-    , stepHeaderFontSizeMedium = common.fontSizeHuge
-    , indicatorIndexFontSizeSmall = common.fontSize
-    , indicatorIndexFontSizeMedium = common.fontSizeHuge
-    , indicatorSizeSmall = common.heightTiny
-    , indicatorSizeMedium = common.heightSmall
-    , indicatorIconSizeSmall = common.fontSize
+    { stepHeaderFontSizeSmall = "14px"
+    , stepHeaderFontSizeMedium = "16px"
+    , indicatorIndexFontSizeSmall = "14px"
+    , indicatorIndexFontSizeMedium = "16px"
+    , indicatorSizeSmall = "22px"
+    , indicatorSizeMedium = "28px"
+    , indicatorIconSizeSmall = "14px"
     , indicatorIconSizeMedium = "18px"
     , stepHeaderFontWeight = common.fontWeightStrong
     , indicatorTextColorProcess = common.baseColor

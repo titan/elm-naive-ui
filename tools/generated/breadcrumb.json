@@ -46,7 +46,8 @@
         "itemBorderRadius",
         "itemColorHover",
         "itemColorPressed",
-        "separatorColor"
+        "separatorColor",
+        "fontWeightActive"
       ]
     },
     "dark": {
@@ -61,6 +62,7 @@
         "separatorColor": "textColor3"
       },
       "seen": [
+        "fontWeightActive",
         "itemLineHeight",
         "itemTextColor",
         "itemTextColorHover",

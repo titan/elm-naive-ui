@@ -33,7 +33,7 @@ vars theme =
 light : Common -> Vars
 light common =
     { titleFontSize = "18px"
-    , backSize = common.heightTiny
+    , backSize = "22px"
     , titleFontWeight = common.fontWeightStrong
     , fontSize = common.fontSize
     , titleTextColor = common.textColor1
@@ -47,7 +47,7 @@ light common =
 dark : Common -> Vars
 dark common =
     { titleFontSize = "18px"
-    , backSize = common.heightTiny
+    , backSize = "22px"
     , titleFontWeight = common.fontWeightStrong
     , fontSize = common.fontSize
     , titleTextColor = common.textColor1

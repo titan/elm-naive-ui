@@ -184,7 +184,12 @@
         "borderFocusError",
         "boxShadowFocusError",
         "caretColorError",
-        "suffixTextColor"
+        "suffixTextColor",
+        "paddingTiny",
+        "paddingSmall",
+        "paddingMedium",
+        "paddingLarge",
+        "clearSize"
       ]
     },
     "dark": {
@@ -208,6 +213,11 @@
         "suffixTextColor": "textColor2"
       },
       "seen": [
+        "paddingTiny",
+        "paddingSmall",
+        "paddingMedium",
+        "paddingLarge",
+        "clearSize",
         "countTextColorDisabled",
         "countTextColor",
         "lineHeightTextarea",

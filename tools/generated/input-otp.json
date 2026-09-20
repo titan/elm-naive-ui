@@ -1,0 +1,42 @@
+{
+  "light": {
+    "inputWidthSmall": "24px",
+    "inputWidthMedium": "30px",
+    "inputWidthLarge": "36px",
+    "gapSmall": "8px",
+    "gapMedium": "8px",
+    "gapLarge": "8px"
+  },
+  "dark": {
+    "inputWidthSmall": "24px",
+    "inputWidthMedium": "30px",
+    "inputWidthLarge": "36px",
+    "gapSmall": "8px",
+    "gapMedium": "8px",
+    "gapLarge": "8px"
+  },
+  "refs": {
+    "light": {
+      "refs": {},
+      "seen": [
+        "inputWidthSmall",
+        "inputWidthMedium",
+        "inputWidthLarge",
+        "gapSmall",
+        "gapMedium",
+        "gapLarge"
+      ]
+    },
+    "dark": {
+      "refs": {},
+      "seen": [
+        "inputWidthSmall",
+        "inputWidthMedium",
+        "inputWidthLarge",
+        "gapSmall",
+        "gapMedium",
+        "gapLarge"
+      ]
+    }
+  }
+}

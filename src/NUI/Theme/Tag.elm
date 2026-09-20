@@ -109,12 +109,12 @@ vars theme =
 
 light : Common -> Vars
 light common =
-    { closeIconSizeTiny = common.fontSizeMini
-    , closeIconSizeSmall = common.fontSizeMini
-    , closeIconSizeMedium = common.fontSize
-    , closeIconSizeLarge = common.fontSize
-    , closeSizeTiny = common.fontSizeHuge
-    , closeSizeSmall = common.fontSizeHuge
+    { closeIconSizeTiny = "12px"
+    , closeIconSizeSmall = "12px"
+    , closeIconSizeMedium = "14px"
+    , closeIconSizeLarge = "14px"
+    , closeSizeTiny = "16px"
+    , closeSizeSmall = "16px"
     , closeSizeMedium = "18px"
     , closeSizeLarge = "18px"
     , padding = "0 7px"
@@ -200,12 +200,12 @@ light common =
 
 dark : Common -> Vars
 dark common =
-    { closeIconSizeTiny = common.fontSizeMini
-    , closeIconSizeSmall = common.fontSizeMini
-    , closeIconSizeMedium = common.fontSize
-    , closeIconSizeLarge = common.fontSize
-    , closeSizeTiny = common.fontSizeHuge
-    , closeSizeSmall = common.fontSizeHuge
+    { closeIconSizeTiny = "12px"
+    , closeIconSizeSmall = "12px"
+    , closeIconSizeMedium = "14px"
+    , closeIconSizeLarge = "14px"
+    , closeSizeTiny = "16px"
+    , closeSizeSmall = "16px"
     , closeSizeMedium = "18px"
     , closeSizeLarge = "18px"
     , padding = "0 7px"

@@ -60,11 +60,11 @@ vars theme =
 
 light : Common -> Vars
 light common =
-    { radioSizeSmall = common.fontSize
-    , radioSizeMedium = common.fontSizeHuge
+    { radioSizeSmall = "14px"
+    , radioSizeMedium = "16px"
     , radioSizeLarge = "18px"
     , labelPadding = "0 8px"
-    , labelFontWeight = common.fontWeight
+    , labelFontWeight = "400"
     , labelLineHeight = common.lineHeight
     , buttonHeightSmall = common.heightSmall
     , buttonHeightMedium = common.heightMedium
@@ -102,11 +102,11 @@ light common =
 
 dark : Common -> Vars
 dark common =
-    { radioSizeSmall = common.fontSize
-    , radioSizeMedium = common.fontSizeHuge
+    { radioSizeSmall = "14px"
+    , radioSizeMedium = "16px"
     , radioSizeLarge = "18px"
     , labelPadding = "0 8px"
-    , labelFontWeight = common.fontWeight
+    , labelFontWeight = "400"
     , labelLineHeight = common.lineHeight
     , buttonHeightSmall = common.heightSmall
     , buttonHeightMedium = common.heightMedium

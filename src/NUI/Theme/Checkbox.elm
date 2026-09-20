@@ -51,11 +51,11 @@ vars theme =
 
 light : Common -> Vars
 light common =
-    { sizeSmall = common.fontSize
-    , sizeMedium = common.fontSizeHuge
+    { sizeSmall = "14px"
+    , sizeMedium = "16px"
     , sizeLarge = "18px"
     , labelPadding = "0 8px"
-    , labelFontWeight = common.fontWeight
+    , labelFontWeight = "400"
     , labelLineHeight = common.lineHeight
     , fontSizeSmall = common.fontSize
     , fontSizeMedium = common.fontSize
@@ -84,11 +84,11 @@ light common =
 
 dark : Common -> Vars
 dark common =
-    { sizeSmall = common.fontSize
-    , sizeMedium = common.fontSizeHuge
+    { sizeSmall = "14px"
+    , sizeMedium = "16px"
     , sizeLarge = "18px"
     , labelPadding = "0 8px"
-    , labelFontWeight = common.fontWeight
+    , labelFontWeight = "400"
     , labelLineHeight = common.lineHeight
     , fontSizeSmall = common.fontSize
     , fontSizeMedium = common.fontSize

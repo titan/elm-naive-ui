@@ -34,7 +34,7 @@ vars theme =
 
 light : Common -> Vars
 light common =
-    { fontWeightActive = common.fontWeight
+    { fontWeightActive = "400"
     , fontSize = common.fontSize
     , itemLineHeight = "1.25"
     , itemTextColor = common.textColor3
@@ -50,7 +50,7 @@ light common =
 
 dark : Common -> Vars
 dark common =
-    { fontWeightActive = common.fontWeight
+    { fontWeightActive = "400"
     , fontSize = common.fontSize
     , itemLineHeight = "1.25"
     , itemTextColor = common.textColor3
