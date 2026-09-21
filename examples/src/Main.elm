@@ -63,6 +63,7 @@ import NUI.Split as Split
 import NUI.Statistic as Statistic
 import NUI.Steps as Steps
 import NUI.Switch as Switch
+import NUI.Tabs as Tabs
 import NUI.Tag as Tag
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Thing as Thing
@@ -173,6 +174,19 @@ descD =
 descItemD : Descriptions.Item msg
 descItemD =
     Descriptions.itemDefaults
+
+
+tabsD : Tabs.Options msg
+tabsD =
+    Tabs.defaults
+
+
+tabsItems : List (Tabs.Tab msg)
+tabsItems =
+    [ { name = "one", label = Element.text "One", disabled = False, closable = Nothing, content = [ Element.text "First pane" ] }
+    , { name = "two", label = Element.text "Two", disabled = False, closable = Nothing, content = [ Element.text "Second pane" ] }
+    , { name = "three", label = Element.text "Three", disabled = True, closable = Nothing, content = [ Element.text "Third pane" ] }
+    ]
 
 
 avD : Avatar.Options msg
@@ -538,6 +552,7 @@ body =
     , loadingBarSection
     , dynamicInputSection
     , descriptionsSection
+    , tabsSection
     , rtlSection
     , themeSection
     ]
@@ -1910,6 +1925,32 @@ descriptionsSection =
                     [ "A", "B", "C", "D" ]
                 )
             ]
+        ]
+
+
+tabsSection : Element msg
+tabsSection =
+    section "Tabs"
+        "Tabbed navigation with panes. The caller owns the active `value`; `ShowIf` (default) mounts only the active pane."
+    <|
+        [ demoRow "Bar (default)"
+            [ Tabs.view theme { tabsD | value = "one" } tabsItems ]
+        , demoRow "Line"
+            [ Tabs.view theme { tabsD | type_ = Tabs.Line, value = "two" } tabsItems ]
+        , demoRow "Card (closable)"
+            [ Tabs.view theme { tabsD | type_ = Tabs.Card, closable = True, value = "one" } tabsItems ]
+        , demoRow "Segment"
+            [ Tabs.view theme { tabsD | type_ = Tabs.Segment, value = "two" } tabsItems ]
+        , demoRow "Sizes (small / medium / large)"
+            [ Tabs.view theme { tabsD | size = Tabs.Small, value = "one" } tabsItems
+            , Tabs.view theme { tabsD | size = Tabs.Large, value = "one" } tabsItems
+            ]
+        , demoRow "Placement (bottom / left)"
+            [ Tabs.view theme { tabsD | placement = Tabs.Bottom, value = "one" } tabsItems
+            , Tabs.view theme { tabsD | placement = Tabs.Left, value = "one" } tabsItems
+            ]
+        , demoRow "Show directive (all panes mounted)"
+            [ Tabs.view theme { tabsD | displayDirective = Tabs.Show, value = "one" } tabsItems ]
         ]
 
 
