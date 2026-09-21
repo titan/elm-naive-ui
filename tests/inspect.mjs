@@ -3967,6 +3967,250 @@ dEq(
     : -1
 )
 
+// Popover --------------------------------------------------------------------
+// The exact inline style the default body emits against Theme.default (light):
+// the 15 --n-* vars in upstream order, joined with ";" (Internal.renderVars).
+const POPOVER_DEFAULT_STYLE =
+  '--n-box-shadow:0 3px 6px -4px rgba(0, 0, 0, .12), 0 6px 16px 0 rgba(0, 0, 0, .08), 0 9px 28px 8px rgba(0, 0, 0, .05)' +
+  ';--n-bezier:cubic-bezier(.4, 0, .2, 1)' +
+  ';--n-bezier-ease-in:cubic-bezier(.4, 0, 1, 1)' +
+  ';--n-bezier-ease-out:cubic-bezier(0, 0, .2, 1)' +
+  ';--n-font-size:14px' +
+  ';--n-text-color:rgb(51, 54, 57)' +
+  ';--n-color:#fff' +
+  ';--n-divider-color:rgb(239, 239, 245)' +
+  ';--n-border-radius:3px' +
+  ';--n-arrow-height:6px' +
+  ';--n-arrow-offset:10px' +
+  ';--n-arrow-offset-vertical:10px' +
+  ';--n-padding:8px 14px' +
+  ';--n-space:6px' +
+  ';--n-space-arrow:10px'
+
+// The body root is an elm-ui element (the Progress/Badge/Scrollbar precedent), so
+// only the Naive UI `n-popover*` tokens are ours (elm-ui structure classes ride along).
+const popoverClasses = (el) =>
+  [...(el ? el.classList : [])].filter((c) => c.startsWith('n-popover')).join(' ')
+
+const popHost = doc.getElementById('live-popover-default')
+const popRoot = doc.querySelector('#live-popover-default .n-popover')
+dEq('DOM: Popover root is a <div>', 'DIV', tagOf(popRoot))
+dEq(
+  'DOM: Popover default root classes are n-popover n-popover-shared n-popover-shared--show-arrow',
+  'n-popover n-popover-shared n-popover-shared--show-arrow',
+  popoverClasses(popRoot)
+)
+dTrue(
+  'DOM: Popover default carries no rtl/scrollable/raw/overlap/center-arrow/show-header classes',
+  !!popRoot &&
+    !hasCls(popRoot, 'n-popover--rtl') &&
+    !hasCls(popRoot, 'n-popover--scrollable') &&
+    !hasCls(popRoot, 'n-popover--show-header-or-footer') &&
+    !hasCls(popRoot, 'n-popover--raw') &&
+    !hasCls(popRoot, 'n-popover-shared--overlap') &&
+    !hasCls(popRoot, 'n-popover-shared--center-arrow'),
+  clsOf(popRoot)
+)
+dEq(
+  'DOM: Popover default root carries 15 --n-* custom properties',
+  15,
+  ((styleAt(popRoot) || '').match(/--n-[a-z-]+:/g) || []).length
+)
+dEq(
+  'DOM: Popover default style is the exact full 15-var string',
+  POPOVER_DEFAULT_STYLE,
+  styleAt(popRoot)
+)
+dTrue(
+  'DOM: Popover --n-space is 6px exactly',
+  !!popRoot && (styleAt(popRoot) || '').includes('--n-space:6px'),
+  styleAt(popRoot)
+)
+
+const popWidthRoot = doc.querySelector('#live-popover-width .n-popover')
+const popWidthStyle = styleAt(popWidthRoot) || ''
+// Only the root's opening tag (descendants carry their own styles, e.g. the
+// embedded-child display:contents wrapper) — elm-ui would clobber a 2nd `style`.
+const popWidthTag = popWidthRoot
+  ? popWidthRoot.outerHTML.slice(0, popWidthRoot.outerHTML.indexOf('>'))
+  : ''
+dTrue(
+  'DOM: Popover width merges width:240px; first into the one style attribute',
+  !!popWidthRoot &&
+    popWidthStyle.startsWith('width:240px;') &&
+    popWidthStyle.includes('--n-space:6px') &&
+    (popWidthTag.match(/ style="/g) || []).length === 1,
+  popWidthStyle.slice(0, 60)
+)
+
+const popHF = doc.querySelector('#live-popover-header-footer .n-popover')
+dTrue(
+  'DOM: Popover header+footer adds --show-header-or-footer and all three wrappers',
+  hasCls(popHF, 'n-popover--show-header-or-footer') &&
+    !!popHF.querySelector('.n-popover__header') &&
+    !!popHF.querySelector('.n-popover__content') &&
+    !!popHF.querySelector('.n-popover__footer'),
+  clsOf(popHF)
+)
+const popHO = doc.querySelector('#live-popover-header-only .n-popover')
+dTrue(
+  'DOM: Popover header-only renders header + content but no footer',
+  hasCls(popHO, 'n-popover--show-header-or-footer') &&
+    !!popHO.querySelector('.n-popover__header') &&
+    !!popHO.querySelector('.n-popover__content') &&
+    !popHO.querySelector('.n-popover__footer'),
+  clsOf(popHO)
+)
+const popHE = doc.querySelector('#live-popover-header-empty .n-popover')
+dTrue(
+  'DOM: Popover header with empty children renders header but no content wrapper',
+  hasCls(popHE, 'n-popover--show-header-or-footer') &&
+    !!popHE.querySelector('.n-popover__header') &&
+    !popHE.querySelector('.n-popover__content') &&
+    !popHE.querySelector('.n-popover__footer'),
+  clsOf(popHE)
+)
+
+const popArrowWrapper = popRoot ? popRoot.querySelector('.n-popover-arrow-wrapper') : null
+const popArrow = popArrowWrapper ? popArrowWrapper.lastElementChild : null
+dTrue(
+  'DOM: Popover arrow is the wrapper > arrow pair and the body last child',
+  !!popArrowWrapper &&
+    !!popArrow &&
+    hasCls(popArrow, 'n-popover-arrow') &&
+    !!popRoot &&
+    popRoot.lastElementChild === popArrowWrapper,
+  clsOf(popArrowWrapper)
+)
+dTrue(
+  'DOM: Popover showArrow=False renders no arrow wrapper',
+  !!doc.querySelector('#live-popover-no-arrow .n-popover') &&
+    !doc.querySelector('#live-popover-no-arrow .n-popover-arrow-wrapper')
+)
+const popOverlap = doc.querySelector('#live-popover-overlap .n-popover')
+dTrue(
+  'DOM: Popover overlap adds --overlap, drops the arrow and --show-arrow',
+  hasCls(popOverlap, 'n-popover-shared--overlap') &&
+    !hasCls(popOverlap, 'n-popover-shared--show-arrow') &&
+    !!popOverlap &&
+    !popOverlap.querySelector('.n-popover-arrow-wrapper'),
+  clsOf(popOverlap)
+)
+
+dTrue(
+  'DOM: Popover raw adds n-popover--raw',
+  hasCls(doc.querySelector('#live-popover-raw .n-popover'), 'n-popover--raw')
+)
+dTrue(
+  'DOM: Popover rtl adds n-popover--rtl',
+  hasCls(doc.querySelector('#live-popover-rtl .n-popover'), 'n-popover--rtl')
+)
+dTrue(
+  'DOM: Popover arrowPointToCenter adds n-popover-shared--center-arrow',
+  hasCls(
+    doc.querySelector('#live-popover-center-arrow .n-popover'),
+    'n-popover-shared--center-arrow'
+  )
+)
+
+const popSc = doc.querySelector('#live-popover-scrollable .n-popover')
+const popScBar = popSc ? popSc.querySelector('.n-scrollbar') : null
+const popScContent = popSc ? popSc.querySelector('.n-scrollbar-content') : null
+dTrue(
+  'DOM: Popover scrollable adds --scrollable and .n-scrollbar is a direct child of the body',
+  hasCls(popSc, 'n-popover--scrollable') && !!popScBar && popScBar.parentElement === popSc,
+  clsOf(popScBar)
+)
+dTrue(
+  'DOM: Popover scrollable (no header) hoists n-popover__content + caller contentClass onto the scrollbar content',
+  hasCls(popScContent, 'n-scrollbar-content') &&
+    hasCls(popScContent, 'n-popover__content') &&
+    hasCls(popScContent, 'my-sc'),
+  clsOf(popScContent)
+)
+const popScH = doc.querySelector('#live-popover-scrollable-header .n-popover')
+const popScHBar = popScH ? popScH.querySelector('.n-scrollbar') : null
+const popScHContent = popScH ? popScH.querySelector('.n-scrollbar-content') : null
+dTrue(
+  'DOM: Popover scrollable+header keeps the scrollbar child but does NOT hoist the content class',
+  !!popScHBar &&
+    popScHBar.parentElement === popScH &&
+    !!popScHContent &&
+    !hasCls(popScHContent, 'n-popover__content') &&
+    !!popScH.querySelector('.n-popover__content'),
+  clsOf(popScHContent)
+)
+
+dTrue(
+  'DOM: Popover transition Just EnterActive adds popover-transition-enter-active',
+  hasCls(
+    doc.querySelector('#live-popover-transition .n-popover'),
+    'popover-transition-enter-active'
+  )
+)
+
+const popPass = doc.querySelector('#live-popover-passthrough .n-popover')
+dTrue(
+  'DOM: Popover contentClass/contentStyle land on the content node',
+  (() => {
+    const n = popPass ? popPass.querySelector('.n-popover__content') : null
+    return hasCls(n, 'my-content') && (styleAt(n) || '').includes('background:blue')
+  })(),
+  clsOf(popPass ? popPass.querySelector('.n-popover__content') : null)
+)
+dTrue(
+  'DOM: Popover headerClass/headerStyle land on the header node',
+  (() => {
+    const n = popPass ? popPass.querySelector('.n-popover__header') : null
+    return hasCls(n, 'my-header') && (styleAt(n) || '').includes('background:green')
+  })(),
+  clsOf(popPass ? popPass.querySelector('.n-popover__header') : null)
+)
+dTrue(
+  'DOM: Popover footerClass/footerStyle land on the footer node',
+  (() => {
+    const n = popPass ? popPass.querySelector('.n-popover__footer') : null
+    return hasCls(n, 'my-footer') && (styleAt(n) || '').includes('background:yellow')
+  })(),
+  clsOf(popPass ? popPass.querySelector('.n-popover__footer') : null)
+)
+dTrue(
+  'DOM: Popover arrowClass/arrowStyle land on the arrow',
+  (() => {
+    const n = popPass ? popPass.querySelector('.n-popover-arrow') : null
+    return hasCls(n, 'my-arrow') && (styleAt(n) || '').includes('background:red')
+  })(),
+  styleAt(popPass ? popPass.querySelector('.n-popover-arrow') : null)
+)
+dTrue(
+  'DOM: Popover arrowWrapperClass/arrowWrapperStyle land on the arrow wrapper',
+  (() => {
+    const n = popPass ? popPass.querySelector('.n-popover-arrow-wrapper') : null
+    return hasCls(n, 'my-arrow-wrap') && (styleAt(n) || '').includes('background:black')
+  })(),
+  styleAt(popPass ? popPass.querySelector('.n-popover-arrow-wrapper') : null)
+)
+dTrue('DOM: Popover attributes land on the root', hasCls(popPass, 'my-root'))
+
+dEq(
+  'DOM: Popover host wrapper carries v-placement=top',
+  'top',
+  popHost ? popHost.getAttribute('v-placement') : null
+)
+dTrue(
+  'DOM: Popover body is a direct child of the v-placement host wrapper',
+  !!popHost && !!popRoot && popHost.firstElementChild === popRoot,
+  clsOf(popHost ? popHost.firstElementChild : null)
+)
+dEq(
+  'DOM: Popover placementAttribute TopStart emits v-placement=top-start',
+  'top-start',
+  (() => {
+    const el = doc.getElementById('live-popover-placement')
+    return el ? el.getAttribute('v-placement') : null
+  })()
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

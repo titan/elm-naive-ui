@@ -61,6 +61,7 @@ import NUI.Marquee as Marquee
 import NUI.NumberAnimation as NumberAnimation
 import NUI.PageHeader as PageHeader
 import NUI.Pagination as Pagination
+import NUI.Popover as Popover
 import NUI.Progress as Progress
 import NUI.QrCode as QrCode
 import NUI.Qrcodegen as Qrcodegen
@@ -2436,6 +2437,114 @@ sStylingOpts =
 sXContentOpts : Scrollbar.Options Msg
 sXContentOpts =
     { sD | xScrollable = True, contentStyle = Just "background:red" }
+
+
+
+-- POPOVER ---------------------------------------------------------------------
+
+
+{-| The plain defaults binding (`{ Popover.defaults | … }` is a parse error).
+-}
+pD : Popover.Options Msg
+pD =
+    Popover.defaults
+
+
+pHeaderFooterOpts : Popover.Options Msg
+pHeaderFooterOpts =
+    { pD | header = Just (Element.text "Header"), footer = Just (Element.text "Footer") }
+
+
+pHeaderOnlyOpts : Popover.Options Msg
+pHeaderOnlyOpts =
+    { pD | header = Just (Element.text "Header") }
+
+
+pWidthOpts : Popover.Options Msg
+pWidthOpts =
+    { pD | width = Just "240px" }
+
+
+pNoArrowOpts : Popover.Options Msg
+pNoArrowOpts =
+    { pD | showArrow = False }
+
+
+pOverlapOpts : Popover.Options Msg
+pOverlapOpts =
+    { pD | overlap = True }
+
+
+pRawOpts : Popover.Options Msg
+pRawOpts =
+    { pD | raw = True }
+
+
+pRtlOpts : Popover.Options Msg
+pRtlOpts =
+    { pD | rtl = True }
+
+
+pCenterArrowOpts : Popover.Options Msg
+pCenterArrowOpts =
+    { pD | arrowPointToCenter = True }
+
+
+pScrollableOpts : Popover.Options Msg
+pScrollableOpts =
+    { pD | scrollable = True, contentClass = Just "my-sc" }
+
+
+pScrollableHeaderOpts : Popover.Options Msg
+pScrollableHeaderOpts =
+    { pD | scrollable = True, header = Just (Element.text "Header") }
+
+
+pTransitionOpts : Popover.Options Msg
+pTransitionOpts =
+    { pD | transition = Just Internal.EnterActive }
+
+
+pPassthroughOpts : Popover.Options Msg
+pPassthroughOpts =
+    { pD
+        | header = Just (Element.text "H")
+        , footer = Just (Element.text "F")
+        , contentClass = Just "my-content"
+        , contentStyle = Just "background:blue"
+        , headerClass = Just "my-header"
+        , headerStyle = Just "background:green"
+        , footerClass = Just "my-footer"
+        , footerStyle = Just "background:yellow"
+        , arrowClass = Just "my-arrow"
+        , arrowStyle = Just "background:red"
+        , arrowWrapperClass = Just "my-arrow-wrap"
+        , arrowWrapperStyle = Just "background:black"
+        , attributes = [ Element.htmlAttribute (HA.class "my-root") ]
+    }
+
+
+{-| The full 15-entry `--n-*` list `NUI.Popover.cssVars` must emit against
+`Theme.default` (light common): names, values, and order (upstream `cssVarsRef`).
+-}
+expectedPopoverVars : List ( String, String )
+expectedPopoverVars =
+    [ ( "--n-box-shadow", "0 3px 6px -4px rgba(0, 0, 0, .12), 0 6px 16px 0 rgba(0, 0, 0, .08), 0 9px 28px 8px rgba(0, 0, 0, .05)" )
+    , ( "--n-bezier", "cubic-bezier(.4, 0, .2, 1)" )
+    , ( "--n-bezier-ease-in", "cubic-bezier(.4, 0, 1, 1)" )
+    , ( "--n-bezier-ease-out", "cubic-bezier(0, 0, .2, 1)" )
+    , ( "--n-font-size", "14px" )
+    , ( "--n-text-color", "rgb(51, 54, 57)" )
+    , ( "--n-color", "#fff" )
+    , ( "--n-divider-color", "rgb(239, 239, 245)" )
+    , ( "--n-border-radius", "3px" )
+    , ( "--n-arrow-height", "6px" )
+    , ( "--n-arrow-offset", "10px" )
+    , ( "--n-arrow-offset-vertical", "10px" )
+    , ( "--n-padding", "8px 14px" )
+    , ( "--n-space", "6px" )
+    , ( "--n-space-arrow", "10px" )
+    ]
 
 
 
@@ -5007,6 +5116,48 @@ checks =
     , eq "scrollbar vars: rtl swaps vertical-left left to auto" (Just "auto") (svar light sRtlOpts "--n-scrollbar-rail-left-vertical-left")
     , eq "scrollbar vars: rtl leaves horizontal-top left unchanged" (Just "2px") (svar light sRtlOpts "--n-scrollbar-rail-left-horizontal-top")
     , eq "scrollbar vars: rtl leaves horizontal-bottom bottom unchanged" (Just "4px") (svar light sRtlOpts "--n-scrollbar-rail-bottom-horizontal-bottom")
+
+    -- popover: defaults -----------------------------------------------------
+    , eq "popover defaults: showArrow True" True pD.showArrow
+    , eq "popover defaults: arrowPointToCenter False" False pD.arrowPointToCenter
+    , eq "popover defaults: overlap False" False pD.overlap
+    , eq "popover defaults: raw False" False pD.raw
+    , eq "popover defaults: scrollable False" False pD.scrollable
+    , eq "popover defaults: width Nothing" Nothing pD.width
+    , eq "popover defaults: rtl False" False pD.rtl
+    , eq "popover defaults: header Nothing" Nothing pD.header
+    , eq "popover defaults: footer Nothing" Nothing pD.footer
+    , eq "popover defaults: transition Nothing" Nothing pD.transition
+    , eq "popover defaults: arrowClass Nothing" Nothing pD.arrowClass
+    , eq "popover defaults: arrowStyle Nothing" Nothing pD.arrowStyle
+    , eq "popover defaults: arrowWrapperClass Nothing" Nothing pD.arrowWrapperClass
+    , eq "popover defaults: arrowWrapperStyle Nothing" Nothing pD.arrowWrapperStyle
+    , eq "popover defaults: contentClass Nothing" Nothing pD.contentClass
+    , eq "popover defaults: contentStyle Nothing" Nothing pD.contentStyle
+    , eq "popover defaults: headerClass Nothing" Nothing pD.headerClass
+    , eq "popover defaults: headerStyle Nothing" Nothing pD.headerStyle
+    , eq "popover defaults: footerClass Nothing" Nothing pD.footerClass
+    , eq "popover defaults: footerStyle Nothing" Nothing pD.footerStyle
+    , eq "popover defaults: attributes []" True (List.isEmpty pD.attributes)
+
+    -- popover: cssVars (theme math) -----------------------------------------
+    , eq "popover vars: 15 keys" 15 (List.length (Popover.cssVars light))
+    , eq "popover vars: full 15-list (name+value, in order)" expectedPopoverVars (Popover.cssVars light)
+    , eq "popover vars: --n-space" (Just "6px") (lookup "--n-space" (Popover.cssVars light))
+
+    -- popover: placementName (all 12) ---------------------------------------
+    , eq "popover placement: Top" "top" (Popover.placementName Popover.Top)
+    , eq "popover placement: TopStart" "top-start" (Popover.placementName Popover.TopStart)
+    , eq "popover placement: TopEnd" "top-end" (Popover.placementName Popover.TopEnd)
+    , eq "popover placement: Bottom" "bottom" (Popover.placementName Popover.Bottom)
+    , eq "popover placement: BottomStart" "bottom-start" (Popover.placementName Popover.BottomStart)
+    , eq "popover placement: BottomEnd" "bottom-end" (Popover.placementName Popover.BottomEnd)
+    , eq "popover placement: Left" "left" (Popover.placementName Popover.Left)
+    , eq "popover placement: LeftStart" "left-start" (Popover.placementName Popover.LeftStart)
+    , eq "popover placement: LeftEnd" "left-end" (Popover.placementName Popover.LeftEnd)
+    , eq "popover placement: Right" "right" (Popover.placementName Popover.Right)
+    , eq "popover placement: RightStart" "right-start" (Popover.placementName Popover.RightStart)
+    , eq "popover placement: RightEnd" "right-end" (Popover.placementName Popover.RightEnd)
     ]
 
 
@@ -5623,6 +5774,38 @@ liveNodes =
                     (Scrollbar.view Theme.default sStylingOpts [ Element.text "content" ])
                 , Element.el [ Element.htmlAttribute (HA.id "live-scrollbar-x-content") ]
                     (Scrollbar.view Theme.default sXContentOpts [ Element.text "content" ])
+
+                -- Popover (the host wrapper carries the v-placement attribute)
+                , Element.el [ Element.htmlAttribute (HA.id "live-popover-default"), Popover.placementAttribute Popover.Top ]
+                    (Popover.view Theme.default pD [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popover-width"), Popover.placementAttribute Popover.Top ]
+                    (Popover.view Theme.default pWidthOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popover-header-footer"), Popover.placementAttribute Popover.Top ]
+                    (Popover.view Theme.default pHeaderFooterOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popover-header-only"), Popover.placementAttribute Popover.Top ]
+                    (Popover.view Theme.default pHeaderOnlyOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popover-header-empty"), Popover.placementAttribute Popover.Top ]
+                    (Popover.view Theme.default pHeaderOnlyOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popover-no-arrow"), Popover.placementAttribute Popover.Top ]
+                    (Popover.view Theme.default pNoArrowOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popover-overlap"), Popover.placementAttribute Popover.Top ]
+                    (Popover.view Theme.default pOverlapOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popover-raw"), Popover.placementAttribute Popover.Top ]
+                    (Popover.view Theme.default pRawOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popover-rtl"), Popover.placementAttribute Popover.Top ]
+                    (Popover.view Theme.default pRtlOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popover-center-arrow"), Popover.placementAttribute Popover.Top ]
+                    (Popover.view Theme.default pCenterArrowOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popover-scrollable"), Popover.placementAttribute Popover.Top ]
+                    (Popover.view Theme.default pScrollableOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popover-scrollable-header"), Popover.placementAttribute Popover.Top ]
+                    (Popover.view Theme.default pScrollableHeaderOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popover-transition"), Popover.placementAttribute Popover.Top ]
+                    (Popover.view Theme.default pTransitionOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popover-passthrough"), Popover.placementAttribute Popover.Top ]
+                    (Popover.view Theme.default pPassthroughOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popover-placement"), Popover.placementAttribute Popover.TopStart ]
+                    (Popover.view Theme.default pD [ Element.text "content" ])
                 ]
             )
         ]
