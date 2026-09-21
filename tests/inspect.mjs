@@ -3501,6 +3501,12 @@ dEq(
   })()
 )
 
+dEq(
+  'DOM: Descriptions separator="" suppresses the separator span',
+  0,
+  doc.querySelectorAll('#live-descriptions-empty-separator .n-descriptions-separator').length
+)
+
 dTrue(
   'DOM: Descriptions labelAlign Center adds --center-label-align',
   hasCls(doc.querySelector('#live-descriptions-center .n-descriptions'), 'n-descriptions--center-label-align'),

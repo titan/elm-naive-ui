@@ -46,6 +46,10 @@ The caller owns the items; nothing is measured or looked up.
   - The extracted stylesheet targets `n-descriptions-table-row__label`, but upstream's DOM
     emits `n-descriptions-table-content__label` — a selector mismatch reproduced faithfully
     (the label span simply carries no rule, exactly as upstream).
+  - In the combined cell, upstream nests the separator span _inside_ `__label`
+    (`Descriptions.tsx` render()); this port renders it as a sibling between `__label` and
+    `__content`. Every applicable CSS rule resolves identically, so the two are
+    render-equivalent; the flat sibling form is simply easier to build on elm-ui.
   - The root is an elm-ui column whose children fill the width (`NUI.Card` precedent); Naive
     UI sets no `display` on `.n-descriptions`.
 

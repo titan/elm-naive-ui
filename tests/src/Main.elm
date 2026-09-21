@@ -2233,6 +2233,11 @@ descSeparatorOpts =
     { ddflt | labelPlacement = Descriptions.Left, separator = "/" }
 
 
+descEmptySeparatorOpts : Descriptions.Options Msg
+descEmptySeparatorOpts =
+    { ddflt | labelPlacement = Descriptions.Left, separator = "" }
+
+
 descCenterOpts : Descriptions.Options Msg
 descCenterOpts =
     { ddflt | labelAlign = Descriptions.AlignCenter }
@@ -5250,6 +5255,8 @@ liveNodes =
                     (Descriptions.view Theme.default descLargeBorderedOpts descItems3)
                 , Element.el [ Element.htmlAttribute (HA.id "live-descriptions-separator") ]
                     (Descriptions.view Theme.default descSeparatorOpts descItems3)
+                , Element.el [ Element.htmlAttribute (HA.id "live-descriptions-empty-separator") ]
+                    (Descriptions.view Theme.default descEmptySeparatorOpts descItems3)
                 , Element.el [ Element.htmlAttribute (HA.id "live-descriptions-center") ]
                     (Descriptions.view Theme.default descCenterOpts descItems3)
                 , Element.el [ Element.htmlAttribute (HA.id "live-descriptions-passthrough") ]
