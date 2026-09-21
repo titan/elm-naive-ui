@@ -75,9 +75,12 @@ elements cannot be cloned; the extra wrapper is visually identical because the
 `n-modal` class, `role="dialog"` and `aria-modal="true"` merged onto the card
 root (via Card's `extraClasses`/`attributes` seams) — start from
 `cardDefaults`: upstream spreads `{...cardBaseProps, ...dialogProps}` so the
-card is unbordered by default inside a modal. `dialog`/`confirm` presets are
-**deferred** until `NUI.Dialog` exists (their own ~30-var theme, icon/type
-system and action buttons); the `Preset` type grows constructors then.
+card is unbordered by default inside a modal. Either way the body phase class
+(`fade-in-scale-up-transition-*`) is forced **last** in the root class list
+(the house invariant, cf. `NUI.Dropdown`), after any caller-supplied
+`extraClasses`. `dialog`/`confirm` presets are **deferred** until
+`NUI.Dialog` exists (their own ~30-var theme, icon/type system and action
+buttons); the `Preset` type grows constructors then.
 
 `showMask = False` adds `n-modal-body-wrapper--mask-hidden` (pointer-events
 pass-through except the content) exactly as upstream's `maskHidden = !showMask`.
@@ -203,9 +206,12 @@ contentNode theme opts preset =
                 children
 
         Card cardOpts children ->
+            -- caller `extraClasses` sit between `n-modal` and the phase class:
+            -- the transition class stays LAST in the root class list (the house
+            -- invariant, cf. `NUI.Dropdown`).
             NUI.Card.view theme
                 { cardOpts
-                    | extraClasses = "n-modal" :: (phases ++ cardOpts.extraClasses)
+                    | extraClasses = "n-modal" :: (cardOpts.extraClasses ++ phases)
                     , attributes = ariaModal :: cardOpts.attributes
                     , role = Just "dialog"
                 }

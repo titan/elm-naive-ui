@@ -6586,6 +6586,11 @@ liveNodes =
                         { mD | show = True, bodyTransition = Just Internal.EnterFrom }
                         (Modal.Card mCardD [ Element.text "Phased card" ])
                     )
+                , Element.el [ Element.htmlAttribute (HA.id "live-modal-card-phase-extra") ]
+                    (Modal.view Theme.default
+                        { mD | show = True, bodyTransition = Just Internal.EnterFrom }
+                        (Modal.Card { mCardD | extraClasses = [ "caller-x" ] } [ Element.text "Phased + caller class" ])
+                    )
                 , Element.el [ Element.htmlAttribute (HA.id "live-modal-dark") ]
                     (Modal.view Theme.dark
                         { mD | show = True }

@@ -5213,6 +5213,31 @@ dEq(
         .join(' ')
     : null
 )
+// caller `extraClasses` must NOT displace the phase class: order is
+// rootClasses ++ ["n-modal", ...caller, ...phase] — phase last (house invariant).
+const mCardPhaseExtra = mContent('live-modal-card-phase-extra')
+dEq(
+  'DOM: Modal Card preset keeps the body phase class LAST even with caller extraClasses (n-modal caller-x phase)',
+  'n-card n-modal caller-x fade-in-scale-up-transition-enter-from',
+  mCardPhaseExtra
+    ? [...mCardPhaseExtra.classList]
+        .filter((c) => c.startsWith('n-') || c === 'caller-x' || c.includes('transition'))
+        .join(' ')
+    : null
+)
+dTrue(
+  'DOM: Modal Card preset phase class is the very last class on the root (caller extraClasses precede it)',
+  (() => {
+    if (!mCardPhaseExtra) return false
+    const cl = [...mCardPhaseExtra.classList]
+    return (
+      cl[cl.length - 1] === 'fade-in-scale-up-transition-enter-from' &&
+      cl.indexOf('caller-x') < cl.length - 1 &&
+      cl.indexOf('n-modal') < cl.indexOf('caller-x')
+    )
+  })(),
+  clsOf(mCardPhaseExtra)
+)
 
 // dark container: dark siblings, shadow identical to light
 const mDarkContainer = mContainer('live-modal-dark')
