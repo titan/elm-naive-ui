@@ -2604,7 +2604,7 @@ expectedTooltipDarkVars =
 -}
 stripColorVars : List ( String, String ) -> List ( String, String )
 stripColorVars =
-    List.filter (\( k, _ ) -> k /= "--n-color" && k /= "--n-text-color" )
+    List.filter (\( k, _ ) -> k /= "--n-color" && k /= "--n-text-color")
 
 
 {-| The full 15-entry `--n-*` list `NUI.Popover.cssVars` must emit against
