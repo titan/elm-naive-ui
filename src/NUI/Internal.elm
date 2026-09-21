@@ -4,6 +4,7 @@ module NUI.Internal exposing
     , classes
     , cssVars
     , isLeavePhase
+    , renderVars
     , transitionClass
     )
 

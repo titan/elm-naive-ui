@@ -422,16 +422,13 @@ cssVarsFor theme =
 
 
 {-| Render one `style` attribute: `k: v` declarations (with
-`NUI.Internal.cssVars`'s `initial` / empty filtering) followed by raw CSS
-fragments verbatim. `NUI.Internal` does not expose its string renderer, so
-the filtering is repeated here.
+`NUI.Internal.renderVars`'s `initial` / empty filtering) followed by raw CSS
+fragments verbatim.
 -}
 renderStyle : List ( String, String ) -> List String -> String
 renderStyle pairs raws =
     String.join ";"
-        (List.map (\( k, v ) -> k ++ ":" ++ v) (List.filter (\( _, v ) -> v /= "initial" && not (String.isEmpty v)) pairs)
-            ++ List.filter (not << String.isEmpty) raws
-        )
+        (List.filter (not << String.isEmpty) (I.renderVars pairs :: raws))
 
 
 {-| Upstream's `entering` ref (LoadingBar.tsx:33): true from the Transition's
