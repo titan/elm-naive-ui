@@ -106,6 +106,7 @@ bridge, tests).
 | `NUI.Marquee`     | ✅ |
 | `NUI.PageHeader`  | ✅ |
 | `NUI.Pagination`  | ✅ |
+| `NUI.Popover`     | ✅ |
 | `NUI.Progress`    | ✅ |
 | `NUI.QrCode`      | ✅ |
 | `NUI.Radio`       | ✅ |
@@ -121,6 +122,7 @@ bridge, tests).
 | `NUI.Tag`         | ✅ |
 | `NUI.Thing`       | ✅ |
 | `NUI.Timeline`    | ✅ |
+| `NUI.Tooltip`     | ✅ |
 | `NUI.Typography`  | ✅ |
 
 Supporting modules: `NUI.Css` (the scoped stylesheet + root marker),
