@@ -4407,6 +4407,531 @@ dEq(
   styleAt(tipDark)
 )
 
+// Dropdown -------------------------------------------------------------------
+// The body renders `n-dropdown-menu` AND the popover-shared marker (never
+// `n-popover`), plus the merged 31-var set (popover order; six values from the
+// dropdown theme). Light/medium default == the upstream vitest snapshot string.
+const DROPDOWN_DEFAULT_STYLE =
+  '--n-box-shadow:0 3px 6px -4px rgba(0, 0, 0, .12), 0 6px 16px 0 rgba(0, 0, 0, .08), 0 9px 28px 8px rgba(0, 0, 0, .05)' +
+  ';--n-bezier:cubic-bezier(.4, 0, .2, 1)' +
+  ';--n-bezier-ease-in:cubic-bezier(.4, 0, 1, 1)' +
+  ';--n-bezier-ease-out:cubic-bezier(0, 0, .2, 1)' +
+  ';--n-font-size:14px' +
+  ';--n-text-color:rgb(51, 54, 57)' +
+  ';--n-color:#fff' +
+  ';--n-divider-color:rgb(239, 239, 245)' +
+  ';--n-border-radius:3px' +
+  ';--n-arrow-height:6px' +
+  ';--n-arrow-offset:10px' +
+  ';--n-arrow-offset-vertical:10px' +
+  ';--n-padding:4px 0' +
+  ';--n-space:6px' +
+  ';--n-space-arrow:10px' +
+  ';--n-option-height:34px' +
+  ';--n-option-prefix-width:14px' +
+  ';--n-option-icon-prefix-width:36px' +
+  ';--n-option-suffix-width:14px' +
+  ';--n-option-icon-suffix-width:32px' +
+  ';--n-option-icon-size:16px' +
+  ';--n-option-opacity-disabled:0.5' +
+  ';--n-option-color-hover:rgb(243, 243, 245)' +
+  ';--n-option-color-active:rgba(24, 160, 88, 0.1)' +
+  ';--n-option-text-color:rgb(51, 54, 57)' +
+  ';--n-option-text-color-hover:rgb(51, 54, 57)' +
+  ';--n-option-text-color-active:#18a058' +
+  ';--n-option-text-color-child-active:#18a058' +
+  ';--n-prefix-color:rgb(51, 54, 57)' +
+  ';--n-suffix-color:rgb(51, 54, 57)' +
+  ';--n-group-header-text-color:rgb(118, 124, 130)'
+
+// The root is an elm-ui element, so filter to our `n-*` tokens.
+const dropdownRootClasses = (el) =>
+  [...(el ? el.classList : [])].filter((c) => c.startsWith('n-')).join(' ')
+const countVars = (el) => ((styleAt(el) || '').match(/--n-[a-z-]+:/g) || []).length
+const labelText = (body) => {
+  const l = body ? body.querySelector('.n-dropdown-option-body__label') : null
+  return l ? l.textContent : null
+}
+
+const ddHost = doc.getElementById('live-dropdown-default')
+const ddRoot = doc.querySelector('#live-dropdown-default .n-dropdown-menu')
+dEq('DOM: Dropdown root is a <div>', 'DIV', tagOf(ddRoot))
+dEq(
+  'DOM: Dropdown default classes are n-dropdown-menu n-popover-shared n-dropdown n-dropdown--medium-size',
+  'n-dropdown-menu n-popover-shared n-dropdown n-dropdown--medium-size',
+  dropdownRootClasses(ddRoot)
+)
+dTrue(
+  'DOM: Dropdown default carries no n-popover marker and no --scrollable',
+  !!ddRoot &&
+    !hasCls(ddRoot, 'n-popover') &&
+    !hasCls(ddRoot, 'n-dropdown-menu--scrollable'),
+  clsOf(ddRoot)
+)
+dEq(
+  'DOM: Dropdown root carries 31 --n-* custom properties',
+  31,
+  countVars(ddRoot)
+)
+dEq(
+  'DOM: Dropdown default style is the exact full 31-var string',
+  DROPDOWN_DEFAULT_STYLE,
+  styleAt(ddRoot)
+)
+dEq(
+  'DOM: Dropdown host wrapper carries v-placement=bottom (dropdown default)',
+  'bottom',
+  ddHost ? ddHost.getAttribute('v-placement') : null
+)
+
+// structure: leaf option (body > prefix + label + suffix)
+const ddLeaf = ddRoot
+  ? ddRoot.querySelector('.n-dropdown-option[data-dropdown-option]')
+  : null
+const ddLeafBody = ddLeaf ? ddLeaf.querySelector('.n-dropdown-option-body') : null
+const ddLeafPrefix = ddLeafBody
+  ? ddLeafBody.querySelector('.n-dropdown-option-body__prefix')
+  : null
+const ddLeafLabel = ddLeafBody
+  ? ddLeafBody.querySelector('.n-dropdown-option-body__label')
+  : null
+const ddLeafSuffix = ddLeafBody
+  ? ddLeafBody.querySelector('.n-dropdown-option-body__suffix')
+  : null
+dTrue(
+  'DOM: Dropdown leaf = .n-dropdown-option[data-dropdown-option] > body > prefix + label + suffix',
+  !!ddLeaf &&
+    !!ddLeafBody &&
+    !!ddLeafPrefix &&
+    ddLeafPrefix.parentElement === ddLeafBody &&
+    !!ddLeafLabel &&
+    ddLeafLabel.parentElement === ddLeafBody &&
+    !!ddLeafSuffix &&
+    ddLeafSuffix.parentElement === ddLeafBody,
+  clsOf(ddLeaf)
+)
+dTrue(
+  'DOM: Dropdown leaf prefix widens (--show-icon, icon present) and suffix widens (--has-submenu)',
+  hasCls(ddLeafPrefix, 'n-dropdown-option-body__prefix--show-icon') &&
+    hasCls(ddLeafSuffix, 'n-dropdown-option-body__suffix--has-submenu'),
+  clsOf(ddLeafBody)
+)
+dTrue(
+  'DOM: Dropdown leaf prefix carries NO data-dropdown-option (snapshot); suffix does',
+  !!ddLeafPrefix &&
+    !ddLeafPrefix.hasAttribute('data-dropdown-option') &&
+    !!ddLeafSuffix &&
+    ddLeafSuffix.hasAttribute('data-dropdown-option'),
+  clsOf(ddLeafBody)
+)
+
+// structure: group header (wrapper WITHOUT data-dropdown-option; body --group;
+// prefix WITH data-dropdown-option; suffix empty)
+const ddGroup = ddRoot
+  ? ddRoot.querySelector('.n-dropdown-option:not([data-dropdown-option])')
+  : null
+const ddGroupBody = ddGroup
+  ? ddGroup.querySelector('.n-dropdown-option-body')
+  : null
+const ddGroupPrefix = ddGroupBody
+  ? ddGroupBody.querySelector('.n-dropdown-option-body__prefix')
+  : null
+const ddGroupSuffix = ddGroupBody
+  ? ddGroupBody.querySelector('.n-dropdown-option-body__suffix')
+  : null
+dTrue(
+  'DOM: Dropdown group wrapper has NO data-dropdown-option; body --group; prefix WITH data-dropdown-option',
+  !!ddGroup &&
+    !ddGroup.hasAttribute('data-dropdown-option') &&
+    hasCls(ddGroupBody, 'n-dropdown-option-body--group') &&
+    !!ddGroupPrefix &&
+    ddGroupPrefix.hasAttribute('data-dropdown-option') &&
+    !!ddGroupSuffix &&
+    ddGroupSuffix.textContent === '',
+  clsOf(ddGroup)
+)
+
+dEq(
+  'DOM: Dropdown renders both dividers',
+  2,
+  ddRoot ? ddRoot.querySelectorAll('.n-dropdown-divider').length : -1
+)
+dTrue(
+  'DOM: Dropdown custom renders its children bare (wrapper + child carry no n-* classes)',
+  (() => {
+    if (!ddRoot) return false
+    const wrapper = [...ddRoot.children].find(
+      (c) => c.textContent.trim() === 'custom-content'
+    )
+    return (
+      !!wrapper &&
+      ![...wrapper.classList].some((c) => c.startsWith('n-')) &&
+      [...wrapper.children].every(
+        (c) => ![...c.classList].some((x) => x.startsWith('n-'))
+      )
+    )
+  })(),
+  ''
+)
+
+// structure: submenu leaf (offset-container) vs leaf without children
+const ddLeafWrappers = ddRoot
+  ? [
+      ...ddRoot.querySelectorAll(
+        '.n-dropdown-option[data-dropdown-option]'
+      )
+    ]
+  : []
+const ddSubLeaf = ddLeafWrappers.find((o) =>
+  o.querySelector('.n-dropdown-offset-container')
+)
+dEq(
+  'DOM: Dropdown renders exactly one (empty) n-dropdown-offset-container, inside the submenu leaf',
+  1,
+  ddRoot ? ddRoot.querySelectorAll('.n-dropdown-offset-container').length : -1
+)
+dTrue(
+  'DOM: Dropdown offset-container is the submenu leaf\u2019s empty direct child',
+  !!ddSubLeaf &&
+    (() => {
+      const c = ddSubLeaf.querySelector('.n-dropdown-offset-container')
+      return !!c && c.parentElement === ddSubLeaf && c.textContent === ''
+    })(),
+  clsOf(ddSubLeaf)
+)
+dTrue(
+  'DOM: Dropdown leaf without children renders no offset container',
+  !!ddLeaf && !ddLeaf.querySelector('.n-dropdown-offset-container')
+)
+dTrue(
+  'DOM: Dropdown chevron lives only in the submenu leaf suffix (svg viewBox 0 0 16 16)',
+  !!ddSubLeaf &&
+    !!ddSubLeaf.querySelector(
+      '.n-dropdown-option-body__suffix .n-icon svg[viewBox="0 0 16 16"]'
+    ) &&
+    !!ddLeaf &&
+    !ddLeaf.querySelector('.n-dropdown-option-body__suffix .n-icon svg'),
+  ''
+)
+
+// menu-level flags: one icon / one submenu widens every column
+const ddFlags = doc.querySelector('#live-dropdown-flags .n-dropdown-menu')
+const ddFlagPrefixes = ddFlags
+  ? [
+      ...ddFlags.querySelectorAll('.n-dropdown-option-body__prefix')
+    ]
+  : []
+const ddFlagSuffixes = ddFlags
+  ? [
+      ...ddFlags.querySelectorAll('.n-dropdown-option-body__suffix')
+    ]
+  : []
+dEq('DOM: Dropdown flags mount has 5 prefixes', 5, ddFlagPrefixes.length)
+dEq('DOM: Dropdown flags mount has 5 suffixes', 5, ddFlagSuffixes.length)
+dTrue(
+  'DOM: one icon on one option widens ALL prefixes (--show-icon)',
+  ddFlagPrefixes.length === 5 &&
+    ddFlagPrefixes.every((p) =>
+      hasCls(p, 'n-dropdown-option-body__prefix--show-icon')
+    ),
+  ddFlagPrefixes.map(clsOf).join(' | ')
+)
+dTrue(
+  'DOM: children = Just [] on one option widens ALL suffixes (--has-submenu)',
+  ddFlagSuffixes.length === 5 &&
+    ddFlagSuffixes.every((s) =>
+      hasCls(s, 'n-dropdown-option-body__suffix--has-submenu')
+    ),
+  ddFlagSuffixes.map(clsOf).join(' | ')
+)
+dEq(
+  'DOM: Dropdown chevron renders on exactly one option suffix',
+  1,
+  ddFlags
+    ? ddFlags.querySelectorAll('.n-dropdown-option-body__suffix .n-icon svg')
+        .length
+    : -1
+)
+dTrue(
+  'DOM: Dropdown chevron is on the submenu option (label C), not the icon option',
+  (() => {
+    if (!ddFlags) return false
+    const withChevron = [
+      ...ddFlags.querySelectorAll('.n-dropdown-option[data-dropdown-option]')
+    ].filter((o) => o.querySelector('.n-dropdown-option-body__suffix svg'))
+    return withChevron.length === 1 && labelText(withChevron[0]) === 'C'
+  })(),
+  ''
+)
+
+// a GROUP CHILD icon must also widen every prefix
+const ddGroupIcon = doc.querySelector(
+  '#live-dropdown-groupicon .n-dropdown-menu'
+)
+const ddGroupIconPrefixes = ddGroupIcon
+  ? [
+      ...ddGroupIcon.querySelectorAll('.n-dropdown-option-body__prefix')
+    ]
+  : []
+dEq(
+  'DOM: Dropdown group-child-icon mount has 3 prefixes',
+  3,
+  ddGroupIconPrefixes.length
+)
+dTrue(
+  'DOM: an icon on a GROUP CHILD widens every prefix (top-level leaf too)',
+  ddGroupIconPrefixes.length === 3 &&
+    ddGroupIconPrefixes.every((p) =>
+      hasCls(p, 'n-dropdown-option-body__prefix--show-icon')
+    ),
+  ddGroupIconPrefixes.map(clsOf).join(' | ')
+)
+
+// group-in-group is dropped
+const ddNest = doc.querySelector('#live-dropdown-groupnest .n-dropdown-menu')
+dEq(
+  'DOM: Dropdown group-in-group renders one group header (nested group dropped)',
+  1,
+  ddNest
+    ? ddNest.querySelectorAll('.n-dropdown-option-body--group').length
+    : -1
+)
+dTrue(
+  'DOM: Dropdown nested group header + its children render nothing',
+  !!ddNest &&
+    /Outer/.test(ddNest.textContent) &&
+    /Inner1/.test(ddNest.textContent) &&
+    !/InnerGroup/.test(ddNest.textContent) &&
+    !/Deep/.test(ddNest.textContent),
+  ddNest ? ddNest.textContent.replace(/\s+/g, ' ').trim() : null
+)
+
+// `value` -> --active / --child-active
+const ddValue = doc.querySelector('#live-dropdown-value .n-dropdown-menu')
+const ddActiveBodies = ddValue
+  ? [...ddValue.querySelectorAll('.n-dropdown-option-body--active')]
+  : []
+const ddChildActiveBodies = ddValue
+  ? [
+      ...ddValue.querySelectorAll('.n-dropdown-option-body--child-active')
+    ]
+  : []
+dEq(
+  'DOM: Dropdown value=g1b marks exactly one --active',
+  1,
+  ddActiveBodies.length
+)
+dEq(
+  'DOM: Dropdown value=g1b marks no --child-active',
+  0,
+  ddChildActiveBodies.length
+)
+dEq(
+  'DOM: Dropdown --active lands on the g1b leaf (through the group)',
+  'B',
+  labelText(ddActiveBodies[0])
+)
+dTrue(
+  'DOM: Dropdown group header never carries state classes',
+  !!ddValue &&
+    [...ddValue.querySelectorAll('.n-dropdown-option-body--group')].every(
+      (b) =>
+        !hasCls(b, 'n-dropdown-option-body--active') &&
+        !hasCls(b, 'n-dropdown-option-body--child-active')
+    ),
+  ''
+)
+
+const ddChildValue = doc.querySelector(
+  '#live-dropdown-childvalue .n-dropdown-menu'
+)
+dEq(
+  'DOM: Dropdown value=sub1 marks the submenu parent --child-active',
+  1,
+  ddChildValue
+    ? ddChildValue.querySelectorAll('.n-dropdown-option-body--child-active')
+        .length
+    : -1
+)
+dEq(
+  'DOM: Dropdown value=sub1 marks no --active (the child leaf is caller-mounted)',
+  0,
+  ddChildValue
+    ? ddChildValue.querySelectorAll('.n-dropdown-option-body--active').length
+    : -1
+)
+dTrue(
+  'DOM: Dropdown child-active is the submenu leaf body (not also active)',
+  (() => {
+    if (!ddChildValue) return false
+    const ca = ddChildValue.querySelector(
+      '.n-dropdown-option-body--child-active'
+    )
+    return (
+      !!ca &&
+      !hasCls(ca, 'n-dropdown-option-body--active') &&
+      labelText(ca) === 'Sub'
+    )
+  })(),
+  ''
+)
+
+// states + onSelect wiring
+const ddSelect = doc.querySelector('#live-dropdown-select .n-dropdown-menu')
+const ddSelectBodies = ddSelect
+  ? [...ddSelect.querySelectorAll('.n-dropdown-option-body')]
+  : []
+const bodyFor = (label) =>
+  ddSelectBodies.find((b) => labelText(b) === label)
+const ddOkBody = bodyFor('OK')
+const ddDisBody = bodyFor('Disabled')
+const ddSubBody = bodyFor('Submenu')
+dTrue(
+  'DOM: Dropdown disabled leaf body has --disabled',
+  hasCls(ddDisBody, 'n-dropdown-option-body--disabled')
+)
+dTrue(
+  'DOM: Dropdown enabled leaf body has no --disabled',
+  !!ddOkBody && !hasCls(ddOkBody, 'n-dropdown-option-body--disabled')
+)
+const ddCount = () =>
+  (doc.getElementById('dropdown-click-count') || {}).textContent
+const ddClick = (el) => {
+  if (el) {
+    el.dispatchEvent(
+      new window.MouseEvent('click', { bubbles: true, cancelable: true })
+    )
+  }
+}
+dEq('DOM: Dropdown click counter starts at 0', '0', ddCount())
+ddClick(ddDisBody)
+ddClick(ddSubBody)
+await new Promise((r) => setTimeout(r, 30))
+dEq(
+  'DOM: clicking a disabled leaf or a submenu leaf dispatches nothing',
+  '0',
+  ddCount()
+)
+ddClick(ddOkBody)
+await new Promise((r) => setTimeout(r, 30))
+dEq(
+  'DOM: clicking a selectable leaf body dispatches onSelect (counter 1)',
+  '1',
+  ddCount()
+)
+
+// arrow: showArrow vs overlap merge
+const ddArrow = doc.querySelector('#live-dropdown-arrow .n-dropdown-menu')
+const ddArrowWrapper = ddArrow
+  ? ddArrow.querySelector('.n-popover-arrow-wrapper')
+  : null
+dTrue(
+  'DOM: Dropdown showArrow adds --show-arrow',
+  hasCls(ddArrow, 'n-popover-shared--show-arrow')
+)
+dTrue(
+  'DOM: Dropdown showArrow renders wrapper > arrow as the body last child',
+  !!ddArrowWrapper &&
+    !!ddArrowWrapper.querySelector('.n-popover-arrow') &&
+    ddArrowWrapper.parentElement === ddArrow &&
+    ddArrow.lastElementChild === ddArrowWrapper,
+  clsOf(ddArrowWrapper)
+)
+const ddOverlapArrow = doc.querySelector(
+  '#live-dropdown-overlap-arrow .n-dropdown-menu'
+)
+dTrue(
+  'DOM: Dropdown overlap + showArrow drops the arrow and --show-arrow, keeps --overlap',
+  !!ddOverlapArrow &&
+    hasCls(ddOverlapArrow, 'n-popover-shared--overlap') &&
+    !hasCls(ddOverlapArrow, 'n-popover-shared--show-arrow') &&
+    !ddOverlapArrow.querySelector('.n-popover-arrow-wrapper'),
+  clsOf(ddOverlapArrow)
+)
+
+// scrollable: --scrollable + scrollbar child carrying n-dropdown-menu__content
+const ddSc = doc.querySelector(
+  '#live-dropdown-scrollable .n-dropdown-menu'
+)
+const ddScBar = ddSc ? ddSc.querySelector('.n-scrollbar') : null
+const ddScContent = ddScBar
+  ? ddScBar.querySelector('.n-scrollbar-content')
+  : null
+dTrue(
+  'DOM: Dropdown scrollable adds --scrollable and a direct .n-scrollbar child',
+  hasCls(ddSc, 'n-dropdown-menu--scrollable') &&
+    !!ddScBar &&
+    ddScBar.parentElement === ddSc,
+  clsOf(ddSc)
+)
+dTrue(
+  'DOM: Dropdown scrollable content carries n-dropdown-menu__content + the options',
+  !!ddScContent &&
+    hasCls(ddScContent, 'n-dropdown-menu__content') &&
+    !!ddScContent.querySelector('.n-dropdown-option'),
+  clsOf(ddScContent)
+)
+
+// transition family
+const ddT = doc.querySelector('#live-dropdown-transition .n-dropdown-menu')
+dTrue(
+  'DOM: Dropdown transition adds popover-transition-enter-active LAST in the class list',
+  !!ddT &&
+    ddT.classList.contains('popover-transition-enter-active') &&
+    [...ddT.classList][[...ddT.classList].length - 1] ===
+      'popover-transition-enter-active',
+  clsOf(ddT)
+)
+const ddSubT = doc.querySelector(
+  '#live-dropdown-subtransition .n-dropdown-menu'
+)
+dTrue(
+  'DOM: Dropdown submenu-family transition emits fade-in-scale-up-transition-enter-active',
+  hasCls(ddSubT, 'fade-in-scale-up-transition-enter-active'),
+  clsOf(ddSubT)
+)
+
+// sizes / inverted / dark / empty in the DOM
+const ddSmall = doc.querySelector('#live-dropdown-small .n-dropdown-menu')
+dTrue(
+  'DOM: Dropdown small emits n-dropdown--small-size + 28px option height',
+  hasCls(ddSmall, 'n-dropdown--small-size') &&
+    (styleAt(ddSmall) || '').includes('--n-option-height:28px') &&
+    (styleAt(ddSmall) || '').includes('--n-font-size:14px'),
+  clsOf(ddSmall)
+)
+const ddInv = doc.querySelector(
+  '#live-dropdown-inverted .n-dropdown-menu'
+)
+dTrue(
+  'DOM: Dropdown inverted swaps --n-color and --n-option-color-active',
+  !!ddInv &&
+    (styleAt(ddInv) || '').includes('--n-color:rgb(0, 20, 40)') &&
+    (styleAt(ddInv) || '').includes('--n-option-color-active:#18a058'),
+  styleAt(ddInv)
+)
+const ddDark = doc.querySelector('#live-dropdown-dark .n-dropdown-menu')
+dTrue(
+  'DOM: Dropdown dark --n-color = popoverColor and --n-option-color-active alpha 0.15',
+  !!ddDark &&
+    (styleAt(ddDark) || '').includes('--n-color:rgb(72, 72, 78)') &&
+    (styleAt(ddDark) || '').includes(
+      '--n-option-color-active:rgba(99, 226, 183, 0.15)'
+    ),
+  styleAt(ddDark)
+)
+dEq(
+  'DOM: Dropdown dark root carries 31 --n-* custom properties',
+  31,
+  countVars(ddDark)
+)
+const ddEmpty = doc.querySelector('#live-dropdown-empty .n-dropdown-menu')
+dTrue(
+  'DOM: Dropdown empty option list renders a bare root with the 31 vars',
+  !!ddEmpty && ddEmpty.children.length === 0 && countVars(ddEmpty) === 31,
+  clsOf(ddEmpty)
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
