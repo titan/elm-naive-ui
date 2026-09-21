@@ -3788,6 +3788,21 @@ dTrue(
   styleAt(doc.querySelector('#live-tabs-styling .n-tab-pane'))
 )
 dEq(
+  'DOM: Tabs card type appends the n-tabs-pad, other types do not',
+  true,
+  doc.querySelectorAll('#live-tabs-card .n-tabs-pad').length === 1 &&
+    doc.querySelectorAll('#live-tabs-default .n-tabs-pad').length === 0 &&
+    doc.querySelectorAll('#live-tabs-segment .n-tabs-pad').length === 0
+)
+dTrue(
+  'DOM: Tabs disabled closable card tab close button carries --disabled + disabled',
+  (() => {
+    const el = doc.querySelector('#live-tabs-card-closable-disabled .n-tabs-tab--disabled .n-tabs-tab__close')
+    return !!el && hasCls(el, 'n-base-close--disabled') && el.hasAttribute('disabled')
+  })(),
+  clsOf(doc.querySelector('#live-tabs-card-closable-disabled .n-tabs-tab--disabled .n-tabs-tab__close'))
+)
+dEq(
   'DOM: Tabs embeds emit no static elm-ui sheet (noStaticStyleSheet)',
   0,
   tabsRoot

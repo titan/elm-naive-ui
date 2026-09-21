@@ -47,6 +47,8 @@ owns the active `value` (like `NUI.Form` / `NUI.Descriptions`).
     `Show` (all panes, inactive ones `display:none`) are.
   - A close click does **not** `stopPropagation` (Elm has no such hook), so when a card tab
     is both activatable and closable both messages fire.
+  - The add tab inherits `tabClass` / `tabStyle` (upstream's separate `addTabClass` /
+    `addTabStyle` props are not ported, and the add tab is not a first-class element).
   - Not ported: draggable tabs, keyboard nav, `tabProps` passthrough,
     `paneWrapperClass`/`Style`, `addTabClass`/`Style`, `tabsPadding` > 0, `labelSize`,
     `onBeforeLeave`, `addable` as an object, `showScrollButton`.
@@ -737,9 +739,21 @@ nonSegmentNav opts tabs =
         [ scrollNode opts
             (Html.div
                 [ HA.class "n-tabs-nav-scroll-content" ]
-                [ wrapperNode opts tabs ]
+                (wrapperNode opts tabs :: padNode opts)
             )
         ]
+
+
+{-| The empty `n-tabs-pad` appended to the scroll content for `Card` (Tabs.tsx:1091); it
+carries the card strip's bottom/side borders.
+-}
+padNode : Options msg -> List (Html msg)
+padNode opts =
+    if opts.type_ == Card then
+        [ Html.div [ HA.class "n-tabs-pad" ] [] ]
+
+    else
+        []
 
 
 {-| Left/right keep naive-ui's own `n-tabs-nav-y-scroll`; top/bottom render the
@@ -981,7 +995,12 @@ closeNode : Options msg -> Tab msg -> List (Html msg)
 closeNode opts tab =
     if mergedClosable opts tab && opts.type_ == Card then
         [ Html.button
-            ([ HA.class "n-base-close n-tabs-tab__close"
+            ([ HA.class
+                (String.join " "
+                    ("n-base-close n-tabs-tab__close"
+                        :: I.classIf tab.disabled "n-base-close--disabled"
+                    )
+                )
              , HA.attribute "type" "button"
              , HA.attribute "tabindex"
                 (if tab.disabled then

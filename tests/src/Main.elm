@@ -5491,6 +5491,8 @@ liveNodes =
                     (Tabs.view Theme.default tClosableBarOpts ttabs)
                 , Element.el [ Element.htmlAttribute (HA.id "live-tabs-card-closable") ]
                     (Tabs.view Theme.default tCardClosableOpts ttabs)
+                , Element.el [ Element.htmlAttribute (HA.id "live-tabs-card-closable-disabled") ]
+                    (Tabs.view Theme.default tCardClosableOpts ttabsDisabled)
                 , Element.el [ Element.htmlAttribute (HA.id "live-tabs-addable") ]
                     (Tabs.view Theme.default tAddableOpts ttabs)
                 , Element.el [ Element.htmlAttribute (HA.id "live-tabs-rtl") ]
