@@ -3811,6 +3811,154 @@ dEq(
     : -1
 )
 
+// Scrollbar -------------------------------------------------------------------
+const scrollRoot = doc.querySelector('#live-scrollbar-default .n-scrollbar')
+dEq('DOM: Scrollbar root is a <div>', 'DIV', tagOf(scrollRoot))
+dEq('DOM: Scrollbar default root class list is exactly n-scrollbar', 'n-scrollbar', clsOf(scrollRoot))
+dEq(
+  'DOM: Scrollbar root role is none',
+  'none',
+  scrollRoot ? scrollRoot.getAttribute('role') : null
+)
+dTrue(
+  'DOM: Scrollbar default root has no n-scrollbar--rtl class',
+  !!scrollRoot && !hasCls(scrollRoot, 'n-scrollbar--rtl'),
+  clsOf(scrollRoot)
+)
+dEq(
+  'DOM: Scrollbar root carries 23 --n-* custom properties',
+  23,
+  ((styleAt(scrollRoot) || '').match(/--n-[a-z-]+:/g) || []).length
+)
+dTrue(
+  'DOM: Scrollbar renders the container and content',
+  !!doc.querySelector('#live-scrollbar-default .n-scrollbar-container') &&
+    !!doc.querySelector('#live-scrollbar-default .n-scrollbar-content'),
+  clsOf(doc.querySelector('#live-scrollbar-default .n-scrollbar-container'))
+)
+dTrue(
+  'DOM: Scrollbar container + content each carry role=none',
+  (() => {
+    const container = doc.querySelector('#live-scrollbar-default .n-scrollbar-container')
+    const content = doc.querySelector('#live-scrollbar-default .n-scrollbar-content')
+    return (
+      !!container &&
+      !!content &&
+      container.getAttribute('role') === 'none' &&
+      content.getAttribute('role') === 'none'
+    )
+  })(),
+  (() => {
+    const container = doc.querySelector('#live-scrollbar-default .n-scrollbar-container')
+    const content = doc.querySelector('#live-scrollbar-default .n-scrollbar-content')
+    return `${container ? container.getAttribute('role') : null}/${
+      content ? content.getAttribute('role') : null
+    }`
+  })()
+)
+const scrollRail = doc.querySelector(
+  '#live-scrollbar-default .n-scrollbar-rail.n-scrollbar-rail--vertical.n-scrollbar-rail--vertical--right'
+)
+dTrue(
+  'DOM: Scrollbar default renders the vertical-right rail with data-scrollbar-rail + aria-hidden',
+  !!scrollRail &&
+    scrollRail.hasAttribute('data-scrollbar-rail') &&
+    scrollRail.getAttribute('aria-hidden') === 'true',
+  clsOf(scrollRail)
+)
+dTrue(
+  'DOM: Scrollbar default renders no bar and no horizontal rail',
+  !!scrollRoot &&
+    !!scrollRail &&
+    doc.querySelectorAll('#live-scrollbar-default .n-scrollbar-rail__scrollbar').length === 0 &&
+    doc.querySelectorAll('#live-scrollbar-default .n-scrollbar-rail--horizontal').length === 0,
+  styleAt(scrollRoot)
+)
+dTrue(
+  'DOM: Scrollbar showYBar renders one bar inside the vertical rail with yBarStyle',
+  (() => {
+    const rail = doc.querySelector('#live-scrollbar-bars .n-scrollbar-rail--vertical')
+    const bars = doc.querySelectorAll('#live-scrollbar-bars .n-scrollbar-rail__scrollbar')
+    return (
+      bars.length === 1 &&
+      !!rail &&
+      rail.contains(bars[0]) &&
+      (styleAt(bars[0]) || '').includes('height:40px')
+    )
+  })(),
+  styleAt(doc.querySelector('#live-scrollbar-bars .n-scrollbar-rail__scrollbar'))
+)
+dTrue(
+  'DOM: Scrollbar xScrollable renders the bottom horizontal rail + bar + fit-content content',
+  (() => {
+    const bars = doc.querySelectorAll('#live-scrollbar-x .n-scrollbar-rail__scrollbar')
+    const content = doc.querySelector('#live-scrollbar-x .n-scrollbar-content')
+    return (
+      !!doc.querySelector('#live-scrollbar-x .n-scrollbar-rail--horizontal--bottom') &&
+      bars.length === 1 &&
+      (styleAt(bars[0]) || '').includes('width:50px') &&
+      !!content &&
+      (styleAt(content) || '').includes('width:fit-content')
+    )
+  })(),
+  styleAt(doc.querySelector('#live-scrollbar-x .n-scrollbar-rail__scrollbar'))
+)
+dEq(
+  'DOM: Scrollbar xPlacement Top renders the top horizontal rail',
+  true,
+  !!doc.querySelector('#live-scrollbar-top-rail .n-scrollbar-rail--horizontal--top')
+)
+dEq(
+  'DOM: Scrollbar yPlacement Left renders the left vertical rail',
+  true,
+  !!doc.querySelector('#live-scrollbar-left .n-scrollbar-rail--vertical--left')
+)
+dTrue(
+  'DOM: Scrollbar rtl adds the rtl class and swaps the vertical rail insets',
+  (() => {
+    const root = doc.querySelector('#live-scrollbar-rtl .n-scrollbar')
+    const s = styleAt(root) || ''
+    return (
+      hasCls(root, 'n-scrollbar--rtl') &&
+      s.includes('--n-scrollbar-rail-right-vertical-right:auto') &&
+      s.includes('--n-scrollbar-rail-left-vertical-left:auto')
+    )
+  })(),
+  styleAt(doc.querySelector('#live-scrollbar-rtl .n-scrollbar'))
+)
+dTrue(
+  'DOM: Scrollbar contentClass/contentStyle hit content; attributes land on root',
+  (() => {
+    const content = doc.querySelector('#live-scrollbar-styling .n-scrollbar-content')
+    const root = doc.querySelector('#live-scrollbar-styling .n-scrollbar')
+    return (
+      hasCls(content, 'my-content') &&
+      (styleAt(content) || '').includes('background:blue') &&
+      hasCls(root, 'my-root')
+    )
+  })(),
+  clsOf(doc.querySelector('#live-scrollbar-styling .n-scrollbar-content'))
+)
+dTrue(
+  'DOM: Scrollbar xScrollable + contentStyle emits one style, width before background',
+  (() => {
+    const content = doc.querySelector('#live-scrollbar-x-content .n-scrollbar-content')
+    const s = styleAt(content) || ''
+    const w = s.indexOf('width:fit-content')
+    const b = s.indexOf('background:red')
+    return w >= 0 && b >= 0 && w < b
+  })(),
+  styleAt(doc.querySelector('#live-scrollbar-x-content .n-scrollbar-content'))
+)
+dEq(
+  'DOM: Scrollbar emits no static elm-ui sheet (noStaticStyleSheet)',
+  0,
+  scrollRoot
+    ? [...scrollRoot.querySelectorAll('style')].filter((s) => /flex-basis\s*:\s*0/.test(s.textContent))
+        .length
+    : -1
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
