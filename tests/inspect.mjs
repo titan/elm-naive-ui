@@ -2618,6 +2618,297 @@ dEq(
   doc.querySelectorAll('#live-heatmap-no-fill thead th').length
 )
 
+// LoadingBar -----------------------------------------------------------------
+const lbCls = (el) => (el ? el.getAttribute('class') : null)
+
+dEq(
+  'DOM: LoadingBar init renders nothing (no .n-loading-bar-container)',
+  0,
+  doc.querySelectorAll('#live-loading-bar-init .n-loading-bar-container').length
+)
+
+const lbStarting = doc.querySelector('#live-loading-bar-starting .n-loading-bar-container')
+dTrue(
+  'DOM: LoadingBar start mounts one .n-loading-bar-container',
+  !!lbStarting && lbStarting.classList.contains('n-loading-bar-container'),
+  lbStarting ? lbStarting.getAttribute('class') : 'missing'
+)
+dEq(
+  'DOM: LoadingBar start container has no display:none',
+  '',
+  styleAt(lbStarting)
+)
+dEq(
+  'DOM: LoadingBar start bar is .n-loading-bar--starting',
+  'n-loading-bar n-loading-bar--starting',
+  lbCls(doc.querySelector('#live-loading-bar-starting .n-loading-bar'))
+)
+dEq(
+  'DOM: LoadingBar not-yet-kicked bar = vars + max-width 0% + transition:none',
+  '--n-height:2px;--n-color-loading:#18a058;--n-color-error:#d03050;max-width:0%;transition:none',
+  styleAt(doc.querySelector('#live-loading-bar-starting .n-loading-bar'))
+)
+dEq(
+  'DOM: LoadingBar kicked bar = vars + max-width 80% (transition:none dropped)',
+  '--n-height:2px;--n-color-loading:#18a058;--n-color-error:#d03050;max-width:80%',
+  styleAt(doc.querySelector('#live-loading-bar-kicked .n-loading-bar'))
+)
+dEq(
+  'DOM: LoadingBar startFromTo 20 60 bar max-width 20% + transition:none',
+  '--n-height:2px;--n-color-loading:#18a058;--n-color-error:#d03050;max-width:20%;transition:none',
+  styleAt(doc.querySelector('#live-loading-bar-from-to .n-loading-bar'))
+)
+
+const lbFinishing = doc.querySelector('#live-loading-bar-finishing .n-loading-bar-container')
+dEq(
+  'DOM: LoadingBar finishing bar is .n-loading-bar--finishing',
+  'n-loading-bar n-loading-bar--finishing',
+  lbCls(doc.querySelector('#live-loading-bar-finishing .n-loading-bar'))
+)
+dEq(
+  'DOM: LoadingBar finishing bar max-width 100%',
+  '--n-height:2px;--n-color-loading:#18a058;--n-color-error:#d03050;max-width:100%',
+  styleAt(doc.querySelector('#live-loading-bar-finishing .n-loading-bar'))
+)
+dEq(
+  'DOM: LoadingBar finishing container is display:none (no leave phase)',
+  'display:none',
+  styleAt(lbFinishing)
+)
+
+dEq(
+  'DOM: LoadingBar erroring bar is .n-loading-bar--error',
+  'n-loading-bar n-loading-bar--error',
+  lbCls(doc.querySelector('#live-loading-bar-erroring .n-loading-bar'))
+)
+dEq(
+  'DOM: LoadingBar erroring bar max-width 100%',
+  '--n-height:2px;--n-color-loading:#18a058;--n-color-error:#d03050;max-width:100%',
+  styleAt(doc.querySelector('#live-loading-bar-erroring .n-loading-bar'))
+)
+dEq(
+  'DOM: LoadingBar erroring container is display:none',
+  'display:none',
+  styleAt(doc.querySelector('#live-loading-bar-erroring .n-loading-bar-container'))
+)
+dEq(
+  'DOM: LoadingBar idle-error bar = --error + max-width 100% + transition:none (kicked False)',
+  '--n-height:2px;--n-color-loading:#18a058;--n-color-error:#d03050;max-width:100%;transition:none',
+  styleAt(doc.querySelector('#live-loading-bar-idle-error .n-loading-bar'))
+)
+dEq(
+  'DOM: LoadingBar idle-error container is display:none (no enter phase set)',
+  'display:none',
+  styleAt(doc.querySelector('#live-loading-bar-idle-error .n-loading-bar-container'))
+)
+
+const lbEnter = doc.querySelector('#live-loading-bar-enter .n-loading-bar-container')
+dTrue(
+  'DOM: LoadingBar EnterFrom adds fade-in-transition-enter-from to the container',
+  !!lbEnter && lbEnter.classList.contains('fade-in-transition-enter-from'),
+  lbEnter ? lbEnter.getAttribute('class') : 'missing'
+)
+dEq(
+  'DOM: LoadingBar enter phase keeps the container visible (no display:none)',
+  '',
+  styleAt(lbEnter)
+)
+
+const lbLeave = doc.querySelector('#live-loading-bar-leave .n-loading-bar-container')
+dTrue(
+  'DOM: LoadingBar LeaveFrom adds fade-in-transition-leave-from to the container',
+  !!lbLeave && lbLeave.classList.contains('fade-in-transition-leave-from'),
+  lbLeave ? lbLeave.getAttribute('class') : 'missing'
+)
+dEq(
+  'DOM: LoadingBar leave phase keeps the container visible mid-fade',
+  '',
+  styleAt(lbLeave)
+)
+
+const lbCustomLoading = doc.querySelector('#live-loading-bar-custom-loading .n-loading-bar-container')
+dTrue(
+  'DOM: LoadingBar containerClass passthrough on the container',
+  !!lbCustomLoading && lbCustomLoading.classList.contains('my-container'),
+  lbCustomLoading ? lbCustomLoading.getAttribute('class') : 'missing'
+)
+dEq(
+  'DOM: LoadingBar containerStyle passthrough (displayed -> no display:none)',
+  'position:relative;margin-bottom:8px;',
+  styleAt(lbCustomLoading)
+)
+dEq(
+  'DOM: LoadingBar loadingBarStyle.loading merged onto the starting bar',
+  '--n-height:2px;--n-color-loading:#18a058;--n-color-error:#d03050;max-width:80%;opacity:0.5',
+  styleAt(doc.querySelector('#live-loading-bar-custom-loading .n-loading-bar'))
+)
+const lbCustomError = doc.querySelector('#live-loading-bar-custom-error .n-loading-bar-container')
+dEq(
+  'DOM: LoadingBar containerStyle passthrough after display:none when hidden',
+  'display:none;position:relative;margin-bottom:8px;',
+  styleAt(lbCustomError)
+)
+dEq(
+  'DOM: LoadingBar loadingBarStyle.error merged onto the error bar',
+  '--n-height:2px;--n-color-loading:#18a058;--n-color-error:#d03050;max-width:100%;opacity:0.9',
+  styleAt(doc.querySelector('#live-loading-bar-custom-error .n-loading-bar'))
+)
+
+// DynamicInput ----------------------------------------------------------------
+const diBtns = (scope) => [...scope.querySelectorAll('.n-dynamic-input-item .n-button')]
+
+const diInput = doc.getElementById('live-dynamic-input-input')
+dEq(
+  'DOM: DynamicInput root is .n-dynamic-input with the action-margin vars',
+  '--action-margin:0 0 0 20px;--action-margin-rtl:0 20px 0 0',
+  styleAt(doc.querySelector('.n-dynamic-input', diInput))
+)
+dEq(
+  'DOM: DynamicInput input preset renders one item per value',
+  3,
+  doc.querySelectorAll('#live-dynamic-input-input .n-dynamic-input-item').length
+)
+dEq(
+  'DOM: DynamicInput input preset has one .n-dynamic-input-preset-input per item',
+  3,
+  doc.querySelectorAll('#live-dynamic-input-input .n-dynamic-input-preset-input').length
+)
+dEq(
+  'DOM: DynamicInput each item carries .n-dynamic-input-item__action',
+  3,
+  doc.querySelectorAll('#live-dynamic-input-input .n-dynamic-input-item__action').length
+)
+dEq(
+  'DOM: DynamicInput action group is .n-button-group (remove + add, no sort) per item',
+  '2,2,2',
+  [...diInput.querySelectorAll('.n-dynamic-input-item')].map((it) => it.querySelectorAll('.n-button').length).join(',')
+)
+dEq(
+  'DOM: DynamicInput input values round-trip into the inputs',
+  'Alice,Bob,Cindy',
+  [...diInput.querySelectorAll('.n-input__input-el')].map((e) => e.value).join(',')
+)
+dEq(
+  'DOM: DynamicInput placeholder is on every preset input',
+  'Name,Name,Name',
+  [...diInput.querySelectorAll('.n-input__input-el')].map((e) => e.getAttribute('placeholder')).join(',')
+)
+dTrue(
+  'DOM: DynamicInput action buttons are circle (border-radius == height 34px)',
+  (styleAt(diInput.querySelector('.n-dynamic-input-item .n-button')) || '').includes('--n-border-radius:34px'),
+  styleAt(diInput.querySelector('.n-dynamic-input-item .n-button'))
+)
+
+const diPair = doc.getElementById('live-dynamic-input-pair')
+dEq(
+  'DOM: DynamicInput pair preset -> 2 items, 2 .n-dynamic-input-preset-pair',
+  '2,2',
+  [
+    diPair.querySelectorAll('.n-dynamic-input-item').length,
+    diPair.querySelectorAll('.n-dynamic-input-preset-pair').length
+  ].join(',')
+)
+dEq(
+  'DOM: DynamicInput pair wraps key/value in 4 .n-dynamic-input-pair-input',
+  4,
+  diPair.querySelectorAll('.n-dynamic-input-pair-input').length
+)
+dEq(
+  'DOM: DynamicInput pair-input wrapper carries inline flex:1',
+  'flex: 1 1 0%;',
+  styleAt(diPair.querySelector('.n-dynamic-input-pair-input'))
+)
+dEq(
+  'DOM: DynamicInput pair values round-trip (key then value per row)',
+  'Name,Naive UI,Author,07akioni',
+  [...diPair.querySelectorAll('.n-input__input-el')].map((e) => e.value).join(',')
+)
+dEq(
+  'DOM: DynamicInput pair key/value placeholders alternate',
+  'Key,Value,Key,Value',
+  [...diPair.querySelectorAll('.n-input__input-el')].map((e) => e.getAttribute('placeholder')).join(',')
+)
+dEq(
+  'DOM: DynamicInput pair has remove + add per item (no sort buttons)',
+  '2,2',
+  [...diPair.querySelectorAll('.n-dynamic-input-item')].map((it) => it.querySelectorAll('.n-button').length).join(',')
+)
+
+const diMaxSort = doc.getElementById('live-dynamic-input-max-sort')
+dEq(
+  'DOM: DynamicInput showSortButton -> remove/add/up/down (4 per item)',
+  '4,4',
+  [...diMaxSort.querySelectorAll('.n-dynamic-input-item')].map((it) => it.querySelectorAll('.n-button').length).join(',')
+)
+dEq(
+  'DOM: DynamicInput sort disabled matrix: up@first, down@last, add/remove enabled',
+  'null,null,true,null | null,null,null,true',
+  [...diMaxSort.querySelectorAll('.n-dynamic-input-item')]
+    .map((it) => [...it.querySelectorAll('.n-button')].map((b) => String(b.getAttribute('aria-disabled'))).join(','))
+    .join(' | ')
+)
+
+const diEmpty = doc.getElementById('live-dynamic-input-empty')
+dEq(
+  'DOM: DynamicInput empty value -> no items',
+  0,
+  diEmpty.querySelectorAll('.n-dynamic-input-item').length
+)
+const diCreate = diEmpty.querySelector('.n-dynamic-input > .n-button')
+dTrue(
+  'DOM: DynamicInput Create button is block + ghost + dashed',
+  !!diCreate &&
+    diCreate.classList.contains('n-button--block') &&
+    diCreate.classList.contains('n-button--ghost') &&
+    diCreate.classList.contains('n-button--dashed'),
+  diCreate ? diCreate.getAttribute('class') : 'missing'
+)
+dEq('DOM: DynamicInput Create button label', 'Create', diCreate ? diCreate.textContent : null)
+dTrue(
+  'DOM: DynamicInput Create button carries the Add icon',
+  !!diEmpty.querySelector('.n-dynamic-input > .n-button .n-button__icon .n-base-icon'),
+  'icon'
+)
+dEq(
+  'DOM: DynamicInput Create button (max unlimited) is enabled',
+  null,
+  diCreate ? diCreate.getAttribute('aria-disabled') : 'missing'
+)
+
+const diMin = doc.getElementById('live-dynamic-input-min')
+dEq(
+  'DOM: DynamicInput min 1 len 1 -> remove disabled, add enabled',
+  'true,null',
+  diBtns(diMin).slice(0, 2).map((b) => String(b.getAttribute('aria-disabled'))).join(',')
+)
+dTrue(
+  'DOM: DynamicInput disabled remove carries .n-button--disabled',
+  (diBtns(diMin)[0] ? diBtns(diMin)[0].getAttribute('class') : '').includes('n-button--disabled'),
+  diBtns(diMin)[0] ? diBtns(diMin)[0].getAttribute('class') : 'missing'
+)
+
+const diMaxed = doc.getElementById('live-dynamic-input-maxed')
+dEq(
+  'DOM: DynamicInput max 2 len 2 -> add disabled, remove enabled',
+  'null,true',
+  diBtns(diMaxed).slice(0, 2).map((b) => String(b.getAttribute('aria-disabled'))).join(',')
+)
+
+const diRtl = doc.querySelector('#live-dynamic-input-rtl .n-dynamic-input')
+dTrue(
+  'DOM: DynamicInput rtl adds .n-dynamic-input--rtl',
+  !!diRtl && diRtl.classList.contains('n-dynamic-input--rtl'),
+  diRtl ? diRtl.getAttribute('class') : 'missing'
+)
+
+const diItem0 = doc.querySelector('#live-dynamic-input-item-style .n-dynamic-input-item')
+dTrue(
+  'DOM: DynamicInput itemClass passthrough on the item',
+  !!diItem0 && diItem0.classList.contains('my-item'),
+  diItem0 ? diItem0.getAttribute('class') : 'missing'
+)
+dEq('DOM: DynamicInput itemStyle passthrough on the item', 'background:red', styleAt(diItem0))
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

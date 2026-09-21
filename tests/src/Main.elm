@@ -32,6 +32,7 @@ import NUI.Checkbox as Checkbox
 import NUI.Collapse as Collapse
 import NUI.Countdown as Countdown
 import NUI.Css as Css
+import NUI.DynamicInput as DynamicInput
 import NUI.DynamicTags as DynamicTags
 import NUI.Ellipsis as Ellipsis
 import NUI.Empty as Empty
@@ -53,6 +54,7 @@ import NUI.LayoutFooter as LayoutFooter
 import NUI.LayoutHeader as LayoutHeader
 import NUI.LayoutSider as LayoutSider
 import NUI.List as NList
+import NUI.LoadingBar as LoadingBar
 import NUI.Marquee as Marquee
 import NUI.NumberAnimation as NumberAnimation
 import NUI.PageHeader as PageHeader
@@ -1385,6 +1387,171 @@ heatmapLeadingOpts =
 heatmapNoFillOpts : Heatmap.Options msg
 heatmapNoFillOpts =
     { heatmapD | data = heatmapLeadingData, fillCalendarLeading = False, now = heatmapNow }
+
+
+
+-- LOADINGBAR / DYNAMICINPUT FIXTURES -------------------------------------------
+
+
+loadingBarCustomOpts : LoadingBar.Options msg
+loadingBarCustomOpts =
+    let
+        d =
+            LoadingBar.defaults
+    in
+    { d
+        | containerClass = Just "my-container"
+        , containerStyle = Just "position:relative;margin-bottom:8px;"
+        , loadingBarStyle = Just { loading = "opacity:0.5", error = "opacity:0.9" }
+    }
+
+
+loadingBarStarting : LoadingBar.State
+loadingBarStarting =
+    LoadingBar.start LoadingBar.init
+
+
+loadingBarKicked : LoadingBar.State
+loadingBarKicked =
+    LoadingBar.start LoadingBar.init |> LoadingBar.kick
+
+
+loadingBarFromTo : LoadingBar.State
+loadingBarFromTo =
+    LoadingBar.startFromTo 20 60 LoadingBar.init
+
+
+loadingBarFromToKicked : LoadingBar.State
+loadingBarFromToKicked =
+    LoadingBar.startFromTo 20 60 LoadingBar.init |> LoadingBar.kick
+
+
+loadingBarFinishing : LoadingBar.State
+loadingBarFinishing =
+    LoadingBar.start LoadingBar.init |> LoadingBar.kick |> LoadingBar.finish
+
+
+{-| A finishing run with the leave fade in flight — upstream's guard window.
+-}
+loadingBarLeave : LoadingBar.State
+loadingBarLeave =
+    { loadingBarFinishing | phase = Just Internal.LeaveFrom }
+
+
+loadingBarErroring : LoadingBar.State
+loadingBarErroring =
+    LoadingBar.start LoadingBar.init |> LoadingBar.kick |> LoadingBar.error
+
+
+{-| The empty-state Create button's disabled case: `max` reached.
+-}
+dynamicInputMaxedOpts : DynamicInput.InputOptions Msg
+dynamicInputMaxedOpts =
+    let
+        d =
+            DynamicInput.inputDefaults
+    in
+    { d | value = [ "a", "b" ], max = Just 2 }
+
+
+{-| The examples' `input` preset fixture: three names with a placeholder.
+-}
+dynamicInputLiveOpts : DynamicInput.InputOptions Msg
+dynamicInputLiveOpts =
+    let
+        d =
+            DynamicInput.inputDefaults
+    in
+    { d
+        | value = [ "Alice", "Bob", "Cindy" ]
+        , placeholder = Just "Name"
+        , onUpdateValue = Just (always NoOp)
+    }
+
+
+{-| The examples' `pair` preset fixture: two key / value rows.
+-}
+dynamicInputPairLiveOpts : DynamicInput.PairOptions Msg
+dynamicInputPairLiveOpts =
+    let
+        d =
+            DynamicInput.pairDefaults
+    in
+    { d
+        | value = [ ( "Name", "Naive UI" ), ( "Author", "07akioni" ) ]
+        , keyPlaceholder = Just "Key"
+        , valuePlaceholder = Just "Value"
+        , onUpdateValue = Just (always NoOp)
+    }
+
+
+{-| `max 3`, two entries, `showSortButton` -> remove / add / up / down per row.
+-}
+dynamicInputMaxSortOpts : DynamicInput.InputOptions Msg
+dynamicInputMaxSortOpts =
+    let
+        d =
+            DynamicInput.inputDefaults
+    in
+    { d
+        | value = [ "Only", "Three" ]
+        , max = Just 3
+        , showSortButton = True
+        , onUpdateValue = Just (always NoOp)
+    }
+
+
+{-| Empty value -> the block ghost dashed Create button.
+-}
+dynamicInputEmptyOpts : DynamicInput.InputOptions Msg
+dynamicInputEmptyOpts =
+    let
+        d =
+            DynamicInput.inputDefaults
+    in
+    { d | value = [], onUpdateValue = Just (always NoOp) }
+
+
+{-| One entry, `min 1` -> the remove button is disabled.
+-}
+dynamicInputMinLiveOpts : DynamicInput.InputOptions Msg
+dynamicInputMinLiveOpts =
+    let
+        d =
+            DynamicInput.inputDefaults
+    in
+    { d
+        | value = [ "a" ]
+        , min = 1
+        , onUpdateValue = Just (always NoOp)
+    }
+
+
+dynamicInputRtlOpts : DynamicInput.InputOptions Msg
+dynamicInputRtlOpts =
+    let
+        d =
+            DynamicInput.inputDefaults
+    in
+    { d
+        | value = [ "a" ]
+        , rtl = True
+        , onUpdateValue = Just (always NoOp)
+    }
+
+
+dynamicInputItemStyleOpts : DynamicInput.InputOptions Msg
+dynamicInputItemStyleOpts =
+    let
+        d =
+            DynamicInput.inputDefaults
+    in
+    { d
+        | value = [ "a" ]
+        , itemClass = Just "my-item"
+        , itemStyle = Just "background:red"
+        , onUpdateValue = Just (always NoOp)
+    }
 
 
 inputOtpLiveOpts : InputOtp.Options msg
@@ -3948,6 +4115,99 @@ checks =
     , eq "heatmap defaults indicator labels"
         ( "less", "more" )
         ( heatmapD.indicatorLessText, heatmapD.indicatorMoreText )
+
+    -- 55. NUI.LoadingBar pure state machine -------------------------------------
+    , eq "loadingbar init started False" False LoadingBar.init.started
+    , eq "loadingbar init status Starting" LoadingBar.Starting LoadingBar.init.status
+    , eq "loadingbar init progress 0" 0 LoadingBar.init.progress
+    , eq "loadingbar init toProgress 80" 80 LoadingBar.init.toProgress
+    , eq "loadingbar init runId 0" 0 LoadingBar.init.runId
+    , eq "loadingbar init kicked False" False LoadingBar.init.kicked
+    , eq "loadingbar init phase Nothing" Nothing LoadingBar.init.phase
+    , eq "loadingbar start sets started" True loadingBarStarting.started
+    , eq "loadingbar start resets status Starting" LoadingBar.Starting loadingBarStarting.status
+    , eq "loadingbar start progress from 0" 0 loadingBarStarting.progress
+    , eq "loadingbar start stages toProgress 80" 80 loadingBarStarting.toProgress
+    , eq "loadingbar start bumps runId to 1" 1 loadingBarStarting.runId
+    , eq "loadingbar start kicked False" False loadingBarStarting.kicked
+    , eq "loadingbar a second start bumps runId to 2" 2 (LoadingBar.start loadingBarStarting).runId
+    , eq "loadingbar startFromTo progress 20" 20 loadingBarFromTo.progress
+    , eq "loadingbar startFromTo toProgress 60" 60 loadingBarFromTo.toProgress
+    , eq "loadingbar startFromTo started" True loadingBarFromTo.started
+    , eq "loadingbar startFromTo runId 1" 1 loadingBarFromTo.runId
+    , eq "loadingbar kick moves progress to toProgress (80)" 80 loadingBarKicked.progress
+    , eq "loadingbar kick sets kicked" True loadingBarKicked.kicked
+    , eq "loadingbar kick after startFromTo moves to 60" 60 loadingBarFromToKicked.progress
+    , eq "loadingbar finish after started+kicked -> Finishing" LoadingBar.Finishing loadingBarFinishing.status
+    , eq "loadingbar finish after started+kicked -> progress 100" 100 loadingBarFinishing.progress
+    , eq "loadingbar finish unstarted is a no-op" LoadingBar.init (LoadingBar.finish LoadingBar.init)
+    , eq "loadingbar finish from kicked starting -> Finishing" LoadingBar.Finishing (LoadingBar.finish loadingBarKicked).status
+    , eq "loadingbar finish from kicked starting -> progress 100" 100 (LoadingBar.finish loadingBarKicked).progress
+    , eq "loadingbar finish from idle-error is a no-op (status)" LoadingBar.Erroring (LoadingBar.finish (LoadingBar.error LoadingBar.init)).status
+    , eq "loadingbar finish from idle-error keeps progress 100" 100 (LoadingBar.finish (LoadingBar.error LoadingBar.init)).progress
+    , eq "loadingbar finish second call keeps progress 100" 100 (LoadingBar.finish loadingBarFinishing).progress
+    , eq "loadingbar error mid-Starting -> Erroring" LoadingBar.Erroring (LoadingBar.start LoadingBar.init |> LoadingBar.error).status
+    , eq "loadingbar error mid-Starting -> progress 100" 100 (LoadingBar.start LoadingBar.init |> LoadingBar.error).progress
+    , eq "loadingbar error mid-Starting keeps runId" 1 (LoadingBar.start LoadingBar.init |> LoadingBar.error).runId
+    , eq "loadingbar error from idle -> started" True (LoadingBar.error LoadingBar.init).started
+    , eq "loadingbar error from idle -> Erroring" LoadingBar.Erroring (LoadingBar.error LoadingBar.init).status
+    , eq "loadingbar error from idle -> progress 100" 100 (LoadingBar.error LoadingBar.init).progress
+    , eq "loadingbar error from idle -> toProgress 100" 100 (LoadingBar.error LoadingBar.init).toProgress
+    , eq "loadingbar error from idle bumps runId to 1" 1 (LoadingBar.error LoadingBar.init).runId
+    , eq "loadingbar error from idle kicked False" False (LoadingBar.error LoadingBar.init).kicked
+    , eq "loadingbar error while leaving is a no-op (status)" LoadingBar.Finishing (LoadingBar.error loadingBarLeave).status
+    , eq "loadingbar error while leaving keeps progress 100" 100 (LoadingBar.error loadingBarLeave).progress
+    , eq "loadingbar error while leaving keeps runId" 1 (LoadingBar.error loadingBarLeave).runId
+    , eq "loadingbar error while leave-active is a no-op" 1 (LoadingBar.error { loadingBarFinishing | phase = Just Internal.LeaveActive }).runId
+    , eq "loadingbar error with no leave phase restarts the run (guard window divergence)" 2 (LoadingBar.error loadingBarFinishing).runId
+    , eq "loadingbar error restart from Finishing -> Erroring" LoadingBar.Erroring (LoadingBar.error loadingBarFinishing).status
+    , eq "loadingbar cssVarsFor keys" [ "--n-height", "--n-color-loading", "--n-color-error" ] (varKeys (LoadingBar.cssVarsFor Theme.default))
+    , eq "loadingbar cssVarsFor height 2px" (Just "2px") (lookup "--n-height" (LoadingBar.cssVarsFor Theme.default))
+    , eq "loadingbar cssVarsFor colorLoading = primary" (Just "#18a058") (lookup "--n-color-loading" (LoadingBar.cssVarsFor Theme.default))
+    , eq "loadingbar cssVarsFor colorError" (Just "#d03050") (lookup "--n-color-error" (LoadingBar.cssVarsFor Theme.default))
+    , eq "loadingbar cssVarsFor dark colorError red" (Just "red") (lookup "--n-color-error" (LoadingBar.cssVarsFor Theme.dark))
+    , eq "loadingbar cssVarsFor dark colorLoading = dark primary" (Just "#63e2b7") (lookup "--n-color-loading" (LoadingBar.cssVarsFor Theme.dark))
+
+    -- 56. NUI.DynamicInput pure list core ---------------------------------------
+    , eq "dynamicinput insertAt -1 on empty -> [item]" [ "x" ] (DynamicInput.insertAt -1 "x" [])
+    , eq "dynamicinput insertAt -1 on non-empty -> index 0" [ "x", "a", "b" ] (DynamicInput.insertAt -1 "x" [ "a", "b" ])
+    , eq "dynamicinput insertAt 0 -> after first" [ "a", "x", "b" ] (DynamicInput.insertAt 0 "x" [ "a", "b" ])
+    , eq "dynamicinput insertAt 1 -> appended (index+1 semantics)" [ "a", "b", "x" ] (DynamicInput.insertAt 1 "x" [ "a", "b" ])
+    , eq "dynamicinput insertAt past the end appends" [ "a", "b", "x" ] (DynamicInput.insertAt 9 "x" [ "a", "b" ])
+    , eq "dynamicinput removeAt 0" [ "b", "c" ] (DynamicInput.removeAt 0 [ "a", "b", "c" ])
+    , eq "dynamicinput removeAt 1" [ "a", "c" ] (DynamicInput.removeAt 1 [ "a", "b", "c" ])
+    , eq "dynamicinput removeAt last" [ "a", "b" ] (DynamicInput.removeAt 2 [ "a", "b", "c" ])
+    , eq "dynamicinput removeAt out of range is a no-op" [ "a", "b" ] (DynamicInput.removeAt 9 [ "a", "b" ])
+    , eq "dynamicinput removeAt -1 is a no-op" [ "a", "b" ] (DynamicInput.removeAt -1 [ "a", "b" ])
+    , eq "dynamicinput moveUp 0 is a no-op (negative target, the fixed bug)" [ "a", "b", "c" ] (DynamicInput.moveUp 0 [ "a", "b", "c" ])
+    , eq "dynamicinput moveUp 1 swaps with 0" [ "b", "a", "c" ] (DynamicInput.moveUp 1 [ "a", "b", "c" ])
+    , eq "dynamicinput moveUp last swaps with previous" [ "a", "c", "b" ] (DynamicInput.moveUp 2 [ "a", "b", "c" ])
+    , eq "dynamicinput moveDown last is a no-op (out of range target)" [ "a", "b", "c" ] (DynamicInput.moveDown 2 [ "a", "b", "c" ])
+    , eq "dynamicinput moveDown 0 swaps with 1" [ "b", "a", "c" ] (DynamicInput.moveDown 0 [ "a", "b", "c" ])
+    , eq "dynamicinput moveDown 1 swaps with 2" [ "a", "c", "b" ] (DynamicInput.moveDown 1 [ "a", "b", "c" ])
+    , eq "dynamicinput moveUp on empty is a no-op" [] (DynamicInput.moveUp 0 [])
+    , eq "dynamicinput moveDown on empty is a no-op" [] (DynamicInput.moveDown 0 [])
+    , eq "dynamicinput moveUp single is a no-op" [ "a" ] (DynamicInput.moveUp 0 [ "a" ])
+    , eq "dynamicinput moveDown single is a no-op" [ "a" ] (DynamicInput.moveDown 0 [ "a" ])
+    , eq "dynamicinput moveUp past the end is a no-op (swap guard)" [ "a", "b" ] (DynamicInput.moveUp 5 [ "a", "b" ])
+    , eq "dynamicinput moveDown at the last index is a no-op" [ "a", "b" ] (DynamicInput.moveDown 1 [ "a", "b" ])
+    , eq "dynamicinput insertionDisabled max 3 count 3" True (DynamicInput.insertionDisabled (Just 3) 3)
+    , eq "dynamicinput insertionDisabled max 3 count 2" False (DynamicInput.insertionDisabled (Just 3) 2)
+    , eq "dynamicinput insertionDisabled max 3 count 4" True (DynamicInput.insertionDisabled (Just 3) 4)
+    , eq "dynamicinput insertionDisabled Nothing is never disabled" False (DynamicInput.insertionDisabled Nothing 99)
+    , eq "dynamicinput removeDisabled min 1 len 1" True (DynamicInput.removeDisabled 1 1)
+    , eq "dynamicinput removeDisabled min 1 len 2" False (DynamicInput.removeDisabled 1 2)
+    , eq "dynamicinput removeDisabled min 0 len 0" True (DynamicInput.removeDisabled 0 0)
+    , eq "dynamicinput removeDisabled min 2 len 2" True (DynamicInput.removeDisabled 2 2)
+    , eq "dynamicinput removeDisabled min 2 len 3" False (DynamicInput.removeDisabled 2 3)
+    , eq "dynamicinput inputDefaults min 0" 0 DynamicInput.inputDefaults.min
+    , eq "dynamicinput inputDefaults max Nothing" Nothing DynamicInput.inputDefaults.max
+    , eq "dynamicinput inputDefaults value []" [] DynamicInput.inputDefaults.value
+    , eq "dynamicinput inputDefaults showSortButton False" False DynamicInput.inputDefaults.showSortButton
+    , eq "dynamicinput pairDefaults value []" [] DynamicInput.pairDefaults.value
+    , eq "dynamicinput cssVarsFor keys" [ "--action-margin", "--action-margin-rtl" ] (varKeys (DynamicInput.cssVarsFor Theme.default))
+    , eq "dynamicinput cssVarsFor actionMargin" (Just "0 0 0 20px") (lookup "--action-margin" (DynamicInput.cssVarsFor Theme.default))
+    , eq "dynamicinput cssVarsFor actionMarginRtl" (Just "0 20px 0 0") (lookup "--action-margin-rtl" (DynamicInput.cssVarsFor Theme.default))
     ]
 
 
@@ -4374,6 +4634,48 @@ liveNodes =
                     (Heatmap.view Theme.default heatmapLeadingOpts [])
                 , Element.el [ Element.htmlAttribute (HA.id "live-heatmap-no-fill") ]
                     (Heatmap.view Theme.default heatmapNoFillOpts [])
+
+                -- LoadingBar
+                , Element.el [ Element.htmlAttribute (HA.id "live-loading-bar-init") ]
+                    (LoadingBar.view Theme.default LoadingBar.defaults LoadingBar.init)
+                , Element.el [ Element.htmlAttribute (HA.id "live-loading-bar-starting") ]
+                    (LoadingBar.view Theme.default LoadingBar.defaults loadingBarStarting)
+                , Element.el [ Element.htmlAttribute (HA.id "live-loading-bar-kicked") ]
+                    (LoadingBar.view Theme.default LoadingBar.defaults loadingBarKicked)
+                , Element.el [ Element.htmlAttribute (HA.id "live-loading-bar-from-to") ]
+                    (LoadingBar.view Theme.default LoadingBar.defaults loadingBarFromTo)
+                , Element.el [ Element.htmlAttribute (HA.id "live-loading-bar-finishing") ]
+                    (LoadingBar.view Theme.default LoadingBar.defaults loadingBarFinishing)
+                , Element.el [ Element.htmlAttribute (HA.id "live-loading-bar-erroring") ]
+                    (LoadingBar.view Theme.default LoadingBar.defaults loadingBarErroring)
+                , Element.el [ Element.htmlAttribute (HA.id "live-loading-bar-idle-error") ]
+                    (LoadingBar.view Theme.default LoadingBar.defaults (LoadingBar.error LoadingBar.init))
+                , Element.el [ Element.htmlAttribute (HA.id "live-loading-bar-enter") ]
+                    (LoadingBar.view Theme.default LoadingBar.defaults { loadingBarStarting | phase = Just Internal.EnterFrom })
+                , Element.el [ Element.htmlAttribute (HA.id "live-loading-bar-leave") ]
+                    (LoadingBar.view Theme.default LoadingBar.defaults { loadingBarFinishing | phase = Just Internal.LeaveFrom })
+                , Element.el [ Element.htmlAttribute (HA.id "live-loading-bar-custom-loading") ]
+                    (LoadingBar.view Theme.default loadingBarCustomOpts loadingBarKicked)
+                , Element.el [ Element.htmlAttribute (HA.id "live-loading-bar-custom-error") ]
+                    (LoadingBar.view Theme.default loadingBarCustomOpts loadingBarErroring)
+
+                -- DynamicInput
+                , Element.el [ Element.htmlAttribute (HA.id "live-dynamic-input-input") ]
+                    (DynamicInput.viewInput Theme.default dynamicInputLiveOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-dynamic-input-pair") ]
+                    (DynamicInput.viewPair Theme.default dynamicInputPairLiveOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-dynamic-input-max-sort") ]
+                    (DynamicInput.viewInput Theme.default dynamicInputMaxSortOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-dynamic-input-empty") ]
+                    (DynamicInput.viewInput Theme.default dynamicInputEmptyOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-dynamic-input-min") ]
+                    (DynamicInput.viewInput Theme.default dynamicInputMinLiveOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-dynamic-input-maxed") ]
+                    (DynamicInput.viewInput Theme.default dynamicInputMaxedOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-dynamic-input-rtl") ]
+                    (DynamicInput.viewInput Theme.default dynamicInputRtlOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-dynamic-input-item-style") ]
+                    (DynamicInput.viewInput Theme.default dynamicInputItemStyleOpts)
                 ]
             )
         ]
