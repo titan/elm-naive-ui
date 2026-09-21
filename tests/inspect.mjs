@@ -4624,7 +4624,8 @@ dTrue(
   ''
 )
 
-// menu-level flags: one icon / one submenu widens every column
+// menu-level flags: a submenu widens every suffix; a submenu CHILD's icon must
+// NOT widen prefixes (menuFlags never scans into submenu children)
 const ddFlags = doc.querySelector('#live-dropdown-flags .n-dropdown-menu')
 const ddFlagPrefixes = ddFlags
   ? [
@@ -4639,15 +4640,15 @@ const ddFlagSuffixes = ddFlags
 dEq('DOM: Dropdown flags mount has 5 prefixes', 5, ddFlagPrefixes.length)
 dEq('DOM: Dropdown flags mount has 5 suffixes', 5, ddFlagSuffixes.length)
 dTrue(
-  'DOM: one icon on one option widens ALL prefixes (--show-icon)',
+  'DOM: no top-level/group icon -> NO prefix widens, despite a submenu-child icon (menuFlags never scans into submenu children)',
   ddFlagPrefixes.length === 5 &&
-    ddFlagPrefixes.every((p) =>
-      hasCls(p, 'n-dropdown-option-body__prefix--show-icon')
+    ddFlagPrefixes.every(
+      (p) => !hasCls(p, 'n-dropdown-option-body__prefix--show-icon')
     ),
   ddFlagPrefixes.map(clsOf).join(' | ')
 )
 dTrue(
-  'DOM: children = Just [] on one option widens ALL suffixes (--has-submenu)',
+  'DOM: children = Just [...] on one option widens ALL suffixes (--has-submenu)',
   ddFlagSuffixes.length === 5 &&
     ddFlagSuffixes.every((s) =>
       hasCls(s, 'n-dropdown-option-body__suffix--has-submenu')
@@ -4663,7 +4664,7 @@ dEq(
     : -1
 )
 dTrue(
-  'DOM: Dropdown chevron is on the submenu option (label C), not the icon option',
+  'DOM: Dropdown chevron is on the submenu option (label C), not a plain leaf',
   (() => {
     if (!ddFlags) return false
     const withChevron = [
@@ -4939,6 +4940,22 @@ dEq(
   'DOM: Dropdown dark root carries 31 --n-* custom properties',
   31,
   countVars(ddDark)
+)
+const ddDarkInv = doc.querySelector(
+  '#live-dropdown-dark-inverted .n-dropdown-menu'
+)
+dTrue(
+  'DOM: Dropdown dark-inverted style = dark colorInverted + primaryColorSuppl hover/active, --n-option-text-color #BBB unchanged',
+  !!ddDarkInv &&
+    (styleAt(ddDarkInv) || '').includes('--n-color:rgb(72, 72, 78)') &&
+    (styleAt(ddDarkInv) || '').includes(
+      '--n-option-color-hover:rgb(42, 148, 125)'
+    ) &&
+    (styleAt(ddDarkInv) || '').includes(
+      '--n-option-color-active:rgb(42, 148, 125)'
+    ) &&
+    (styleAt(ddDarkInv) || '').includes('--n-option-text-color:#BBB'),
+  styleAt(ddDarkInv)
 )
 const ddEmpty = doc.querySelector('#live-dropdown-empty .n-dropdown-menu')
 dTrue(

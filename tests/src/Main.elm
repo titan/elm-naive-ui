@@ -2816,14 +2816,17 @@ dStructureOptions =
     ]
 
 
-{-| One icon and one empty submenu at the top level, plus a group — pins the
-menu-level column flags (the widest scan).
+{-| A submenu whose CHILD carries an icon (that child is caller-mounted, never
+rendered at this level, and `menuFlags` must never scan into submenu children),
+plus a group — with no icon at the top level or in the group. So every prefix
+must stay narrow (pins the `showIcon` submenu-child exclusion) while the submenu
+still widens every suffix (`--has-submenu`).
 -}
 dFlagsOptions : List (Dropdown.Option Msg)
 dFlagsOptions =
     [ dLeaf "a" "A"
-    , dLeafIcon "b" "B"
-    , dSubmenu "c" "C" []
+    , dLeaf "b" "B"
+    , dSubmenu "c" "C" [ dLeafIcon "c1" "C1" ]
     , dGroup "g" "G" [ dLeaf "g1" "G1" ]
     ]
 
