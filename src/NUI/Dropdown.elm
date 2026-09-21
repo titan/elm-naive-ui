@@ -393,7 +393,7 @@ leafNode theme opts flags activePath leaf =
         (Element.row
             ([ I.classes bodyClasses ] ++ clickAttrs ++ leaf.attributes)
             [ prefixNode flags.showIcon False leaf.icon
-            , labelNode False leaf.label
+            , labelNode leaf.label
             , suffixNode theme flags.hasSubmenu (leaf.children /= Nothing)
             ]
             :: submenuScaffold
@@ -411,7 +411,7 @@ groupHeaderNode theme flags group =
         [ Element.row
             [ I.classes [ "n-dropdown-option-body", "n-dropdown-option-body--group" ] ]
             [ prefixNode flags.showIcon True group.icon
-            , labelNode True group.label
+            , labelNode group.label
             , suffixNode theme flags.hasSubmenu False
             ]
         ]
@@ -452,19 +452,15 @@ prefixNode showIcon isGroup icon =
 
 
 {-| The label cell (upstream falls back `label ?? title`; the port takes one
-string).
+string). Carries the `data-dropdown-option` marker on both leaves and group
+headers (upstream puts it on every label div).
 -}
-labelNode : Bool -> String -> Element msg
-labelNode isGroup label =
+labelNode : String -> Element msg
+labelNode label =
     Element.el
-        ([ I.classes [ "n-dropdown-option-body__label" ] ]
-            ++ (if isGroup then
-                    [ Element.htmlAttribute (HA.attribute "data-dropdown-option" "true") ]
-
-                else
-                    []
-               )
-        )
+        [ I.classes [ "n-dropdown-option-body__label" ]
+        , Element.htmlAttribute (HA.attribute "data-dropdown-option" "true")
+        ]
         (Element.text label)
 
 
