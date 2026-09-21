@@ -73,6 +73,7 @@ import NUI.Spin as Spin
 import NUI.Split as Split
 import NUI.Statistic as Statistic
 import NUI.Steps as Steps
+import NUI.Tabs as Tabs
 import NUI.Tag as Tag
 import NUI.Theme as Theme
 import NUI.Theme.Button as ButtonTheme
@@ -2157,6 +2158,11 @@ dvar theme opts key =
     lookup key (Descriptions.cssVars theme opts)
 
 
+tvar : Theme.Theme -> Tabs.Options Msg -> String -> Maybe String
+tvar theme opts key =
+    lookup key (Tabs.cssVars theme opts)
+
+
 descItem : String -> Descriptions.Item Msg
 descItem lbl =
     { ditem | label = Just (Element.text lbl), content = [ Element.text (lbl ++ "-c") ] }
@@ -2250,6 +2256,129 @@ descPassthroughOpts =
         , labelStyle = Just "color:red"
         , contentClass = Just "my-content"
         , contentStyle = Just "background:blue"
+    }
+
+
+
+-- TABS ------------------------------------------------------------------------
+
+
+tdefault : Tabs.Options Msg
+tdefault =
+    let
+        d =
+            Tabs.defaults
+    in
+    { d | value = "a" }
+
+
+ttabs : List (Tabs.Tab Msg)
+ttabs =
+    [ { name = "a", label = Element.text "A", disabled = False, closable = Nothing, content = [ Element.text "A-c" ] }
+    , { name = "b", label = Element.text "B", disabled = False, closable = Nothing, content = [ Element.text "B-c" ] }
+    , { name = "c", label = Element.text "C", disabled = False, closable = Nothing, content = [ Element.text "C-c" ] }
+    ]
+
+
+ttabsDisabled : List (Tabs.Tab Msg)
+ttabsDisabled =
+    [ { name = "a", label = Element.text "A", disabled = False, closable = Nothing, content = [ Element.text "A-c" ] }
+    , { name = "b", label = Element.text "B", disabled = True, closable = Nothing, content = [ Element.text "B-c" ] }
+    ]
+
+
+tLineOpts : Tabs.Options Msg
+tLineOpts =
+    { tdefault | type_ = Tabs.Line }
+
+
+tCardOpts : Tabs.Options Msg
+tCardOpts =
+    { tdefault | type_ = Tabs.Card }
+
+
+tSegmentOpts : Tabs.Options Msg
+tSegmentOpts =
+    { tdefault | type_ = Tabs.Segment }
+
+
+tSmallOpts : Tabs.Options Msg
+tSmallOpts =
+    { tdefault | size = Tabs.Small }
+
+
+tLargeOpts : Tabs.Options Msg
+tLargeOpts =
+    { tdefault | size = Tabs.Large }
+
+
+tBottomOpts : Tabs.Options Msg
+tBottomOpts =
+    { tdefault | placement = Tabs.Bottom }
+
+
+tLeftOpts : Tabs.Options Msg
+tLeftOpts =
+    { tdefault | placement = Tabs.Left }
+
+
+tRightOpts : Tabs.Options Msg
+tRightOpts =
+    { tdefault | placement = Tabs.Right }
+
+
+tJustifyOpts : Tabs.Options Msg
+tJustifyOpts =
+    { tdefault | justifyContent = Just Tabs.JustifyCenter }
+
+
+tClosableBarOpts : Tabs.Options Msg
+tClosableBarOpts =
+    { tdefault | closable = True }
+
+
+tCardClosableOpts : Tabs.Options Msg
+tCardClosableOpts =
+    { tCardOpts | closable = True }
+
+
+tAddableOpts : Tabs.Options Msg
+tAddableOpts =
+    { tCardOpts | addable = True }
+
+
+tRtlOpts : Tabs.Options Msg
+tRtlOpts =
+    { tdefault | rtl = True }
+
+
+tPrefixSuffixOpts : Tabs.Options Msg
+tPrefixSuffixOpts =
+    { tdefault | prefix = Just (Element.text "P"), suffix = Just (Element.text "S") }
+
+
+tDisabledOpts : Tabs.Options Msg
+tDisabledOpts =
+    tdefault
+
+
+tShowOpts : Tabs.Options Msg
+tShowOpts =
+    { tdefault | displayDirective = Tabs.Show }
+
+
+tHoverOpts : Tabs.Options Msg
+tHoverOpts =
+    { tdefault | trigger = Tabs.Hover, onChange = Just (\_ -> NoOp) }
+
+
+tStylingOpts : Tabs.Options Msg
+tStylingOpts =
+    { tdefault
+        | tabClass = Just "my-tab"
+        , tabStyle = Just "color:red"
+        , paneClass = Just "my-pane"
+        , paneStyle = Just "background:blue"
     }
 
 
@@ -4709,6 +4838,77 @@ checks =
     , eq "desc vars: dark th color" (Just "rgba(38, 38, 42, 1)") (dvar dark ddflt "--n-th-color")
     , eq "desc vars: dark border color" (Just "rgba(45, 45, 48, 1)") (dvar dark ddflt "--n-border-color")
     , eq "desc vars: dark title text color" (Just "rgba(255, 255, 255, 0.9)") (dvar dark ddflt "--n-title-text-color")
+
+    -- tabs: defaults --------------------------------------------------------
+    , eq "tab defaults: type bar" Tabs.Bar tdefault.type_
+    , eq "tab defaults: size medium" Tabs.Medium tdefault.size
+    , eq "tab defaults: placement top" Tabs.Top tdefault.placement
+    , eq "tab defaults: value" "a" tdefault.value
+    , eq "tab defaults: justifyContent Nothing" Nothing tdefault.justifyContent
+    , eq "tab defaults: closable False" False tdefault.closable
+    , eq "tab defaults: addable False" False tdefault.addable
+    , eq "tab defaults: trigger click" Tabs.Click tdefault.trigger
+    , eq "tab defaults: displayDirective ShowIf" Tabs.ShowIf tdefault.displayDirective
+    , eq "tab defaults: rtl False" False tdefault.rtl
+    , eq "tab defaults: prefix Nothing" Nothing tdefault.prefix
+    , eq "tab defaults: suffix Nothing" Nothing tdefault.suffix
+    , eq "tab defaults: onChange Nothing" Nothing tdefault.onChange
+    , eq "tab defaults: onClose Nothing" Nothing tdefault.onClose
+    , eq "tab defaults: onAdd Nothing" Nothing tdefault.onAdd
+
+    -- tabs: cssVars (theme math) -------------------------------------------
+    , eq "tab vars: 32 keys in upstream order"
+        [ "--n-bezier", "--n-color-segment", "--n-bar-color", "--n-tab-font-size", "--n-tab-text-color", "--n-tab-text-color-active", "--n-tab-text-color-disabled", "--n-tab-text-color-hover", "--n-pane-text-color", "--n-tab-border-color", "--n-tab-border-radius", "--n-close-size", "--n-close-icon-size", "--n-close-color-hover", "--n-close-color-pressed", "--n-close-border-radius", "--n-close-icon-color", "--n-close-icon-color-hover", "--n-close-icon-color-pressed", "--n-tab-color", "--n-tab-font-weight", "--n-tab-font-weight-active", "--n-tab-padding", "--n-tab-padding-vertical", "--n-tab-gap", "--n-tab-gap-vertical", "--n-pane-padding-left", "--n-pane-padding-right", "--n-pane-padding-top", "--n-pane-padding-bottom", "--n-font-weight-strong", "--n-tab-color-segment" ]
+        (varKeys (Tabs.cssVars light tdefault))
+    , eq "tab vars: bezier" (Just "cubic-bezier(.4, 0, .2, 1)") (tvar light tdefault "--n-bezier")
+    , eq "tab vars: color-segment = light tabColor" (Just "rgb(247, 247, 250)") (tvar light tdefault "--n-color-segment")
+    , eq "tab vars: bar-color = primaryColor" (Just "#18a058") (tvar light tdefault "--n-bar-color")
+    , eq "tab vars: tab-font-size medium" (Just "14px") (tvar light tdefault "--n-tab-font-size")
+    , eq "tab vars: tab-font-size small" (Just "14px") (tvar light tSmallOpts "--n-tab-font-size")
+    , eq "tab vars: tab-font-size large" (Just "16px") (tvar light tLargeOpts "--n-tab-font-size")
+    , eq "tab vars: bar text color = textColor1" (Just "rgb(31, 34, 37)") (tvar light tdefault "--n-tab-text-color")
+    , eq "tab vars: bar active text color = primaryColor" (Just "#18a058") (tvar light tdefault "--n-tab-text-color-active")
+    , eq "tab vars: bar hover text color = primaryColor" (Just "#18a058") (tvar light tdefault "--n-tab-text-color-hover")
+    , eq "tab vars: bar disabled text color" (Just "rgba(194, 194, 194, 1)") (tvar light tdefault "--n-tab-text-color-disabled")
+    , eq "tab vars: segment active text color = textColor2" (Just "rgb(51, 54, 57)") (tvar light tSegmentOpts "--n-tab-text-color-active")
+    , eq "tab vars: line text color = textColor1" (Just "rgb(31, 34, 37)") (tvar light tLineOpts "--n-tab-text-color")
+    , eq "tab vars: card text color = textColor1" (Just "rgb(31, 34, 37)") (tvar light tCardOpts "--n-tab-text-color")
+    , eq "tab vars: pane text color = textColor2" (Just "rgb(51, 54, 57)") (tvar light tdefault "--n-pane-text-color")
+    , eq "tab vars: tab border color = dividerColor" (Just "rgb(239, 239, 245)") (tvar light tdefault "--n-tab-border-color")
+    , eq "tab vars: tab border radius" (Just "3px") (tvar light tdefault "--n-tab-border-radius")
+    , eq "tab vars: close size" (Just "18px") (tvar light tdefault "--n-close-size")
+    , eq "tab vars: close icon size" (Just "14px") (tvar light tdefault "--n-close-icon-size")
+    , eq "tab vars: close color hover" (Just "rgba(0, 0, 0, .09)") (tvar light tdefault "--n-close-color-hover")
+    , eq "tab vars: close color pressed" (Just "rgba(0, 0, 0, .13)") (tvar light tdefault "--n-close-color-pressed")
+    , eq "tab vars: close border radius" (Just "3px") (tvar light tdefault "--n-close-border-radius")
+    , eq "tab vars: close icon color" (Just "rgba(102, 102, 102, 1)") (tvar light tdefault "--n-close-icon-color")
+    , eq "tab vars: close icon color hover" (Just "rgba(102, 102, 102, 1)") (tvar light tdefault "--n-close-icon-color-hover")
+    , eq "tab vars: close icon color pressed" (Just "rgba(102, 102, 102, 1)") (tvar light tdefault "--n-close-icon-color-pressed")
+    , eq "tab vars: tab color = tabColor" (Just "rgb(247, 247, 250)") (tvar light tdefault "--n-tab-color")
+    , eq "tab vars: tab font weight" (Just "400") (tvar light tdefault "--n-tab-font-weight")
+    , eq "tab vars: tab font weight active" (Just "400") (tvar light tdefault "--n-tab-font-weight-active")
+    , eq "tab vars: medium bar padding" (Just "6px 0") (tvar light tdefault "--n-tab-padding")
+    , eq "tab vars: medium bar padding vertical" (Just "8px 16px") (tvar light tdefault "--n-tab-padding-vertical")
+    , eq "tab vars: medium bar gap" (Just "36px") (tvar light tdefault "--n-tab-gap")
+    , eq "tab vars: medium bar gap vertical" (Just "8px") (tvar light tdefault "--n-tab-gap-vertical")
+    , eq "tab vars: medium line padding" (Just "10px 0") (tvar light tLineOpts "--n-tab-padding")
+    , eq "tab vars: medium card padding" (Just "10px 20px") (tvar light tCardOpts "--n-tab-padding")
+    , eq "tab vars: medium card gap" (Just "4px") (tvar light tCardOpts "--n-tab-gap")
+    , eq "tab vars: medium segment padding" (Just "6px 0") (tvar light tSegmentOpts "--n-tab-padding")
+    , eq "tab vars: medium segment gap" (Just "0") (tvar light tSegmentOpts "--n-tab-gap")
+    , eq "tab vars: small bar padding" (Just "4px 0") (tvar light tSmallOpts "--n-tab-padding")
+    , eq "tab vars: large bar padding" (Just "10px 0") (tvar light tLargeOpts "--n-tab-padding")
+    , eq "tab vars: small pane padding top" (Just "8px") (tvar light tSmallOpts "--n-pane-padding-top")
+    , eq "tab vars: medium pane padding top" (Just "12px") (tvar light tdefault "--n-pane-padding-top")
+    , eq "tab vars: large pane padding top" (Just "16px") (tvar light tLargeOpts "--n-pane-padding-top")
+    , eq "tab vars: pane padding left (from shorthand)" (Just "0") (tvar light tdefault "--n-pane-padding-left")
+    , eq "tab vars: pane padding right (from shorthand)" (Just "0") (tvar light tdefault "--n-pane-padding-right")
+    , eq "tab vars: pane padding bottom (from shorthand)" (Just "0") (tvar light tdefault "--n-pane-padding-bottom")
+    , eq "tab vars: font weight strong" (Just "500") (tvar light tdefault "--n-font-weight-strong")
+    , eq "tab vars: tab color segment = baseColor" (Just "#FFF") (tvar light tdefault "--n-tab-color-segment")
+    , eq "tab vars: dark color-segment = dark inputColor" (Just "rgba(255, 255, 255, 0.1)") (tvar dark tdefault "--n-color-segment")
+    , eq "tab vars: dark tab color segment = dark inputColor" (Just "rgba(255, 255, 255, 0.1)") (tvar dark tdefault "--n-tab-color-segment")
+    , eq "tab vars: dark bar color = dark primaryColor" (Just "#63e2b7") (tvar dark tdefault "--n-bar-color")
     ]
 
 
@@ -5265,6 +5465,46 @@ liveNodes =
                     (Descriptions.view Theme.default descBorderedOpts descItemStyled)
                 , Element.el [ Element.htmlAttribute (HA.id "live-descriptions-empty") ]
                     (Descriptions.view Theme.default ddflt [])
+
+                -- Tabs
+                , Element.el [ Element.htmlAttribute (HA.id "live-tabs-default") ]
+                    (Tabs.view Theme.default tdefault ttabs)
+                , Element.el [ Element.htmlAttribute (HA.id "live-tabs-line") ]
+                    (Tabs.view Theme.default tLineOpts ttabs)
+                , Element.el [ Element.htmlAttribute (HA.id "live-tabs-card") ]
+                    (Tabs.view Theme.default tCardOpts ttabs)
+                , Element.el [ Element.htmlAttribute (HA.id "live-tabs-segment") ]
+                    (Tabs.view Theme.default tSegmentOpts ttabs)
+                , Element.el [ Element.htmlAttribute (HA.id "live-tabs-small") ]
+                    (Tabs.view Theme.default tSmallOpts ttabs)
+                , Element.el [ Element.htmlAttribute (HA.id "live-tabs-large") ]
+                    (Tabs.view Theme.default tLargeOpts ttabs)
+                , Element.el [ Element.htmlAttribute (HA.id "live-tabs-bottom") ]
+                    (Tabs.view Theme.default tBottomOpts ttabs)
+                , Element.el [ Element.htmlAttribute (HA.id "live-tabs-left") ]
+                    (Tabs.view Theme.default tLeftOpts ttabs)
+                , Element.el [ Element.htmlAttribute (HA.id "live-tabs-right") ]
+                    (Tabs.view Theme.default tRightOpts ttabs)
+                , Element.el [ Element.htmlAttribute (HA.id "live-tabs-justify") ]
+                    (Tabs.view Theme.default tJustifyOpts ttabs)
+                , Element.el [ Element.htmlAttribute (HA.id "live-tabs-closable-bar") ]
+                    (Tabs.view Theme.default tClosableBarOpts ttabs)
+                , Element.el [ Element.htmlAttribute (HA.id "live-tabs-card-closable") ]
+                    (Tabs.view Theme.default tCardClosableOpts ttabs)
+                , Element.el [ Element.htmlAttribute (HA.id "live-tabs-addable") ]
+                    (Tabs.view Theme.default tAddableOpts ttabs)
+                , Element.el [ Element.htmlAttribute (HA.id "live-tabs-rtl") ]
+                    (Tabs.view Theme.default tRtlOpts ttabs)
+                , Element.el [ Element.htmlAttribute (HA.id "live-tabs-prefix-suffix") ]
+                    (Tabs.view Theme.default tPrefixSuffixOpts ttabs)
+                , Element.el [ Element.htmlAttribute (HA.id "live-tabs-disabled") ]
+                    (Tabs.view Theme.default tDisabledOpts ttabsDisabled)
+                , Element.el [ Element.htmlAttribute (HA.id "live-tabs-show") ]
+                    (Tabs.view Theme.default tShowOpts ttabs)
+                , Element.el [ Element.htmlAttribute (HA.id "live-tabs-hover") ]
+                    (Tabs.view Theme.default tHoverOpts ttabs)
+                , Element.el [ Element.htmlAttribute (HA.id "live-tabs-styling") ]
+                    (Tabs.view Theme.default tStylingOpts ttabs)
                 ]
             )
         ]

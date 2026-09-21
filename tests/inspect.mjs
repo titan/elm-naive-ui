@@ -3569,6 +3569,233 @@ dTrue(
   clsOf(doc.querySelector('#live-descriptions-empty .n-descriptions'))
 )
 
+// Tabs ------------------------------------------------------------------------
+const tabsRoot = doc.querySelector('#live-tabs-default .n-tabs')
+dEq('DOM: Tabs root is a <div>', 'DIV', tagOf(tabsRoot))
+dTrue(
+  'DOM: Tabs root carries n-tabs + bar-type/medium-size/top classes',
+  hasCls(tabsRoot, 'n-tabs') &&
+    hasCls(tabsRoot, 'n-tabs--bar-type') &&
+    hasCls(tabsRoot, 'n-tabs--medium-size') &&
+    hasCls(tabsRoot, 'n-tabs--top'),
+  clsOf(tabsRoot)
+)
+dEq(
+  'DOM: Tabs root carries 32 --n-* custom properties',
+  32,
+  ((styleAt(tabsRoot) || '').match(/--n-[a-z-]+:/g) || []).length
+)
+dTrue(
+  'DOM: Tabs nav carries --{type}-type/--{placement}/n-tabs-nav classes',
+  (() => {
+    const nav = doc.querySelector('#live-tabs-default .n-tabs-nav')
+    return (
+      !!nav &&
+      hasCls(nav, 'n-tabs-nav') &&
+      hasCls(nav, 'n-tabs-nav--bar-type') &&
+      hasCls(nav, 'n-tabs-nav--top')
+    )
+  })(),
+  clsOf(doc.querySelector('#live-tabs-default .n-tabs-nav'))
+)
+dTrue(
+  'DOM: Tabs top nav nests scroll-wrapper > scroll-content > wrapper',
+  !!doc.querySelector('#live-tabs-default .n-tabs-nav-scroll-wrapper > .n-tabs-nav-scroll-content > .n-tabs-wrapper'),
+  clsOf(doc.querySelector('#live-tabs-default .n-tabs-nav-scroll-wrapper'))
+)
+dEq(
+  'DOM: Tabs top placement has no y-scroll div',
+  0,
+  doc.querySelectorAll('#live-tabs-default .n-tabs-nav-y-scroll').length
+)
+dEq(
+  'DOM: Tabs left placement has the y-scroll div',
+  1,
+  doc.querySelectorAll('#live-tabs-left .n-tabs-nav-y-scroll').length
+)
+dEq(
+  'DOM: Tabs renders one tab-wrapper per tab',
+  3,
+  doc.querySelectorAll('#live-tabs-default .n-tabs-tab-wrapper').length
+)
+dEq(
+  'DOM: Tabs renders one tab per item',
+  3,
+  doc.querySelectorAll('#live-tabs-default .n-tabs-tab').length
+)
+dEq(
+  'DOM: Tabs label span per tab',
+  3,
+  doc.querySelectorAll('#live-tabs-default .n-tabs-tab__label').length
+)
+dEq(
+  'DOM: Tabs marks exactly one active tab',
+  1,
+  doc.querySelectorAll('#live-tabs-default .n-tabs-tab--active').length
+)
+dEq(
+  'DOM: the active tab is the value (data-name)',
+  'a',
+  (() => {
+    const el = doc.querySelector('#live-tabs-default .n-tabs-tab--active')
+    return el ? el.getAttribute('data-name') : null
+  })()
+)
+dTrue(
+  'DOM: Tabs first tab has no left-pad, later tabs do',
+  doc.querySelectorAll('#live-tabs-default .n-tabs-tab-pad').length === 2,
+  String(doc.querySelectorAll('#live-tabs-default .n-tabs-tab-pad').length)
+)
+dTrue(
+  'DOM: Tabs bar element present for bar type, absent for card',
+  !!doc.querySelector('#live-tabs-default .n-tabs-bar') &&
+    !doc.querySelector('#live-tabs-card .n-tabs-bar'),
+  clsOf(doc.querySelector('#live-tabs-card .n-tabs-wrapper'))
+)
+dTrue(
+  'DOM: Tabs segment nests rail > capsule > wrapper > dummy tab',
+  !!doc.querySelector('#live-tabs-segment .n-tabs-rail > .n-tabs-capsule > .n-tabs-wrapper > .n-tabs-tab'),
+  clsOf(doc.querySelector('#live-tabs-segment .n-tabs-rail'))
+)
+dTrue(
+  'DOM: Tabs segment resolves placement to top',
+  hasCls(doc.querySelector('#live-tabs-segment .n-tabs'), 'n-tabs--segment-type') &&
+    hasCls(doc.querySelector('#live-tabs-segment .n-tabs'), 'n-tabs--top'),
+  clsOf(doc.querySelector('#live-tabs-segment .n-tabs'))
+)
+dEq(
+  'DOM: Tabs line type class',
+  true,
+  hasCls(doc.querySelector('#live-tabs-line .n-tabs'), 'n-tabs--line-type')
+)
+dEq(
+  'DOM: Tabs small size class',
+  true,
+  hasCls(doc.querySelector('#live-tabs-small .n-tabs'), 'n-tabs--small-size')
+)
+dEq(
+  'DOM: Tabs large size class',
+  true,
+  hasCls(doc.querySelector('#live-tabs-large .n-tabs'), 'n-tabs--large-size')
+)
+dEq(
+  'DOM: Tabs bottom placement class',
+  true,
+  hasCls(doc.querySelector('#live-tabs-bottom .n-tabs'), 'n-tabs--bottom')
+)
+dEq(
+  'DOM: Tabs right placement class',
+  true,
+  hasCls(doc.querySelector('#live-tabs-right .n-tabs'), 'n-tabs--right')
+)
+dEq(
+  'DOM: Tabs rtl class',
+  true,
+  hasCls(doc.querySelector('#live-tabs-rtl .n-tabs'), 'n-tabs--rtl')
+)
+dTrue(
+  'DOM: Tabs justify adds --flex and the flex wrapper style',
+  hasCls(doc.querySelector('#live-tabs-justify .n-tabs'), 'n-tabs--flex') &&
+    (styleAt(doc.querySelector('#live-tabs-justify .n-tabs-wrapper')) || '').includes('justify-content:center'),
+  clsOf(doc.querySelector('#live-tabs-justify .n-tabs'))
+)
+dTrue(
+  'DOM: Tabs disabled tab carries --disabled + data-disabled',
+  (() => {
+    const el = doc.querySelector('#live-tabs-disabled .n-tabs-tab--disabled')
+    return !!el && el.getAttribute('data-disabled') === 'true'
+  })(),
+  clsOf(doc.querySelector('#live-tabs-disabled .n-tabs-tab--disabled'))
+)
+dTrue(
+  'DOM: Tabs closable (bar) marks tabs --closable but renders no close button',
+  doc.querySelectorAll('#live-tabs-closable-bar .n-tabs-tab--closable').length === 3 &&
+    doc.querySelectorAll('#live-tabs-closable-bar .n-tabs-tab__close').length === 0,
+  String(doc.querySelectorAll('#live-tabs-closable-bar .n-tabs-tab__close').length)
+)
+dEq(
+  'DOM: Tabs closable (card) renders one close button per tab',
+  3,
+  doc.querySelectorAll('#live-tabs-card-closable .n-tabs-tab__close').length
+)
+dTrue(
+  'DOM: Tabs close button is n-base-close with the close icon',
+  (() => {
+    const el = doc.querySelector('#live-tabs-card-closable .n-tabs-tab__close')
+    return !!el && hasCls(el, 'n-base-close') && !!el.querySelector('i.n-base-icon svg')
+  })(),
+  clsOf(doc.querySelector('#live-tabs-card-closable .n-tabs-tab__close'))
+)
+dTrue(
+  'DOM: Tabs addable (card) renders the add tab with placeholder + icon',
+  (() => {
+    const el = doc.querySelector('#live-tabs-addable .n-tabs-tab--addable')
+    return (
+      !!el &&
+      el.getAttribute('data-name') === '__addable' &&
+      !!el.querySelector('.n-tabs-tab__height-placeholder') &&
+      !!el.querySelector('svg')
+    )
+  })(),
+  clsOf(doc.querySelector('#live-tabs-addable .n-tabs-tab--addable'))
+)
+dTrue(
+  'DOM: Tabs prefix/suffix slots render',
+  !!doc.querySelector('#live-tabs-prefix-suffix .n-tabs-nav__prefix') &&
+    !!doc.querySelector('#live-tabs-prefix-suffix .n-tabs-nav__suffix'),
+  clsOf(doc.querySelector('#live-tabs-prefix-suffix .n-tabs-nav'))
+)
+dEq(
+  'DOM: Tabs default (ShowIf) renders only the active pane',
+  1,
+  doc.querySelectorAll('#live-tabs-default .n-tab-pane').length
+)
+dEq(
+  'DOM: Tabs active pane carries the content text',
+  'A-c',
+  (() => {
+    const el = doc.querySelector('#live-tabs-default .n-tab-pane')
+    if (!el) return null
+    const clone = el.cloneNode(true)
+    clone.querySelectorAll('style').forEach((s) => s.remove())
+    return clone.textContent.trim()
+  })()
+)
+dEq(
+  'DOM: Tabs Show directive renders every pane',
+  3,
+  doc.querySelectorAll('#live-tabs-show .n-tab-pane').length
+)
+dTrue(
+  'DOM: Tabs Show directive hides the inactive panes',
+  (() => {
+    const panes = [...doc.querySelectorAll('#live-tabs-show .n-tab-pane')]
+    const hidden = panes.filter((p) => (styleAt(p) || '').includes('display:none'))
+    return hidden.length === 2
+  })(),
+  [...doc.querySelectorAll('#live-tabs-show .n-tab-pane')].map((p) => styleAt(p)).join(' | ')
+)
+dTrue(
+  'DOM: Tabs tabClass/tabStyle land on every tab',
+  doc.querySelectorAll('#live-tabs-styling .n-tabs-tab.my-tab').length === 3 &&
+    (styleAt(doc.querySelector('#live-tabs-styling .n-tabs-tab')) || '').includes('color:red'),
+  styleAt(doc.querySelector('#live-tabs-styling .n-tabs-tab'))
+)
+dTrue(
+  'DOM: Tabs paneClass/paneStyle land on the pane',
+  !!doc.querySelector('#live-tabs-styling .n-tab-pane.my-pane') &&
+    (styleAt(doc.querySelector('#live-tabs-styling .n-tab-pane')) || '').includes('background:blue'),
+  styleAt(doc.querySelector('#live-tabs-styling .n-tab-pane'))
+)
+dEq(
+  'DOM: Tabs embeds emit no static elm-ui sheet (noStaticStyleSheet)',
+  0,
+  tabsRoot
+    ? [...tabsRoot.querySelectorAll('style')].filter((s) => /flex-basis\s*:\s*0/.test(s.textContent))
+        .length
+    : -1
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
