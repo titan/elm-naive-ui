@@ -71,6 +71,7 @@ import NUI.Tag as Tag
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Thing as Thing
 import NUI.Timeline as Timeline
+import NUI.Tooltip as Tooltip
 import NUI.Types as T
 import NUI.Typography as Typo
 import Time
@@ -88,6 +89,11 @@ theme =
 purple : Theme
 purple =
     Theme.setPrimary "#7c3aed" theme
+
+
+darkTheme : Theme
+darkTheme =
+    Theme.dark
 
 
 
@@ -200,6 +206,11 @@ scrollbarD =
 popoverD : Popover.Options msg
 popoverD =
     Popover.defaults
+
+
+tooltipD : Tooltip.Options msg
+tooltipD =
+    Tooltip.defaults
 
 
 avD : Avatar.Options msg
@@ -568,6 +579,7 @@ body =
     , tabsSection
     , scrollbarSection
     , popoverSection
+    , tooltipSection
     , rtlSection
     , themeSection
     ]
@@ -2097,6 +2109,36 @@ popoverSection =
                         , attributes = [ Element.height (Element.px 120) ]
                     }
                     [ Element.text scrollbarCopy ]
+                )
+            ]
+        ]
+
+
+tooltipSection : Element msg
+tooltipSection =
+    section "Tooltip"
+        "Popover wearing waistcoat — the same body (`n-tooltip` marker class), the tooltip theme swapping the colours: a dark bubble in light mode, the popover's own colours in dark."
+    <|
+        [ demoRow "Light theme (dark bubble)"
+            [ popoverHost Popover.Top
+                []
+                (Tooltip.view theme
+                    { tooltipD | width = Just "200px" }
+                    [ Element.text "A tooltip bubble." ]
+                )
+            , popoverHost Popover.Bottom
+                []
+                (Tooltip.view theme
+                    { tooltipD | width = Just "200px", showArrow = False }
+                    [ Element.text "No arrow." ]
+                )
+            ]
+        , demoRow "Dark theme (popover colours)"
+            [ popoverHost Popover.Right
+                []
+                (Tooltip.view darkTheme
+                    { tooltipD | width = Just "200px" }
+                    [ Element.text "Same as the dark popover." ]
                 )
             ]
         ]
