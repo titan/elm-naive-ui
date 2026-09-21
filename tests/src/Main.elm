@@ -59,6 +59,7 @@ import NUI.LayoutSider as LayoutSider
 import NUI.List as NList
 import NUI.LoadingBar as LoadingBar
 import NUI.Marquee as Marquee
+import NUI.Modal as Modal
 import NUI.NumberAnimation as NumberAnimation
 import NUI.PageHeader as PageHeader
 import NUI.Pagination as Pagination
@@ -109,10 +110,12 @@ main =
 type Msg
     = NoOp
     | Selected String
+    | ModalClose
 
 
-{-| The model is a counter of dropdown `onSelect` dispatches — the only observable
-way to prove the click wiring fires (and that disabled / submenu clicks do not).
+{-| The model is a counter of dropdown `onSelect` / modal `onClose` dispatches —
+the only observable way to prove the click wiring fires (and that disabled /
+submenu clicks do not).
 -}
 update : Msg -> Int -> Int
 update msg count =
@@ -121,6 +124,9 @@ update msg count =
             count
 
         Selected _ ->
+            count + 1
+
+        ModalClose ->
             count + 1
 
 
@@ -373,6 +379,19 @@ sparseTags =
 listAt : Int -> List a -> Maybe a
 listAt index list =
     List.drop index list |> List.head
+
+
+{-| `Maybe` presence without `==` — the option records carry `Element`/attribute
+payloads that Elm will not compare.
+-}
+isNothing : Maybe a -> Bool
+isNothing m =
+    case m of
+        Nothing ->
+            True
+
+        Just _ ->
+            False
 
 
 
@@ -2959,6 +2978,74 @@ changedVarKeys from to =
                     Just k
         )
         from
+
+
+
+-- MODAL OPTION SETS -------------------------------------------------------------
+
+
+mD : Modal.Options Msg
+mD =
+    Modal.defaults
+
+
+{-| `Card.defaults` with `bordered = False` — upstream spreads the dialog props
+last so the card preset is unbordered inside a modal.
+-}
+mCardD : Card.Options Msg
+mCardD =
+    Modal.cardDefaults
+
+
+mLightVars : List ( String, String )
+mLightVars =
+    Modal.cssVars Theme.default
+
+
+mDarkVars : List ( String, String )
+mDarkVars =
+    Modal.cssVars Theme.dark
+
+
+{-| `boxShadow3` — identical literal in the light and dark themes.
+-}
+modalShadow : String
+modalShadow =
+    "0 6px 16px -9px rgba(0, 0, 0, .08), 0 9px 28px 0 rgba(0, 0, 0, .05), 0 12px 48px 16px rgba(0, 0, 0, .03)"
+
+
+expectedModalLightVars : List ( String, String )
+expectedModalLightVars =
+    [ ( "--n-bezier-ease-out", "cubic-bezier(0, 0, .2, 1)" )
+    , ( "--n-box-shadow", modalShadow )
+    , ( "--n-color", "#fff" )
+    , ( "--n-text-color", "rgb(51, 54, 57)" )
+    ]
+
+
+expectedModalDarkVars : List ( String, String )
+expectedModalDarkVars =
+    [ ( "--n-bezier-ease-out", "cubic-bezier(0, 0, .2, 1)" )
+    , ( "--n-box-shadow", modalShadow )
+    , ( "--n-color", "rgb(44, 44, 50)" )
+    , ( "--n-text-color", "rgba(255, 255, 255, 0.82)" )
+    ]
+
+
+{-| A plain `Card.view` with the composition seams exercised (extraClasses +
+root attributes + role) — the seam `NUI.Modal`'s card preset rides on.
+-}
+mCardSeamOpts : Card.Options Msg
+mCardSeamOpts =
+    let
+        base =
+            Card.defaults
+    in
+    { base
+        | extraClasses = [ "seam-a", "seam-b" ]
+        , attributes = [ Element.htmlAttribute (HA.attribute "data-seam" "on") ]
+        , role = Just "region"
+    }
 
 
 
@@ -5679,6 +5766,48 @@ checks =
     , eq "dropdown dark inverted: --n-option-color-hover = primaryColorSuppl rgb(42, 148, 125)" (Just "rgb(42, 148, 125)") (lookup "--n-option-color-hover" dDarkInvertedVars)
     , eq "dropdown dark inverted: --n-option-color-active = primaryColorSuppl rgb(42, 148, 125)" (Just "rgb(42, 148, 125)") (lookup "--n-option-color-active" dDarkInvertedVars)
     , eq "dropdown dark inverted: --n-color = popoverColor rgb(72, 72, 78)" (Just "rgb(72, 72, 78)") (lookup "--n-color" dDarkInvertedVars)
+
+    -- modal: defaults --------------------------------------------------------
+    , eq "modal defaults: show False" False mD.show
+    , eq "modal defaults: showMask True" True mD.showMask
+    , eq "modal defaults: zIndex Nothing" Nothing mD.zIndex
+    , eq "modal defaults: maskTransition Nothing" Nothing mD.maskTransition
+    , eq "modal defaults: bodyTransition Nothing" Nothing mD.bodyTransition
+    , eq "modal defaults: attributes []" True (List.isEmpty mD.attributes)
+
+    -- modal: cardDefaults (Card.defaults | bordered = False) -----------------
+    , eq "modal cardDefaults: bordered False (Card.defaults is True)" ( True, False ) ( Card.defaults.bordered, mCardD.bordered )
+    , eq "modal cardDefaults: closable = Card.defaults" Card.defaults.closable mCardD.closable
+    , eq "modal cardDefaults: hoverable = Card.defaults" Card.defaults.hoverable mCardD.hoverable
+    , eq "modal cardDefaults: embedded = Card.defaults" Card.defaults.embedded mCardD.embedded
+    , eq "modal cardDefaults: size = Card.defaults" Card.defaults.size mCardD.size
+    , eq "modal cardDefaults: segmented = Card.defaults" Card.defaults.segmented mCardD.segmented
+    , eq "modal cardDefaults: contentStyle = Card.defaults" Card.defaults.contentStyle mCardD.contentStyle
+    , eq "modal cardDefaults: role = Card.defaults" Card.defaults.role mCardD.role
+    , eq "modal cardDefaults: rtl = Card.defaults" Card.defaults.rtl mCardD.rtl
+    , eq "modal cardDefaults: extraClasses = Card.defaults" Card.defaults.extraClasses mCardD.extraClasses
+    , eq "modal cardDefaults: attributes count = Card.defaults" (List.length Card.defaults.attributes) (List.length mCardD.attributes)
+    , eq "modal cardDefaults: title Nothing (= Card.defaults)" ( True, True ) ( isNothing Card.defaults.title, isNothing mCardD.title )
+    , eq "modal cardDefaults: headerExtra Nothing" True (isNothing mCardD.headerExtra)
+    , eq "modal cardDefaults: cover Nothing" True (isNothing mCardD.cover)
+    , eq "modal cardDefaults: footer Nothing" True (isNothing mCardD.footer)
+    , eq "modal cardDefaults: action Nothing" True (isNothing mCardD.action)
+    , eq "modal cardDefaults: onClose Nothing (= Card.defaults)" ( True, True ) ( isNothing Card.defaults.onClose, isNothing mCardD.onClose )
+
+    -- modal: cssVars (exact 4-tuple order + values, light and dark) ----------
+    , eq "modal vars: 4 keys (light)" 4 (List.length mLightVars)
+    , eq "modal vars: exact 4-list light (name+value, order)" expectedModalLightVars mLightVars
+    , eq "modal vars: --n-bezier-ease-out = cubicBezierEaseOut" (Just "cubic-bezier(0, 0, .2, 1)") (lookup "--n-bezier-ease-out" mLightVars)
+    , eq "modal vars: --n-box-shadow = boxShadow3" (Just modalShadow) (lookup "--n-box-shadow" mLightVars)
+    , eq "modal vars: --n-color = modalColor #fff" (Just "#fff") (lookup "--n-color" mLightVars)
+    , eq "modal vars: --n-text-color = textColor2 rgb(51, 54, 57)" (Just "rgb(51, 54, 57)") (lookup "--n-text-color" mLightVars)
+    , eq "modal vars: 4 keys (dark)" 4 (List.length mDarkVars)
+    , eq "modal vars: exact 4-list dark (name+value, order)" expectedModalDarkVars mDarkVars
+    , eq "modal dark: --n-color = rgb(44, 44, 50)" (Just "rgb(44, 44, 50)") (lookup "--n-color" mDarkVars)
+    , eq "modal dark: --n-text-color = rgba(255, 255, 255, 0.82)" (Just "rgba(255, 255, 255, 0.82)") (lookup "--n-text-color" mDarkVars)
+    , eq "modal dark: --n-box-shadow identical to light" (Just modalShadow) (lookup "--n-box-shadow" mDarkVars)
+    , eq "modal dark: --n-bezier-ease-out identical to light" (Just "cubic-bezier(0, 0, .2, 1)") (lookup "--n-bezier-ease-out" mDarkVars)
+    , eq "modal light/dark differ in exactly color + text-color" [ "--n-color", "--n-text-color" ] (changedVarKeys mLightVars mDarkVars)
     ]
 
 
@@ -6386,6 +6515,84 @@ liveNodes =
                     (Dropdown.view Theme.dark dD [ dLeaf "a" "A" ])
                 , Element.el [ Element.htmlAttribute (HA.id "live-dropdown-dark-inverted"), Dropdown.placementAttribute dD.placement ]
                     (Dropdown.view Theme.dark dInvertedOpts [ dLeaf "a" "A" ])
+
+                -- Modal (the mount-body family: container > mask + body-wrapper >
+                -- scrollbar > content, self-positioning; the fixed positioning is
+                -- irrelevant to the DOM probes)
+                , Element.el [ Element.htmlAttribute (HA.id "live-modal-custom") ]
+                    (Modal.view Theme.default
+                        { mD | show = True }
+                        (Modal.Custom [ Element.htmlAttribute (HA.id "modal-custom-content") ]
+                            [ Element.text "Custom body" ]
+                        )
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-modal-zindex") ]
+                    (Modal.view Theme.default
+                        { mD | show = True, zIndex = Just 100 }
+                        (Modal.Custom [] [ Element.text "Z" ])
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-modal-nomask") ]
+                    (Modal.view Theme.default
+                        { mD | show = True, showMask = False }
+                        (Modal.Custom [] [ Element.text "No mask" ])
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-modal-hidden") ]
+                    (Modal.view Theme.default mD (Modal.Custom [] [ Element.text "Hidden" ]))
+                , Element.el [ Element.htmlAttribute (HA.id "live-modal-mask-leave") ]
+                    (Modal.view Theme.default
+                        { mD | maskTransition = Just Internal.LeaveActive }
+                        (Modal.Custom [] [ Element.text "Mask leave" ])
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-modal-body-leave") ]
+                    (Modal.view Theme.default
+                        { mD | bodyTransition = Just Internal.LeaveTo }
+                        (Modal.Custom [] [ Element.text "Body leave" ])
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-modal-mask-enter") ]
+                    (Modal.view Theme.default
+                        { mD | show = True, maskTransition = Just Internal.EnterActive }
+                        (Modal.Custom [] [ Element.text "Mask enter" ])
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-modal-body-enter") ]
+                    (Modal.view Theme.default
+                        { mD | show = True, bodyTransition = Just Internal.EnterFrom }
+                        (Modal.Custom [] [ Element.text "Body enter" ])
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-modal-card") ]
+                    (Modal.view Theme.default
+                        { mD | show = True }
+                        (Modal.Card
+                            { mCardD
+                                | title = Just (Element.text "Card title")
+                                , closable = True
+                                , onClose = Just ModalClose
+                                , attributes = [ Element.htmlAttribute (HA.attribute "data-card-extra" "on") ]
+                            }
+                            [ Element.text "Card body" ]
+                        )
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-modal-card-bordered") ]
+                    (Modal.view Theme.default
+                        { mD | show = True }
+                        (Modal.Card { mCardD | bordered = True } [ Element.text "Bordered" ])
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-modal-card-role") ]
+                    (Modal.view Theme.default
+                        { mD | show = True }
+                        (Modal.Card { mCardD | role = Just "region" } [ Element.text "Role" ])
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-modal-card-phase") ]
+                    (Modal.view Theme.default
+                        { mD | show = True, bodyTransition = Just Internal.EnterFrom }
+                        (Modal.Card mCardD [ Element.text "Phased card" ])
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-modal-dark") ]
+                    (Modal.view Theme.dark
+                        { mD | show = True }
+                        (Modal.Custom [] [ Element.text "Dark" ])
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-card-seam") ]
+                    (Card.view Theme.default mCardSeamOpts [ Element.text "Seam" ])
                 ]
             )
         ]

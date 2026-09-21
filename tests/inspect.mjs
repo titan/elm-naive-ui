@@ -4964,6 +4964,328 @@ dTrue(
   clsOf(ddEmpty)
 )
 
+// Modal ------------------------------------------------------------------------
+// The container is the mount root (role=none, the 4 vars [+ z-index]); the mask,
+// the body-wrapper and the scrollbar content follow. `.n-modal` sits inside
+// Scrollbar's documented `display:contents` embed wrapper, so everything below is
+// reached with descendant selectors.
+const mContainer = (id) => doc.querySelector('#' + id + ' .n-modal-container')
+const mContent = (id) => doc.querySelector('#' + id + ' .n-modal')
+const mMask = (id) => doc.querySelector('#' + id + ' .n-modal-mask')
+const mBody = (id) => doc.querySelector('#' + id + ' .n-modal-body-wrapper')
+const mScroll = (id) => doc.querySelector('#' + id + ' .n-modal-scroll-content')
+const mCs = (el) => (el ? window.getComputedStyle(el) : null)
+
+const MODAL_LIGHT_STYLE =
+  '--n-bezier-ease-out:cubic-bezier(0, 0, .2, 1)' +
+  ';--n-box-shadow:0 6px 16px -9px rgba(0, 0, 0, .08), 0 9px 28px 0 rgba(0, 0, 0, .05), 0 12px 48px 16px rgba(0, 0, 0, .03)' +
+  ';--n-color:#fff' +
+  ';--n-text-color:rgb(51, 54, 57)'
+
+const mCustomContainer = mContainer('live-modal-custom')
+dEq('DOM: Modal container is a <div>', 'DIV', tagOf(mCustomContainer))
+dEq(
+  'DOM: Modal container role=none',
+  'none',
+  mCustomContainer ? mCustomContainer.getAttribute('role') : null
+)
+dEq(
+  'DOM: Modal container style = the 4 vars in upstream order (light)',
+  MODAL_LIGHT_STYLE,
+  styleAt(mCustomContainer)
+)
+dEq(
+  'DOM: Modal container carries 4 --n-* custom properties (no size/inverted vars)',
+  4,
+  countVars(mCustomContainer)
+)
+
+// z-index: appended AFTER the 4 vars on the single style attribute (Vue mutates
+// style after patch), and it is not an --n-* custom property.
+const mZContainer = mContainer('live-modal-zindex')
+dEq(
+  'DOM: Modal zIndex=100 appends "z-index:100" after the 4 vars',
+  MODAL_LIGHT_STYLE + ';z-index:100',
+  styleAt(mZContainer)
+)
+dEq(
+  'DOM: Modal zIndex does not add an --n-* custom property',
+  4,
+  countVars(mZContainer)
+)
+
+// mask matrix: mask iff showMask && (show || isLeavePhase maskTransition)
+const mDefaultMask = mMask('live-modal-custom')
+dTrue(
+  'DOM: Modal show -> mask present with aria-hidden="true" and no phase classes',
+  !!mDefaultMask &&
+    mDefaultMask.getAttribute('aria-hidden') === 'true' &&
+    mDefaultMask.getAttribute('class').split(/\s+/).includes('n-modal-mask') &&
+    !mDefaultMask.getAttribute('class').includes('fade-in-transition-'),
+  clsOf(mDefaultMask)
+)
+dTrue(
+  'DOM: Modal showMask=False drops the mask node entirely (body-wrapper is then the only child)',
+  !!mContainer('live-modal-nomask') &&
+    mMask('live-modal-nomask') === null &&
+    mContainer('live-modal-nomask').children.length === 1,
+  clsOf(mContainer('live-modal-nomask'))
+)
+dTrue(
+  'DOM: Modal show=False + no leave phase renders a BARE container (no mask, no body-wrapper)',
+  mContainer('live-modal-hidden') !== null &&
+    mContainer('live-modal-hidden').children.length === 0 &&
+    mMask('live-modal-hidden') === null &&
+    mBody('live-modal-hidden') === null,
+  clsOf(mContainer('live-modal-hidden'))
+)
+const mMaskLeave = mMask('live-modal-mask-leave')
+dTrue(
+  'DOM: Modal show=False + mask leave phase keeps ONLY the mask (fade-in-transition-leave-active)',
+  !!mMaskLeave &&
+    hasCls(mMaskLeave, 'fade-in-transition-leave-active') &&
+    mBody('live-modal-mask-leave') === null,
+  clsOf(mMaskLeave)
+)
+const mBodyLeave = mContent('live-modal-body-leave')
+dTrue(
+  'DOM: Modal show=False + body leave phase keeps ONLY the body (content fade-in-scale-up-transition-leave-to)',
+  !!mBodyLeave &&
+    hasCls(mBodyLeave, 'fade-in-scale-up-transition-leave-to') &&
+    mMask('live-modal-body-leave') === null &&
+    mBody('live-modal-body-leave') !== null,
+  clsOf(mBodyLeave)
+)
+const mMaskEnter = mMask('live-modal-mask-enter')
+dTrue(
+  'DOM: Modal mask enter phase class is fade-in-transition-enter-active',
+  hasCls(mMaskEnter, 'fade-in-transition-enter-active'),
+  clsOf(mMaskEnter)
+)
+const mBodyEnter = mContent('live-modal-body-enter')
+dTrue(
+  'DOM: Modal content enter phase class is fade-in-scale-up-transition-enter-from',
+  hasCls(mBodyEnter, 'fade-in-scale-up-transition-enter-from'),
+  clsOf(mBodyEnter)
+)
+
+// body-wrapper: role=none; --mask-hidden iff !showMask (maskHidden = !showMask)
+const mBodyDefault = mBody('live-modal-custom')
+dEq(
+  'DOM: Modal body-wrapper role=none',
+  'none',
+  mBodyDefault ? mBodyDefault.getAttribute('role') : null
+)
+dTrue(
+  'DOM: Modal showMask=True does NOT add n-modal-body-wrapper--mask-hidden',
+  !!mBodyDefault &&
+    !hasCls(mBodyDefault, 'n-modal-body-wrapper--mask-hidden'),
+  clsOf(mBodyDefault)
+)
+dTrue(
+  'DOM: Modal showMask=False adds n-modal-body-wrapper--mask-hidden (pointer-events pass-through)',
+  hasCls(mBody('live-modal-nomask'), 'n-modal-body-wrapper--mask-hidden'),
+  clsOf(mBody('live-modal-nomask'))
+)
+
+// scrollbar child + the display:contents embed wrapper + centering evidence
+const mCustomContent = mContent('live-modal-custom')
+const mCustomScroll = mScroll('live-modal-custom')
+dTrue(
+  'DOM: Modal body-wrapper > n-scrollbar > n-modal-scroll-content > (display:contents embed) > .n-modal',
+  !!mCustomScroll &&
+    hasCls(mCustomScroll, 'n-modal-scroll-content') &&
+    mCustomScroll.closest('.n-scrollbar') !== null &&
+    !!mCustomContent &&
+    mCustomScroll.contains(mCustomContent) &&
+    !!mCustomContent.parentElement &&
+    (mCustomContent.parentElement.getAttribute('style') || '').includes(
+      'display:contents'
+    ),
+  clsOf(mCustomScroll)
+)
+dEq(
+  'DOM: Modal .n-modal computed box-shadow = var(--n-box-shadow) (the .n-modal cssr rule lands on the content node)',
+  'var(--n-box-shadow)',
+  mCs(mCustomContent) ? mCs(mCustomContent).boxShadow : null
+)
+dEq(
+  'DOM: Modal scroll-content computed display=flex (the centering flex box)',
+  'flex',
+  mCs(mCustomScroll) ? mCs(mCustomScroll).display : null
+)
+dEq(
+  'DOM: Modal scroll-content computed min-height=100%',
+  '100%',
+  mCs(mCustomScroll) ? mCs(mCustomScroll).minHeight : null
+)
+// The stylesheet centres with `align-self:center; margin:auto` on .n-modal — but
+// jsdom's cascade is last-declaration-wins (it ignores specificity), and elm-ui's
+// own stylesheet (appended later) re-declares align-self/margin for elm-ui nodes,
+// so the computed values are not usable as evidence. Assert the rule itself.
+const mAllCssRules = (() => {
+  const out = []
+  for (const sheet of doc.styleSheets) {
+    let rules
+    try {
+      rules = sheet.cssRules
+    } catch {
+      continue
+    }
+    for (const r of rules) out.push(r)
+  }
+  return out
+})()
+const mCenteringRule = mAllCssRules.find(
+  (r) => r.selectorText === '.nui-root.nui-root .n-modal'
+)
+dTrue(
+  'DOM: modal cssr rule ".nui-root.nui-root .n-modal" declares align-self:center + margin:auto',
+  !!mCenteringRule &&
+    /align-self:\s*center/.test(mCenteringRule.cssText) &&
+    /margin:\s*auto/.test(mCenteringRule.cssText),
+  mCenteringRule
+    ? mCenteringRule.cssText.replace(/\s+/g, ' ').slice(0, 140)
+    : 'rule missing'
+)
+
+// Custom wrapper: n-modal + caller attrs passthrough
+dTrue(
+  'DOM: Modal Custom wrapper carries class n-modal and the caller attribute (id) alongside',
+  hasCls(mCustomContent, 'n-modal') &&
+    mCustomContent.getAttribute('id') === 'modal-custom-content' &&
+    tagOf(mCustomContent) === 'DIV',
+  clsOf(mCustomContent)
+)
+
+// Card preset: root class ORDER (n-card… n-modal [phase last]), role, aria-modal,
+// unbordered by default, bordered opt-in
+const mCardContent = mContent('live-modal-card')
+const mCardClassList = mCardContent ? [...mCardContent.classList] : []
+dEq(
+  'DOM: Modal Card preset n-* classes are exactly n-card then n-modal',
+  'n-card n-modal',
+  mCardClassList.filter((c) => c.startsWith('n-')).join(' ')
+)
+dEq(
+  'DOM: Modal Card preset role=dialog',
+  'dialog',
+  mCardContent ? mCardContent.getAttribute('role') : null
+)
+dEq(
+  'DOM: Modal Card preset aria-modal=true',
+  'true',
+  mCardContent ? mCardContent.getAttribute('aria-modal') : null
+)
+dTrue(
+  'DOM: Modal Card preset is unbordered by default (no n-card--bordered)',
+  !!mCardContent && !hasCls(mCardContent, 'n-card--bordered'),
+  clsOf(mCardContent)
+)
+dEq(
+  'DOM: Modal Card preset bordered opt-in puts n-card--bordered BEFORE n-modal',
+  'n-card n-card--bordered n-modal',
+  mContent('live-modal-card-bordered')
+    ? [...mContent('live-modal-card-bordered').classList]
+        .filter((c) => c.startsWith('n-'))
+        .join(' ')
+    : null
+)
+dEq(
+  'DOM: Modal Card preset forces role=dialog over the card options\' own role',
+  'dialog',
+  mContent('live-modal-card-role')
+    ? mContent('live-modal-card-role').getAttribute('role')
+    : null
+)
+dTrue(
+  'DOM: Modal Card preset: caller card attributes land on the root (aria-modal then caller)',
+  mCardContent && mCardContent.getAttribute('data-card-extra') === 'on',
+  clsOf(mCardContent)
+)
+const mCardPhase = mContent('live-modal-card-phase')
+dEq(
+  'DOM: Modal Card preset body phase class is LAST in the root class list',
+  'n-card n-modal fade-in-scale-up-transition-enter-from',
+  mCardPhase
+    ? [...mCardPhase.classList]
+        .filter((c) => c.startsWith('n-') || c.includes('transition'))
+        .join(' ')
+    : null
+)
+
+// dark container: dark siblings, shadow identical to light
+const mDarkContainer = mContainer('live-modal-dark')
+dEq(
+  'DOM: Modal dark container --n-color = rgb(44, 44, 50) and --n-text-color = rgba(255, 255, 255, 0.82)',
+  MODAL_LIGHT_STYLE.replace('--n-color:#fff', '--n-color:rgb(44, 44, 50)').replace(
+    '--n-text-color:rgb(51, 54, 57)',
+    '--n-text-color:rgba(255, 255, 255, 0.82)'
+  ),
+  styleAt(mDarkContainer)
+)
+
+// Card composition seams (the seam NUI.Modal's card preset rides on)
+const mSeamRoot = doc.querySelector('#live-card-seam .n-card')
+dTrue(
+  'DOM: Card seam extraClasses appended AFTER the card\'s own classes (n-card n-card--bordered seam-a seam-b)',
+  (() => {
+    if (!mSeamRoot) return false
+    const cl = [...mSeamRoot.classList]
+    return (
+      cl[cl.length - 2] === 'seam-a' &&
+      cl[cl.length - 1] === 'seam-b' &&
+      cl.includes('n-card') &&
+      cl.includes('n-card--bordered')
+    )
+  })(),
+  clsOf(mSeamRoot)
+)
+dEq(
+  'DOM: Card seam root role lands from options.role',
+  'region',
+  mSeamRoot ? mSeamRoot.getAttribute('role') : null
+)
+dEq(
+  'DOM: Card seam root attributes land on the root',
+  'on',
+  mSeamRoot ? mSeamRoot.getAttribute('data-seam') : null
+)
+dTrue(
+  'DOM: Card seam attributes are appended AFTER role (upstream merge order)',
+  (() => {
+    if (!mSeamRoot) return false
+    const names = mSeamRoot.getAttributeNames()
+    return (
+      names.indexOf('role') !== -1 &&
+      names.indexOf('data-seam') > names.indexOf('role')
+    )
+  })(),
+  mSeamRoot ? mSeamRoot.getAttributeNames().join(',') : 'missing'
+)
+
+// Card preset close button dispatches its onClose msg (delta against the shared counter)
+const mCount = () =>
+  (doc.getElementById('dropdown-click-count') || {}).textContent
+const mBeforeClose = mCount()
+const mCloseBtn = doc.querySelector('#live-modal-card .n-base-close')
+dTrue(
+  'DOM: Modal Card preset closable renders the .n-base-close button in the header',
+  !!mCloseBtn && !!doc.querySelector('#live-modal-card .n-card-header'),
+  mCloseBtn ? clsOf(mCloseBtn) : 'missing'
+)
+if (mCloseBtn) {
+  mCloseBtn.dispatchEvent(
+    new window.MouseEvent('click', { bubbles: true, cancelable: true })
+  )
+}
+await new Promise((r) => setTimeout(r, 30))
+dEq(
+  'DOM: clicking the Modal Card preset close button fires its onClose msg (counter +1)',
+  String(Number(mBeforeClose) + 1),
+  mCount()
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
