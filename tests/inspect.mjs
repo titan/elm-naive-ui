@@ -4452,6 +4452,11 @@ const labelText = (body) => {
   const l = body ? body.querySelector('.n-dropdown-option-body__label') : null
   return l ? l.textContent : null
 }
+// upstream puts `data-dropdown-option` on EVERY label div (fc8828b).
+const labelAttr = (body) => {
+  const l = body ? body.querySelector('.n-dropdown-option-body__label') : null
+  return l ? l.getAttribute('data-dropdown-option') : null
+}
 
 const ddHost = doc.getElementById('live-dropdown-default')
 const ddRoot = doc.querySelector('#live-dropdown-default .n-dropdown-menu')
@@ -4523,6 +4528,11 @@ dTrue(
     !!ddLeafSuffix &&
     ddLeafSuffix.hasAttribute('data-dropdown-option'),
   clsOf(ddLeafBody)
+)
+dEq(
+  'DOM: Dropdown leaf label carries data-dropdown-option="true"',
+  'true',
+  labelAttr(ddLeafBody)
 )
 
 // structure: group header (wrapper WITHOUT data-dropdown-option; body --group;
@@ -4793,6 +4803,11 @@ dTrue(
 dTrue(
   'DOM: Dropdown enabled leaf body has no --disabled',
   !!ddOkBody && !hasCls(ddOkBody, 'n-dropdown-option-body--disabled')
+)
+dEq(
+  'DOM: Dropdown disabled leaf label carries data-dropdown-option="true"',
+  'true',
+  labelAttr(ddDisBody)
 )
 const ddCount = () =>
   (doc.getElementById('dropdown-click-count') || {}).textContent
