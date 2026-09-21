@@ -37,6 +37,11 @@ Naive UI's `--n-*` custom properties, and `NUI.Css` ships Naive UI's exact CSS.
 not part of the generated CSS yet, so its structural rules are ported inline here
 (`:hover` / `:active` colour shifts cannot be inlined and are currently missing).
 
+**Composition seams.** `extraClasses` (appended after the card's own classes,
+like a Vue fallthrough class) and `attributes` let wrapper components merge
+themselves onto the card root — `NUI.Modal`'s card preset uses them for the
+`n-modal` class, `role="dialog"` and `aria-modal="true"`.
+
 -}
 
 import Element exposing (Element)
@@ -100,6 +105,8 @@ type alias Options msg =
     , contentStyle : List ( String, String )
     , role : Maybe String
     , rtl : Bool
+    , extraClasses : List String
+    , attributes : List (Element.Attribute msg)
     }
 
 
@@ -120,6 +127,8 @@ defaults =
     , contentStyle = []
     , role = Nothing
     , rtl = False
+    , extraClasses = []
+    , attributes = []
     }
 
 
@@ -226,9 +235,10 @@ view theme opts children =
                 opts.action
     in
     Element.column
-        (I.classes (rootClasses opts)
+        (I.classes (rootClasses opts ++ opts.extraClasses)
             :: I.cssVars (cssVars theme opts.size (CardTheme.vars theme))
             :: maybeRole opts.role
+            ++ opts.attributes
         )
         (List.filterMap identity
             [ coverEl
