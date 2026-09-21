@@ -194,100 +194,7 @@ body input {
 .nui-root.nui-root .n-base-menu-mask.fade-in-transition-leave-to {
   opacity: 0;}.nui-root.nui-root .n-base-menu-mask.fade-in-transition-leave-from,
 .nui-root.nui-root .n-base-menu-mask.fade-in-transition-enter-to {
-  opacity: 1;}.nui-root.nui-root .n-scrollbar {
-
-  overflow: hidden;
-  position: relative;
-  z-index: auto;
-  height: 100%;
-  width: 100%;}.nui-root.nui-root .n-scrollbar > .n-scrollbar-container {
-
-      width: 100%;
-      overflow: scroll;
-      height: 100%;
-      min-height: inherit;
-      max-height: inherit;
-      scrollbar-width: none;}.nui-root.nui-root .n-scrollbar > .n-scrollbar-container::-webkit-scrollbar,
-.nui-root.nui-root .n-scrollbar > .n-scrollbar-container::-webkit-scrollbar-track-piece,
-.nui-root.nui-root .n-scrollbar > .n-scrollbar-container::-webkit-scrollbar-thumb {
-
-        width: 0;
-        height: 0;
-        display: none;}.nui-root.nui-root .n-scrollbar > .n-scrollbar-container > .n-scrollbar-content {
-
-          box-sizing: border-box;
-          min-width: 100%;}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail,
-.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail {
-
-      position: absolute;
-      pointer-events: none;
-      user-select: none;
-      background: var(--n-scrollbar-rail-color);
-      -webkit-user-select: none;}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail.n-scrollbar-rail--horizontal,
-.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail.n-scrollbar-rail--horizontal {
-
-        height: var(--n-scrollbar-height);}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail.n-scrollbar-rail--horizontal > .n-scrollbar-rail__scrollbar,
-.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail.n-scrollbar-rail--horizontal > .n-scrollbar-rail__scrollbar {
-
-            height: var(--n-scrollbar-height);
-            border-radius: var(--n-scrollbar-border-radius);
-            right: 0;}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail.n-scrollbar-rail--horizontal--top,
-.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail.n-scrollbar-rail--horizontal--top {
-
-        top: var(--n-scrollbar-rail-top-horizontal-top);  
-        right: var(--n-scrollbar-rail-right-horizontal-top);  
-        bottom: var(--n-scrollbar-rail-bottom-horizontal-top);  
-        left: var(--n-scrollbar-rail-left-horizontal-top);}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail.n-scrollbar-rail--horizontal--bottom,
-.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail.n-scrollbar-rail--horizontal--bottom {
-
-        top: var(--n-scrollbar-rail-top-horizontal-bottom);  
-        right: var(--n-scrollbar-rail-right-horizontal-bottom);  
-        bottom: var(--n-scrollbar-rail-bottom-horizontal-bottom);  
-        left: var(--n-scrollbar-rail-left-horizontal-bottom);}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail.n-scrollbar-rail--vertical,
-.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail.n-scrollbar-rail--vertical {
-
-        width: var(--n-scrollbar-width);}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail.n-scrollbar-rail--vertical > .n-scrollbar-rail__scrollbar,
-.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail.n-scrollbar-rail--vertical > .n-scrollbar-rail__scrollbar {
-
-            width: var(--n-scrollbar-width);
-            border-radius: var(--n-scrollbar-border-radius);
-            bottom: 0;}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail.n-scrollbar-rail--vertical--left,
-.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail.n-scrollbar-rail--vertical--left {
-
-        top: var(--n-scrollbar-rail-top-vertical-left);  
-        right: var(--n-scrollbar-rail-right-vertical-left);  
-        bottom: var(--n-scrollbar-rail-bottom-vertical-left);  
-        left: var(--n-scrollbar-rail-left-vertical-left);}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail.n-scrollbar-rail--vertical--right,
-.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail.n-scrollbar-rail--vertical--right {
-
-        top: var(--n-scrollbar-rail-top-vertical-right);  
-        right: var(--n-scrollbar-rail-right-vertical-right);  
-        bottom: var(--n-scrollbar-rail-bottom-vertical-right);  
-        left: var(--n-scrollbar-rail-left-vertical-right);}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail.n-scrollbar-rail--disabled > .n-scrollbar-rail__scrollbar,
-.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail.n-scrollbar-rail--disabled > .n-scrollbar-rail__scrollbar {
-pointer-events: none;}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail > .n-scrollbar-rail__scrollbar,
-.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail > .n-scrollbar-rail__scrollbar {
-
-          z-index: 1;
-          position: absolute;
-          cursor: pointer;
-          pointer-events: all;
-          background-color: var(--n-scrollbar-color);
-          transition: background-color .2s var(--n-scrollbar-bezier);}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail > .n-scrollbar-rail__scrollbar.fade-in-transition-enter-active,
-.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail > .n-scrollbar-rail__scrollbar.fade-in-transition-enter-active {
-  transition: all 0.2s cubic-bezier(.4, 0, .2, 1)!important;}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail > .n-scrollbar-rail__scrollbar.fade-in-transition-leave-active,
-.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail > .n-scrollbar-rail__scrollbar.fade-in-transition-leave-active {
-  transition: all 0.2s cubic-bezier(.4, 0, .2, 1)!important;}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail > .n-scrollbar-rail__scrollbar.fade-in-transition-enter-from,
-.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail > .n-scrollbar-rail__scrollbar.fade-in-transition-enter-from,
-.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail > .n-scrollbar-rail__scrollbar.fade-in-transition-leave-to,
-.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail > .n-scrollbar-rail__scrollbar.fade-in-transition-leave-to {
-  opacity: 0;}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail > .n-scrollbar-rail__scrollbar.fade-in-transition-leave-from,
-.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail > .n-scrollbar-rail__scrollbar.fade-in-transition-leave-from,
-.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail > .n-scrollbar-rail__scrollbar.fade-in-transition-enter-to,
-.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail > .n-scrollbar-rail__scrollbar.fade-in-transition-enter-to {
-  opacity: 1;}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail > .n-scrollbar-rail__scrollbar:hover,
-.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail > .n-scrollbar-rail__scrollbar:hover {
-background-color: var(--n-scrollbar-color-hover);}.nui-root.nui-root .n-base-select-menu {
+  opacity: 1;}.nui-root.nui-root .n-base-select-menu {
 
   line-height: 1.5;
   outline: none;
@@ -5038,6 +4945,107 @@ border-top: 1px solid var(--n-tab-border-color);}.nui-root.nui-root .n-tabs .n-t
 
         padding-right: 6px;
         padding-left: 10px;}
+
+/* ===== naive-ui: scrollbar ===== */
+.nui-root.nui-root .n-scrollbar {
+
+  overflow: hidden;
+  position: relative;
+  z-index: auto;
+  height: 100%;
+  width: 100%;}.nui-root.nui-root .n-scrollbar > .n-scrollbar-container {
+
+      width: 100%;
+      overflow: scroll;
+      height: 100%;
+      min-height: inherit;
+      max-height: inherit;
+      scrollbar-width: none;}.nui-root.nui-root .n-scrollbar > .n-scrollbar-container::-webkit-scrollbar,
+.nui-root.nui-root .n-scrollbar > .n-scrollbar-container::-webkit-scrollbar-track-piece,
+.nui-root.nui-root .n-scrollbar > .n-scrollbar-container::-webkit-scrollbar-thumb {
+
+        width: 0;
+        height: 0;
+        display: none;}.nui-root.nui-root .n-scrollbar > .n-scrollbar-container > .n-scrollbar-content {
+
+          box-sizing: border-box;
+          min-width: 100%;}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail,
+.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail {
+
+      position: absolute;
+      pointer-events: none;
+      user-select: none;
+      background: var(--n-scrollbar-rail-color);
+      -webkit-user-select: none;}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail.n-scrollbar-rail--horizontal,
+.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail.n-scrollbar-rail--horizontal {
+
+        height: var(--n-scrollbar-height);}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail.n-scrollbar-rail--horizontal > .n-scrollbar-rail__scrollbar,
+.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail.n-scrollbar-rail--horizontal > .n-scrollbar-rail__scrollbar {
+
+            height: var(--n-scrollbar-height);
+            border-radius: var(--n-scrollbar-border-radius);
+            right: 0;}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail.n-scrollbar-rail--horizontal--top,
+.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail.n-scrollbar-rail--horizontal--top {
+
+        top: var(--n-scrollbar-rail-top-horizontal-top);  
+        right: var(--n-scrollbar-rail-right-horizontal-top);  
+        bottom: var(--n-scrollbar-rail-bottom-horizontal-top);  
+        left: var(--n-scrollbar-rail-left-horizontal-top);}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail.n-scrollbar-rail--horizontal--bottom,
+.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail.n-scrollbar-rail--horizontal--bottom {
+
+        top: var(--n-scrollbar-rail-top-horizontal-bottom);  
+        right: var(--n-scrollbar-rail-right-horizontal-bottom);  
+        bottom: var(--n-scrollbar-rail-bottom-horizontal-bottom);  
+        left: var(--n-scrollbar-rail-left-horizontal-bottom);}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail.n-scrollbar-rail--vertical,
+.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail.n-scrollbar-rail--vertical {
+
+        width: var(--n-scrollbar-width);}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail.n-scrollbar-rail--vertical > .n-scrollbar-rail__scrollbar,
+.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail.n-scrollbar-rail--vertical > .n-scrollbar-rail__scrollbar {
+
+            width: var(--n-scrollbar-width);
+            border-radius: var(--n-scrollbar-border-radius);
+            bottom: 0;}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail.n-scrollbar-rail--vertical--left,
+.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail.n-scrollbar-rail--vertical--left {
+
+        top: var(--n-scrollbar-rail-top-vertical-left);  
+        right: var(--n-scrollbar-rail-right-vertical-left);  
+        bottom: var(--n-scrollbar-rail-bottom-vertical-left);  
+        left: var(--n-scrollbar-rail-left-vertical-left);}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail.n-scrollbar-rail--vertical--right,
+.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail.n-scrollbar-rail--vertical--right {
+
+        top: var(--n-scrollbar-rail-top-vertical-right);  
+        right: var(--n-scrollbar-rail-right-vertical-right);  
+        bottom: var(--n-scrollbar-rail-bottom-vertical-right);  
+        left: var(--n-scrollbar-rail-left-vertical-right);}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail.n-scrollbar-rail--disabled > .n-scrollbar-rail__scrollbar,
+.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail.n-scrollbar-rail--disabled > .n-scrollbar-rail__scrollbar {
+pointer-events: none;}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail > .n-scrollbar-rail__scrollbar,
+.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail > .n-scrollbar-rail__scrollbar {
+
+          z-index: 1;
+          position: absolute;
+          cursor: pointer;
+          pointer-events: all;
+          background-color: var(--n-scrollbar-color);
+          transition: background-color .2s var(--n-scrollbar-bezier);}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail > .n-scrollbar-rail__scrollbar.fade-in-transition-enter-active,
+.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail > .n-scrollbar-rail__scrollbar.fade-in-transition-enter-active {
+  transition: all 0.2s cubic-bezier(.4, 0, .2, 1)!important;}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail > .n-scrollbar-rail__scrollbar.fade-in-transition-leave-active,
+.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail > .n-scrollbar-rail__scrollbar.fade-in-transition-leave-active {
+  transition: all 0.2s cubic-bezier(.4, 0, .2, 1)!important;}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail > .n-scrollbar-rail__scrollbar.fade-in-transition-enter-from,
+.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail > .n-scrollbar-rail__scrollbar.fade-in-transition-enter-from,
+.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail > .n-scrollbar-rail__scrollbar.fade-in-transition-leave-to,
+.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail > .n-scrollbar-rail__scrollbar.fade-in-transition-leave-to {
+  opacity: 0;}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail > .n-scrollbar-rail__scrollbar.fade-in-transition-leave-from,
+.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail > .n-scrollbar-rail__scrollbar.fade-in-transition-leave-from,
+.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail > .n-scrollbar-rail__scrollbar.fade-in-transition-enter-to,
+.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail > .n-scrollbar-rail__scrollbar.fade-in-transition-enter-to {
+  opacity: 1;}.nui-root.nui-root .n-scrollbar > .n-scrollbar-rail > .n-scrollbar-rail__scrollbar:hover,
+.nui-root.nui-root .n-scrollbar + .n-scrollbar-rail > .n-scrollbar-rail__scrollbar:hover {
+background-color: var(--n-scrollbar-color-hover);}.nui-root.nui-root .n-scrollbar.n-scrollbar--rtl {
+
+    direction: rtl;}.nui-root.nui-root .n-scrollbar.n-scrollbar--rtl > .n-scrollbar-rail.n-scrollbar-rail--horizontal > .n-scrollbar-rail__scrollbar {
+
+              left: 0;
+              right: unset;}
 
 /* ===== elm-ui bridge =====
  *

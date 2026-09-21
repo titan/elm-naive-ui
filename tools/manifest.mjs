@@ -15,7 +15,6 @@ export const components = {
       '_internal/icon/src/styles/index.cssr.ts',
       '_internal/loading/src/styles/index.cssr.ts',
       '_internal/menu-mask/src/styles/index.cssr.ts',
-      '_internal/scrollbar/src/styles/index.cssr.ts',
       '_internal/select-menu/src/styles/index.cssr.ts',
       '_internal/selection/src/styles/index.cssr.ts',
       '_internal/slot-machine/src/styles/index.cssr.ts',
@@ -276,5 +275,16 @@ export const components = {
   tabs: {
     cssr: ['tabs/src/styles/index.cssr.ts', 'tabs/src/styles/rtl.cssr.ts'],
     theme: 'tabs/styles/light.ts'
+  },
+  scrollbar: {
+    // `_internal/scrollbar` — the public `src/scrollbar` only forwards to it.
+    // The base cssr used to live in the catch-all `internal` entry; it moves here
+    // so the component owns its block and the RTL rule gets extracted too
+    // (`n-scrollbar--rtl`, previously absent).
+    cssr: [
+      '_internal/scrollbar/src/styles/index.cssr.ts',
+      '_internal/scrollbar/src/styles/rtl.cssr.ts'
+    ],
+    theme: '_internal/scrollbar/styles/light.ts'
   }
 }

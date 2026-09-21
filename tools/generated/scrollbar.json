@@ -1,0 +1,70 @@
+{
+  "light": {
+    "railInsetHorizontalBottom": "auto 2px 4px 2px",
+    "railInsetHorizontalTop": "4px 2px auto 2px",
+    "railInsetVerticalRight": "2px 4px 2px auto",
+    "railInsetVerticalLeft": "2px auto 2px 4px",
+    "railColor": "transparent",
+    "height": "5px",
+    "width": "5px",
+    "borderRadius": "5px",
+    "color": "rgba(0, 0, 0, 0.25)",
+    "colorHover": "rgba(0, 0, 0, 0.4)"
+  },
+  "dark": {
+    "railInsetHorizontalBottom": "auto 2px 4px 2px",
+    "railInsetHorizontalTop": "4px 2px auto 2px",
+    "railInsetVerticalRight": "2px 4px 2px auto",
+    "railInsetVerticalLeft": "2px auto 2px 4px",
+    "railColor": "transparent",
+    "height": "5px",
+    "width": "5px",
+    "borderRadius": "5px",
+    "color": "rgba(255, 255, 255, 0.2)",
+    "colorHover": "rgba(255, 255, 255, 0.3)"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "height": "scrollbarHeight",
+        "width": "scrollbarWidth",
+        "borderRadius": "scrollbarBorderRadius",
+        "color": "scrollbarColor",
+        "colorHover": "scrollbarColorHover"
+      },
+      "seen": [
+        "height",
+        "width",
+        "borderRadius",
+        "color",
+        "colorHover",
+        "railInsetHorizontalBottom",
+        "railInsetHorizontalTop",
+        "railInsetVerticalRight",
+        "railInsetVerticalLeft",
+        "railColor"
+      ]
+    },
+    "dark": {
+      "refs": {
+        "height": "scrollbarHeight",
+        "width": "scrollbarWidth",
+        "borderRadius": "scrollbarBorderRadius",
+        "color": "scrollbarColor",
+        "colorHover": "scrollbarColorHover"
+      },
+      "seen": [
+        "railInsetHorizontalBottom",
+        "railInsetHorizontalTop",
+        "railInsetVerticalRight",
+        "railInsetVerticalLeft",
+        "railColor",
+        "height",
+        "width",
+        "borderRadius",
+        "color",
+        "colorHover"
+      ]
+    }
+  }
+}
