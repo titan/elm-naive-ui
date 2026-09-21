@@ -88,7 +88,8 @@ const targets = {
   // Tabs root carries the full --n-* var set.
   '.n-tabs': true,
   // Scrollbar root carries the full --n-* var set.
-  '.n-scrollbar': true
+  '.n-scrollbar': true,
+  '.n-popover': true
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {

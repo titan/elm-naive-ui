@@ -51,6 +51,7 @@ import NUI.Marquee as Marquee
 import NUI.NumberAnimation as NumberAnimation
 import NUI.PageHeader as PageHeader
 import NUI.Pagination as Pagination
+import NUI.Popover as Popover
 import NUI.Progress as Progress
 import NUI.QrCode as QrCode
 import NUI.Radio as Radio
@@ -193,6 +194,11 @@ tabsItems =
 scrollbarD : Scrollbar.Options msg
 scrollbarD =
     Scrollbar.defaults
+
+
+popoverD : Popover.Options msg
+popoverD =
+    Popover.defaults
 
 
 avD : Avatar.Options msg
@@ -560,6 +566,7 @@ body =
     , descriptionsSection
     , tabsSection
     , scrollbarSection
+    , popoverSection
     , rtlSection
     , themeSection
     ]
@@ -2009,6 +2016,78 @@ scrollbarSection =
 scrollbarCopy : String
 scrollbarCopy =
     "And as I sat there, brooding on the old unknown world, I thought of Gatsby's wonder when he first picked out the green light at the end of Daisy's dock."
+
+
+{-| The caller-owned follower wrapper: a `v-placement` host the popover body sits
+in (upstream: vueuc's `v-binder-follower-content` with runtime positioning).
+-}
+popoverHost : Popover.Placement -> List (Element.Attribute msg) -> Element msg -> Element msg
+popoverHost placement attrs content =
+    Element.el
+        ([ Popover.placementAttribute placement
+         , Element.htmlAttribute (HA.attribute "style" "position:relative;padding:34px 28px;")
+         ]
+            ++ attrs
+        )
+        content
+
+
+popoverSection : Element msg
+popoverSection =
+    section "Popover"
+        "The `n-popover` body. The caller owns the show state and the positioned `v-placement` wrapper (here: `popoverHost`); placements, arrows, header/footer and the scrollable scrollbar are static DOM."
+    <|
+        [ demoRow "Basic (top) + header/footer (bottom)"
+            [ popoverHost Popover.Top
+                []
+                (Popover.view theme
+                    { popoverD | width = Just "240px" }
+                    [ Element.text "The pure body of a popover — mount it, position it, it is yours." ]
+                )
+            , popoverHost Popover.Bottom
+                []
+                (Popover.view theme
+                    { popoverD
+                        | width = Just "240px"
+                        , header = Just (Element.text "Title")
+                        , footer = Just (Element.text "Footer")
+                    }
+                    [ Element.text "Header and footer slots add their wrapper divs and the modifier class." ]
+                )
+            ]
+        , demoRow "No arrow / overlap / raw"
+            [ popoverHost Popover.Right
+                []
+                (Popover.view theme
+                    { popoverD | width = Just "220px", showArrow = False }
+                    [ Element.text "No arrow." ]
+                )
+            , popoverHost Popover.Right
+                []
+                (Popover.view theme
+                    { popoverD | width = Just "220px", overlap = True }
+                    [ Element.text "Overlap: no arrow and no spacing margin." ]
+                )
+            , popoverHost Popover.Right
+                []
+                (Popover.view theme
+                    { popoverD | width = Just "220px", raw = True }
+                    [ Element.text "Raw: no background, radius or padding." ]
+                )
+            ]
+        , demoRow "Scrollable (n-scrollbar child)"
+            [ popoverHost Popover.Top
+                []
+                (Popover.view theme
+                    { popoverD
+                        | width = Just "260px"
+                        , scrollable = True
+                        , attributes = [ Element.height (Element.px 120) ]
+                    }
+                    [ Element.text scrollbarCopy ]
+                )
+            ]
+        ]
 
 
 rtlSection : Element msg

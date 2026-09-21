@@ -66,8 +66,10 @@ inside `nui-root` (this port's CSS is doubly scoped; upstream teleports to
 -}
 
 import Element exposing (Element)
+import Html
 import Html.Attributes as HA
 import NUI.Internal as I
+import NUI.Scrollbar
 import NUI.Theme exposing (Theme)
 import NUI.Theme.Popover as PopoverTheme
 
@@ -204,15 +206,229 @@ defaults =
 -- VIEW -------------------------------------------------------------------------
 
 
-{-| The `n-popover` body element.
+{-| The `n-popover` body element: the `n-popover` div with Naive UI's classes,
+vars, and header / content / footer / arrow structure. Mount it inside a
+wrapper that carries `placementAttribute` (the vueuc follower contract).
 -}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
-view _ _ _ =
-    Element.none
+view theme opts children =
+    let
+        hasHeaderOrFooter =
+            opts.header /= Nothing || opts.footer /= Nothing
+
+        showArrow =
+            -- upstream merges `overlap` into showArrow before the body sees it
+            not opts.overlap && opts.showArrow
+
+        classList =
+            "n-popover"
+                :: "n-popover-shared"
+                :: I.classIf opts.rtl "n-popover--rtl"
+                ++ I.classIf opts.scrollable "n-popover--scrollable"
+                ++ I.classIf hasHeaderOrFooter "n-popover--show-header-or-footer"
+                ++ I.classIf opts.raw "n-popover--raw"
+                ++ I.classIf opts.overlap "n-popover-shared--overlap"
+                ++ I.classIf showArrow "n-popover-shared--show-arrow"
+                ++ I.classIf opts.arrowPointToCenter "n-popover-shared--center-arrow"
+                ++ (case opts.transition of
+                        Just phase ->
+                            [ I.transitionClass "popover-transition" phase ]
+
+                        Nothing ->
+                            []
+                   )
+
+        stylePairs =
+            -- upstream styleRef: `[width?, …, cssVars]` — width first
+            (case opts.width of
+                Just w ->
+                    [ ( "width", w ) ]
+
+                Nothing ->
+                    []
+            )
+                ++ cssVars theme
+    in
+    Element.column
+        ([ I.classes classList
+         , I.cssVars stylePairs
+         ]
+            ++ opts.attributes
+        )
+        (bodyNodes theme opts children hasHeaderOrFooter
+            ++ (if showArrow then
+                    [ arrowNode opts ]
+
+                else
+                    []
+               )
+        )
+
+
+{-| The body's leading children: the header / content / footer structure (or its
+scrollable variant). Each is one `Html` node kept a direct child of the root so
+the `n-popover > n-scrollbar` rule holds.
+-}
+bodyNodes : Theme -> Options msg -> List (Element msg) -> Bool -> List (Element msg)
+bodyNodes theme opts children hasHeaderOrFooter =
+    if hasHeaderOrFooter then
+        let
+            headerNode =
+                case opts.header of
+                    Just header ->
+                        [ slotNode "n-popover__header" opts.headerClass opts.headerStyle [ embedChild header ] ]
+
+                    Nothing ->
+                        []
+
+            contentNode =
+                -- upstream `resolveWrappedSlot`: the wrapper exists only while
+                -- the slot is non-empty
+                if List.isEmpty children then
+                    []
+
+                else
+                    [ slotNode "n-popover__content" opts.contentClass opts.contentStyle (List.map embedChild children) ]
+
+            footerNode =
+                case opts.footer of
+                    Just footer ->
+                        [ slotNode "n-popover__footer" opts.footerClass opts.footerStyle [ embedChild footer ] ]
+
+                    Nothing ->
+                        []
+
+            body =
+                headerNode ++ contentNode ++ footerNode
+        in
+        if opts.scrollable then
+            [ scrollbarChild theme Nothing Nothing (List.map Element.html body) ]
+
+        else
+            List.map Element.html body
+
+    else if opts.scrollable then
+        -- no header/footer: the content class/style hoist onto the scrollbar's
+        -- content (`n-popover__content ${contentClass}`), children render bare
+        [ scrollbarChild theme
+            (Just ("n-popover__content" :: extraClass opts.contentClass))
+            opts.contentStyle
+            children
+        ]
+
+    else
+        [ Element.html (slotNode "n-popover__content" opts.contentClass opts.contentStyle (List.map embedChild children)) ]
+
+
+{-| The `n-scrollbar` wrapper upstream renders around the body when `scrollable`.
+Its `contentClass`/`contentStyle` carry the hoisted `n-popover__content` pair
+only in the header-less case.
+-}
+scrollbarChild : Theme -> Maybe (List String) -> Maybe String -> List (Element msg) -> Element msg
+scrollbarChild theme contentClasses contentStyle children =
+    let
+        scrollbarDefaults =
+            NUI.Scrollbar.defaults
+    in
+    NUI.Scrollbar.view theme
+        { scrollbarDefaults
+            | contentClass = contentClasses |> Maybe.map (String.join " ")
+            , contentStyle = contentStyle
+        }
+        children
+
+
+{-| One header / content / footer wrapper div: the BEM class (+ the caller's),
+the raw slot `style`, and the embedded slot children.
+-}
+slotNode : String -> Maybe String -> Maybe String -> List (Html.Html msg) -> Html.Html msg
+slotNode base maybeClass maybeStyle children =
+    Html.div
+        ([ HA.class (String.join " " (base :: extraClass maybeClass)) ]
+            ++ rawStyleAttr maybeStyle
+        )
+        children
+
+
+{-| The arrow: an absolutely-positioned wrapper (overflow hidden) around the
+rotated square. Positioning comes from the `[v-placement] >` placement CSS on
+the caller's wrapper — nothing inline here.
+-}
+arrowNode : Options msg -> Element msg
+arrowNode opts =
+    Element.html
+        (Html.div
+            ([ HA.class (String.join " " ("n-popover-arrow-wrapper" :: extraClass opts.arrowWrapperClass)) ]
+                ++ rawStyleAttr opts.arrowWrapperStyle
+            )
+            [ Html.div
+                ([ HA.class (String.join " " ("n-popover-arrow" :: extraClass opts.arrowClass)) ]
+                    ++ rawStyleAttr opts.arrowStyle
+                )
+                []
+            ]
+        )
+
+
+rawStyleAttr : Maybe String -> List (Html.Attribute msg)
+rawStyleAttr maybeStyle =
+    case maybeStyle of
+        Just style ->
+            [ HA.attribute "style" style ]
+
+        Nothing ->
+            []
+
+
+extraClass : Maybe String -> List String
+extraClass maybeClass =
+    case maybeClass of
+        Just c ->
+            if String.isEmpty c then
+                []
+
+            else
+                [ c ]
+
+        Nothing ->
+            []
+
+
+{-| Elm-ui has no public `Element` → `Html`; embed through `layoutWith` with
+`noStaticStyleSheet` (so no duplicate elm-ui stylesheet lands after the bridge).
+-}
+embedChild : Element msg -> Html.Html msg
+embedChild child =
+    Element.layoutWith { options = [ Element.noStaticStyleSheet ] }
+        [ Element.htmlAttribute (HA.attribute "style" "display:contents;font:inherit;color:inherit") ]
+        child
+
+
+
+-- THEME ------------------------------------------------------------------------
 
 
 {-| The 15 `--n-*` custom properties the body attaches (upstream cssVarsRef).
 -}
 cssVars : Theme -> List ( String, String )
-cssVars _ =
-    []
+cssVars theme =
+    let
+        v =
+            PopoverTheme.vars theme
+    in
+    [ ( "--n-box-shadow", v.boxShadow )
+    , ( "--n-bezier", theme.common.cubicBezierEaseInOut )
+    , ( "--n-bezier-ease-in", theme.common.cubicBezierEaseIn )
+    , ( "--n-bezier-ease-out", theme.common.cubicBezierEaseOut )
+    , ( "--n-font-size", v.fontSize )
+    , ( "--n-text-color", v.textColor )
+    , ( "--n-color", v.color )
+    , ( "--n-divider-color", v.dividerColor )
+    , ( "--n-border-radius", v.borderRadius )
+    , ( "--n-arrow-height", v.arrowHeight )
+    , ( "--n-arrow-offset", v.arrowOffset )
+    , ( "--n-arrow-offset-vertical", v.arrowOffsetVertical )
+    , ( "--n-padding", v.padding )
+    , ( "--n-space", v.space )
+    , ( "--n-space-arrow", v.spaceArrow )
+    ]
