@@ -4349,6 +4349,41 @@ dTrue(
   clsOf(tipExtra)
 )
 
+const tipWidthRoot = doc.querySelector('#live-tooltip-width .n-tooltip')
+const tipWidthStyle = styleAt(tipWidthRoot) || ''
+const tipWidthTag = tipWidthRoot
+  ? tipWidthRoot.outerHTML.slice(0, tipWidthRoot.outerHTML.indexOf('>'))
+  : ''
+dTrue(
+  'DOM: Tooltip width merges width:220px; first into the one style attribute',
+  !!tipWidthRoot &&
+    tipWidthStyle.startsWith('width:220px;') &&
+    tipWidthStyle.includes('--n-space:6px') &&
+    tipWidthStyle.includes('--n-color:rgba(38, 38, 38, 1)') &&
+    ((styleAt(tipWidthRoot) || '').match(/--n-[a-z-]+:/g) || []).length === 15 &&
+    (tipWidthTag.match(/ style="/g) || []).length === 1,
+  tipWidthStyle.slice(0, 60)
+)
+const tipTransition = doc.querySelector('#live-tooltip-transition .n-tooltip')
+dTrue(
+  'DOM: Tooltip transition Just EnterActive adds popover-transition-enter-active after the n-tooltip marker',
+  hasCls(tipTransition, 'popover-transition-enter-active') &&
+    !!tipTransition &&
+    [...tipTransition.classList].indexOf('n-tooltip') <
+      [...tipTransition.classList].indexOf('popover-transition-enter-active'),
+  clsOf(tipTransition)
+)
+
+// negative: the marker must not leak into a plain Popover.view mount
+dTrue(
+  'DOM: plain Popover mounts carry no n-tooltip marker',
+  !!popRoot &&
+    !hasCls(popRoot, 'n-tooltip') &&
+    !hasCls(doc.querySelector('#live-popover-dark .n-popover'), 'n-tooltip') &&
+    !hasCls(doc.querySelector('#live-popover-width .n-popover'), 'n-tooltip'),
+  clsOf(popRoot)
+)
+
 const tipDark = doc.querySelector('#live-tooltip-dark .n-tooltip')
 dEq(
   'DOM: Tooltip dark style is the exact full 15-var string',
