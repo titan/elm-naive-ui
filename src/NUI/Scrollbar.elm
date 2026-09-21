@@ -30,9 +30,12 @@ caller-owned-runtime precedent). The rails themselves always render.
 
   - The root is an elm-ui element (the `NUI.Progress` / `NUI.Badge` precedent, so the
     caller's `attributes` land on it), which means elm-ui's own structure classes also
-    sit alongside `n-scrollbar`. Naive UI's rules (scoped `.nui-root.nui-root`) declare
-    every load-bearing property and the bridge restores `flex-basis`, so the result
-    matches; the container and rails remain the root's direct children (`>` hold).
+    sit alongside `n-scrollbar`, and the root is a flex column where upstream is a
+    block. Both are harmless here: Naive UI's doubly-scoped rules declare every
+    load-bearing property of `.n-scrollbar` (`overflow`, `position`, `height`,
+    `width`), the bridge restores `flex-basis`, and every child is `height`/`width:
+    100%` or absolutely positioned, so it does not depend on the root's display mode.
+    The container and rails remain the root's direct children (`>` selectors hold).
   - `vueuc`'s `VResizeObserver` (content/container resize tracking) is omitted.
   - `trigger` (public `'none' | 'hover'`) is not modelled: it only selects between a
     no-op `Wrapper` and a `Transition`, so it has no static DOM effect. Hover-driven
@@ -281,7 +284,7 @@ extraClass maybeClass =
             []
 
 
-{-| El m-ui has no public `Element` → `Html`; embed through `layoutWith` with
+{-| Elm-ui has no public `Element` → `Html`; embed through `layoutWith` with
 `noStaticStyleSheet` (so no duplicate elm-ui stylesheet lands after the bridge).
 -}
 embedChild : Element msg -> Html.Html msg
@@ -349,8 +352,11 @@ type alias Inset =
     }
 
 
-{-| seemly's `getPadding` — the CSS shorthand split into its four sides (1–4
-space-separated parts).
+{-| seemly's `getPadding`, the CSS shorthand split into its four sides. The 1–4 part
+cases follow CSS semantics exactly. seemly (which aliases `getPadding = getMargin`)
+throws on any other part count, but the only inputs here are the generated theme
+constants (always four parts); the >4 case takes the first four (CSS semantics,
+extra parts ignored) and an empty value yields empty sides rather than throwing.
 -}
 insetParts : String -> Inset
 insetParts value =
@@ -364,10 +370,10 @@ insetParts value =
         [ topValue, horizontal, bottomValue ] ->
             { top = topValue, right = horizontal, bottom = bottomValue, left = horizontal }
 
-        [ topValue, rightValue, bottomValue, leftValue ] ->
+        topValue :: rightValue :: bottomValue :: leftValue :: _ ->
             { top = topValue, right = rightValue, bottom = bottomValue, left = leftValue }
 
-        _ ->
+        [] ->
             { top = "", right = "", bottom = "", left = "" }
 
 
