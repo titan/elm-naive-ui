@@ -286,5 +286,13 @@ export const components = {
       '_internal/scrollbar/src/styles/rtl.cssr.ts'
     ],
     theme: '_internal/scrollbar/styles/light.ts'
+  },
+  popover: {
+    // Placement rules are attribute-scoped (`[v-placement=…] > .n-popover-shared`)
+    // and stay valid under the `.nui-root.nui-root` prefix — the caller mounts
+    // the body inside `nui-root` (no upstream body teleport). The cssr imports
+    // `lodash-es` (`map`) — kept real in `_loader.mjs`.
+    cssr: ['popover/src/styles/index.cssr.ts', 'popover/src/styles/rtl.cssr.ts'],
+    theme: 'popover/styles/light.ts'
   }
 }

@@ -1,0 +1,80 @@
+{
+  "light": {
+    "space": "6px",
+    "spaceArrow": "10px",
+    "arrowOffset": "10px",
+    "arrowOffsetVertical": "10px",
+    "arrowHeight": "6px",
+    "padding": "8px 14px",
+    "fontSize": "14px",
+    "borderRadius": "3px",
+    "color": "#fff",
+    "dividerColor": "rgb(239, 239, 245)",
+    "textColor": "rgb(51, 54, 57)",
+    "boxShadow": "0 3px 6px -4px rgba(0, 0, 0, .12), 0 6px 16px 0 rgba(0, 0, 0, .08), 0 9px 28px 8px rgba(0, 0, 0, .05)"
+  },
+  "dark": {
+    "space": "6px",
+    "spaceArrow": "10px",
+    "arrowOffset": "10px",
+    "arrowOffsetVertical": "10px",
+    "arrowHeight": "6px",
+    "padding": "8px 14px",
+    "fontSize": "14px",
+    "borderRadius": "3px",
+    "color": "rgb(72, 72, 78)",
+    "dividerColor": "rgba(255, 255, 255, 0.09)",
+    "textColor": "rgba(255, 255, 255, 0.82)",
+    "boxShadow": "0 3px 6px -4px rgba(0, 0, 0, .24), 0 6px 12px 0 rgba(0, 0, 0, .16), 0 9px 18px 8px rgba(0, 0, 0, .10)"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "color": "popoverColor",
+        "textColor": "textColor2",
+        "boxShadow": "boxShadow2",
+        "borderRadius": "borderRadius",
+        "fontSize": "fontSize",
+        "dividerColor": "dividerColor"
+      },
+      "seen": [
+        "color",
+        "textColor",
+        "boxShadow",
+        "borderRadius",
+        "fontSize",
+        "dividerColor",
+        "space",
+        "spaceArrow",
+        "arrowOffset",
+        "arrowOffsetVertical",
+        "arrowHeight",
+        "padding"
+      ]
+    },
+    "dark": {
+      "refs": {
+        "fontSize": "fontSize",
+        "borderRadius": "borderRadius",
+        "color": "popoverColor",
+        "dividerColor": "dividerColor",
+        "textColor": "textColor2",
+        "boxShadow": "boxShadow2"
+      },
+      "seen": [
+        "space",
+        "spaceArrow",
+        "arrowOffset",
+        "arrowOffsetVertical",
+        "arrowHeight",
+        "padding",
+        "fontSize",
+        "borderRadius",
+        "color",
+        "dividerColor",
+        "textColor",
+        "boxShadow"
+      ]
+    }
+  }
+}

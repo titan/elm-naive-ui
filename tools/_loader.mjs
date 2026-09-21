@@ -11,7 +11,7 @@ const here = path.dirname(fileURLToPath(import.meta.url))
 export const NM = path.join(here, 'node_modules')
 
 const keep = id =>
-  id === 'css-render' || id === '@css-render/plugin-bem' || id === 'seemly'
+  id === 'css-render' || id === '@css-render/plugin-bem' || id === 'seemly' || id === 'lodash-es'
 
 const stubCache = new Map()
 function stubFor(id) {
