@@ -2970,6 +2970,17 @@ dEq(
   'display:contents;font:inherit;color:inherit',
   flatStyle(formEmbedWrapper)
 )
+// noStaticStyleSheet: the embed must NOT re-emit elm-ui's *static* stylesheet
+// (that sheet lands after the bridge and re-clobbers flex-basis:0% page-wide).
+// elm-ui's small dynamic font sheet (no flex-basis) legitimately remains.
+dEq(
+  'DOM: Form embeds emit no static elm-ui sheet (noStaticStyleSheet)',
+  0,
+  formRoot
+    ? [...formRoot.querySelectorAll('style')].filter((s) => /flex-basis\s*:\s*0/.test(s.textContent))
+        .length
+    : -1
+)
 dEq('DOM: Form default has no --inline modifier', null, doc.querySelector('#live-form-plain .n-form--inline'))
 dTrue(
   'DOM: Form inline adds .n-form--inline',
@@ -3317,6 +3328,16 @@ dTrue(
 // Descriptions ----------------------------------------------------------------
 const descBasic = doc.querySelector('#live-descriptions-basic .n-descriptions')
 dEq('DOM: Descriptions root is a <div>', 'DIV', tagOf(descBasic))
+// noStaticStyleSheet: embeds must not re-emit elm-ui's static sheet (same
+// page-wide flex-basis hazard as Form); the dynamic font sheet may remain.
+dEq(
+  'DOM: Descriptions embeds emit no static elm-ui sheet (noStaticStyleSheet)',
+  0,
+  descBasic
+    ? [...descBasic.querySelectorAll('style')].filter((s) => /flex-basis\s*:\s*0/.test(s.textContent))
+        .length
+    : -1
+)
 dTrue(
   'DOM: Descriptions root carries n-descriptions + placement/align/size classes (no --bordered)',
   hasCls(descBasic, 'n-descriptions') &&

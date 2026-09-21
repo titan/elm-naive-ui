@@ -74,13 +74,16 @@ lookups, cross-field rules) without a registry or provide/inject.
 
   - `view` returns a real `<form class="n-form">`, but its children are
     `Element`s and elm-ui has no public `Element` → `Html` conversion, so each
-    child is embedded through `Element.layoutWith` — a wrapper `div` carrying
-    elm-ui's root styles and a collected `<style>` node. The wrapper gets an
-    inline `display: contents` (so the child participates directly in the
-    form's flex/grid) and inline `font` / `color: inherit` (best-effort
-    neutralisation of elm-ui's class-based root font; jsdom drops the `font`
-    shorthand from the serialised attribute). This mirrors `NUI.DynamicInput`'s
-    pair-input wrapper: geometry preserved, one extra DOM node per child.
+    child is embedded through `Element.layoutWith` (with
+    `Element.noStaticStyleSheet`, so the per-child _static_ stylesheet is not
+    re-emitted — only elm-ui's small dynamic font sheet remains; see the note
+    on `embedChild`) — a wrapper `div` carrying elm-ui's root styles. The
+    wrapper gets an inline `display: contents` (so the child participates
+    directly in the form's flex/grid) and inline `font` / `color: inherit`
+    (best-effort neutralisation of elm-ui's class-based root font; jsdom drops
+    the `font` shorthand from the serialised attribute). This mirrors
+    `NUI.DynamicInput`'s pair-input wrapper: geometry preserved, one extra DOM
+    node per child.
 
   - `item` / its label / blank / feedback wrapper are built in elm-ui /
     `Element.html` land. The item root and the blank are elm-ui elements whose
@@ -932,10 +935,20 @@ formAttrs opts =
 `Element` → `Html` conversion, so a layout root is the only bridge; the wrapper
 is neutralised with `display: contents` + inherited font/colour (see the module
 docs).
+
+`noStaticStyleSheet`: without it elm-ui re-emits its static stylesheet as a
+`<style>` node inside every embed. Those nodes land **after** the bridge
+(`NUI.Css`, which restores `flex-basis`/`line-height`/`white-space` at equal
+specificity) in document order and re-declare `.s.r > .s { flex-basis: 0% }`,
+re-clobbering `flex-basis: auto` page-wide. The app's own `Element.layout`
+supplies the sheet once. elm-ui still emits a small _dynamic_ (font) sheet per
+embed; it carries no `flex-basis`, so it is harmless.
+`NUI.Descriptions.embedChild` carries the same fix.
+
 -}
 embedChild : Element msg -> Html.Html msg
 embedChild child =
-    Element.layoutWith { options = [] }
+    Element.layoutWith { options = [ Element.noStaticStyleSheet ] }
         [ Element.htmlAttribute (HA.attribute "style" "display:contents;font:inherit;color:inherit") ]
         child
 
