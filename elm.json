@@ -20,6 +20,7 @@
     "NUI.Collapse",
     "NUI.Countdown",
     "NUI.Css",
+    "NUI.Descriptions",
     "NUI.Divider",
     "NUI.DynamicInput",
     "NUI.DynamicTags",
