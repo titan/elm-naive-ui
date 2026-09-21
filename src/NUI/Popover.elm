@@ -6,6 +6,7 @@ module NUI.Popover exposing
     , placementAttribute
     , placementName
     , view
+    , viewWithVars
     )
 
 {-| Naive UI's `Popover` body (`n-popover`), rebuilt on elm-ui.
@@ -65,6 +66,9 @@ fallbacks, so an unset var degrades the arrow position to `auto` (the
   - `n-popover--show-header-or-footer` and the header / footer nodes exist only
     while `header` / `footer` are `Just` (upstream renders each wrapper only
     when its slot is non-empty).
+  - `extraClasses` is upstream's `internalExtraClass` slot — extra classes
+    after `n-popover-shared` (and `--rtl`), before the conditional modifiers.
+    `NUI.Tooltip` uses it to add its `n-tooltip` marker.
 
 -}
 
@@ -172,6 +176,7 @@ type alias Options msg =
     , headerStyle : Maybe String
     , footerClass : Maybe String
     , footerStyle : Maybe String
+    , extraClasses : List String
     , attributes : List (Element.Attribute msg)
     }
 
@@ -201,6 +206,7 @@ defaults =
     , headerStyle = Nothing
     , footerClass = Nothing
     , footerStyle = Nothing
+    , extraClasses = []
     , attributes = []
     }
 
@@ -215,6 +221,16 @@ wrapper that carries `placementAttribute` (the vueuc follower contract).
 -}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
+    viewWithVars theme opts (cssVars theme) children
+
+
+{-| The body with an explicit vars list — the composition point upstream wires
+through `builtinThemeOverrides` (`NUI.Tooltip` swaps in its theme's
+color / textColor / padding / radius / shadow). The `Theme` still feeds the
+scrollable scrollbar child.
+-}
+viewWithVars : Theme -> Options msg -> List ( String, String ) -> List (Element msg) -> Element msg
+viewWithVars theme opts childrenVars children =
     let
         hasHeaderOrFooter =
             opts.header /= Nothing || opts.footer /= Nothing
@@ -227,6 +243,7 @@ view theme opts children =
             "n-popover"
                 :: "n-popover-shared"
                 :: I.classIf opts.rtl "n-popover--rtl"
+                ++ opts.extraClasses
                 ++ I.classIf opts.scrollable "n-popover--scrollable"
                 ++ I.classIf hasHeaderOrFooter "n-popover--show-header-or-footer"
                 ++ I.classIf opts.raw "n-popover--raw"
@@ -250,7 +267,7 @@ view theme opts children =
                 Nothing ->
                     []
             )
-                ++ cssVars theme
+                ++ childrenVars
     in
     Element.column
         ([ I.classes classList
