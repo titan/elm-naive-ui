@@ -2551,6 +2551,22 @@ tExtraOpts =
     { tD | extraClasses = [ "caller-class" ] }
 
 
+{-| A raw CSS `width` — upstream merges it into the one style attribute
+**before** the vars (`styleRef` order).
+-}
+tWidthOpts : Tooltip.Options Msg
+tWidthOpts =
+    { tD | width = Just "220px" }
+
+
+{-| An enter transition phase — the tooltip body carries the popover's
+`popover-transition-*` class (after the marker and the conditional modifiers).
+-}
+tTransitionOpts : Tooltip.Options Msg
+tTransitionOpts =
+    { tD | transition = Just Internal.EnterActive }
+
+
 {-| The full 15-entry `--n-*` list `NUI.Tooltip.cssVars` must emit against
 `Theme.default` (light): the popover's names/order, with `--n-text-color` =
 common `baseColor` (`#FFF`) and `--n-color` = the pinned `rgba(38, 38, 38, 1)`.
@@ -5936,6 +5952,10 @@ liveNodes =
                     (Tooltip.view Theme.default tExtraOpts [ Element.text "content" ])
                 , Element.el [ Element.htmlAttribute (HA.id "live-tooltip-placement"), Tooltip.placementAttribute Popover.BottomEnd ]
                     (Tooltip.view Theme.default tD [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-tooltip-width"), Tooltip.placementAttribute Popover.Top ]
+                    (Tooltip.view Theme.default tWidthOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-tooltip-transition"), Tooltip.placementAttribute Popover.Top ]
+                    (Tooltip.view Theme.default tTransitionOpts [ Element.text "content" ])
                 , Element.el [ Element.htmlAttribute (HA.id "live-popover-dark"), Popover.placementAttribute Popover.Top ]
                     (Popover.view Theme.dark pD [ Element.text "content" ])
                 ]
