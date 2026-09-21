@@ -39,6 +39,7 @@ import NUI.Empty as Empty
 import NUI.Flex as Flex
 import NUI.FloatButton as FloatButton
 import NUI.FloatButtonGroup as FloatButtonGroup
+import NUI.Form as Form
 import NUI.GradientText as GradientText
 import NUI.Grid as Grid
 import NUI.Heatmap as Heatmap
@@ -1986,6 +1987,125 @@ isErr result =
 
         Ok _ ->
             False
+
+
+
+-- FORM FIXTURES ----------------------------------------------------------------
+
+
+{-| `validateValue` with the field name pinned to "f".
+-}
+fval : Maybe Form.Trigger -> List Form.Rule -> Maybe Form.Value -> List Form.Feedback
+fval trigger rules value =
+    Form.validateValue trigger "f" rules value
+
+
+{-| `validateValue` with a caller-chosen field name.
+-}
+fvalAs : String -> Maybe Form.Trigger -> List Form.Rule -> Maybe Form.Value -> List Form.Feedback
+fvalAs field trigger rules value =
+    Form.validateValue trigger field rules value
+
+
+fmsgs : List Form.Feedback -> List String
+fmsgs =
+    List.map .message
+
+
+flevels : List Form.Feedback -> List Form.Level
+flevels =
+    List.map .level
+
+
+{-| One `--n-*` var of a form item.
+-}
+fvar : Theme.Theme -> Form.ItemOptions -> String -> Maybe String
+fvar theme opts key =
+    lookup key (Form.cssVarsForItem theme opts)
+
+
+{-| A local base for record updates (Elm only updates a variable, never a
+qualified value in place).
+-}
+fdflt : Form.Rule
+fdflt =
+    Form.defaultRule
+
+
+fditem : Form.ItemOptions
+fditem =
+    Form.itemDefaults
+
+
+fdefs : Form.Options Msg
+fdefs =
+    Form.defaults
+
+
+{-| A required rule (default `TypeString`).
+-}
+freq : Form.Rule
+freq =
+    { fdflt | required = True }
+
+
+{-| A failing error-level rule with a verbatim message.
+-}
+ferr : String -> Form.Rule
+ferr message =
+    { fdflt | required = True, message = Just message }
+
+
+{-| A failing warning-level rule with a verbatim message.
+-}
+fwarn : String -> Form.Rule
+fwarn message =
+    { fdflt | required = True, level = Form.WarningLevel, message = Just message }
+
+
+{-| A required rule restricted to the given triggers.
+-}
+fstr : List Form.Trigger -> Form.Rule
+fstr triggers =
+    { fdflt | required = True, message = Just "t", trigger = Just triggers }
+
+
+fbwd : Form.Rule
+fbwd =
+    fstr [ Form.OnBlur, Form.OnChange ]
+
+
+formRules : Form.Rules
+formRules =
+    [ ( "a", [ ferr "a-req" ] ), ( "b", [ ferr "b-req" ] ), ( "c", [ ferr "c-req" ] ) ]
+
+
+formValues : Form.Values
+formValues =
+    [ ( "a", Form.VString "x" ), ( "b", Form.VString "" ), ( "c", Form.VString "y" ) ]
+
+
+{-| The 16 `--n-*` vars `cssVarsForItem` attaches, sorted.
+-}
+formItemVarKeys : List String
+formItemVarKeys =
+    [ "--n-asterisk-color"
+    , "--n-bezier"
+    , "--n-blank-height"
+    , "--n-feedback-font-size"
+    , "--n-feedback-height"
+    , "--n-feedback-padding"
+    , "--n-feedback-text-color"
+    , "--n-feedback-text-color-error"
+    , "--n-feedback-text-color-warning"
+    , "--n-label-font-size"
+    , "--n-label-font-weight"
+    , "--n-label-height"
+    , "--n-label-padding"
+    , "--n-label-text-align"
+    , "--n-label-text-color"
+    , "--n-line-height"
+    ]
 
 
 
@@ -4208,6 +4328,180 @@ checks =
     , eq "dynamicinput cssVarsFor keys" [ "--action-margin", "--action-margin-rtl" ] (varKeys (DynamicInput.cssVarsFor Theme.default))
     , eq "dynamicinput cssVarsFor actionMargin" (Just "0 0 0 20px") (lookup "--action-margin" (DynamicInput.cssVarsFor Theme.default))
     , eq "dynamicinput cssVarsFor actionMarginRtl" (Just "0 20px 0 0") (lookup "--action-margin-rtl" (DynamicInput.cssVarsFor Theme.default))
+
+    -- 57. NUI.Form — trigger filter ---------------------------------------------
+    , eq "form trigger: manual (Nothing) runs every rule" [ "f is required" ] (fmsgs (fval Nothing [ freq ] (Just (Form.VString ""))))
+    , eq "form trigger: manual runs a blur/change-restricted rule" [ "t" ] (fmsgs (fval Nothing [ fbwd ] (Just (Form.VString ""))))
+    , eq "form trigger: a trigger-less rule runs under any trigger" [ "f is required" ] (fmsgs (fval (Just Form.OnBlur) [ freq ] (Just (Form.VString ""))))
+    , eq "form trigger: membership in (blur)" [ "t" ] (fmsgs (fval (Just Form.OnBlur) [ fbwd ] (Just (Form.VString ""))))
+    , eq "form trigger: membership in (change)" [ "t" ] (fmsgs (fval (Just Form.OnChange) [ fbwd ] (Just (Form.VString ""))))
+    , eq "form trigger: membership out (input) drops the rule" [] (fval (Just Form.OnInput) [ fbwd ] (Just (Form.VString "")))
+    , eq "form trigger: membership out (focus) drops the rule" [] (fval (Just Form.OnFocus) [ fbwd ] (Just (Form.VString "")))
+    , eq "form trigger: an empty trigger list never matches" [] (fval (Just Form.OnBlur) [ fstr [] ] (Just (Form.VString "")))
+    , eq "form trigger: on-focus membership" [ "t" ] (fmsgs (fval (Just Form.OnFocus) [ fstr [ Form.OnFocus ] ] (Just (Form.VString ""))))
+
+    -- 58. NUI.Form — level partition -------------------------------------------
+    , eq "form level: an error suppresses a failing warning" [ { level = Form.ErrorLevel, message = "E" } ] (fval Nothing [ ferr "E", fwarn "W" ] Nothing)
+    , eq "form level: the warning loses even when listed first" [ { level = Form.ErrorLevel, message = "E" } ] (fval Nothing [ fwarn "W", ferr "E" ] Nothing)
+    , eq "form level: no errors -> the warning surfaces" [ { level = Form.WarningLevel, message = "W" } ] (fval Nothing [ Form.defaultRule, fwarn "W" ] Nothing)
+    , eq "form level: warning feedback reports WarningLevel" [ Form.WarningLevel ] (flevels (fval Nothing [ fwarn "W" ] Nothing))
+    , eq "form level: rule order is preserved inside the error level" [ "E1", "E2" ] (fmsgs (fval Nothing [ ferr "E1", ferr "E2" ] Nothing))
+    , eq "form level: rule order is preserved inside the warning level" [ "W1", "W2" ] (fmsgs (fval Nothing [ fwarn "W1", fwarn "W2" ] Nothing))
+    , eq "form level: a warning is dropped entirely once an error exists" 1 (List.length (fval Nothing [ ferr "E", fwarn "W" ] Nothing))
+
+    -- 59. NUI.Form — absent values ---------------------------------------------
+    , eq "form absent: Nothing passes a rule without required" [] (fval Nothing [ Form.defaultRule ] Nothing)
+    , eq "form absent: VNull is absent too" [] (fval Nothing [ Form.defaultRule ] (Just Form.VNull))
+    , eq "form absent: required + Nothing fails" [ "f is required" ] (fmsgs (fval Nothing [ freq ] Nothing))
+    , eq "form absent: only required can fail (min/len/pattern/whitespace/enum skip)" [ "f is required" ] (fmsgs (fval Nothing [ { fdflt | required = True, min = Just 5, len = Just 3, pattern = Just "[0-9]+", whitespace = True, enum_ = [ "a" ] } ] Nothing))
+    , eq "form absent: non-required skips min/len/pattern/whitespace" [] (fval Nothing [ { fdflt | min = Just 5, len = Just 3, pattern = Just "[0-9]+", whitespace = True } ] Nothing)
+    , eq "form absent: required + VNull under an array rule fails" [ "f is required" ] (fmsgs (fval Nothing [ { fdflt | required = True, type_ = Form.TypeArray } ] (Just Form.VNull)))
+
+    -- 60. NUI.Form — required ---------------------------------------------------
+    , eq "form required: empty string fails" [ "f is required" ] (fmsgs (fval Nothing [ freq ] (Just (Form.VString ""))))
+    , eq "form required: empty array fails (array rule)" [ "f is required" ] (fmsgs (fval Nothing [ { fdflt | required = True, type_ = Form.TypeArray } ] (Just (Form.VArray []))))
+    , eq "form required: number 0 passes" [] (fval Nothing [ { fdflt | required = True, type_ = Form.TypeNumber } ] (Just (Form.VNumber 0)))
+    , eq "form required: boolean false passes" [] (fval Nothing [ { fdflt | required = True, type_ = Form.TypeBoolean } ] (Just (Form.VBool False)))
+    , eq "form required: non-empty string passes" [] (fval Nothing [ freq ] (Just (Form.VString "x")))
+    , eq "form required: message=Just is verbatim (no interpolation)" [ "Custom!" ] (fmsgs (fval Nothing [ { freq | message = Just "Custom!" } ] Nothing))
+    , eq "form required: the default message interpolates the field name" [ "email is required" ] (fmsgs (fvalAs "email" Nothing [ freq ] Nothing))
+
+    -- 61. NUI.Form — type matrix ------------------------------------------------
+    , eq "form type: string x TypeString passes" [] (fval Nothing [ { fdflt | type_ = Form.TypeString } ] (Just (Form.VString "x")))
+    , eq "form type: empty string passes TypeString" [] (fval Nothing [ { fdflt | type_ = Form.TypeString } ] (Just (Form.VString "")))
+    , eq "form type: string x TypeNumber -> is not a number" [ "f is not a number" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeNumber } ] (Just (Form.VString "x"))))
+    , eq "form type: number x TypeNumber passes" [] (fval Nothing [ { fdflt | type_ = Form.TypeNumber } ] (Just (Form.VNumber 5)))
+    , eq "form type: number x TypeString -> is not a string" [ "f is not a string" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeString } ] (Just (Form.VNumber 5))))
+    , eq "form type: array x TypeArray passes" [] (fval Nothing [ { fdflt | type_ = Form.TypeArray } ] (Just (Form.VArray [ Form.VString "a" ])))
+    , eq "form type: string x TypeArray -> is not an array" [ "f is not an array" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeArray } ] (Just (Form.VString "x"))))
+    , eq "form type: bool x TypeBoolean passes" [] (fval Nothing [ { fdflt | type_ = Form.TypeBoolean } ] (Just (Form.VBool True)))
+    , eq "form type: bool x TypeString -> is not a string" [ "f is not a string" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeString } ] (Just (Form.VBool True))))
+    , eq "form type: empty string is NOT empty for a boolean rule" [ "f is not a boolean" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeBoolean } ] (Just (Form.VString ""))))
+    , eq "form type: TypeAny runs no type check (every value kind)" [ 0, 0, 0, 0, 0 ] (List.map (\v -> List.length (fval Nothing [ { fdflt | type_ = Form.TypeAny } ] (Just v))) [ Form.VString "x", Form.VNumber 1, Form.VArray [], Form.VBool False, Form.VNull ])
+    , eq "form type: empty string under TypeNumber coerces to absent (non-required passes)" [] (fval Nothing [ { fdflt | type_ = Form.TypeNumber } ] (Just (Form.VString "")))
+    , eq "form type: empty string under TypeNumber + required fails required only" [ "f is required" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeNumber, required = True } ] (Just (Form.VString ""))))
+
+    -- 62. NUI.Form — range (len/min/max else-if cascade) ------------------------
+    , eq "form range: number below min" [ "f cannot be less than 5" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeNumber, min = Just 5 } ] (Just (Form.VNumber 4))))
+    , eq "form range: number at min passes" [] (fval Nothing [ { fdflt | type_ = Form.TypeNumber, min = Just 5 } ] (Just (Form.VNumber 5)))
+    , eq "form range: number above max" [ "f cannot be greater than 5" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeNumber, max = Just 5 } ] (Just (Form.VNumber 6))))
+    , eq "form range: number min+max" [ "f must be between 1 and 5" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeNumber, min = Just 1, max = Just 5 } ] (Just (Form.VNumber 6))))
+    , eq "form range: number len" [ "f must equal 3" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeNumber, len = Just 3 } ] (Just (Form.VNumber 4))))
+    , eq "form range: len wins over min (else-if cascade)" [ "f must equal 3" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeNumber, len = Just 3, min = Just 1 } ] (Just (Form.VNumber 4))))
+    , eq "form range: string below min" [ "f must be at least 3 characters" ] (fmsgs (fval Nothing [ { fdflt | min = Just 3 } ] (Just (Form.VString "ab"))))
+    , eq "form range: string at min passes" [] (fval Nothing [ { fdflt | min = Just 3 } ] (Just (Form.VString "abc")))
+    , eq "form range: string above max" [ "f cannot be longer than 3 characters" ] (fmsgs (fval Nothing [ { fdflt | max = Just 3 } ] (Just (Form.VString "abcd"))))
+    , eq "form range: string min+max" [ "f must be between 1 and 3 characters" ] (fmsgs (fval Nothing [ { fdflt | min = Just 1, max = Just 3 } ] (Just (Form.VString "abcd"))))
+    , eq "form range: string len" [ "f must be exactly 3 characters" ] (fmsgs (fval Nothing [ { fdflt | len = Just 3 } ] (Just (Form.VString "abcd"))))
+    , eq "form range: astral char counts as one (surrogate-corrected len)" [] (fval Nothing [ { fdflt | len = Just 1 } ] (Just (Form.VString "𠮷")))
+    , eq "form range: astral char is length 1 for min too" [ "f must be at least 2 characters" ] (fmsgs (fval Nothing [ { fdflt | min = Just 2 } ] (Just (Form.VString "𠮷"))))
+    , eq "form range: array below min" [ "f cannot be less than 2 in length" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeArray, min = Just 2 } ] (Just (Form.VArray [ Form.VString "a" ]))))
+    , eq "form range: array above max" [ "f cannot be greater than 2 in length" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeArray, max = Just 2 } ] (Just (Form.VArray [ Form.VString "a", Form.VString "b", Form.VString "c" ]))))
+    , eq "form range: array min+max" [ "f must be between 1 and 2 in length" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeArray, min = Just 1, max = Just 2 } ] (Just (Form.VArray [ Form.VString "a", Form.VString "b", Form.VString "c" ]))))
+    , eq "form range: array len" [ "f must be exactly 2 in length" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeArray, len = Just 2 } ] (Just (Form.VArray [ Form.VString "a" ]))))
+    , eq "form range: skipped for booleans" [] (fval Nothing [ { fdflt | type_ = Form.TypeBoolean, min = Just 5 } ] (Just (Form.VBool True)))
+    , eq "form range: two checks fail in one rule (type + range)" [ "f is not a string", "f cannot be less than 5" ] (fmsgs (fval Nothing [ { fdflt | min = Just 5 } ] (Just (Form.VNumber 4))))
+    , eq "form range: message=Just collapses two failures into one verbatim line" [ "custom" ] (fmsgs (fval Nothing [ { fdflt | min = Just 5, message = Just "custom" } ] (Just (Form.VNumber 4))))
+
+    -- 63. NUI.Form — enum --------------------------------------------------------
+    , eq "form enum: member passes" [] (fval Nothing [ { fdflt | type_ = Form.TypeEnum, enum_ = [ "a", "b" ] } ] (Just (Form.VString "a")))
+    , eq "form enum: non-member fails with the joined list" [ "f must be one of a, b" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeEnum, enum_ = [ "a", "b" ] } ] (Just (Form.VString "c"))))
+    , eq "form enum: three entries join with ', '" [ "f must be one of red, green, blue" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeEnum, enum_ = [ "red", "green", "blue" ] } ] (Just (Form.VString "pink"))))
+    , eq "form enum: a non-string value is not a member" [ "f must be one of a, b" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeEnum, enum_ = [ "a", "b" ] } ] (Just (Form.VNumber 1))))
+    , eq "form enum: an empty list is inactive" [] (fval Nothing [ { fdflt | type_ = Form.TypeEnum, enum_ = [] } ] (Just (Form.VString "x")))
+
+    -- 64. NUI.Form — whitespace --------------------------------------------------
+    , eq "form whitespace: all-whitespace fails with cannot be empty" [ "f cannot be empty" ] (fmsgs (fval Nothing [ { fdflt | whitespace = True } ] (Just (Form.VString "   "))))
+    , eq "form whitespace: whitespace around a word passes" [] (fval Nothing [ { fdflt | whitespace = True } ] (Just (Form.VString " x ")))
+    , eq "form whitespace: empty string never reaches the whitespace check" [] (fval Nothing [ { fdflt | whitespace = True } ] (Just (Form.VString "")))
+    , eq "form whitespace: empty + required yields only is-required" [ "f is required" ] (fmsgs (fval Nothing [ { fdflt | whitespace = True, required = True } ] (Just (Form.VString ""))))
+    , eq "form whitespace: ignored under TypeNumber" [] (fval Nothing [ { fdflt | type_ = Form.TypeNumber, whitespace = True } ] (Just (Form.VNumber 1)))
+
+    -- 65. NUI.Form — pattern -----------------------------------------------------
+    , eq "form pattern: a match passes" [] (fval Nothing [ { fdflt | pattern = Just "[0-9]+" } ] (Just (Form.VString "123")))
+    , eq "form pattern: a mismatch carries field, value and source" [ "f value abc does not match pattern [0-9]+" ] (fmsgs (fval Nothing [ { fdflt | pattern = Just "[0-9]+" } ] (Just (Form.VString "abc"))))
+    , eq "form pattern: a non-string value fails the rule" True (not (List.isEmpty (fval Nothing [ { fdflt | pattern = Just "[0-9]+" } ] (Just (Form.VNumber 1)))))
+    , eq "form pattern: an uncompilable source fails loudly (default message)" [ "Validation error on field f" ] (fmsgs (fval Nothing [ { fdflt | pattern = Just "[" } ] (Just (Form.VString "x"))))
+    , eq "form pattern: uncompilable + message=Just is verbatim" [ "bad" ] (fmsgs (fval Nothing [ { fdflt | pattern = Just "[", message = Just "bad" } ] (Just (Form.VString "x"))))
+    , eq "form pattern: the uncompilable default message interpolates the field" [ "Validation error on field age" ] (fmsgs (fvalAs "age" Nothing [ { fdflt | pattern = Just "[" } ] (Just (Form.VString "x"))))
+    , eq "form pattern: absent value passes when not required" [] (fval Nothing [ { fdflt | pattern = Just "[0-9]+" } ] Nothing)
+
+    -- 66. NUI.Form — custom validator -------------------------------------------
+    , eq "form validator: False yields field ++ ' fails'" [ "f fails" ] (fmsgs (fval Nothing [ { fdflt | validator = Just (\_ -> False) } ] (Just (Form.VString "x"))))
+    , eq "form validator: False + message=Just is verbatim" [ "nope" ] (fmsgs (fval Nothing [ { fdflt | validator = Just (\_ -> False), message = Just "nope" } ] (Just (Form.VString "x"))))
+    , eq "form validator: True passes" [] (fval Nothing [ { fdflt | validator = Just (\_ -> True) } ] (Just (Form.VString "x")))
+    , eq "form validator: replaces the structural checks (required + min ignored)" [] (fval Nothing [ { fdflt | validator = Just (\_ -> True), required = True, min = Just 5 } ] (Just (Form.VString "abc")))
+    , eq "form validator: sees the value (pass)" [] (fval Nothing [ { fdflt | validator = Just (\v -> v == Form.VNumber 5) } ] (Just (Form.VNumber 5)))
+    , eq "form validator: sees the value (fail)" [ "f fails" ] (fmsgs (fval Nothing [ { fdflt | validator = Just (\v -> v == Form.VNumber 5) } ] (Just (Form.VNumber 6))))
+    , eq "form validator: runs for an absent value too" [ "z" ] (fmsgs (fval Nothing [ { fdflt | validator = Just (\_ -> False), message = Just "z" } ] Nothing))
+    , eq "form validator: the trigger filter still applies" [] (fval (Just Form.OnInput) [ { fdflt | validator = Just (\_ -> False), trigger = Just [ Form.OnBlur ] } ] (Just (Form.VString "x")))
+
+    -- 67. NUI.Form — isRequired -------------------------------------------------
+    , eq "form isRequired: empty list is False" False (Form.isRequired [])
+    , eq "form isRequired: no required rule is False" False (Form.isRequired [ Form.defaultRule ])
+    , eq "form isRequired: a required rule is True" True (Form.isRequired [ { fdflt | required = True } ])
+    , eq "form isRequired: any required rule wins" True (Form.isRequired [ Form.defaultRule, { fdflt | required = True } ])
+    , eq "form isRequired: message/validator alone do not set it" False (Form.isRequired [ { fdflt | message = Just "x", validator = Just (\_ -> False) } ])
+
+    -- 68. NUI.Form — validateForm ------------------------------------------------
+    , eq "form validateForm: no filter -> every path, Rules order" [ ( "a", [] ), ( "b", [ { level = Form.ErrorLevel, message = "b-req" } ] ), ( "c", [] ) ] (Form.validateForm Nothing Nothing formRules formValues)
+    , eq "form validateForm: the paths filter keeps Rules order, not filter order" [ "a", "c" ] (List.map Tuple.first (Form.validateForm Nothing (Just [ "c", "a" ]) formRules formValues))
+    , eq "form validateForm: a single filtered path" [ ( "b", [ { level = Form.ErrorLevel, message = "b-req" } ] ) ] (Form.validateForm Nothing (Just [ "b" ]) formRules formValues)
+    , eq "form validateForm: a valid filtered path is emitted empty" [ ( "c", [] ) ] (Form.validateForm Nothing (Just [ "c" ]) formRules formValues)
+    , eq "form validateForm: unknown filtered paths are not emitted" [] (Form.validateForm Nothing (Just [ "zz" ]) formRules formValues)
+    , eq "form validateForm: value lookup is first-match-wins" [ ( "a", [ { level = Form.ErrorLevel, message = "a-req" } ] ) ] (Form.validateForm Nothing Nothing [ ( "a", [ ferr "a-req" ] ) ] [ ( "a", Form.VString "" ), ( "a", Form.VString "x" ) ])
+    , eq "form validateForm: first-match-wins (a valid first entry)" [ ( "a", [] ) ] (Form.validateForm Nothing Nothing [ ( "a", [ ferr "a-req" ] ) ] [ ( "a", Form.VString "x" ), ( "a", Form.VString "" ) ])
+    , eq "form validateForm: a missing value entry is absent (path is the field name)" [ ( "a", [ { level = Form.ErrorLevel, message = "a is required" } ] ) ] (Form.validateForm Nothing Nothing [ ( "a", [ freq ] ) ] [])
+    , eq "form validateForm: the trigger filter threads through (no match)" [ ( "a", [] ) ] (Form.validateForm (Just Form.OnChange) Nothing [ ( "a", [ { freq | trigger = Just [ Form.OnBlur ], message = Just "a-blur" } ] ) ] [ ( "a", Form.VString "" ) ])
+    , eq "form validateForm: the trigger filter threads through (match)" [ ( "a", [ { level = Form.ErrorLevel, message = "a-blur" } ] ) ] (Form.validateForm (Just Form.OnBlur) Nothing [ ( "a", [ { freq | trigger = Just [ Form.OnBlur ], message = Just "a-blur" } ] ) ] [ ( "a", Form.VString "" ) ])
+    , eq "form validateForm: each path keeps its own level partition" [ ( "w", [ { level = Form.WarningLevel, message = "w1" } ] ), ( "e", [ { level = Form.ErrorLevel, message = "e1" } ] ) ] (Form.validateForm Nothing Nothing [ ( "w", [ fwarn "w1" ] ), ( "e", [ ferr "e1" ] ) ] [])
+
+    -- 69. NUI.Form — cssVarsForItem ---------------------------------------------
+    , eq "form vars: the 16 upstream keys (sorted)" formItemVarKeys (List.sort (varKeys (Form.cssVarsForItem light Form.itemDefaults)))
+    , eq "form vars: count is 16" 16 (List.length (Form.cssVarsForItem light Form.itemDefaults))
+    , eq "form vars: bezier" (Just "cubic-bezier(.4, 0, .2, 1)") (fvar light Form.itemDefaults "--n-bezier")
+    , eq "form vars: line-height" (Just "1.6") (fvar light Form.itemDefaults "--n-line-height")
+    , eq "form vars: medium blank height" (Just "34px") (fvar light Form.itemDefaults "--n-blank-height")
+    , eq "form vars: medium label height" (Just "26px") (fvar light Form.itemDefaults "--n-label-height")
+    , eq "form vars: top+medium label font size" (Just "14px") (fvar light Form.itemDefaults "--n-label-font-size")
+    , eq "form vars: top label text align defaults to flex-start" (Just "flex-start") (fvar light Form.itemDefaults "--n-label-text-align")
+    , eq "form vars: top label padding is the vertical one" (Just "0 0 6px 2px") (fvar light Form.itemDefaults "--n-label-padding")
+    , eq "form vars: label font weight" (Just "400") (fvar light Form.itemDefaults "--n-label-font-weight")
+    , eq "form vars: asterisk color" (Just "#d03050") (fvar light Form.itemDefaults "--n-asterisk-color")
+    , eq "form vars: label text color" (Just "rgb(31, 34, 37)") (fvar light Form.itemDefaults "--n-label-text-color")
+    , eq "form vars: feedback padding" (Just "4px 0 0 2px") (fvar light Form.itemDefaults "--n-feedback-padding")
+    , eq "form vars: medium feedback font size" (Just "14px") (fvar light Form.itemDefaults "--n-feedback-font-size")
+    , eq "form vars: medium feedback height" (Just "24px") (fvar light Form.itemDefaults "--n-feedback-height")
+    , eq "form vars: feedback text color" (Just "rgb(118, 124, 130)") (fvar light Form.itemDefaults "--n-feedback-text-color")
+    , eq "form vars: feedback warning color" (Just "#f0a020") (fvar light Form.itemDefaults "--n-feedback-text-color-warning")
+    , eq "form vars: feedback error color" (Just "#d03050") (fvar light Form.itemDefaults "--n-feedback-text-color-error")
+    , eq "form vars: small blank height" (Just "28px") (fvar light { fditem | size = Form.Small } "--n-blank-height")
+    , eq "form vars: small label height" (Just "24px") (fvar light { fditem | size = Form.Small } "--n-label-height")
+    , eq "form vars: small top label font size" (Just "13px") (fvar light { fditem | size = Form.Small } "--n-label-font-size")
+    , eq "form vars: small feedback font size" (Just "13px") (fvar light { fditem | size = Form.Small } "--n-feedback-font-size")
+    , eq "form vars: large blank height" (Just "40px") (fvar light { fditem | size = Form.Large } "--n-blank-height")
+    , eq "form vars: large label height" (Just "28px") (fvar light { fditem | size = Form.Large } "--n-label-height")
+    , eq "form vars: large feedback height" (Just "26px") (fvar light { fditem | size = Form.Large } "--n-feedback-height")
+    , eq "form vars: left medium label font size" (Just "14px") (fvar light { fditem | labelPlacement = Just Form.Left } "--n-label-font-size")
+    , eq "form vars: left label padding is the horizontal one" (Just "0 12px 0 0") (fvar light { fditem | labelPlacement = Just Form.Left } "--n-label-padding")
+    , eq "form vars: left label text align is right" (Just "right") (fvar light { fditem | labelPlacement = Just Form.Left } "--n-label-text-align")
+    , eq "form vars: left small label font size" (Just "14px") (fvar light { fditem | labelPlacement = Just Form.Left, size = Form.Small } "--n-label-font-size")
+    , eq "form vars: left large label font size" (Just "15px") (fvar light { fditem | labelPlacement = Just Form.Left, size = Form.Large } "--n-label-font-size")
+    , eq "form vars: top + align right becomes flex-end" (Just "flex-end") (fvar light { fditem | labelAlign = Just Form.AlignRight } "--n-label-text-align")
+    , eq "form vars: top + align center stays flex-start (upstream override)" (Just "flex-start") (fvar light { fditem | labelAlign = Just Form.AlignCenter } "--n-label-text-align")
+    , eq "form vars: top + align left is flex-start" (Just "flex-start") (fvar light { fditem | labelAlign = Just Form.AlignLeft } "--n-label-text-align")
+    , eq "form vars: left + align left is left" (Just "left") (fvar light { fditem | labelPlacement = Just Form.Left, labelAlign = Just Form.AlignLeft } "--n-label-text-align")
+    , eq "form vars: left + align center is center" (Just "center") (fvar light { fditem | labelPlacement = Just Form.Left, labelAlign = Just Form.AlignCenter } "--n-label-text-align")
+    , eq "form vars: dark asterisk color" (Just "#e88080") (fvar dark Form.itemDefaults "--n-asterisk-color")
+    , eq "form vars: dark label text color" (Just "rgba(255, 255, 255, 0.9)") (fvar dark Form.itemDefaults "--n-label-text-color")
+    , eq "form vars: dark feedback error color" (Just "#e88080") (fvar dark Form.itemDefaults "--n-feedback-text-color-error")
+    , eq "form vars: itemDefaults size is medium" Form.Medium Form.itemDefaults.size
+    , eq "form vars: itemDefaults showFeedback defaults True" True Form.itemDefaults.showFeedback
+    , eq "form vars: itemDefaults requireMarkPlacement defaults right" Form.MarkRight Form.itemDefaults.requireMarkPlacement
+    , eq "form vars: itemDefaults labelPlacement defaults Nothing" Nothing Form.itemDefaults.labelPlacement
+    , eq "form vars: itemDefaults validation defaults Nothing" Nothing Form.itemDefaults.validation
+    , eq "form vars: Form.defaults.inline is False" False Form.defaults.inline
+    , eq "form vars: Form.defaults.onSubmit is Nothing" Nothing Form.defaults.onSubmit
     ]
 
 
@@ -4676,6 +4970,60 @@ liveNodes =
                     (DynamicInput.viewInput Theme.default dynamicInputRtlOpts)
                 , Element.el [ Element.htmlAttribute (HA.id "live-dynamic-input-item-style") ]
                     (DynamicInput.viewInput Theme.default dynamicInputItemStyleOpts)
+
+                -- Form
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-plain") ]
+                    (Form.view Theme.default Form.defaults [ Element.text "Body" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-inline") ]
+                    (Form.view Theme.default { fdefs | inline = True } [ Element.text "Body" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-submit") ]
+                    (Form.view Theme.default { fdefs | onSubmit = Just NoOp } [ Element.text "Body" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-item-default") ]
+                    (Form.item Theme.default Form.itemDefaults [ Element.text "Body" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-item-label") ]
+                    (Form.item Theme.default { fditem | label = Just "Name", required = True } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-item-label-for") ]
+                    (Form.item Theme.default { fditem | label = Just "Name", labelFor = Just "the-input" } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-item-label-left") ]
+                    (Form.item Theme.default { fditem | label = Just "Name", labelPlacement = Just Form.Left, labelAlign = Just Form.AlignLeft, requireMarkPlacement = Form.MarkLeft, required = True } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-item-left-rightmark") ]
+                    (Form.item Theme.default { fditem | label = Just "Name", labelPlacement = Just Form.Left, labelAlign = Just Form.AlignLeft, requireMarkPlacement = Form.MarkRight, required = True } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-item-left-noalign") ]
+                    (Form.item Theme.default { fditem | label = Just "Name", labelPlacement = Just Form.Left, requireMarkPlacement = Form.MarkLeft, required = True } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-item-hanging") ]
+                    (Form.item Theme.default { fditem | label = Just "Name", requireMarkPlacement = Form.MarkRightHanging } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-item-hanging-shown") ]
+                    (Form.item Theme.default { fditem | label = Just "Name", requireMarkPlacement = Form.MarkRightHanging, required = True } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-item-mark-force") ]
+                    (Form.item Theme.default { fditem | label = Just "Name", showRequireMark = Just True } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-item-mark-hide") ]
+                    (Form.item Theme.default { fditem | label = Just "Name", required = True, showRequireMark = Just False } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-item-no-label") ]
+                    (Form.item Theme.default { fditem | label = Just "Name", showLabel = Just False } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-item-small") ]
+                    (Form.item Theme.default { fditem | size = Form.Small, label = Just "S" } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-item-large") ]
+                    (Form.item Theme.default { fditem | size = Form.Large } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-item-content") ]
+                    (Form.item Theme.default { fditem | contentClass = Just "my-content", contentStyle = Just "background:red" } [ Element.text "Body" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-item-label-width") ]
+                    (Form.item Theme.default { fditem | label = Just "Name", labelPlacement = Just Form.Left, labelWidth = Just (Form.Px 120) } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-item-label-style") ]
+                    (Form.item Theme.default { fditem | label = Just "Name", labelStyle = Just "text-decoration:underline" } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-item-feedback") ]
+                    (Form.item Theme.default { fditem | feedback = Just "Controlled" } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-item-validation-warn") ]
+                    (Form.item Theme.default { fditem | validation = Just [ { level = Form.WarningLevel, message = "w1" }, { level = Form.WarningLevel, message = "w2" } ] } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-item-validation-error") ]
+                    (Form.item Theme.default { fditem | validation = Just [ { level = Form.ErrorLevel, message = "e1" } ] } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-item-validation-override") ]
+                    (Form.item Theme.default { fditem | validation = Just [ { level = Form.ErrorLevel, message = "e1" } ], validationStatus = Just Form.WarningLevel } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-item-status-only") ]
+                    (Form.item Theme.default { fditem | validationStatus = Just Form.ErrorLevel } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-item-feedback-off") ]
+                    (Form.item Theme.default { fditem | showFeedback = False, feedback = Just "Hidden" } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-item-feedback-style") ]
+                    (Form.item Theme.default { fditem | feedback = Just "F", feedbackClass = Just "my-fb", feedbackStyle = Just "color:blue" } [])
                 ]
             )
         ]
