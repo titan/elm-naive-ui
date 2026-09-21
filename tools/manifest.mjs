@@ -287,6 +287,12 @@ export const components = {
     ],
     theme: '_internal/scrollbar/styles/light.ts'
   },
+  tooltip: {
+    // No cssr of its own — the body carries popover's classes/CSS; only the
+    // theme overrides five popover vars (upstream builtinThemeOverrides).
+    cssr: [],
+    theme: 'tooltip/styles/light.ts'
+  },
   popover: {
     // Placement rules are attribute-scoped (`[v-placement=…] > .n-popover-shared`)
     // and stay valid under the `.nui-root.nui-root` prefix — the caller mounts

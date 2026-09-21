@@ -118,9 +118,11 @@
     "NUI.Theme.Tag",
     "NUI.Theme.Thing",
     "NUI.Theme.Timeline",
+    "NUI.Theme.Tooltip",
     "NUI.Theme.Typography",
     "NUI.Thing",
     "NUI.Timeline",
+    "NUI.Tooltip",
     "NUI.Types",
     "NUI.Typography"
   ],

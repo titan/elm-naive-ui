@@ -47,6 +47,9 @@ const ALLOW = new Set([
   // Highlight has no stylesheet at all (no cssr source upstream): the root span
   // and the `mark` tag carry classes, but nothing targets them.
   'n-highlight',
+  // Tooltip adds this marker via popover's internalExtraClass; no rule targets
+  // it anywhere upstream — the popover body rules carry the look.
+  'n-tooltip',
   'n-highlight__mark',
   // FormItem.tsx emits n-form-item-feedback__line on each feedback line; no
   // rule targets it (the lines are laid out by the wrapper / inner feedback
