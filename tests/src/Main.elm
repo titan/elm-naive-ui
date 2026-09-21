@@ -67,6 +67,7 @@ import NUI.Qrcodegen as Qrcodegen
 import NUI.Radio as Radio
 import NUI.Rate as Rate
 import NUI.Result as Result
+import NUI.Scrollbar as Scrollbar
 import NUI.Skeleton as Skeleton
 import NUI.Space as Space
 import NUI.Spin as Spin
@@ -2163,6 +2164,11 @@ tvar theme opts key =
     lookup key (Tabs.cssVars theme opts)
 
 
+svar : Theme.Theme -> Scrollbar.Options Msg -> String -> Maybe String
+svar theme opts key =
+    lookup key (Scrollbar.cssVars theme opts)
+
+
 descItem : String -> Descriptions.Item Msg
 descItem lbl =
     { ditem | label = Just (Element.text lbl), content = [ Element.text (lbl ++ "-c") ] }
@@ -2380,6 +2386,56 @@ tStylingOpts =
         , paneClass = Just "my-pane"
         , paneStyle = Just "background:blue"
     }
+
+
+
+-- SCROLLBAR -------------------------------------------------------------------
+
+
+{-| The plain defaults binding (`{ Scrollbar.defaults | … }` is a parse error).
+-}
+sD : Scrollbar.Options Msg
+sD =
+    Scrollbar.defaults
+
+
+sBarsOpts : Scrollbar.Options Msg
+sBarsOpts =
+    { sD | showYBar = True, yBarStyle = Just "height:40px;top:0" }
+
+
+sXOpts : Scrollbar.Options Msg
+sXOpts =
+    { sD | xScrollable = True, showXBar = True, xBarStyle = Just "width:50px;left:0" }
+
+
+sTopRailOpts : Scrollbar.Options Msg
+sTopRailOpts =
+    { sD | xScrollable = True, showXBar = True, xBarStyle = Just "width:50px", xPlacement = Scrollbar.Top }
+
+
+sLeftOpts : Scrollbar.Options Msg
+sLeftOpts =
+    { sD | yPlacement = Scrollbar.Left }
+
+
+sRtlOpts : Scrollbar.Options Msg
+sRtlOpts =
+    { sD | rtl = True }
+
+
+sStylingOpts : Scrollbar.Options Msg
+sStylingOpts =
+    { sD
+        | contentClass = Just "my-content"
+        , contentStyle = Just "background:blue"
+        , attributes = [ Element.htmlAttribute (HA.class "my-root") ]
+    }
+
+
+sXContentOpts : Scrollbar.Options Msg
+sXContentOpts =
+    { sD | xScrollable = True, contentStyle = Just "background:red" }
 
 
 
@@ -4909,6 +4965,48 @@ checks =
     , eq "tab vars: dark color-segment = dark inputColor" (Just "rgba(255, 255, 255, 0.1)") (tvar dark tdefault "--n-color-segment")
     , eq "tab vars: dark tab color segment = dark inputColor" (Just "rgba(255, 255, 255, 0.1)") (tvar dark tdefault "--n-tab-color-segment")
     , eq "tab vars: dark bar color = dark primaryColor" (Just "#63e2b7") (tvar dark tdefault "--n-bar-color")
+
+    -- scrollbar: defaults ---------------------------------------------------
+    , eq "scrollbar defaults: xScrollable False" False sD.xScrollable
+    , eq "scrollbar defaults: yPlacement Right" Scrollbar.Right sD.yPlacement
+    , eq "scrollbar defaults: xPlacement Bottom" Scrollbar.Bottom sD.xPlacement
+    , eq "scrollbar defaults: rtl False" False sD.rtl
+    , eq "scrollbar defaults: showYBar False" False sD.showYBar
+    , eq "scrollbar defaults: showXBar False" False sD.showXBar
+    , eq "scrollbar defaults: yBarStyle Nothing" Nothing sD.yBarStyle
+    , eq "scrollbar defaults: xBarStyle Nothing" Nothing sD.xBarStyle
+    , eq "scrollbar defaults: contentClass Nothing" Nothing sD.contentClass
+    , eq "scrollbar defaults: contentStyle Nothing" Nothing sD.contentStyle
+
+    -- scrollbar: cssVars (theme math) ---------------------------------------
+    , eq "scrollbar vars: 23 keys" 23 (List.length (Scrollbar.cssVars light sD))
+    , eq "scrollbar vars: first key = bezier" (Just "--n-scrollbar-bezier") (List.head (varKeys (Scrollbar.cssVars light sD)))
+    , eq "scrollbar vars: last key = rail color" (Just "--n-scrollbar-rail-color") (listAt 22 (varKeys (Scrollbar.cssVars light sD)))
+    , eq "scrollbar vars: bezier = theme.common.cubicBezierEaseInOut" (Just light.common.cubicBezierEaseInOut) (svar light sD "--n-scrollbar-bezier")
+    , eq "scrollbar vars: color" (Just "rgba(0, 0, 0, 0.25)") (svar light sD "--n-scrollbar-color")
+    , eq "scrollbar vars: width" (Just "5px") (svar light sD "--n-scrollbar-width")
+    , eq "scrollbar vars: height" (Just "5px") (svar light sD "--n-scrollbar-height")
+    , eq "scrollbar vars: border radius" (Just "5px") (svar light sD "--n-scrollbar-border-radius")
+    , eq "scrollbar vars: rail color transparent" (Just "transparent") (svar light sD "--n-scrollbar-rail-color")
+    , eq "scrollbar vars: horizontal-top top" (Just "4px") (svar light sD "--n-scrollbar-rail-top-horizontal-top")
+    , eq "scrollbar vars: horizontal-top left" (Just "2px") (svar light sD "--n-scrollbar-rail-left-horizontal-top")
+    , eq "scrollbar vars: horizontal-top bottom = auto" (Just "auto") (svar light sD "--n-scrollbar-rail-bottom-horizontal-top")
+    , eq "scrollbar vars: horizontal-bottom top = auto" (Just "auto") (svar light sD "--n-scrollbar-rail-top-horizontal-bottom")
+    , eq "scrollbar vars: horizontal-bottom bottom" (Just "4px") (svar light sD "--n-scrollbar-rail-bottom-horizontal-bottom")
+    , eq "scrollbar vars: vertical-right top" (Just "2px") (svar light sD "--n-scrollbar-rail-top-vertical-right")
+    , eq "scrollbar vars: vertical-right right" (Just "4px") (svar light sD "--n-scrollbar-rail-right-vertical-right")
+    , eq "scrollbar vars: vertical-right bottom" (Just "2px") (svar light sD "--n-scrollbar-rail-bottom-vertical-right")
+    , eq "scrollbar vars: vertical-right left = auto" (Just "auto") (svar light sD "--n-scrollbar-rail-left-vertical-right")
+    , eq "scrollbar vars: vertical-left top" (Just "2px") (svar light sD "--n-scrollbar-rail-top-vertical-left")
+    , eq "scrollbar vars: vertical-left right = auto" (Just "auto") (svar light sD "--n-scrollbar-rail-right-vertical-left")
+    , eq "scrollbar vars: vertical-left bottom" (Just "2px") (svar light sD "--n-scrollbar-rail-bottom-vertical-left")
+    , eq "scrollbar vars: vertical-left left" (Just "4px") (svar light sD "--n-scrollbar-rail-left-vertical-left")
+    , eq "scrollbar vars: rtl swaps vertical-right right to auto" (Just "auto") (svar light sRtlOpts "--n-scrollbar-rail-right-vertical-right")
+    , eq "scrollbar vars: rtl swaps vertical-right left to 4px" (Just "4px") (svar light sRtlOpts "--n-scrollbar-rail-left-vertical-right")
+    , eq "scrollbar vars: rtl swaps vertical-left right to 4px" (Just "4px") (svar light sRtlOpts "--n-scrollbar-rail-right-vertical-left")
+    , eq "scrollbar vars: rtl swaps vertical-left left to auto" (Just "auto") (svar light sRtlOpts "--n-scrollbar-rail-left-vertical-left")
+    , eq "scrollbar vars: rtl leaves horizontal-top left unchanged" (Just "2px") (svar light sRtlOpts "--n-scrollbar-rail-left-horizontal-top")
+    , eq "scrollbar vars: rtl leaves horizontal-bottom bottom unchanged" (Just "4px") (svar light sRtlOpts "--n-scrollbar-rail-bottom-horizontal-bottom")
     ]
 
 
@@ -5507,6 +5605,24 @@ liveNodes =
                     (Tabs.view Theme.default tHoverOpts ttabs)
                 , Element.el [ Element.htmlAttribute (HA.id "live-tabs-styling") ]
                     (Tabs.view Theme.default tStylingOpts ttabs)
+
+                -- Scrollbar
+                , Element.el [ Element.htmlAttribute (HA.id "live-scrollbar-default") ]
+                    (Scrollbar.view Theme.default sD [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-scrollbar-bars") ]
+                    (Scrollbar.view Theme.default sBarsOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-scrollbar-x") ]
+                    (Scrollbar.view Theme.default sXOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-scrollbar-top-rail") ]
+                    (Scrollbar.view Theme.default sTopRailOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-scrollbar-left") ]
+                    (Scrollbar.view Theme.default sLeftOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-scrollbar-rtl") ]
+                    (Scrollbar.view Theme.default sRtlOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-scrollbar-styling") ]
+                    (Scrollbar.view Theme.default sStylingOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-scrollbar-x-content") ]
+                    (Scrollbar.view Theme.default sXContentOpts [ Element.text "content" ])
                 ]
             )
         ]
