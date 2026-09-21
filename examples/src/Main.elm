@@ -25,6 +25,7 @@ import NUI.Countdown as Countdown
 import NUI.Css as Css
 import NUI.Descriptions as Descriptions
 import NUI.Divider as Divider
+import NUI.Dropdown as Dropdown
 import NUI.DynamicInput as DynamicInput
 import NUI.DynamicTags as DynamicTags
 import NUI.Ellipsis as Ellipsis
@@ -211,6 +212,11 @@ popoverD =
 tooltipD : Tooltip.Options msg
 tooltipD =
     Tooltip.defaults
+
+
+dropdownD : Dropdown.Options msg
+dropdownD =
+    Dropdown.defaults
 
 
 avD : Avatar.Options msg
@@ -580,6 +586,7 @@ body =
     , scrollbarSection
     , popoverSection
     , tooltipSection
+    , dropdownSection
     , rtlSection
     , themeSection
     ]
@@ -2142,6 +2149,183 @@ tooltipSection =
                 )
             ]
         ]
+
+
+dropdownSection : Element msg
+dropdownSection =
+    section "Dropdown"
+        "The `n-dropdown-menu` body — the popover runtime's sibling, rendered as its own element (`n-popover-shared` + `n-dropdown` markers, the merged 31-var set). The caller owns show state, the `v-placement` wrapper (here: `popoverHost`), and any submenu mounts."
+    <|
+        [ demoRow "Basic + sizes"
+            [ popoverHost Popover.Bottom
+                []
+                (Dropdown.view theme
+                    dropdownD
+                    [ Dropdown.Option
+                        { key = "edit"
+                        , label = "Edit"
+                        , icon = Nothing
+                        , disabled = False
+                        , children = Nothing
+                        , attributes = []
+                        }
+                    , Dropdown.Option
+                        { key = "duplicate"
+                        , label = "Duplicate"
+                        , icon = Nothing
+                        , disabled = False
+                        , children = Nothing
+                        , attributes = []
+                        }
+                    , Dropdown.Divider { attributes = [] }
+                    , Dropdown.Option
+                        { key = "delete"
+                        , label = "Delete"
+                        , icon = Nothing
+                        , disabled = True
+                        , children = Nothing
+                        , attributes = []
+                        }
+                    ]
+                )
+            , popoverHost Popover.Bottom
+                []
+                (Dropdown.view theme
+                    { dropdownD | size = Dropdown.Small }
+                    [ demoLeaf "small-1" "Small", demoLeaf "small-2" "28px rows" ]
+                )
+            , popoverHost Popover.Bottom
+                []
+                (Dropdown.view theme
+                    { dropdownD | size = Dropdown.Huge }
+                    [ demoLeaf "huge-1" "Huge", demoLeaf "huge-2" "46px rows, 18px icons" ]
+                )
+            ]
+        , demoRow "Groups, dividers, icons, submenus, custom"
+            [ popoverHost Popover.Bottom
+                []
+                (Dropdown.view theme
+                    { dropdownD | width = Just "220px" }
+                    [ Dropdown.Group
+                        { key = "group-people"
+                        , label = "People"
+                        , icon = Nothing
+                        , children =
+                            [ Dropdown.Option
+                                { key = "jay"
+                                , label = "Jay Gatsby"
+                                , icon = Just demoIcon
+                                , disabled = False
+                                , children = Nothing
+                                , attributes = []
+                                }
+                            , Dropdown.Option
+                                { key = "daisy"
+                                , label = "Daisy Buchanan"
+                                , icon = Just demoIcon
+                                , disabled = True
+                                , children = Nothing
+                                , attributes = []
+                                }
+                            ]
+                        }
+                    , Dropdown.Divider { attributes = [] }
+                    , Dropdown.Option
+                        { key = "others"
+                        , label = "Others"
+                        , icon = Just demoIcon
+                        , disabled = False
+                        , children = Just [ demoLeaf "nick" "Nick Carraway", demoLeaf "tom" "Tom Buchanan" ]
+                        , attributes = []
+                        }
+                    , Dropdown.Custom
+                        { key = "custom"
+                        , children = [ Element.text "A custom render option." ]
+                        , attributes = []
+                        }
+                    ]
+                )
+            , popoverHost Popover.Bottom
+                []
+                (Dropdown.view theme
+                    { dropdownD | value = Just "target" }
+                    [ Dropdown.Option
+                        { key = "parent"
+                        , label = "Parent (child-active)"
+                        , icon = Nothing
+                        , disabled = False
+                        , children = Just [ demoLeaf "target" "Target (active)" ]
+                        , attributes = []
+                        }
+                    , demoLeaf "plain" "Plain"
+                    ]
+                )
+            , popoverHost Popover.Bottom
+                []
+                (Dropdown.view theme
+                    { dropdownD | value = Just "target" }
+                    [ demoLeaf "target" "Target (active)"
+                    , demoLeaf "plain" "Plain"
+                    ]
+                )
+            ]
+        , demoRow "Arrow / inverted / scrollable"
+            [ popoverHost Popover.Bottom
+                []
+                (Dropdown.view theme
+                    { dropdownD | showArrow = True }
+                    [ demoLeaf "a1" "With the popover arrow", demoLeaf "a2" "Second item" ]
+                )
+            , popoverHost Popover.Bottom
+                []
+                (Dropdown.view theme
+                    { dropdownD | inverted = True }
+                    [ demoLeaf "i1" "Inverted menu", demoLeaf "i2" "Primary hover" ]
+                )
+            , popoverHost Popover.Bottom
+                []
+                (Dropdown.view theme
+                    { dropdownD
+                        | scrollable = True
+                        , width = Just "240px"
+                        , attributes = [ Element.height (Element.px 120) ]
+                    }
+                    (List.indexedMap (\i _ -> demoLeaf ("s" ++ String.fromInt i) ("Scrollable item " ++ String.fromInt (i + 1))) (List.range 1 12))
+                )
+            ]
+        ]
+
+
+demoLeaf : String -> String -> Dropdown.Option msg
+demoLeaf key label =
+    Dropdown.Option
+        { key = key
+        , label = label
+        , icon = Nothing
+        , disabled = False
+        , children = Nothing
+        , attributes = []
+        }
+
+
+demoIcon : Element msg
+demoIcon =
+    Element.html
+        (Html.node "svg"
+            [ HA.attribute "viewBox" "0 0 512 512"
+            , HA.attribute "fill" "none"
+            , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
+            ]
+            [ Html.node "circle"
+                [ HA.attribute "cx" "256"
+                , HA.attribute "cy" "256"
+                , HA.attribute "r" "208"
+                , HA.attribute "stroke" "currentColor"
+                , HA.attribute "stroke-width" "32"
+                ]
+                []
+            ]
+        )
 
 
 rtlSection : Element msg

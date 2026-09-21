@@ -56,7 +56,8 @@ placement is `Bottom` (upstream overrides the popover's top).
 **Documented gaps** (beyond the popover's):
 
   - `key` is required per option (upstream generates keys for keyless options);
-    with duplicate keys the first match wins for `value` highlighting.
+    with duplicate keys the first match wins for `value` highlighting. Keys of
+    dividers / customs never participate (upstream treemate ignores them).
   - `label`/`icon` replace upstream's `label|title` + render hooks;
     `renderLabel`/`renderIcon`/`renderOption`/`nodeProps`/`menuProps` become
     per-option `attributes` (they land on the option body, upstream's
@@ -77,9 +78,16 @@ placement is `Bottom` (upstream overrides the popover's top).
 -}
 
 import Element exposing (Element)
+import Element.Events
+import Html
+import Html.Attributes as HA
+import NUI.Icon
 import NUI.Internal as I
 import NUI.Popover as Popover
+import NUI.Scrollbar
 import NUI.Theme exposing (Theme)
+import NUI.Theme.Dropdown as DropdownTheme
+import NUI.Theme.Popover as PopoverTheme
 
 
 
@@ -228,8 +236,445 @@ survives the `overlap` merge) the popover arrow pair. Mount it inside a
 wrapper that carries `placementAttribute`.
 -}
 view : Theme -> Options msg -> List (Option msg) -> Element msg
-view _ _ _ =
-    Element.none
+view theme opts options =
+    let
+        showArrow =
+            -- upstream merges `overlap` into showArrow before the body sees it
+            not opts.overlap && opts.showArrow
+
+        flags =
+            menuFlags options
+
+        activePath =
+            case opts.value of
+                Just value ->
+                    findKeyPath value options
+                        |> Maybe.withDefault []
+
+                Nothing ->
+                    []
+
+        classList =
+            ("n-dropdown-menu"
+                :: I.classIf opts.scrollable "n-dropdown-menu--scrollable"
+            )
+                ++ ("n-popover-shared"
+                        :: I.classIf opts.rtl "n-popover--rtl"
+                        ++ I.classIf opts.overlap "n-popover-shared--overlap"
+                        ++ I.classIf showArrow "n-popover-shared--show-arrow"
+                        ++ I.classIf opts.arrowPointToCenter "n-popover-shared--center-arrow"
+                        ++ [ "n-dropdown", "n-dropdown--" ++ sizeName opts.size ++ "-size" ]
+                        ++ (case opts.transition of
+                                Just ( family, phase ) ->
+                                    [ I.transitionClass family phase ]
+
+                                Nothing ->
+                                    []
+                           )
+                   )
+
+        stylePairs =
+            -- upstream: the popover's `[width?, …vars]` with the dropdown's
+            -- vars object-merged over it — width first, then the 31
+            (case opts.width of
+                Just w ->
+                    [ ( "width", w ) ]
+
+                Nothing ->
+                    []
+            )
+                ++ cssVars theme opts.size opts.inverted
+
+        optionNodes =
+            List.concatMap (optionNodesFor theme opts flags activePath) options
+
+        menuBody =
+            if opts.scrollable then
+                [ scrollbarChild theme optionNodes ]
+
+            else
+                optionNodes
+    in
+    Element.column
+        ([ I.classes classList
+         , I.cssVars stylePairs
+         ]
+            ++ opts.attributes
+        )
+        (menuBody
+            ++ (if showArrow then
+                    [ arrowNode opts.arrowStyle ]
+
+                else
+                    []
+               )
+        )
+
+
+{-| The `n-scrollbar` wrapper upstream renders around the options when
+`scrollable`, with the menu's `__content` class hoisted onto the scrollbar's
+content (`NxScrollbar contentClass`, `DropdownMenu.tsx`).
+-}
+scrollbarChild : Theme -> List (Element msg) -> Element msg
+scrollbarChild theme children =
+    let
+        scrollbarDefaults =
+            NUI.Scrollbar.defaults
+    in
+    NUI.Scrollbar.view theme
+        { scrollbarDefaults
+            | contentClass = Just "n-dropdown-menu__content"
+        }
+        children
+
+
+
+-- OPTION NODES -------------------------------------------------------------------
+
+
+{-| The nodes one option contributes — a group contributes its header plus its
+children as siblings (upstream renders a fragment), everything else one node.
+-}
+optionNodesFor : Theme -> Options msg -> MenuFlags -> List String -> Option msg -> List (Element msg)
+optionNodesFor theme opts flags activePath option =
+    case option of
+        Option leaf ->
+            [ leafNode theme opts flags activePath leaf ]
+
+        Group group ->
+            groupHeaderNode theme flags group
+                :: List.filterMap (groupChildNode theme opts flags activePath) group.children
+
+        Divider divider ->
+            [ Element.el
+                ([ I.classes [ "n-dropdown-divider" ] ] ++ divider.attributes)
+                Element.none
+            ]
+
+        Custom custom ->
+            [ Element.column custom.attributes custom.children ]
+
+
+{-| One selectable row: the wrapper (with the `data-dropdown-option` test
+marker) around the three-column body, plus the submenu scaffold.
+-}
+leafNode : Theme -> Options msg -> MenuFlags -> List String -> LeafOption msg -> Element msg
+leafNode theme opts flags activePath leaf =
+    let
+        state =
+            keyState activePath leaf.key
+
+        bodyClasses =
+            "n-dropdown-option-body"
+                :: I.classIf state.active "n-dropdown-option-body--active"
+                ++ I.classIf state.childActive "n-dropdown-option-body--child-active"
+                ++ I.classIf leaf.disabled "n-dropdown-option-body--disabled"
+
+        clickAttrs =
+            case ( opts.onSelect, leaf.disabled, leaf.children ) of
+                ( Just handler, False, Nothing ) ->
+                    [ Element.Events.onClick (handler leaf.key) ]
+
+                _ ->
+                    []
+
+        submenuScaffold =
+            case leaf.children of
+                Just _ ->
+                    [ Element.el [ I.classes [ "n-dropdown-offset-container" ] ] Element.none ]
+
+                Nothing ->
+                    []
+    in
+    Element.column
+        [ I.classes [ "n-dropdown-option" ]
+        , Element.htmlAttribute (HA.attribute "data-dropdown-option" "true")
+        ]
+        (Element.row
+            ([ I.classes bodyClasses ] ++ clickAttrs ++ leaf.attributes)
+            [ prefixNode flags.showIcon False leaf.icon
+            , labelNode False leaf.label
+            , suffixNode theme flags.hasSubmenu (leaf.children /= Nothing)
+            ]
+            :: submenuScaffold
+        )
+
+
+{-| The group header — the leaf shape with the `--group` body modifier, no
+`data-dropdown-option` on the wrapper (upstream `DropdownGroupHeader`), and an
+always-empty suffix.
+-}
+groupHeaderNode : Theme -> MenuFlags -> GroupOption msg -> Element msg
+groupHeaderNode theme flags group =
+    Element.column
+        [ I.classes [ "n-dropdown-option" ] ]
+        [ Element.row
+            [ I.classes [ "n-dropdown-option-body", "n-dropdown-option-body--group" ] ]
+            [ prefixNode flags.showIcon True group.icon
+            , labelNode True group.label
+            , suffixNode theme flags.hasSubmenu False
+            ]
+        ]
+
+
+{-| A group's child — groups are dropped inside groups (upstream warns and
+renders nothing); other types pass through unchanged.
+-}
+groupChildNode : Theme -> Options msg -> MenuFlags -> List String -> Option msg -> Maybe (Element msg)
+groupChildNode theme opts flags activePath option =
+    case option of
+        Group _ ->
+            Nothing
+
+        _ ->
+            Just (List.head (optionNodesFor theme opts flags activePath option) |> Maybe.withDefault Element.none)
+
+
+{-| The prefix column — widens to the icon width when any sibling has an icon
+(upstream computes `showIcon` at menu level).
+-}
+prefixNode : Bool -> Bool -> Maybe (Element msg) -> Element msg
+prefixNode showIcon isGroup icon =
+    Element.el
+        ([ I.classes
+            ([ "n-dropdown-option-body__prefix" ]
+                ++ I.classIf showIcon "n-dropdown-option-body__prefix--show-icon"
+            )
+         ]
+            ++ (if isGroup then
+                    [ Element.htmlAttribute (HA.attribute "data-dropdown-option" "true") ]
+
+                else
+                    []
+               )
+        )
+        (Maybe.withDefault Element.none icon)
+
+
+{-| The label cell (upstream falls back `label ?? title`; the port takes one
+string).
+-}
+labelNode : Bool -> String -> Element msg
+labelNode isGroup label =
+    Element.el
+        ([ I.classes [ "n-dropdown-option-body__label" ] ]
+            ++ (if isGroup then
+                    [ Element.htmlAttribute (HA.attribute "data-dropdown-option" "true") ]
+
+                else
+                    []
+               )
+        )
+        (Element.text label)
+
+
+{-| The suffix column — widens when any sibling opens a submenu; carries the
+chevron icon only on submenu options themselves.
+-}
+suffixNode : Theme -> Bool -> Bool -> Element msg
+suffixNode theme hasSubmenu isSubmenuOption =
+    Element.el
+        [ I.classes
+            ([ "n-dropdown-option-body__suffix" ]
+                ++ I.classIf hasSubmenu "n-dropdown-option-body__suffix--has-submenu"
+            )
+        , Element.htmlAttribute (HA.attribute "data-dropdown-option" "true")
+        ]
+        (if isSubmenuOption then
+            chevronRightIcon theme
+
+         else
+            Element.none
+        )
+
+
+{-| The chevron upstream renders in every submenu option's suffix
+(`ChevronRightIcon` inside `NIcon`).
+-}
+chevronRightIcon : Theme -> Element msg
+chevronRightIcon theme =
+    NUI.Icon.view theme
+        NUI.Icon.defaults
+        [ Element.html
+            (Html.node "svg"
+                [ HA.attribute "viewBox" "0 0 16 16"
+                , HA.attribute "fill" "none"
+                , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
+                ]
+                [ Html.node "path"
+                    [ HA.attribute "d" chevronRightPath
+                    , HA.attribute "fill" "currentColor"
+                    ]
+                    []
+                ]
+            )
+        ]
+
+
+chevronRightPath : String
+chevronRightPath =
+    "M5.64645 3.14645C5.45118 3.34171 5.45118 3.65829 5.64645 3.85355L9.79289 8L5.64645 12.1464C5.45118 12.3417 5.45118 12.6583 5.64645 12.8536C5.84171 13.0488 6.15829 13.0488 6.35355 12.8536L10.8536 8.35355C11.0488 8.15829 11.0488 7.84171 10.8536 7.64645L6.35355 3.14645C6.15829 2.95118 5.84171 2.95118 5.64645 3.14645Z"
+
+
+{-| The popover's arrow pair (upstream `renderArrow`, shared from
+`PopoverBody`) — the dropdown passes only `arrowStyle`, so no class/style
+variants here.
+-}
+arrowNode : Maybe String -> Element msg
+arrowNode arrowStyle =
+    Element.html
+        (Html.div
+            [ HA.class "n-popover-arrow-wrapper" ]
+            [ Html.div
+                ([ HA.class "n-popover-arrow" ] ++ rawStyleAttr arrowStyle)
+                []
+            ]
+        )
+
+
+rawStyleAttr : Maybe String -> List (Html.Attribute msg)
+rawStyleAttr maybeStyle =
+    case maybeStyle of
+        Just style ->
+            [ HA.attribute "style" style ]
+
+        Nothing ->
+            []
+
+
+
+-- MENU-LEVEL DERIVATIONS -----------------------------------------------------------
+
+
+type alias MenuFlags =
+    { showIcon : Bool, hasSubmenu : Bool }
+
+
+{-| The menu-level column flags (upstream `DropdownMenu` computes them over
+the top-level options **and one level into groups**, never into submenu
+children): every prefix widens if some option has an icon, every suffix widens
+if some option opens a submenu.
+-}
+menuFlags : List (Option msg) -> MenuFlags
+menuFlags options =
+    List.foldl
+        (\option acc ->
+            case option of
+                Option leaf ->
+                    leafFlags leaf acc
+
+                Group group ->
+                    List.foldl
+                        (\child cacc ->
+                            case child of
+                                Option leaf ->
+                                    leafFlags leaf cacc
+
+                                _ ->
+                                    cacc
+                        )
+                        acc
+                        group.children
+
+                _ ->
+                    acc
+        )
+        { showIcon = False, hasSubmenu = False }
+        options
+
+
+leafFlags : LeafOption msg -> MenuFlags -> MenuFlags
+leafFlags leaf acc =
+    { showIcon = acc.showIcon || (leaf.icon /= Nothing)
+    , hasSubmenu = acc.hasSubmenu || (leaf.children /= Nothing)
+    }
+
+
+{-| The key path from the menu root to the option carrying `value` (upstream
+treemate `getPath(value).keyPath`) — through groups and submenus; the last key
+is `--active`, the ancestors are `--child-active`.
+-}
+findKeyPath : String -> List (Option msg) -> Maybe (List String)
+findKeyPath value options =
+    List.foldl
+        (\option found ->
+            case found of
+                Just _ ->
+                    found
+
+                Nothing ->
+                    case option of
+                        Option leaf ->
+                            if leaf.key == value then
+                                Just [ leaf.key ]
+
+                            else
+                                leaf.children
+                                    |> Maybe.andThen (findKeyPath value)
+                                    |> Maybe.map ((::) leaf.key)
+
+                        Group group ->
+                            findKeyPath value group.children
+                                |> Maybe.map ((::) group.key)
+
+                        _ ->
+                            Nothing
+        )
+        Nothing
+        options
+
+
+{-| Active / child-active state for one key against the path (first index
+wins, as upstream's `findIndex`).
+-}
+keyState : List String -> String -> { active : Bool, childActive : Bool }
+keyState activePath key =
+    let
+        last =
+            List.length activePath - 1
+    in
+    case keyIndex 0 key activePath of
+        Just index ->
+            { active = index == last
+            , childActive = index < last
+            }
+
+        Nothing ->
+            { active = False, childActive = False }
+
+
+keyIndex : Int -> String -> List String -> Maybe Int
+keyIndex index key keys =
+    case keys of
+        [] ->
+            Nothing
+
+        head :: rest ->
+            if head == key then
+                Just index
+
+            else
+                keyIndex (index + 1) key rest
+
+
+sizeName : Size -> String
+sizeName size =
+    case size of
+        Small ->
+            "small"
+
+        Medium ->
+            "medium"
+
+        Large ->
+            "large"
+
+        Huge ->
+            "huge"
+
+
+
+-- THEME ------------------------------------------------------------------------
 
 
 {-| The 31 `--n-*` custom properties the body attaches — the popover's 15
@@ -239,5 +684,108 @@ view _ _ _ =
 order. Size- and inverted-dependent.
 -}
 cssVars : Theme -> Size -> Bool -> List ( String, String )
-cssVars _ _ _ =
-    []
+cssVars theme size inverted =
+    let
+        p =
+            PopoverTheme.vars theme
+
+        d =
+            DropdownTheme.vars theme
+
+        s =
+            sizeVars d size
+
+        ifInverted normal inverted_ =
+            if inverted then
+                inverted_
+
+            else
+                normal
+    in
+    [ ( "--n-box-shadow", p.boxShadow )
+    , ( "--n-bezier", theme.common.cubicBezierEaseInOut )
+    , ( "--n-bezier-ease-in", theme.common.cubicBezierEaseIn )
+    , ( "--n-bezier-ease-out", theme.common.cubicBezierEaseOut )
+    , ( "--n-font-size", s.fontSize )
+    , ( "--n-text-color", p.textColor )
+    , ( "--n-color", ifInverted d.color d.colorInverted )
+    , ( "--n-divider-color", d.dividerColor )
+    , ( "--n-border-radius", d.borderRadius )
+    , ( "--n-arrow-height", p.arrowHeight )
+    , ( "--n-arrow-offset", p.arrowOffset )
+    , ( "--n-arrow-offset-vertical", p.arrowOffsetVertical )
+    , ( "--n-padding", d.padding )
+    , ( "--n-space", p.space )
+    , ( "--n-space-arrow", p.spaceArrow )
+    , ( "--n-option-height", s.optionHeight )
+    , ( "--n-option-prefix-width", s.optionPrefixWidth )
+    , ( "--n-option-icon-prefix-width", s.optionIconPrefixWidth )
+    , ( "--n-option-suffix-width", s.optionSuffixWidth )
+    , ( "--n-option-icon-suffix-width", s.optionIconSuffixWidth )
+    , ( "--n-option-icon-size", s.optionIconSize )
+    , ( "--n-option-opacity-disabled", d.optionOpacityDisabled )
+    , ( "--n-option-color-hover", ifInverted d.optionColorHover d.optionColorHoverInverted )
+    , ( "--n-option-color-active", ifInverted d.optionColorActive d.optionColorActiveInverted )
+    , ( "--n-option-text-color", ifInverted d.optionTextColor d.optionTextColorInverted )
+    , ( "--n-option-text-color-hover", ifInverted d.optionTextColorHover d.optionTextColorHoverInverted )
+    , ( "--n-option-text-color-active", ifInverted d.optionTextColorActive d.optionTextColorActiveInverted )
+    , ( "--n-option-text-color-child-active", ifInverted d.optionTextColorChildActive d.optionTextColorChildActiveInverted )
+    , ( "--n-prefix-color", ifInverted d.prefixColor d.prefixColorInverted )
+    , ( "--n-suffix-color", ifInverted d.suffixColor d.suffixColorInverted )
+    , ( "--n-group-header-text-color", ifInverted d.groupHeaderTextColor d.groupHeaderTextColorInverted )
+    ]
+
+
+type alias SizeVars =
+    { fontSize : String
+    , optionHeight : String
+    , optionPrefixWidth : String
+    , optionIconPrefixWidth : String
+    , optionSuffixWidth : String
+    , optionIconSuffixWidth : String
+    , optionIconSize : String
+    }
+
+
+sizeVars : DropdownTheme.Vars -> Size -> SizeVars
+sizeVars d size =
+    case size of
+        Small ->
+            { fontSize = d.fontSizeSmall
+            , optionHeight = d.optionHeightSmall
+            , optionPrefixWidth = d.optionPrefixWidthSmall
+            , optionIconPrefixWidth = d.optionIconPrefixWidthSmall
+            , optionSuffixWidth = d.optionSuffixWidthSmall
+            , optionIconSuffixWidth = d.optionIconSuffixWidthSmall
+            , optionIconSize = d.optionIconSizeSmall
+            }
+
+        Medium ->
+            { fontSize = d.fontSizeMedium
+            , optionHeight = d.optionHeightMedium
+            , optionPrefixWidth = d.optionPrefixWidthMedium
+            , optionIconPrefixWidth = d.optionIconPrefixWidthMedium
+            , optionSuffixWidth = d.optionSuffixWidthMedium
+            , optionIconSuffixWidth = d.optionIconSuffixWidthMedium
+            , optionIconSize = d.optionIconSizeMedium
+            }
+
+        Large ->
+            { fontSize = d.fontSizeLarge
+            , optionHeight = d.optionHeightLarge
+            , optionPrefixWidth = d.optionPrefixWidthLarge
+            , optionIconPrefixWidth = d.optionIconPrefixWidthLarge
+            , optionSuffixWidth = d.optionSuffixWidthLarge
+            , optionIconSuffixWidth = d.optionIconSuffixWidthLarge
+            , optionIconSize = d.optionIconSizeLarge
+            }
+
+        Huge ->
+            { fontSize = d.fontSizeHuge
+            , optionHeight = d.optionHeightHuge
+            , optionPrefixWidth = d.optionPrefixWidthHuge
+            , optionIconPrefixWidth = d.optionIconPrefixWidthHuge
+            , optionSuffixWidth = d.optionSuffixWidthHuge
+            , optionIconSuffixWidth = d.optionIconSuffixWidthHuge
+            , optionIconSize = d.optionIconSizeHuge
+            }

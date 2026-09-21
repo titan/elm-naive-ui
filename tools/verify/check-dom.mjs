@@ -90,7 +90,8 @@ const targets = {
   // Scrollbar root carries the full --n-* var set.
   '.n-scrollbar': true,
   '.n-popover': true,
-  '.n-tooltip': true
+  '.n-tooltip': true,
+  '.n-dropdown': true
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {
