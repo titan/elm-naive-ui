@@ -2909,6 +2909,387 @@ dTrue(
 )
 dEq('DOM: DynamicInput itemStyle passthrough on the item', 'background:red', styleAt(diItem0))
 
+// Form ------------------------------------------------------------------------
+const tagOf = (el) => (el ? el.tagName : null)
+const clsOf = (el) => (el ? el.getAttribute('class') : null)
+const hasCls = (el, c) => !!el && el.classList.contains(c)
+const flatStyle = (el) => (styleAt(el) || '').replace(/\s/g, '')
+
+// Class tokens of the label subtree, in document order: text / asterisk /
+// placeholder. Tag-agnostic (the label may be the .n-form-item-label element
+// itself or a <label> nested in it).
+const formLabelTokens = (scope) => {
+  const label = doc.querySelector(`${scope} .n-form-item-label`)
+  if (!label) return null
+  return [
+    ...label.querySelectorAll(
+      '.n-form-item-label__text, .n-form-item-label__asterisk, .n-form-item-label__asterisk-placeholder'
+    )
+  ]
+    .map((el) => {
+      if (el.classList.contains('n-form-item-label__text')) return `text:${el.textContent}`
+      if (el.classList.contains('n-form-item-label__asterisk-placeholder')) return 'placeholder'
+      return `asterisk:${JSON.stringify(el.textContent)}`
+    })
+    .join(' | ')
+}
+
+const formRoot = doc.querySelector('#live-form-plain form.n-form')
+dEq('DOM: Form root is a real <form class="n-form">', 'FORM', tagOf(formRoot))
+dTrue(
+  'DOM: Form root carries the n-form class',
+  hasCls(formRoot, 'n-form'),
+  clsOf(formRoot)
+)
+dEq(
+  'DOM: Form renders its children',
+  'Body',
+  formRoot ? formRoot.textContent.trim() : null
+)
+dEq('DOM: Form default has no --inline modifier', null, doc.querySelector('#live-form-plain .n-form--inline'))
+dTrue(
+  'DOM: Form inline adds .n-form--inline',
+  hasCls(doc.querySelector('#live-form-inline .n-form'), 'n-form--inline'),
+  clsOf(doc.querySelector('#live-form-inline .n-form'))
+)
+dEq('DOM: Form with onSubmit is still a real <form>', 'FORM', tagOf(doc.querySelector('#live-form-submit form')))
+
+const fiDefault = doc.querySelector('#live-form-item-default .n-form-item')
+dTrue('DOM: Form item root is .n-form-item', hasCls(fiDefault, 'n-form-item'), clsOf(fiDefault))
+dTrue(
+  'DOM: Form item default size is medium',
+  hasCls(fiDefault, 'n-form-item--medium-size'),
+  clsOf(fiDefault)
+)
+dTrue(
+  'DOM: Form item default placement is top-labelled',
+  hasCls(fiDefault, 'n-form-item--top-labelled'),
+  clsOf(fiDefault)
+)
+dEq(
+  'DOM: Form item with no label does NOT get --no-label (showLabel default true)',
+  false,
+  hasCls(fiDefault, 'n-form-item--no-label')
+)
+dEq(
+  'DOM: a label-less item renders no label element',
+  0,
+  doc.querySelectorAll('#live-form-item-default .n-form-item-label').length
+)
+dEq(
+  'DOM: Form item root carries the 16 --n- vars',
+  16,
+  ((styleAt(fiDefault) || '').match(/--n-[a-z-]+:/g) || []).length
+)
+dTrue(
+  'DOM: Form item medium blank height var',
+  (styleAt(fiDefault) || '').includes('--n-blank-height:34px'),
+  styleAt(fiDefault)
+)
+dEq(
+  'DOM: Form item blank has no status modifier by default',
+  0,
+  doc.querySelectorAll(
+    '#live-form-item-default .n-form-item-blank--error, #live-form-item-default .n-form-item-blank--warning'
+  ).length
+)
+dEq(
+  'DOM: Form item children render inside .n-form-item-blank',
+  'Body',
+  (() => {
+    const b = doc.querySelector('#live-form-item-default .n-form-item-blank')
+    return b ? b.textContent.trim() : null
+  })()
+)
+dTrue(
+  'DOM: the feedback wrapper renders whenever showFeedback (empty when no lines)',
+  hasCls(doc.querySelector('#live-form-item-default .n-form-item-feedback-wrapper'), 'n-form-item-feedback-wrapper'),
+  clsOf(doc.querySelector('#live-form-item-default .n-form-item-feedback-wrapper'))
+)
+dEq(
+  'DOM: an empty wrapper carries no inner .n-form-item-feedback',
+  0,
+  doc.querySelectorAll('#live-form-item-default .n-form-item-feedback-wrapper .n-form-item-feedback').length
+)
+
+dTrue(
+  'DOM: Form item small adds --small-size',
+  hasCls(doc.querySelector('#live-form-item-small .n-form-item'), 'n-form-item--small-size'),
+  clsOf(doc.querySelector('#live-form-item-small .n-form-item'))
+)
+dTrue(
+  'DOM: Form item small blank height var is 28px',
+  (styleAt(doc.querySelector('#live-form-item-small .n-form-item')) || '').includes('--n-blank-height:28px'),
+  styleAt(doc.querySelector('#live-form-item-small .n-form-item'))
+)
+dTrue(
+  'DOM: Form item large adds --large-size',
+  hasCls(doc.querySelector('#live-form-item-large .n-form-item'), 'n-form-item--large-size'),
+  clsOf(doc.querySelector('#live-form-item-large .n-form-item'))
+)
+dTrue(
+  'DOM: Form item large blank height var is 40px',
+  (styleAt(doc.querySelector('#live-form-item-large .n-form-item')) || '').includes('--n-blank-height:40px'),
+  styleAt(doc.querySelector('#live-form-item-large .n-form-item'))
+)
+
+// label -----------------------------------------------------------------------
+const fiLabel = doc.querySelector('#live-form-item-label .n-form-item-label')
+dTrue('DOM: a labelled item renders .n-form-item-label', !!fiLabel, clsOf(fiLabel))
+dTrue(
+  'DOM: the default mark placement adds --right-mark',
+  hasCls(fiLabel, 'n-form-item-label--right-mark'),
+  clsOf(fiLabel)
+)
+dEq(
+  'DOM: a labelled item does not get --no-label',
+  false,
+  hasCls(doc.querySelector('#live-form-item-label .n-form-item'), 'n-form-item--no-label')
+)
+dEq(
+  'DOM: the label text span holds the label',
+  'Name',
+  (() => {
+    const t = doc.querySelector('#live-form-item-label .n-form-item-label__text')
+    return t ? t.textContent : null
+  })()
+)
+dEq(
+  'DOM: MarkRight puts the NBSP asterisk after the text',
+  'text:Name | asterisk:"\\u00a0*"',
+  formLabelTokens('#live-form-item-label')
+)
+dEq(
+  'DOM: labelFor renders label[for]',
+  'the-input',
+  (() => {
+    const l = doc.querySelector('#live-form-item-label-for label[for]')
+    return l ? l.getAttribute('for') : null
+  })()
+)
+dTrue(
+  'DOM: MarkLeft adds --left-mark',
+  hasCls(doc.querySelector('#live-form-item-label-left .n-form-item-label'), 'n-form-item-label--left-mark'),
+  clsOf(doc.querySelector('#live-form-item-label-left .n-form-item-label'))
+)
+dEq(
+  'DOM: MarkLeft puts the asterisk (and NBSP) before the text',
+  'asterisk:"*\\u00a0" | text:Name',
+  formLabelTokens('#live-form-item-label-left')
+)
+dTrue(
+  'DOM: left + MarkLeft + AlignLeft adds --reverse-columns-space',
+  hasCls(
+    doc.querySelector('#live-form-item-label-left .n-form-item-label'),
+    'n-form-item-label--reverse-columns-space'
+  ),
+  clsOf(doc.querySelector('#live-form-item-label-left .n-form-item-label'))
+)
+dEq(
+  'DOM: left + MarkRight + AlignLeft has no --reverse-columns-space',
+  false,
+  hasCls(
+    doc.querySelector('#live-form-item-left-rightmark .n-form-item-label'),
+    'n-form-item-label--reverse-columns-space'
+  )
+)
+dEq(
+  'DOM: left + MarkLeft + labelAlign Nothing has no --reverse-columns-space',
+  false,
+  hasCls(
+    doc.querySelector('#live-form-item-left-noalign .n-form-item-label'),
+    'n-form-item-label--reverse-columns-space'
+  )
+)
+dTrue(
+  'DOM: MarkRightHanging adds --right-hanging-mark',
+  hasCls(
+    doc.querySelector('#live-form-item-hanging .n-form-item-label'),
+    'n-form-item-label--right-hanging-mark'
+  ),
+  clsOf(doc.querySelector('#live-form-item-hanging .n-form-item-label'))
+)
+dEq(
+  'DOM: a hidden right-hanging mark keeps its geometry via the placeholder',
+  'text:Name | placeholder',
+  formLabelTokens('#live-form-item-hanging')
+)
+dEq(
+  'DOM: a shown right-hanging mark uses the asterisk slot',
+  'text:Name | asterisk:"\\u00a0*"',
+  formLabelTokens('#live-form-item-hanging-shown')
+)
+dEq(
+  'DOM: showRequireMark Just True forces the mark',
+  'text:Name | asterisk:"\\u00a0*"',
+  formLabelTokens('#live-form-item-mark-force')
+)
+dEq(
+  'DOM: showRequireMark Just False hides the mark entirely (MarkRight)',
+  'text:Name',
+  formLabelTokens('#live-form-item-mark-hide')
+)
+const fiNoLabel = doc.querySelector('#live-form-item-no-label .n-form-item')
+dTrue('DOM: showLabel Just False adds --no-label', hasCls(fiNoLabel, 'n-form-item--no-label'), clsOf(fiNoLabel))
+dEq(
+  'DOM: showLabel Just False renders no label element',
+  0,
+  doc.querySelectorAll('#live-form-item-no-label .n-form-item-label').length
+)
+
+// blank passthrough ------------------------------------------------------------
+dTrue(
+  'DOM: contentClass lands on the blank',
+  hasCls(doc.querySelector('#live-form-item-content .n-form-item-blank'), 'my-content'),
+  clsOf(doc.querySelector('#live-form-item-content .n-form-item-blank'))
+)
+dTrue(
+  'DOM: contentStyle lands on the blank',
+  flatStyle(doc.querySelector('#live-form-item-content .n-form-item-blank')).includes('background:red'),
+  styleAt(doc.querySelector('#live-form-item-content .n-form-item-blank'))
+)
+dTrue(
+  'DOM: labelWidth Px 120 lands on the label element (left placement)',
+  flatStyle(doc.querySelector('#live-form-item-label-width .n-form-item-label')).includes('width:120px'),
+  styleAt(doc.querySelector('#live-form-item-label-width .n-form-item-label'))
+)
+dEq(
+  'DOM: labelWidth Px does not put a width on the item root',
+  false,
+  flatStyle(doc.querySelector('#live-form-item-label-width .n-form-item')).includes('width:')
+)
+dTrue(
+  'DOM: labelWidth Px 80 lands on the label as width:80px',
+  flatStyle(doc.querySelector('#live-form-item-label-width-px80 .n-form-item-label')).includes('width:80px'),
+  styleAt(doc.querySelector('#live-form-item-label-width-px80 .n-form-item-label'))
+)
+dTrue(
+  'DOM: labelWidth Custom is a verbatim width value',
+  flatStyle(doc.querySelector('#live-form-item-label-width-custom .n-form-item-label')).includes('width:10em'),
+  styleAt(doc.querySelector('#live-form-item-label-width-custom .n-form-item-label'))
+)
+dEq(
+  'DOM: top placement renders no width anywhere',
+  false,
+  (() => {
+    const it = doc.getElementById('live-form-item-label-width-top')
+    if (!it) return 'missing'
+    return it.outerHTML.includes('width:')
+  })()
+)
+dTrue(
+  'DOM: labelStyle is applied inside the label',
+  (() => {
+    const it = doc.getElementById('live-form-item-label-style')
+    return !!it && it.outerHTML.includes('underline')
+  })(),
+  (() => {
+    const it = doc.getElementById('live-form-item-label-style')
+    return it ? it.outerHTML.slice(0, 200) : 'missing'
+  })()
+)
+
+// feedback --------------------------------------------------------------------
+dTrue(
+  'DOM: a controlled feedback line renders the wrapper',
+  hasCls(doc.querySelector('#live-form-item-feedback .n-form-item-feedback-wrapper'), 'n-form-item-feedback-wrapper'),
+  clsOf(doc.querySelector('#live-form-item-feedback .n-form-item-feedback-wrapper'))
+)
+dEq(
+  'DOM: controlled feedback renders one line with the text',
+  'Controlled',
+  (() => {
+    const lines = doc.querySelectorAll('#live-form-item-feedback .n-form-item-feedback__line')
+    return lines.length === 1 ? lines[0].textContent : `count=${lines.length}`
+  })()
+)
+dTrue(
+  'DOM: a controlled line with no validation stays neutral',
+  (() => {
+    const el = doc.querySelector('#live-form-item-feedback .n-form-item-feedback')
+    return hasCls(el, 'n-form-item-feedback') && !hasCls(el, 'n-form-item-feedback--error') && !hasCls(el, 'n-form-item-feedback--warning')
+  })(),
+  clsOf(doc.querySelector('#live-form-item-feedback .n-form-item-feedback'))
+)
+dEq(
+  'DOM: validation warnings render both lines in order',
+  'w1|w2',
+  [...doc.querySelectorAll('#live-form-item-validation-warn .n-form-item-feedback__line')]
+    .map((e) => e.textContent)
+    .join('|')
+)
+dTrue(
+  'DOM: validation warnings set the --warning feedback modifier',
+  hasCls(doc.querySelector('#live-form-item-validation-warn .n-form-item-feedback'), 'n-form-item-feedback--warning'),
+  clsOf(doc.querySelector('#live-form-item-validation-warn .n-form-item-feedback'))
+)
+dTrue(
+  'DOM: a warning marks the blank --warning (bare status word)',
+  hasCls(doc.querySelector('#live-form-item-validation-warn .n-form-item-blank'), 'n-form-item-blank--warning'),
+  clsOf(doc.querySelector('#live-form-item-validation-warn .n-form-item-blank'))
+)
+dEq(
+  'DOM: validation errors render one line',
+  'e1',
+  (() => {
+    const l = doc.querySelector('#live-form-item-validation-error .n-form-item-feedback__line')
+    return l ? l.textContent : null
+  })()
+)
+dTrue(
+  'DOM: validation errors set the --error feedback modifier',
+  hasCls(doc.querySelector('#live-form-item-validation-error .n-form-item-feedback'), 'n-form-item-feedback--error'),
+  clsOf(doc.querySelector('#live-form-item-validation-error .n-form-item-feedback'))
+)
+dTrue(
+  'DOM: an error marks the blank --error (bare status word)',
+  hasCls(doc.querySelector('#live-form-item-validation-error .n-form-item-blank'), 'n-form-item-blank--error'),
+  clsOf(doc.querySelector('#live-form-item-validation-error .n-form-item-blank'))
+)
+dTrue(
+  'DOM: validationStatus overrides the error feedback modifier (warning wins)',
+  (() => {
+    const el = doc.querySelector('#live-form-item-validation-override .n-form-item-feedback')
+    return hasCls(el, 'n-form-item-feedback--warning') && !hasCls(el, 'n-form-item-feedback--error')
+  })(),
+  clsOf(doc.querySelector('#live-form-item-validation-override .n-form-item-feedback'))
+)
+dTrue(
+  'DOM: validationStatus overrides the blank status too',
+  hasCls(doc.querySelector('#live-form-item-validation-override .n-form-item-blank'), 'n-form-item-blank--warning'),
+  clsOf(doc.querySelector('#live-form-item-validation-override .n-form-item-blank'))
+)
+dTrue(
+  'DOM: validationStatus alone still marks the blank',
+  hasCls(doc.querySelector('#live-form-item-status-only .n-form-item-blank'), 'n-form-item-blank--error'),
+  clsOf(doc.querySelector('#live-form-item-status-only .n-form-item-blank'))
+)
+dTrue(
+  'DOM: a status with no lines still renders the (empty) wrapper',
+  hasCls(doc.querySelector('#live-form-item-status-only .n-form-item-feedback-wrapper'), 'n-form-item-feedback-wrapper'),
+  clsOf(doc.querySelector('#live-form-item-status-only .n-form-item-feedback-wrapper'))
+)
+dEq(
+  'DOM: status with no lines renders no inner .n-form-item-feedback',
+  0,
+  doc.querySelectorAll('#live-form-item-status-only .n-form-item-feedback').length
+)
+dEq(
+  'DOM: showFeedback False suppresses the wrapper even with a controlled line',
+  0,
+  doc.querySelectorAll('#live-form-item-feedback-off .n-form-item-feedback-wrapper').length
+)
+dTrue(
+  'DOM: feedbackClass lands on the wrapper',
+  hasCls(doc.querySelector('#live-form-item-feedback-style .n-form-item-feedback-wrapper'), 'my-fb'),
+  clsOf(doc.querySelector('#live-form-item-feedback-style .n-form-item-feedback-wrapper'))
+)
+dTrue(
+  'DOM: feedbackStyle lands on the wrapper',
+  flatStyle(doc.querySelector('#live-form-item-feedback-style .n-form-item-feedback-wrapper')).includes('color:blue'),
+  styleAt(doc.querySelector('#live-form-item-feedback-style .n-form-item-feedback-wrapper'))
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
