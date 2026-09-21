@@ -33,6 +33,7 @@ import NUI.Collapse as Collapse
 import NUI.Countdown as Countdown
 import NUI.Css as Css
 import NUI.Descriptions as Descriptions
+import NUI.Dropdown as Dropdown
 import NUI.DynamicInput as DynamicInput
 import NUI.DynamicTags as DynamicTags
 import NUI.Ellipsis as Ellipsis
@@ -96,17 +97,31 @@ import NUI.Types as T
 import Time
 
 
-main : Program () () Msg
+main : Program () Int Msg
 main =
     Browser.sandbox
-        { init = ()
-        , update = \_ model -> model
+        { init = 0
+        , update = update
         , view = view
         }
 
 
 type Msg
     = NoOp
+    | Selected String
+
+
+{-| The model is a counter of dropdown `onSelect` dispatches — the only observable
+way to prove the click wiring fires (and that disabled / submenu clicks do not).
+-}
+update : Msg -> Int -> Int
+update msg count =
+    case msg of
+        NoOp ->
+            count
+
+        Selected _ ->
+            count + 1
 
 
 type alias Check =
@@ -2644,6 +2659,303 @@ expectedPopoverVars =
     , ( "--n-space", "6px" )
     , ( "--n-space-arrow", "10px" )
     ]
+
+
+
+-- DROPDOWN -------------------------------------------------------------------
+
+
+{-| The plain defaults binding (`{ Dropdown.defaults | … }` is a parse error).
+-}
+dD : Dropdown.Options Msg
+dD =
+    Dropdown.defaults
+
+
+dSmallOpts : Dropdown.Options Msg
+dSmallOpts =
+    { dD | size = Dropdown.Small }
+
+
+dInvertedOpts : Dropdown.Options Msg
+dInvertedOpts =
+    { dD | inverted = True }
+
+
+dArrowOpts : Dropdown.Options Msg
+dArrowOpts =
+    { dD | showArrow = True }
+
+
+dOverlapArrowOpts : Dropdown.Options Msg
+dOverlapArrowOpts =
+    { dD | showArrow = True, overlap = True }
+
+
+dScrollableOpts : Dropdown.Options Msg
+dScrollableOpts =
+    { dD | scrollable = True }
+
+
+{-| An enter transition carrying the root's `popover-transition` family.
+-}
+dTransitionOpts : Dropdown.Options Msg
+dTransitionOpts =
+    { dD | transition = Just ( "popover-transition", Internal.EnterActive ) }
+
+
+{-| The submenu family tuple (upstream `fade-in-scale-up-transition`).
+-}
+dSubTransitionOpts : Dropdown.Options Msg
+dSubTransitionOpts =
+    { dD | transition = Just ( "fade-in-scale-up-transition", Internal.EnterActive ) }
+
+
+{-| `value = g1b` (a group child) and `value = sub1` (a submenu child) paths.
+-}
+dValueOpts : Dropdown.Options Msg
+dValueOpts =
+    { dD | value = Just "g1b" }
+
+
+dChildValueOpts : Dropdown.Options Msg
+dChildValueOpts =
+    { dD | value = Just "sub1" }
+
+
+{-| `onSelect` wired to the harness counter (the only observable click effect).
+-}
+dSelectOpts : Dropdown.Options Msg
+dSelectOpts =
+    { dD | onSelect = Just Selected }
+
+
+dLeaf : String -> String -> Dropdown.Option Msg
+dLeaf key label =
+    Dropdown.Option
+        { key = key
+        , label = label
+        , icon = Nothing
+        , disabled = False
+        , children = Nothing
+        , attributes = []
+        }
+
+
+dLeafIcon : String -> String -> Dropdown.Option Msg
+dLeafIcon key label =
+    Dropdown.Option
+        { key = key
+        , label = label
+        , icon = Just (Element.text "I")
+        , disabled = False
+        , children = Nothing
+        , attributes = []
+        }
+
+
+dLeafDisabled : String -> String -> Dropdown.Option Msg
+dLeafDisabled key label =
+    Dropdown.Option
+        { key = key
+        , label = label
+        , icon = Nothing
+        , disabled = True
+        , children = Nothing
+        , attributes = []
+        }
+
+
+{-| `children = Just []` still makes a submenu (chevron suffix, no select).
+-}
+dSubmenu : String -> String -> List (Dropdown.Option Msg) -> Dropdown.Option Msg
+dSubmenu key label children =
+    Dropdown.Option
+        { key = key
+        , label = label
+        , icon = Nothing
+        , disabled = False
+        , children = Just children
+        , attributes = []
+        }
+
+
+dGroup : String -> String -> List (Dropdown.Option Msg) -> Dropdown.Option Msg
+dGroup key label children =
+    Dropdown.Group { key = key, label = label, icon = Nothing, children = children }
+
+
+{-| A group whose own icon must be ignored by the menu-level flag scan (upstream
+scans the children, not the header).
+-}
+dGroupIcon : String -> String -> List (Dropdown.Option Msg) -> Dropdown.Option Msg
+dGroupIcon key label children =
+    Dropdown.Group { key = key, label = label, icon = Just (Element.text "G"), children = children }
+
+
+dDivider : Dropdown.Option Msg
+dDivider =
+    Dropdown.Divider { attributes = [] }
+
+
+dCustom : String -> Dropdown.Option Msg
+dCustom txt =
+    Dropdown.Custom { key = "custom", children = [ Element.text txt ], attributes = [] }
+
+
+{-| Every option type, a group with a divider child, a submenu (offset container)
+and a leaf without children (no offset container).
+-}
+dStructureOptions : List (Dropdown.Option Msg)
+dStructureOptions =
+    [ dLeafIcon "leaf" "Leaf"
+    , dGroup "grp" "Group" [ dLeaf "gc" "GroupChild", dDivider ]
+    , dDivider
+    , dCustom "custom-content"
+    , dSubmenu "sub" "Submenu" []
+    ]
+
+
+{-| One icon and one empty submenu at the top level, plus a group — pins the
+menu-level column flags (the widest scan).
+-}
+dFlagsOptions : List (Dropdown.Option Msg)
+dFlagsOptions =
+    [ dLeaf "a" "A"
+    , dLeafIcon "b" "B"
+    , dSubmenu "c" "C" []
+    , dGroup "g" "G" [ dLeaf "g1" "G1" ]
+    ]
+
+
+{-| The icon lives on a _group child_ — it must still widen every prefix.
+-}
+dGroupIconOptions : List (Dropdown.Option Msg)
+dGroupIconOptions =
+    [ dLeaf "a" "A"
+    , dGroup "g" "G" [ dLeafIcon "g1" "G1" ]
+    ]
+
+
+{-| A group inside a group — the nested group is dropped (upstream warns+nulls).
+-}
+dNestedGroupOptions : List (Dropdown.Option Msg)
+dNestedGroupOptions =
+    [ dGroup "outer"
+        "Outer"
+        [ dLeaf "inner1" "Inner1"
+        , dGroup "inner" "InnerGroup" [ dLeaf "deep" "Deep" ]
+        ]
+    ]
+
+
+{-| A plain leaf, a group (child targeted by `value`), and a submenu (parent
+targeted by `value`).
+-}
+dValueOptions : List (Dropdown.Option Msg)
+dValueOptions =
+    [ dLeaf "overview" "Overview"
+    , dGroup "g1" "G1" [ dLeaf "g1a" "A", dLeaf "g1b" "B" ]
+    , dSubmenu "sub" "Sub" [ dLeaf "sub1" "S1" ]
+    ]
+
+
+{-| One selectable leaf, one disabled leaf, one submenu leaf — all with
+`onSelect` wired; only the selectable leaf must fire.
+-}
+dSelectOptions : List (Dropdown.Option Msg)
+dSelectOptions =
+    [ dLeaf "ok" "OK"
+    , dLeafDisabled "dis" "Disabled"
+    , dSubmenu "sub" "Submenu" []
+    ]
+
+
+{-| The full 31-entry `--n-*` list `NUI.Dropdown.cssVars` must emit against
+`Theme.default` (light, medium) — the upstream vitest snapshot string.
+-}
+expectedDropdownVars : List ( String, String )
+expectedDropdownVars =
+    [ ( "--n-box-shadow", "0 3px 6px -4px rgba(0, 0, 0, .12), 0 6px 16px 0 rgba(0, 0, 0, .08), 0 9px 28px 8px rgba(0, 0, 0, .05)" )
+    , ( "--n-bezier", "cubic-bezier(.4, 0, .2, 1)" )
+    , ( "--n-bezier-ease-in", "cubic-bezier(.4, 0, 1, 1)" )
+    , ( "--n-bezier-ease-out", "cubic-bezier(0, 0, .2, 1)" )
+    , ( "--n-font-size", "14px" )
+    , ( "--n-text-color", "rgb(51, 54, 57)" )
+    , ( "--n-color", "#fff" )
+    , ( "--n-divider-color", "rgb(239, 239, 245)" )
+    , ( "--n-border-radius", "3px" )
+    , ( "--n-arrow-height", "6px" )
+    , ( "--n-arrow-offset", "10px" )
+    , ( "--n-arrow-offset-vertical", "10px" )
+    , ( "--n-padding", "4px 0" )
+    , ( "--n-space", "6px" )
+    , ( "--n-space-arrow", "10px" )
+    , ( "--n-option-height", "34px" )
+    , ( "--n-option-prefix-width", "14px" )
+    , ( "--n-option-icon-prefix-width", "36px" )
+    , ( "--n-option-suffix-width", "14px" )
+    , ( "--n-option-icon-suffix-width", "32px" )
+    , ( "--n-option-icon-size", "16px" )
+    , ( "--n-option-opacity-disabled", "0.5" )
+    , ( "--n-option-color-hover", "rgb(243, 243, 245)" )
+    , ( "--n-option-color-active", "rgba(24, 160, 88, 0.1)" )
+    , ( "--n-option-text-color", "rgb(51, 54, 57)" )
+    , ( "--n-option-text-color-hover", "rgb(51, 54, 57)" )
+    , ( "--n-option-text-color-active", "#18a058" )
+    , ( "--n-option-text-color-child-active", "#18a058" )
+    , ( "--n-prefix-color", "rgb(51, 54, 57)" )
+    , ( "--n-suffix-color", "rgb(51, 54, 57)" )
+    , ( "--n-group-header-text-color", "rgb(118, 124, 130)" )
+    ]
+
+
+{-| The derived var lists the checks compare (light/dark × medium/small/inverted).
+-}
+dMediumVars : List ( String, String )
+dMediumVars =
+    Dropdown.cssVars Theme.default Dropdown.Medium False
+
+
+dSmallVars : List ( String, String )
+dSmallVars =
+    Dropdown.cssVars Theme.default Dropdown.Small False
+
+
+dInvertedVars : List ( String, String )
+dInvertedVars =
+    Dropdown.cssVars Theme.default Dropdown.Medium True
+
+
+dDarkVars : List ( String, String )
+dDarkVars =
+    Dropdown.cssVars Theme.dark Dropdown.Medium False
+
+
+dDarkInvertedVars : List ( String, String )
+dDarkInvertedVars =
+    Dropdown.cssVars Theme.dark Dropdown.Medium True
+
+
+{-| The keys (in `from`'s order) whose value differs between two same-ordered
+var lists — pins that an override swaps _exactly_ the intended keys.
+-}
+changedVarKeys : List ( String, String ) -> List ( String, String ) -> List String
+changedVarKeys from to =
+    List.filterMap
+        (\( k, v ) ->
+            case lookup k to of
+                Just v2 ->
+                    if v2 == v then
+                        Nothing
+
+                    else
+                        Just k
+
+                Nothing ->
+                    Just k
+        )
+        from
 
 
 
@@ -5289,6 +5601,81 @@ checks =
     , eq "tooltip vs popover (light): --n-color pair (tooltip rgba vs popover #fff)" ( Just "rgba(38, 38, 38, 1)", Just "#fff" ) ( lookup "--n-color" (Tooltip.cssVars light), lookup "--n-color" (Popover.cssVars light) )
     , eq "tooltip vs popover (light): --n-text-color pair (tooltip #FFF vs popover textColor2)" ( Just "#FFF", Just "rgb(51, 54, 57)" ) ( lookup "--n-text-color" (Tooltip.cssVars light), lookup "--n-text-color" (Popover.cssVars light) )
     , eq "tooltip vs popover (light): --n-padding pair is identical" ( Just "8px 14px", Just "8px 14px" ) ( lookup "--n-padding" (Tooltip.cssVars light), lookup "--n-padding" (Popover.cssVars light) )
+
+    -- dropdown: defaults ---------------------------------------------------
+    , eq "dropdown defaults: placementName Bottom" "bottom" (Dropdown.placementName Dropdown.defaults.placement)
+    , eq "dropdown defaults: placement is Popover.Bottom" Popover.Bottom Dropdown.defaults.placement
+    , eq "dropdown defaults: size Medium" Dropdown.Medium Dropdown.defaults.size
+    , eq "dropdown defaults: showArrow False" False Dropdown.defaults.showArrow
+    , eq "dropdown defaults: inverted False" False Dropdown.defaults.inverted
+    , eq "dropdown defaults: scrollable False" False Dropdown.defaults.scrollable
+    , eq "dropdown defaults: overlap False" False Dropdown.defaults.overlap
+    , eq "dropdown defaults: arrowPointToCenter False" False Dropdown.defaults.arrowPointToCenter
+    , eq "dropdown defaults: rtl False" False Dropdown.defaults.rtl
+    , eq "dropdown defaults: width Nothing" Nothing Dropdown.defaults.width
+    , eq "dropdown defaults: value Nothing" Nothing Dropdown.defaults.value
+    , eq "dropdown defaults: onSelect Nothing" Nothing Dropdown.defaults.onSelect
+    , eq "dropdown defaults: transition Nothing" Nothing Dropdown.defaults.transition
+    , eq "dropdown defaults: arrowStyle Nothing" Nothing Dropdown.defaults.arrowStyle
+    , eq "dropdown defaults: attributes []" True (List.isEmpty Dropdown.defaults.attributes)
+
+    -- dropdown: placementName through the alias ----------------------------
+    , eq "dropdown placementName: BottomStart" "bottom-start" (Dropdown.placementName Popover.BottomStart)
+    , eq "dropdown placementName: RightStart" "right-start" (Dropdown.placementName Popover.RightStart)
+
+    -- dropdown: cssVars light/medium (31-var snapshot) ----------------------
+    , eq "dropdown vars: 31 keys (light/medium)" 31 (List.length dMediumVars)
+    , eq "dropdown vars: full 31-list light/medium (name+value, order)" expectedDropdownVars dMediumVars
+    , eq "dropdown vars: slot 13 key is --n-padding" (Just "--n-padding") (listAt 12 dMediumVars |> Maybe.map Tuple.first)
+    , eq "dropdown vars: slot 13 value is 4px 0" (Just "4px 0") (listAt 12 dMediumVars |> Maybe.map Tuple.second)
+    , eq "dropdown vars: --n-color #fff" (Just "#fff") (lookup "--n-color" dMediumVars)
+    , eq "dropdown vars: --n-option-color-active rgba(24, 160, 88, 0.1)" (Just "rgba(24, 160, 88, 0.1)") (lookup "--n-option-color-active" dMediumVars)
+    , eq "dropdown vars: --n-option-height 34px" (Just "34px") (lookup "--n-option-height" dMediumVars)
+
+    -- dropdown: cssVars light/small (size-keyed) --------------------------
+    , eq "dropdown vars: 31 keys (light/small)" 31 (List.length dSmallVars)
+    , eq "dropdown vars: small --n-font-size 14px (common fontSizeSmall)" (Just "14px") (lookup "--n-font-size" dSmallVars)
+    , eq "dropdown vars: small --n-option-height 28px" (Just "28px") (lookup "--n-option-height" dSmallVars)
+    , eq "dropdown vars: small --n-option-icon-size 14px" (Just "14px") (lookup "--n-option-icon-size" dSmallVars)
+    , eq "dropdown vars: small prefix/icon-prefix widths 14/36" ( Just "14px", Just "36px" ) ( lookup "--n-option-prefix-width" dSmallVars, lookup "--n-option-icon-prefix-width" dSmallVars )
+    , eq "dropdown vars: small suffix/icon-suffix widths 14/32" ( Just "14px", Just "32px" ) ( lookup "--n-option-suffix-width" dSmallVars, lookup "--n-option-icon-suffix-width" dSmallVars )
+    , eq "dropdown vars: small differs from medium only in height + icon-size" [ "--n-option-height", "--n-option-icon-size" ] (changedVarKeys dMediumVars dSmallVars)
+
+    -- dropdown: cssVars light/medium inverted -----------------------------
+    , eq "dropdown vars: 31 keys (light/medium inverted)" 31 (List.length dInvertedVars)
+    , eq "dropdown inverted: exactly 10 keys differ" [ "--n-color", "--n-option-color-hover", "--n-option-color-active", "--n-option-text-color", "--n-option-text-color-hover", "--n-option-text-color-active", "--n-option-text-color-child-active", "--n-prefix-color", "--n-suffix-color", "--n-group-header-text-color" ] (changedVarKeys dMediumVars dInvertedVars)
+    , eq "dropdown inverted: --n-color rgb(0, 20, 40)" (Just "rgb(0, 20, 40)") (lookup "--n-color" dInvertedVars)
+    , eq "dropdown inverted: --n-option-color-hover #18a058" (Just "#18a058") (lookup "--n-option-color-hover" dInvertedVars)
+    , eq "dropdown inverted: --n-option-color-active #18a058" (Just "#18a058") (lookup "--n-option-color-active" dInvertedVars)
+    , eq "dropdown inverted: --n-option-text-color #BBB" (Just "#BBB") (lookup "--n-option-text-color" dInvertedVars)
+    , eq "dropdown inverted: --n-option-text-color-hover #FFF" (Just "#FFF") (lookup "--n-option-text-color-hover" dInvertedVars)
+    , eq "dropdown inverted: --n-option-text-color-active #FFF" (Just "#FFF") (lookup "--n-option-text-color-active" dInvertedVars)
+    , eq "dropdown inverted: --n-option-text-color-child-active #FFF" (Just "#FFF") (lookup "--n-option-text-color-child-active" dInvertedVars)
+    , eq "dropdown inverted: --n-prefix-color #BBB" (Just "#BBB") (lookup "--n-prefix-color" dInvertedVars)
+    , eq "dropdown inverted: --n-suffix-color #BBB" (Just "#BBB") (lookup "--n-suffix-color" dInvertedVars)
+    , eq "dropdown inverted: --n-group-header-text-color #AAA" (Just "#AAA") (lookup "--n-group-header-text-color" dInvertedVars)
+    , eq "dropdown inverted: --n-text-color stays rgb(51, 54, 57)" (Just "rgb(51, 54, 57)") (lookup "--n-text-color" dInvertedVars)
+    , eq "dropdown inverted: --n-divider-color stays rgb(239, 239, 245)" (Just "rgb(239, 239, 245)") (lookup "--n-divider-color" dInvertedVars)
+    , eq "dropdown inverted: --n-option-opacity-disabled stays 0.5" (Just "0.5") (lookup "--n-option-opacity-disabled" dInvertedVars)
+
+    -- dropdown: cssVars dark (theme siblings, not light values) -----------
+    , eq "dropdown vars: 31 keys (dark/medium)" 31 (List.length dDarkVars)
+    , eq "dropdown dark: --n-color = popoverColor rgb(72, 72, 78)" (Just "rgb(72, 72, 78)") (lookup "--n-color" dDarkVars)
+    , eq "dropdown dark: --n-option-color-active rgba(99, 226, 183, 0.15)" (Just "rgba(99, 226, 183, 0.15)") (lookup "--n-option-color-active" dDarkVars)
+    , eq "dropdown dark: --n-option-color-hover = hoverColor rgba(255, 255, 255, 0.09)" (Just "rgba(255, 255, 255, 0.09)") (lookup "--n-option-color-hover" dDarkVars)
+    , eq "dropdown dark: --n-option-text-color = textColor2 rgba(255, 255, 255, 0.82)" (Just "rgba(255, 255, 255, 0.82)") (lookup "--n-option-text-color" dDarkVars)
+    , eq "dropdown dark: --n-option-text-color-active = primaryColor #63e2b7" (Just "#63e2b7") (lookup "--n-option-text-color-active" dDarkVars)
+    , eq "dropdown dark: --n-divider-color rgba(255, 255, 255, 0.09)" (Just "rgba(255, 255, 255, 0.09)") (lookup "--n-divider-color" dDarkVars)
+    , eq "dropdown dark: --n-option-opacity-disabled 0.38" (Just "0.38") (lookup "--n-option-opacity-disabled" dDarkVars)
+    , eq "dropdown dark: --n-group-header-text-color = textColor3 rgba(255, 255, 255, 0.52)" (Just "rgba(255, 255, 255, 0.52)") (lookup "--n-group-header-text-color" dDarkVars)
+    , eq "dropdown dark: --n-text-color = dark popover textColor2" (Just "rgba(255, 255, 255, 0.82)") (lookup "--n-text-color" dDarkVars)
+    , eq "dropdown dark: --n-box-shadow = dark boxShadow2" (Just "0 3px 6px -4px rgba(0, 0, 0, .24), 0 6px 12px 0 rgba(0, 0, 0, .16), 0 9px 18px 8px rgba(0, 0, 0, .10)") (lookup "--n-box-shadow" dDarkVars)
+    , eq "dropdown dark: --n-option-color-active swaps (light rgba(24, 160, 88, 0.1) -> dark)" ( Just "rgba(24, 160, 88, 0.1)", Just "rgba(99, 226, 183, 0.15)" ) ( lookup "--n-option-color-active" dMediumVars, lookup "--n-option-color-active" dDarkVars )
+
+    -- dropdown: cssVars dark inverted -------------------------------------
+    , eq "dropdown dark inverted: --n-option-color-hover = primaryColorSuppl rgb(42, 148, 125)" (Just "rgb(42, 148, 125)") (lookup "--n-option-color-hover" dDarkInvertedVars)
+    , eq "dropdown dark inverted: --n-option-color-active = primaryColorSuppl rgb(42, 148, 125)" (Just "rgb(42, 148, 125)") (lookup "--n-option-color-active" dDarkInvertedVars)
+    , eq "dropdown dark inverted: --n-color = popoverColor rgb(72, 72, 78)" (Just "rgb(72, 72, 78)") (lookup "--n-color" dDarkInvertedVars)
     ]
 
 
@@ -5296,8 +5683,8 @@ checks =
 -- VIEW -------------------------------------------------------------------------
 
 
-view : () -> Html Msg
-view _ =
+view : Int -> Html Msg
+view count =
     let
         failures =
             checks |> List.filter (\c -> not c.ok) |> List.length
@@ -5319,6 +5706,7 @@ view _ =
             (List.map renderCheck checks)
         , probeNodes
         , liveNodes
+        , Html.div [ HA.id "dropdown-click-count" ] [ Html.text (String.fromInt count) ]
         ]
 
 
@@ -5958,6 +6346,43 @@ liveNodes =
                     (Tooltip.view Theme.default tTransitionOpts [ Element.text "content" ])
                 , Element.el [ Element.htmlAttribute (HA.id "live-popover-dark"), Popover.placementAttribute Popover.Top ]
                     (Popover.view Theme.dark pD [ Element.text "content" ])
+
+                -- Dropdown (the body IS the `n-dropdown-menu`; the host wrapper
+                -- carries the default bottom placement)
+                , Element.el [ Element.htmlAttribute (HA.id "live-dropdown-default"), Dropdown.placementAttribute dD.placement ]
+                    (Dropdown.view Theme.default dD dStructureOptions)
+                , Element.el [ Element.htmlAttribute (HA.id "live-dropdown-small"), Dropdown.placementAttribute dD.placement ]
+                    (Dropdown.view Theme.default dSmallOpts [ dLeaf "a" "A" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-dropdown-inverted"), Dropdown.placementAttribute dD.placement ]
+                    (Dropdown.view Theme.default dInvertedOpts [ dLeaf "a" "A" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-dropdown-arrow"), Dropdown.placementAttribute dD.placement ]
+                    (Dropdown.view Theme.default dArrowOpts [ dLeaf "a" "A" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-dropdown-overlap-arrow"), Dropdown.placementAttribute dD.placement ]
+                    (Dropdown.view Theme.default dOverlapArrowOpts [ dLeaf "a" "A" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-dropdown-scrollable"), Dropdown.placementAttribute dD.placement ]
+                    (Dropdown.view Theme.default dScrollableOpts [ dLeaf "a" "A" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-dropdown-transition"), Dropdown.placementAttribute dD.placement ]
+                    (Dropdown.view Theme.default dTransitionOpts [ dLeaf "a" "A" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-dropdown-subtransition"), Dropdown.placementAttribute dD.placement ]
+                    (Dropdown.view Theme.default dSubTransitionOpts [ dLeaf "a" "A" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-dropdown-flags"), Dropdown.placementAttribute dD.placement ]
+                    (Dropdown.view Theme.default dD dFlagsOptions)
+                , Element.el [ Element.htmlAttribute (HA.id "live-dropdown-groupicon"), Dropdown.placementAttribute dD.placement ]
+                    (Dropdown.view Theme.default dD dGroupIconOptions)
+                , Element.el [ Element.htmlAttribute (HA.id "live-dropdown-groupnest"), Dropdown.placementAttribute dD.placement ]
+                    (Dropdown.view Theme.default dD dNestedGroupOptions)
+                , Element.el [ Element.htmlAttribute (HA.id "live-dropdown-value"), Dropdown.placementAttribute dD.placement ]
+                    (Dropdown.view Theme.default dValueOpts dValueOptions)
+                , Element.el [ Element.htmlAttribute (HA.id "live-dropdown-childvalue"), Dropdown.placementAttribute dD.placement ]
+                    (Dropdown.view Theme.default dChildValueOpts dValueOptions)
+                , Element.el [ Element.htmlAttribute (HA.id "live-dropdown-select"), Dropdown.placementAttribute dD.placement ]
+                    (Dropdown.view Theme.default dSelectOpts dSelectOptions)
+                , Element.el [ Element.htmlAttribute (HA.id "live-dropdown-empty"), Dropdown.placementAttribute dD.placement ]
+                    (Dropdown.view Theme.default dD [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-dropdown-dark"), Dropdown.placementAttribute dD.placement ]
+                    (Dropdown.view Theme.dark dD [ dLeaf "a" "A" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-dropdown-dark-inverted"), Dropdown.placementAttribute dD.placement ]
+                    (Dropdown.view Theme.dark dInvertedOpts [ dLeaf "a" "A" ])
                 ]
             )
         ]
