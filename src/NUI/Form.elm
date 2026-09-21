@@ -48,7 +48,8 @@ type Value
 
 {-| The `type` of an async-validator rule (the exercised subset; upstream's
 `url` / `email` / `date` / `method` / `regexp` / `integer` / `float` /
-`object` / `hex` are not ported).
+`object` / `hex` are not ported). `TypeEnum` is upstream's
+`{ type: 'enum', enum: [...] }`.
 -}
 type RuleType
     = TypeAny
@@ -56,6 +57,7 @@ type RuleType
     | TypeNumber
     | TypeArray
     | TypeBoolean
+    | TypeEnum
 
 
 {-| Naive UI's rule `trigger` values.
