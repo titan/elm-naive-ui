@@ -48,6 +48,10 @@ const ALLOW = new Set([
   // and the `mark` tag carry classes, but nothing targets them.
   'n-highlight',
   'n-highlight__mark',
+  // FormItem.tsx emits n-form-item-feedback__line on each feedback line; no
+  // rule targets it (the lines are laid out by the wrapper / inner feedback
+  // div). Kept faithful to upstream's DOM.
+  'n-form-item-feedback__line',
   // Harmless extras: not upstream class names, but the CSS targets the tag /
   // descendant, so rendering is unaffected.
   'n-avatar__img', // upstream CSS targets `.n-avatar img`

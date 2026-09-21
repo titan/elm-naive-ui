@@ -2929,7 +2929,9 @@ const formLabelTokens = (scope) => {
     .map((el) => {
       if (el.classList.contains('n-form-item-label__text')) return `text:${el.textContent}`
       if (el.classList.contains('n-form-item-label__asterisk-placeholder')) return 'placeholder'
-      return `asterisk:${JSON.stringify(el.textContent)}`
+      // The asterisk content is an NBSP (U+00A0); JSON.stringify does not escape
+      // it, so escape it explicitly to keep the pinned expectation visible.
+      return `asterisk:${JSON.stringify(el.textContent).replace(/\u00a0/g, '\\u00a0')}`
     })
     .join(' | ')
 }
@@ -2943,8 +2945,15 @@ dTrue(
 )
 dEq(
   'DOM: Form renders its children',
+  // embed wrappers carry elm-ui <style> nodes; the probe asserts child text,
+  // not sheet text (parent-arbitrated).
   'Body',
-  formRoot ? formRoot.textContent.trim() : null
+  (() => {
+    if (!formRoot) return null
+    const clone = formRoot.cloneNode(true)
+    clone.querySelectorAll('style').forEach((s) => s.remove())
+    return clone.textContent.trim()
+  })()
 )
 dEq('DOM: Form default has no --inline modifier', null, doc.querySelector('#live-form-plain .n-form--inline'))
 dTrue(
