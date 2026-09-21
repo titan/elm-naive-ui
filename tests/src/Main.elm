@@ -2112,6 +2112,7 @@ formItemVarKeys =
 
 -- Descriptions -----------------------------------------------------------------
 
+
 ddflt : Descriptions.Options Msg
 ddflt =
     Descriptions.defaults
@@ -4679,7 +4680,7 @@ checks =
     , eq "desc layout col1 forces a row per item" "H0:2|C0:2|H1:2|C1:2" (dlayout 1 Descriptions.Top False [ 1, 1 ])
 
     -- descriptions: cssVars (theme math) -------------------------------------
-    , eq "desc vars: 18 keys in upstream order"
+    , eq "desc vars: 19 keys in upstream order"
         [ "--n-title-text-color", "--n-th-padding", "--n-td-padding", "--n-font-size", "--n-bezier", "--n-th-font-weight", "--n-line-height", "--n-th-text-color", "--n-td-text-color", "--n-th-color", "--n-th-color-modal", "--n-th-color-popover", "--n-td-color", "--n-td-color-modal", "--n-td-color-popover", "--n-border-radius", "--n-border-color", "--n-border-color-modal", "--n-border-color-popover" ]
         (varKeys (Descriptions.cssVars light ddflt))
     , eq "desc vars: title text color = textColor1" (Just "rgb(31, 34, 37)") (dvar light ddflt "--n-title-text-color")

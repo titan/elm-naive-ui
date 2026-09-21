@@ -23,6 +23,7 @@ import NUI.Checkbox as Checkbox
 import NUI.Collapse as Collapse
 import NUI.Countdown as Countdown
 import NUI.Css as Css
+import NUI.Descriptions as Descriptions
 import NUI.Divider as Divider
 import NUI.DynamicInput as DynamicInput
 import NUI.DynamicTags as DynamicTags
@@ -162,6 +163,16 @@ diD =
 diPairD : DynamicInput.PairOptions msg
 diPairD =
     DynamicInput.pairDefaults
+
+
+descD : Descriptions.Options msg
+descD =
+    Descriptions.defaults
+
+
+descItemD : Descriptions.Item msg
+descItemD =
+    Descriptions.itemDefaults
 
 
 avD : Avatar.Options msg
@@ -526,6 +537,7 @@ body =
     , heatmapSection
     , loadingBarSection
     , dynamicInputSection
+    , descriptionsSection
     , rtlSection
     , themeSection
     ]
@@ -1858,6 +1870,47 @@ heatmapSample =
 sampleNow : Time.Posix
 sampleNow =
     Time.millisToPosix 1710086400000
+
+
+descriptionsSection : Element msg
+descriptionsSection =
+    section "Descriptions"
+        "Labelled field/value tables. `span` and `column` pack the rows; the packer is the pure `Descriptions.layout`."
+    <|
+        [ demoRow "Basic (title + a span-2 cell)"
+            [ Descriptions.view theme
+                { descD | title = Just (Element.text "Description") }
+                [ { descItemD | label = Just (Element.text "Breakfast"), content = [ Element.text "Apple" ] }
+                , { descItemD | label = Just (Element.text "Brunch"), content = [ Element.text "Apple" ] }
+                , { descItemD | label = Just (Element.text "Lunch"), content = [ Element.text "Apple" ] }
+                , { descItemD | span = 2, label = Just (Element.text "Supper"), content = [ Element.text "Two Apples" ] }
+                , { descItemD | label = Just (Element.text "Midnight Snack"), content = [ Element.text "Apple" ] }
+                ]
+            ]
+        , demoRow "Bordered"
+            [ Descriptions.view theme
+                { descD | bordered = True }
+                [ { descItemD | label = Just (Element.text "Name"), content = [ Element.text "Naive UI" ] }
+                , { descItemD | label = Just (Element.text "Version"), content = [ Element.text "0.19" ] }
+                , { descItemD | label = Just (Element.text "License"), content = [ Element.text "MIT" ] }
+                ]
+            ]
+        , demoRow "Left label placement (bordered)"
+            [ Descriptions.view theme
+                { descD | labelPlacement = Descriptions.Left, bordered = True }
+                [ { descItemD | label = Just (Element.text "Name"), content = [ Element.text "Naive UI" ] }
+                , { descItemD | label = Just (Element.text "Version"), content = [ Element.text "0.19" ] }
+                ]
+            ]
+        , demoRow "Columns = 4"
+            [ Descriptions.view theme
+                { descD | columns = Just 4 }
+                (List.map
+                    (\l -> { descItemD | label = Just (Element.text l), content = [ Element.text "Apple" ] })
+                    [ "A", "B", "C", "D" ]
+                )
+            ]
+        ]
 
 
 rtlSection : Element msg

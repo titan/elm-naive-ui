@@ -82,7 +82,9 @@ const targets = {
   '.n-dynamic-input': false,
   // The loading-bar container carries no vars; the inner bar does.
   '.n-loading-bar-container': false,
-  '.n-loading-bar': true
+  '.n-loading-bar': true,
+  // Descriptions root carries the full --n-* var set.
+  '.n-descriptions': true
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {

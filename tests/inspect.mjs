@@ -3327,8 +3327,8 @@ dTrue(
   clsOf(descBasic)
 )
 dEq(
-  'DOM: Descriptions root carries the 18 --n- vars',
-  18,
+  'DOM: Descriptions root carries the 19 --n- vars',
+  19,
   ((styleAt(descBasic) || '').match(/--n-[a-z-]+:/g) || []).length
 )
 dTrue(
@@ -3383,7 +3383,7 @@ dEq(
 )
 dEq(
   'DOM: Descriptions renders the caller labels/content (style nodes stripped)',
-  'BreakfastBrunchLunchBreakfast-cBrunch-cLunch-cSupperMidnight SnackSupper-cMidnight Snack-c',
+  'BreakfastBrunchLunchBreakfast-cBrunch-cLunch-cSupperMidnightSnackSupper-cMidnightSnack-c',
   (() => {
     const t = doc.querySelector('#live-descriptions-basic .n-descriptions-table')
     if (!t) return null

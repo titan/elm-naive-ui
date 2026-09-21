@@ -52,6 +52,11 @@ const ALLOW = new Set([
   // rule targets it (the lines are laid out by the wrapper / inner feedback
   // div). Kept faithful to upstream's DOM.
   'n-form-item-feedback__line',
+  // Descriptions.tsx emits n-descriptions-table-content__label on the left
+  // placement's label span, but the extracted CSS targets
+  // n-descriptions-table-row__label (upstream selector mismatch, kept faithful —
+  // the span carries no rule, exactly as upstream).
+  'n-descriptions-table-content__label',
   // Harmless extras: not upstream class names, but the CSS targets the tag /
   // descendant, so rendering is unaffected.
   'n-avatar__img', // upstream CSS targets `.n-avatar img`
