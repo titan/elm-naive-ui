@@ -272,5 +272,9 @@ export const components = {
   descriptions: {
     cssr: ['descriptions/src/styles/index.cssr.ts'],
     theme: 'descriptions/styles/light.ts'
+  },
+  tabs: {
+    cssr: ['tabs/src/styles/index.cssr.ts', 'tabs/src/styles/rtl.cssr.ts'],
+    theme: 'tabs/styles/light.ts'
   }
 }
