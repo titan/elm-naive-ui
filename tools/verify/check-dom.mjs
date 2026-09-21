@@ -91,7 +91,9 @@ const targets = {
   '.n-scrollbar': true,
   '.n-popover': true,
   '.n-tooltip': true,
-  '.n-dropdown': true
+  '.n-dropdown': true,
+  // The modal container carries the 4-var set (bezier/box-shadow/color/text).
+  '.n-modal-container': true
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {

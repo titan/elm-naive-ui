@@ -50,6 +50,7 @@ import NUI.LayoutSider as LayoutSider
 import NUI.List as NList
 import NUI.LoadingBar as LoadingBar
 import NUI.Marquee as Marquee
+import NUI.Modal as Modal
 import NUI.NumberAnimation as NumberAnimation
 import NUI.PageHeader as PageHeader
 import NUI.Pagination as Pagination
@@ -217,6 +218,16 @@ tooltipD =
 dropdownD : Dropdown.Options msg
 dropdownD =
     Dropdown.defaults
+
+
+modalD : Modal.Options msg
+modalD =
+    Modal.defaults
+
+
+modalCardD : Card.Options msg
+modalCardD =
+    Modal.cardDefaults
 
 
 avD : Avatar.Options msg
@@ -587,6 +598,7 @@ body =
     , popoverSection
     , tooltipSection
     , dropdownSection
+    , modalSection
     , rtlSection
     , themeSection
     ]
@@ -2326,6 +2338,139 @@ demoIcon =
                 []
             ]
         )
+
+
+{-| The caller-owned modal host: upstream teleports the fixed tree to `to`; here a
+`transform: translate(0,0)` cell becomes the containing block that confines the
+fixed container/mask/body-wrapper, and `overflow: hidden` clips the overlay to
+the demo cell.
+-}
+modalHost : List (Element.Attribute msg) -> Element msg -> Element msg
+modalHost attrs content =
+    Element.el
+        ([ Element.htmlAttribute
+            (HA.attribute
+                "style"
+                "position:relative;transform:translate(0,0);height:210px;width:320px;overflow:hidden;border:1px solid #efeff5;background:#fafafc"
+            )
+         ]
+            ++ attrs
+        )
+        content
+
+
+modalSection : Element msg
+modalSection =
+    section "Modal"
+        "The mount-body family — its own fixed tree (container > mask > body-wrapper > scrollbar > content), self-positioned and centred by flex. The caller owns mounting, the show state, the transition clock (one clock drives the mask and body tuples), outside-click closing and Esc; `dialog`/`confirm` presets land with `NUI.Dialog`. The demo cells confine the fixed tree with a `transform: translate(0,0)` containing block."
+    <|
+        [ demoRow "Custom content + card preset"
+            [ modalHost []
+                (Modal.view theme
+                    { modalD | show = True }
+                    (Modal.Custom
+                        [ Element.htmlAttribute
+                            (HA.attribute
+                                "style"
+                                "background:var(--n-color);box-shadow:var(--n-box-shadow);border-radius:3px;padding:14px 18px;color:var(--n-text-color)"
+                            )
+                        ]
+                        [ Element.text "Custom content — you own the box; the wrapper carries `n-modal`." ]
+                    )
+                )
+            , modalHost []
+                (Modal.view theme
+                    { modalD | show = True }
+                    (Modal.Card
+                        { modalCardD
+                            | title = Just (Element.text "A card modal")
+                            , footer = Just (Element.text "#footer")
+                            , closable = True
+                        }
+                        [ Element.text "Unbordered by default — upstream spreads the dialog props last." ]
+                    )
+                )
+            ]
+        , demoRow "Card variants (bordered opt-in, segmented, dark)"
+            [ modalHost []
+                (Modal.view theme
+                    { modalD | show = True }
+                    (Modal.Card
+                        { modalCardD
+                            | title = Just (Element.text "Bordered")
+                            , bordered = True
+                        }
+                        [ Element.text "Opt back into the card border." ]
+                    )
+                )
+            , modalHost []
+                (Modal.view theme
+                    { modalD | show = True }
+                    (Modal.Card
+                        { modalCardD
+                            | title = Just (Element.text "Segmented")
+                            , segmented =
+                                { content = Card.Hard
+                                , footer = Card.Off
+                                , action = Card.Off
+                                }
+                            , footer = Just (Element.text "#footer")
+                        }
+                        [ Element.text "Content/footer separators." ]
+                    )
+                )
+            , modalHost []
+                (Modal.view darkTheme
+                    { modalD | show = True }
+                    (Modal.Card
+                        { modalCardD | title = Just (Element.text "Dark theme") }
+                        [ Element.text "rgb(44, 44, 50) surface, .82 white text." ]
+                    )
+                )
+            ]
+        , demoRow "No mask (mask-hidden) + z-index"
+            [ modalHost []
+                (Modal.view theme
+                    { modalD | show = True, showMask = False }
+                    (Modal.Custom
+                        [ Element.htmlAttribute
+                            (HA.attribute
+                                "style"
+                                "background:var(--n-color);box-shadow:var(--n-box-shadow);border-radius:3px;padding:14px 18px"
+                            )
+                        ]
+                        [ Element.text "No mask: --mask-hidden passes clicks through around the content." ]
+                    )
+                )
+            , modalHost []
+                (Modal.view theme
+                    { modalD | show = True, zIndex = Just 100 }
+                    (Modal.Custom
+                        [ Element.htmlAttribute
+                            (HA.attribute
+                                "style"
+                                "background:var(--n-color);box-shadow:var(--n-box-shadow);border-radius:3px;padding:14px 18px"
+                            )
+                        ]
+                        [ Element.text "z-index: 100 on the container." ]
+                    )
+                )
+            ]
+        , demoRow "Enter-active phases (caller clock)"
+            [ modalHost []
+                (Modal.view theme
+                    { modalD
+                        | show = True
+                        , maskTransition = Just I.EnterActive
+                        , bodyTransition = Just I.EnterActive
+                    }
+                    (Modal.Card
+                        { modalCardD | title = Just (Element.text "Entering") }
+                        [ Element.text "fade-in + fade-in-scale-up enter-active classes." ]
+                    )
+                )
+            ]
+        ]
 
 
 rtlSection : Element msg
