@@ -67,7 +67,13 @@ edits exposed pure, so an `onRemove`-style handler can apply them itself:
 
 The `min` / `max` guards are upstream's computeds: `insertionDisabled` (max
 set and reached) disables the Create / add buttons, `removeDisabled`
-(`len <= min`) the remove buttons.
+(`len <= min`) the remove buttons. That disable is the only enforcement —
+upstream's `createItem` / `remove` also no-op under the same guards before
+mutating, but the pure `insertAt` / `removeAt` helpers apply unconditionally
+(they are the splice itself); a caller driving them past `max` / under `min`
+owns that guard. Likewise, with `onUpdateValue = Nothing` create / remove /
+sort presses emit no message, so `onCreate` is never consulted on that path
+(upstream invokes `onCreate(index + 1)` on every create).
 
 **Not ported** (upstream props with no counterpart in a pure port):
 
