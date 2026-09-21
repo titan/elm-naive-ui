@@ -24,6 +24,7 @@ import NUI.Collapse as Collapse
 import NUI.Countdown as Countdown
 import NUI.Css as Css
 import NUI.Divider as Divider
+import NUI.DynamicInput as DynamicInput
 import NUI.DynamicTags as DynamicTags
 import NUI.Ellipsis as Ellipsis
 import NUI.Empty as Empty
@@ -44,6 +45,7 @@ import NUI.LayoutFooter as LayoutFooter
 import NUI.LayoutHeader as LayoutHeader
 import NUI.LayoutSider as LayoutSider
 import NUI.List as NList
+import NUI.LoadingBar as LoadingBar
 import NUI.Marquee as Marquee
 import NUI.NumberAnimation as NumberAnimation
 import NUI.PageHeader as PageHeader
@@ -145,6 +147,21 @@ divD =
 dtagsD : DynamicTags.Options msg
 dtagsD =
     DynamicTags.defaults
+
+
+lbD : LoadingBar.Options msg
+lbD =
+    LoadingBar.defaults
+
+
+diD : DynamicInput.InputOptions msg
+diD =
+    DynamicInput.inputDefaults
+
+
+diPairD : DynamicInput.PairOptions msg
+diPairD =
+    DynamicInput.pairDefaults
 
 
 avD : Avatar.Options msg
@@ -507,6 +524,8 @@ body =
     , highlightSection
     , numberAnimationSection
     , heatmapSection
+    , loadingBarSection
+    , dynamicInputSection
     , rtlSection
     , themeSection
     ]
@@ -1750,6 +1769,76 @@ heatmapSection =
 
 {-| Deterministic demo data (UTC midnights, ~10 weeks, some gaps and zeros).
 -}
+loadingBarSection : Element msg
+loadingBarSection =
+    section "LoadingBar"
+        "Top loading indicator: a `max-width`-transitioned bar driven by a caller-owned state machine (`start` / `kick` / `finish` / `error`). The container is `position: fixed` by default; the demos pin it relatively."
+    <|
+        [ demoRow "Starting (80%)"
+            [ Element.el [ Element.width (Element.px 440) ]
+                (LoadingBar.view theme
+                    { lbD | containerStyle = Just "position:relative;margin-bottom:8px;" }
+                    (LoadingBar.start LoadingBar.init |> LoadingBar.kick)
+                )
+            ]
+        , demoRow "Finishing"
+            [ Element.el [ Element.width (Element.px 440) ]
+                (LoadingBar.view theme
+                    { lbD | containerStyle = Just "position:relative;margin-bottom:8px;" }
+                    (LoadingBar.start LoadingBar.init |> LoadingBar.kick |> LoadingBar.finish)
+                )
+            ]
+        , demoRow "Error"
+            [ Element.el [ Element.width (Element.px 440) ]
+                (LoadingBar.view theme
+                    { lbD | containerStyle = Just "position:relative;margin-bottom:8px;" }
+                    (LoadingBar.start LoadingBar.init |> LoadingBar.kick |> LoadingBar.error)
+                )
+            ]
+        ]
+
+
+dynamicInputSection : Element msg
+dynamicInputSection =
+    section "DynamicInput"
+        "A list of values, each row an input (or key / value pair) with add / remove / sort actions. Pure list core: `insertAt` / `removeAt` / `moveUp` / `moveDown`, guarded by `min` / `max`."
+    <|
+        [ demoRow "Preset: input"
+            [ Element.el [ Element.width (Element.px 440) ]
+                (DynamicInput.viewInput theme
+                    { diD
+                        | value = [ "Alice", "Bob", "Cindy" ]
+                        , placeholder = Just "Name"
+                    }
+                )
+            ]
+        , demoRow "Preset: pair"
+            [ Element.el [ Element.width (Element.px 520) ]
+                (DynamicInput.viewPair theme
+                    { diPairD
+                        | value = [ ( "Name", "Naive UI" ), ( "Author", "07akioni" ) ]
+                        , keyPlaceholder = Just "Key"
+                        , valuePlaceholder = Just "Value"
+                    }
+                )
+            ]
+        , demoRow "Max + sort buttons"
+            [ Element.el [ Element.width (Element.px 440) ]
+                (DynamicInput.viewInput theme
+                    { diD
+                        | value = [ "Only", "Three" ]
+                        , max = Just 3
+                        , showSortButton = True
+                    }
+                )
+            ]
+        , demoRow "Empty (Create button)"
+            [ Element.el [ Element.width (Element.px 440) ]
+                (DynamicInput.viewInput theme { diD | value = [] })
+            ]
+        ]
+
+
 heatmapSample : List Heatmap.HeatmapDataItem
 heatmapSample =
     List.indexedMap

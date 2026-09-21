@@ -76,7 +76,13 @@ const targets = {
   '.n-heatmap': true,
   // Highlight ships no stylesheet rule at all; the root span carries the class
   // and no --n-* vars.
-  '.n-highlight': false
+  '.n-highlight': false,
+  // DynamicInput's root carries unprefixed --action-margin vars upstream (no
+  // --n-* prefix on this component), so only the bridge is asserted.
+  '.n-dynamic-input': false,
+  // The loading-bar container carries no vars; the inner bar does.
+  '.n-loading-bar-container': false,
+  '.n-loading-bar': true
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {
