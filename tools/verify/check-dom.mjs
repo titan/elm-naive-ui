@@ -86,7 +86,9 @@ const targets = {
   // Descriptions root carries the full --n-* var set.
   '.n-descriptions': true,
   // Tabs root carries the full --n-* var set.
-  '.n-tabs': true
+  '.n-tabs': true,
+  // Scrollbar root carries the full --n-* var set.
+  '.n-scrollbar': true
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {

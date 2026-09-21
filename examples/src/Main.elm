@@ -56,6 +56,7 @@ import NUI.QrCode as QrCode
 import NUI.Radio as Radio
 import NUI.Rate as Rate
 import NUI.Result as Result
+import NUI.Scrollbar as Scrollbar
 import NUI.Skeleton as Skeleton
 import NUI.Space as Space
 import NUI.Spin as Spin
@@ -187,6 +188,11 @@ tabsItems =
     , { name = "two", label = Element.text "Two", disabled = False, closable = Nothing, content = [ Element.text "Second pane" ] }
     , { name = "three", label = Element.text "Three", disabled = True, closable = Nothing, content = [ Element.text "Third pane" ] }
     ]
+
+
+scrollbarD : Scrollbar.Options msg
+scrollbarD =
+    Scrollbar.defaults
 
 
 avD : Avatar.Options msg
@@ -553,6 +559,7 @@ body =
     , dynamicInputSection
     , descriptionsSection
     , tabsSection
+    , scrollbarSection
     , rtlSection
     , themeSection
     ]
@@ -1952,6 +1959,56 @@ tabsSection =
         , demoRow "Show directive (all panes mounted)"
             [ Tabs.view theme { tabsD | displayDirective = Tabs.Show, value = "one" } tabsItems ]
         ]
+
+
+scrollbarSection : Element msg
+scrollbarSection =
+    section "Scrollbar"
+        "A styled scroll container with custom rails. The caller owns whether each bar is shown and its measured geometry."
+    <|
+        [ demoRow "Vertical bar shown"
+            [ Element.el [ Element.height (Element.px 120), Element.width Element.fill ]
+                (Scrollbar.view theme
+                    { scrollbarD
+                        | showYBar = True
+                        , yBarStyle = Just "height:48px;top:8px"
+                    }
+                    [ Element.paragraph [] (List.repeat 3 (Element.text scrollbarCopy)) ]
+                )
+            ]
+        , demoRow "Both rails (x-scrollable)"
+            [ Element.el [ Element.height (Element.px 120), Element.width Element.fill ]
+                (Scrollbar.view theme
+                    { scrollbarD
+                        | xScrollable = True
+                        , showYBar = True
+                        , yBarStyle = Just "height:48px;top:8px"
+                        , showXBar = True
+                        , xBarStyle = Just "width:80px;left:0"
+                    }
+                    [ Element.el [ Element.htmlAttribute (HA.attribute "style" "white-space:nowrap") ]
+                        (Element.text scrollbarCopy)
+                    ]
+                )
+            ]
+        , demoRow "Rails only (left / top)"
+            [ Element.el [ Element.height (Element.px 100), Element.width Element.fill ]
+                (Scrollbar.view theme
+                    { scrollbarD | yPlacement = Scrollbar.Left }
+                    [ Element.text scrollbarCopy ]
+                )
+            , Element.el [ Element.height (Element.px 100), Element.width Element.fill ]
+                (Scrollbar.view theme
+                    { scrollbarD | xScrollable = True, xPlacement = Scrollbar.Top }
+                    [ Element.text scrollbarCopy ]
+                )
+            ]
+        ]
+
+
+scrollbarCopy : String
+scrollbarCopy =
+    "And as I sat there, brooding on the old unknown world, I thought of Gatsby's wonder when he first picked out the green light at the end of Daisy's dock."
 
 
 rtlSection : Element msg
