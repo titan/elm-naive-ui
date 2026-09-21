@@ -2955,6 +2955,21 @@ dEq(
     return clone.textContent.trim()
   })()
 )
+// The embed wrapper (Element.layoutWith) is what lets the caller's children
+// participate in the form/item layout: it must neutralise its own layout box
+// (display:contents) and inherit the form's font/colour. Asserted here so a
+// regression that drops the attribute is caught (mirrors the Skeleton probe).
+const formEmbedWrapper = doc.querySelector('#live-form-plain form.n-form [style*="display:contents"]')
+dTrue(
+  'DOM: Form embed wrapper neutralises its box with display:contents',
+  !!formEmbedWrapper,
+  formEmbedWrapper ? formEmbedWrapper.getAttribute('style') : 'missing'
+)
+dEq(
+  'DOM: Form embed wrapper inherits font + colour',
+  'display:contents;font:inherit;color:inherit',
+  flatStyle(formEmbedWrapper)
+)
 dEq('DOM: Form default has no --inline modifier', null, doc.querySelector('#live-form-plain .n-form--inline'))
 dTrue(
   'DOM: Form inline adds .n-form--inline',
