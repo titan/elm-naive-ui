@@ -82,6 +82,8 @@
     "NUI.Theme.FloatButtonGroup",
     "NUI.Theme.Icon",
     "NUI.Theme.Heatmap",
+    "NUI.Theme.LoadingBar",
+    "NUI.Theme.DynamicInput",
     "NUI.Theme.IconWrapper",
     "NUI.Theme.Input",
     "NUI.Theme.InputNumber",

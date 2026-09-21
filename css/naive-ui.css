@@ -4292,6 +4292,74 @@ transition: none!important;}.nui-root.nui-root .n-pagination .n-pagination-quick
 
     direction: rtl;}
 
+/* ===== naive-ui: loading-bar ===== */
+.nui-root.nui-root .n-loading-bar-container {
+
+  z-index: 5999;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;}.nui-root.nui-root .n-loading-bar-container.fade-in-transition-enter-active {
+  transition: all 0.3s cubic-bezier(.4, 0, .2, 1)!important;}.nui-root.nui-root .n-loading-bar-container.fade-in-transition-leave-active {
+  transition: all 0.8s cubic-bezier(.4, 0, .2, 1)!important;}.nui-root.nui-root .n-loading-bar-container.fade-in-transition-enter-from,
+.nui-root.nui-root .n-loading-bar-container.fade-in-transition-leave-to {
+  opacity: 0;}.nui-root.nui-root .n-loading-bar-container.fade-in-transition-leave-from,
+.nui-root.nui-root .n-loading-bar-container.fade-in-transition-enter-to {
+  opacity: 1;}.nui-root.nui-root .n-loading-bar-container .n-loading-bar {
+
+    width: 100%;
+    transition:
+      max-width 4s linear,
+      background .2s linear;
+    height: var(--n-height);}.nui-root.nui-root .n-loading-bar-container .n-loading-bar.n-loading-bar--starting {
+
+      background: var(--n-color-loading);}.nui-root.nui-root .n-loading-bar-container .n-loading-bar.n-loading-bar--finishing {
+
+      background: var(--n-color-loading);
+      transition:
+        max-width .2s linear,
+        background .2s linear;}.nui-root.nui-root .n-loading-bar-container .n-loading-bar.n-loading-bar--error {
+
+      background: var(--n-color-error);
+      transition:
+        max-width .2s linear,
+        background .2s linear;}
+
+/* ===== naive-ui: dynamic-input ===== */
+.nui-root.nui-root .n-dynamic-input {
+  width: 100%;}.nui-root.nui-root .n-dynamic-input .n-dynamic-input-item {
+
+    margin-bottom: 10px;
+    display: flex;
+    flex-wrap: nowrap;}.nui-root.nui-root .n-dynamic-input .n-dynamic-input-item .n-dynamic-input-preset-input {
+  flex: 1;
+  align-items: center;}.nui-root.nui-root .n-dynamic-input .n-dynamic-input-item .n-dynamic-input-preset-pair {
+
+      flex: 1;
+      display: flex;
+      align-items: center;}.nui-root.nui-root .n-dynamic-input .n-dynamic-input-item .n-dynamic-input-preset-pair .n-dynamic-input-pair-input:first-child {
+  margin-right: 12px;}.nui-root.nui-root .n-dynamic-input .n-dynamic-input-item .n-dynamic-input-item__action {
+
+      align-self: flex-start;
+      display: flex;
+      justify-content: flex-end;
+      flex-shrink: 0;
+      flex-grow: 0;
+      margin: var(--action-margin);}.nui-root.nui-root .n-dynamic-input .n-dynamic-input-item .n-dynamic-input-item__action.n-dynamic-input-item__action--icon {
+  cursor: pointer;}.nui-root.nui-root .n-dynamic-input .n-dynamic-input-item:last-child {
+  margin-bottom: 0;}.nui-root.nui-root .n-dynamic-input .n-form-item {
+
+    padding-top: 0 !important;
+    margin-right: 0 !important;}.nui-root.nui-root .n-dynamic-input .n-form-item .n-form-item-blank {
+  padding-top: 0 !important;}.nui-root.nui-root .n-dynamic-input.n-dynamic-input--rtl {
+
+    direction: rtl;}.nui-root.nui-root .n-dynamic-input.n-dynamic-input--rtl .n-dynamic-input-preset-pair .n-dynamic-input-pair-input:first-child {
+  margin-left: 12px;
+  margin-right: 0;}.nui-root.nui-root .n-dynamic-input.n-dynamic-input--rtl .n-dynamic-input-item .n-dynamic-input-item__action {
+
+        margin: var(--action-margin-rtl);}
+
 /* ===== elm-ui bridge =====
  *
  * Components are built from elm-ui elements, and elm-ui styles its own helper classes

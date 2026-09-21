@@ -1,0 +1,35 @@
+{
+  "light": {
+    "colorError": "#d03050",
+    "colorLoading": "#18a058",
+    "height": "2px"
+  },
+  "dark": {
+    "colorError": "red",
+    "colorLoading": "#63e2b7",
+    "height": "2px"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "colorError": "errorColor",
+        "colorLoading": "primaryColor"
+      },
+      "seen": [
+        "colorError",
+        "colorLoading",
+        "height"
+      ]
+    },
+    "dark": {
+      "refs": {
+        "colorLoading": "primaryColor"
+      },
+      "seen": [
+        "colorError",
+        "colorLoading",
+        "height"
+      ]
+    }
+  }
+}

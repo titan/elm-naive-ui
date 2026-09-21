@@ -1,0 +1,20 @@
+{
+  "light": {
+    "actionMargin": "0 0 0 20px",
+    "actionMarginRtl": "0 20px 0 0"
+  },
+  "dark": {
+    "actionMargin": "0 0 0 20px",
+    "actionMarginRtl": "0 20px 0 0"
+  },
+  "refs": {
+    "light": {
+      "refs": {},
+      "seen": []
+    },
+    "dark": {
+      "refs": {},
+      "seen": []
+    }
+  }
+}

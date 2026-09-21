@@ -253,5 +253,16 @@ export const components = {
   heatmap: {
     cssr: ['heatmap/src/styles/index.cssr.ts', 'heatmap/src/styles/rtl.cssr.ts'],
     theme: 'heatmap/styles/light.ts'
+  },
+  'loading-bar': {
+    cssr: ['loading-bar/src/styles/index.cssr.ts'],
+    theme: 'loading-bar/styles/light.ts'
+  },
+  'dynamic-input': {
+    cssr: [
+      'dynamic-input/src/styles/index.cssr.ts',
+      'dynamic-input/src/styles/rtl.cssr.ts'
+    ],
+    theme: 'dynamic-input/styles/light.ts'
   }
 }
