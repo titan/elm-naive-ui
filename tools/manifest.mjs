@@ -268,5 +268,9 @@ export const components = {
   form: {
     cssr: ['form/src/styles/form.cssr.ts', 'form/src/styles/form-item.cssr.ts'],
     theme: 'form/styles/light.ts'
+  },
+  descriptions: {
+    cssr: ['descriptions/src/styles/index.cssr.ts'],
+    theme: 'descriptions/styles/light.ts'
   }
 }

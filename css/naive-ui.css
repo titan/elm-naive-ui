@@ -4477,6 +4477,95 @@ white-space: nowrap;}.nui-root.nui-root .n-form-item.n-form-item--left-labelled 
   transition: opacity .2s cubic-bezier(.4, 0, .2, 1), transform .2s cubic-bezier(.4, 0, .2, 1);}.nui-root.nui-root .n-form-item .n-form-item-feedback-wrapper .n-form-item-feedback.fade-down-transition-enter-active {
   transition: opacity .3s cubic-bezier(.4, 0, .2, 1), transform .3s cubic-bezier(.4, 0, .2, 1);}
 
+/* ===== naive-ui: descriptions ===== */
+.nui-root.nui-root .n-descriptions {
+  font-size: var(--n-font-size);}.nui-root.nui-root .n-descriptions .n-descriptions-separator {
+
+      display: inline-block;
+      margin: 0 8px 0 2px;}.nui-root.nui-root .n-descriptions .n-descriptions-table-wrapper .n-descriptions-table .n-descriptions-table-row .n-descriptions-table-header {
+  padding: var(--n-th-padding);}.nui-root.nui-root .n-descriptions .n-descriptions-table-wrapper .n-descriptions-table .n-descriptions-table-row .n-descriptions-table-content {
+  padding: var(--n-td-padding);}.nui-root.nui-root .n-descriptions:not(.n-descriptions--bordered) .n-descriptions-table-wrapper .n-descriptions-table .n-descriptions-table-row:last-child .n-descriptions-table-content {
+  padding-bottom: 0;}.nui-root.nui-root .n-descriptions.n-descriptions--left-label-placement .n-descriptions-table-content > * {
+  vertical-align: top;}.nui-root.nui-root .n-descriptions.n-descriptions--left-label-align th {
+  text-align: left;}.nui-root.nui-root .n-descriptions.n-descriptions--center-label-align th {
+  text-align: center;}.nui-root.nui-root .n-descriptions.n-descriptions--right-label-align th {
+  text-align: right;}.nui-root.nui-root .n-descriptions.n-descriptions--bordered .n-descriptions-table-wrapper {
+
+        border-radius: var(--n-border-radius);
+        overflow: hidden;
+        background: var(--n-merged-td-color);
+        border: 1px solid var(--n-merged-border-color);}.nui-root.nui-root .n-descriptions.n-descriptions--bordered .n-descriptions-table-wrapper .n-descriptions-table .n-descriptions-table-row:not(:last-child) .n-descriptions-table-content {
+  border-bottom: 1px solid var(--n-merged-border-color);}.nui-root.nui-root .n-descriptions.n-descriptions--bordered .n-descriptions-table-wrapper .n-descriptions-table .n-descriptions-table-row:not(:last-child) .n-descriptions-table-header {
+  border-bottom: 1px solid var(--n-merged-border-color);}.nui-root.nui-root .n-descriptions.n-descriptions--bordered .n-descriptions-table-wrapper .n-descriptions-table .n-descriptions-table-row .n-descriptions-table-header {
+
+              font-weight: 400;
+              background-clip: padding-box;
+              background-color: var(--n-merged-th-color);}.nui-root.nui-root .n-descriptions.n-descriptions--bordered .n-descriptions-table-wrapper .n-descriptions-table .n-descriptions-table-row .n-descriptions-table-header:not(:last-child) {
+  border-right: 1px solid var(--n-merged-border-color);}.nui-root.nui-root .n-descriptions.n-descriptions--bordered .n-descriptions-table-wrapper .n-descriptions-table .n-descriptions-table-row .n-descriptions-table-content:not(:last-child) {
+  border-right: 1px solid var(--n-merged-border-color);}.nui-root.nui-root .n-descriptions .n-descriptions-header {
+
+      font-weight: var(--n-th-font-weight);
+      font-size: 18px;
+      transition: color .3s var(--n-bezier);
+      line-height: var(--n-line-height);
+      margin-bottom: 16px;
+      color: var(--n-title-text-color);}.nui-root.nui-root .n-descriptions .n-descriptions-table-wrapper {
+
+      transition:
+        background-color .3s var(--n-bezier),
+        border-color .3s var(--n-bezier);}.nui-root.nui-root .n-descriptions .n-descriptions-table-wrapper .n-descriptions-table {
+
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        box-sizing: border-box;}.nui-root.nui-root .n-descriptions .n-descriptions-table-wrapper .n-descriptions-table .n-descriptions-table-row {
+
+          box-sizing: border-box;
+          transition: border-color .3s var(--n-bezier);}.nui-root.nui-root .n-descriptions .n-descriptions-table-wrapper .n-descriptions-table .n-descriptions-table-row .n-descriptions-table-header {
+
+            font-weight: var(--n-th-font-weight);
+            line-height: var(--n-line-height);
+            display: table-cell;
+            box-sizing: border-box;
+            color: var(--n-th-text-color);
+            transition:
+              color .3s var(--n-bezier),
+              background-color .3s var(--n-bezier),
+              border-color .3s var(--n-bezier);}.nui-root.nui-root .n-descriptions .n-descriptions-table-wrapper .n-descriptions-table .n-descriptions-table-row .n-descriptions-table-content {
+
+            vertical-align: top;
+            line-height: var(--n-line-height);
+            display: table-cell;
+            box-sizing: border-box;
+            color: var(--n-td-text-color);
+            transition:
+              color .3s var(--n-bezier),
+              background-color .3s var(--n-bezier),
+              border-color .3s var(--n-bezier);}.nui-root.nui-root .n-descriptions .n-descriptions-table-wrapper .n-descriptions-table .n-descriptions-table-row .n-descriptions-table-content .n-descriptions-table-content__content {
+
+              transition: color .3s var(--n-bezier);
+              display: inline-block;
+              color: var(--n-td-text-color);}.nui-root.nui-root .n-descriptions .n-descriptions-table-wrapper .n-descriptions-table .n-descriptions-table-row .n-descriptions-table-row__label {
+
+            font-weight: var(--n-th-font-weight);
+            transition: color .3s var(--n-bezier);
+            display: inline-block;
+            margin-right: 14px;
+            color: var(--n-th-text-color);}.nui-root.nui-root .n-descriptions-table-wrapper {
+
+    --n-merged-th-color: var(--n-th-color);
+    --n-merged-td-color: var(--n-td-color);
+    --n-merged-border-color: var(--n-border-color);}.nui-root.nui-root .n-modal .n-descriptions-table-wrapper,
+.nui-root.nui-root .n-drawer .n-descriptions-table-wrapper {
+
+      --n-merged-th-color: var(--n-th-color-modal);
+      --n-merged-td-color: var(--n-td-color-modal);
+      --n-merged-border-color: var(--n-border-color-modal);}.nui-root.nui-root .n-popover .n-descriptions-table-wrapper {
+
+      --n-merged-th-color: var(--n-th-color-popover);
+      --n-merged-td-color: var(--n-td-color-popover);
+      --n-merged-border-color: var(--n-border-color-popover);}
+
 /* ===== elm-ui bridge =====
  *
  * Components are built from elm-ui elements, and elm-ui styles its own helper classes

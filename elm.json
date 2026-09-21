@@ -76,6 +76,7 @@
     "NUI.Theme.Collapse",
     "NUI.Theme.Color",
     "NUI.Theme.Common",
+    "NUI.Theme.Descriptions",
     "NUI.Theme.Divider",
     "NUI.Theme.DynamicTags",
     "NUI.Theme.Empty",
