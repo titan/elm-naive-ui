@@ -5526,6 +5526,180 @@ pointer-events: none;}.nui-root.nui-root .n-modal-body-wrapper.n-modal-body-wrap
       cursor: move;
       user-select: none;}
 
+/* ===== naive-ui: drawer ===== */
+.nui-root.nui-root .n-drawer {
+
+    word-break: break-word;
+    line-height: var(--n-line-height);
+    position: absolute;
+    pointer-events: all;
+    box-shadow: var(--n-box-shadow);
+    transition:
+      background-color .3s var(--n-bezier),
+      color .3s var(--n-bezier);
+    background-color: var(--n-color);
+    color: var(--n-text-color);
+    box-sizing: border-box;}.nui-root.nui-root .n-drawer.slide-in-from-right-transition-leave-active {
+  transition: transform 0.2s cubic-bezier(.4, 0, 1, 1);}.nui-root.nui-root .n-drawer.slide-in-from-right-transition-enter-active {
+  transition: transform 0.3s cubic-bezier(0, 0, .2, 1);}.nui-root.nui-root .n-drawer.slide-in-from-right-transition-enter-to {
+  transform: translateX(0);}.nui-root.nui-root .n-drawer.slide-in-from-right-transition-enter-from {
+  transform: translateX(100%);}.nui-root.nui-root .n-drawer.slide-in-from-right-transition-leave-from {
+  transform: translateX(0);}.nui-root.nui-root .n-drawer.slide-in-from-right-transition-leave-to {
+  transform: translateX(100%);}.nui-root.nui-root .n-drawer.slide-in-from-left-transition-leave-active {
+  transition: transform 0.2s cubic-bezier(.4, 0, 1, 1);}.nui-root.nui-root .n-drawer.slide-in-from-left-transition-enter-active {
+  transition: transform 0.3s cubic-bezier(0, 0, .2, 1);}.nui-root.nui-root .n-drawer.slide-in-from-left-transition-enter-to {
+  transform: translateX(0);}.nui-root.nui-root .n-drawer.slide-in-from-left-transition-enter-from {
+  transform: translateX(-100%);}.nui-root.nui-root .n-drawer.slide-in-from-left-transition-leave-from {
+  transform: translateX(0);}.nui-root.nui-root .n-drawer.slide-in-from-left-transition-leave-to {
+  transform: translateX(-100%);}.nui-root.nui-root .n-drawer.slide-in-from-top-transition-leave-active {
+  transition: transform 0.2s cubic-bezier(.4, 0, 1, 1);}.nui-root.nui-root .n-drawer.slide-in-from-top-transition-enter-active {
+  transition: transform 0.3s cubic-bezier(0, 0, .2, 1);}.nui-root.nui-root .n-drawer.slide-in-from-top-transition-enter-to {
+  transform: translateY(0);}.nui-root.nui-root .n-drawer.slide-in-from-top-transition-enter-from {
+  transform: translateY(-100%);}.nui-root.nui-root .n-drawer.slide-in-from-top-transition-leave-from {
+  transform: translateY(0);}.nui-root.nui-root .n-drawer.slide-in-from-top-transition-leave-to {
+  transform: translateY(-100%);}.nui-root.nui-root .n-drawer.slide-in-from-bottom-transition-leave-active {
+  transition: transform 0.2s cubic-bezier(.4, 0, 1, 1);}.nui-root.nui-root .n-drawer.slide-in-from-bottom-transition-enter-active {
+  transition: transform 0.3s cubic-bezier(0, 0, .2, 1);}.nui-root.nui-root .n-drawer.slide-in-from-bottom-transition-enter-to {
+  transform: translateY(0);}.nui-root.nui-root .n-drawer.slide-in-from-bottom-transition-enter-from {
+  transform: translateY(100%);}.nui-root.nui-root .n-drawer.slide-in-from-bottom-transition-leave-from {
+  transform: translateY(0);}.nui-root.nui-root .n-drawer.slide-in-from-bottom-transition-leave-to {
+  transform: translateY(100%);}.nui-root.nui-root .n-drawer.n-drawer--unselectable {
+
+      user-select: none; 
+      -webkit-user-select: none;}.nui-root.nui-root .n-drawer.n-drawer--native-scrollbar .n-drawer-content-wrapper {
+
+        overflow: auto;
+        height: 100%;}.nui-root.nui-root .n-drawer .n-drawer__resize-trigger {
+
+      position: absolute;
+      background-color: #0000;
+      transition: background-color .3s var(--n-bezier);}.nui-root.nui-root .n-drawer .n-drawer__resize-trigger.n-drawer__resize-trigger--hover {
+
+        background-color: var(--n-resize-trigger-color-hover);}.nui-root.nui-root .n-drawer .n-drawer-content-wrapper {
+
+      box-sizing: border-box;}.nui-root.nui-root .n-drawer .n-drawer-content {
+
+      height: 100%;
+      display: flex;
+      flex-direction: column;}.nui-root.nui-root .n-drawer .n-drawer-content.n-drawer-content--native-scrollbar .n-drawer-body-content-wrapper {
+
+          height: 100%;
+          overflow: auto;}.nui-root.nui-root .n-drawer .n-drawer-content .n-drawer-body {
+
+        flex: 1 0 0;
+        overflow: hidden;}.nui-root.nui-root .n-drawer .n-drawer-content .n-drawer-body-content-wrapper {
+
+        box-sizing: border-box;
+        padding: var(--n-body-padding);}.nui-root.nui-root .n-drawer .n-drawer-content .n-drawer-header {
+
+        font-weight: var(--n-title-font-weight);
+        line-height: 1;
+        font-size: var(--n-title-font-size);
+        color: var(--n-title-text-color);
+        padding: var(--n-header-padding);
+        transition: border .3s var(--n-bezier);
+        border-bottom: 1px solid var(--n-divider-color);
+        border-bottom: var(--n-header-border-bottom);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;}.nui-root.nui-root .n-drawer .n-drawer-content .n-drawer-header .n-drawer-header__main {
+
+          flex: 1;}.nui-root.nui-root .n-drawer .n-drawer-content .n-drawer-header .n-drawer-header__close {
+
+          margin-left: 6px;
+          transition:
+            background-color .3s var(--n-bezier),
+            color .3s var(--n-bezier);}.nui-root.nui-root .n-drawer .n-drawer-content .n-drawer-footer {
+
+        display: flex;
+        justify-content: flex-end;
+        border-top: var(--n-footer-border-top);
+        transition: border .3s var(--n-bezier);
+        padding: var(--n-footer-padding);}.nui-root.nui-root .n-drawer.n-drawer--right-placement {
+
+      top: 0;
+      bottom: 0;
+      right: 0;
+      border-top-left-radius: var(--n-border-radius);
+      border-bottom-left-radius: var(--n-border-radius);}.nui-root.nui-root .n-drawer.n-drawer--right-placement .n-drawer__resize-trigger {
+
+        width: 3px;
+        height: 100%;
+        top: 0;
+        left: 0;
+        transform: translateX(-1.5px);
+        cursor: ew-resize;}.nui-root.nui-root .n-drawer.n-drawer--left-placement {
+
+      top: 0;
+      bottom: 0;
+      left: 0;
+      border-top-right-radius: var(--n-border-radius);
+      border-bottom-right-radius: var(--n-border-radius);}.nui-root.nui-root .n-drawer.n-drawer--left-placement .n-drawer__resize-trigger {
+
+        width: 3px;
+        height: 100%;
+        top: 0;
+        right: 0;
+        transform: translateX(1.5px);
+        cursor: ew-resize;}.nui-root.nui-root .n-drawer.n-drawer--top-placement {
+
+      top: 0;
+      left: 0;
+      right: 0;
+      border-bottom-left-radius: var(--n-border-radius);
+      border-bottom-right-radius: var(--n-border-radius);}.nui-root.nui-root .n-drawer.n-drawer--top-placement .n-drawer__resize-trigger {
+
+        width: 100%;
+        height: 3px;
+        bottom: 0;
+        left: 0;
+        transform: translateY(1.5px);
+        cursor: ns-resize;}.nui-root.nui-root .n-drawer.n-drawer--bottom-placement {
+
+      left: 0;
+      bottom: 0;
+      right: 0;
+      border-top-left-radius: var(--n-border-radius);
+      border-top-right-radius: var(--n-border-radius);}.nui-root.nui-root .n-drawer.n-drawer--bottom-placement .n-drawer__resize-trigger {
+
+        width: 100%;
+        height: 3px;
+        top: 0;
+        left: 0;
+        transform: translateY(-1.5px);
+        cursor: ns-resize;}.nui-root.nui-root body > .n-drawer-container {
+
+        position: fixed;}.nui-root.nui-root .n-drawer-container {
+
+    position: relative;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    pointer-events: none;}.nui-root.nui-root .n-drawer-container > * {
+
+      pointer-events: all;}.nui-root.nui-root .n-drawer-mask {
+
+    background-color: rgba(0, 0, 0, .3);
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;}.nui-root.nui-root .n-drawer-mask.n-drawer-mask--invisible {}.nui-root.nui-root .n-drawer-mask.fade-in-transition-enter-active {
+  transition: all 0.2s var(--n-bezier-in)!important;}.nui-root.nui-root .n-drawer-mask.fade-in-transition-leave-active {
+  transition: all 0.2s var(--n-bezier-out)!important;}.nui-root.nui-root .n-drawer-mask.fade-in-transition-enter-from,
+.nui-root.nui-root .n-drawer-mask.fade-in-transition-leave-to {
+  opacity: 0;}.nui-root.nui-root .n-drawer-mask.fade-in-transition-leave-from,
+.nui-root.nui-root .n-drawer-mask.fade-in-transition-enter-to {
+  opacity: 1;}.nui-root.nui-root .n-drawer.n-drawer--rtl {
+
+    direction: rtl;
+    text-align: right;}.nui-root.nui-root .n-drawer.n-drawer--rtl .n-drawer-content .n-drawer-header .n-drawer-header__close {
+
+          margin-left: 0;
+          margin-right: 6px;}
+
 /* ===== elm-ui bridge =====
  *
  * Components are built from elm-ui elements, and elm-ui styles its own helper classes

@@ -314,5 +314,13 @@ export const components = {
     // fade-in + fade-in-scale-up transitions; mask colour is hardcoded cssr.
     cssr: ['modal/src/styles/index.cssr.ts'],
     theme: 'modal/styles/light.ts'
+  },
+  drawer: {
+    // Mount-body sibling of Modal: own container/mask/body tree (provides
+    // popoverBodyInjectionKey/modalBodyInjectionKey/drawerBodyInjectionKey
+    // upstream). cssr pulls fade-in + the four slide-in-from-* transitions;
+    // mask colour hardcoded.
+    cssr: ['drawer/src/styles/index.cssr.ts', 'drawer/src/styles/rtl.cssr.ts'],
+    theme: 'drawer/styles/light.ts'
   }
 }

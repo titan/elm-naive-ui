@@ -84,6 +84,7 @@
     "NUI.Theme.Common",
     "NUI.Theme.Descriptions",
     "NUI.Theme.Divider",
+    "NUI.Theme.Drawer",
     "NUI.Theme.Dropdown",
     "NUI.Theme.Modal",
     "NUI.Theme.DynamicTags",
