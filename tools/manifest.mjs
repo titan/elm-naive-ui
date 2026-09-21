@@ -264,5 +264,9 @@ export const components = {
       'dynamic-input/src/styles/rtl.cssr.ts'
     ],
     theme: 'dynamic-input/styles/light.ts'
+  },
+  form: {
+    cssr: ['form/src/styles/form.cssr.ts', 'form/src/styles/form-item.cssr.ts'],
+    theme: 'form/styles/light.ts'
   }
 }
