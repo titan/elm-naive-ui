@@ -59,6 +59,12 @@ function scopeCss(css, scope) {
         frame = { kind: isKf(trimmed) ? 'keyframes' : 'at', out: '', parent: frame }
       } else if (frame.kind === 'rule') {
         // Nested rule inside a declaration block: capture, hoist on close.
+        // NOTE (review-confirmed, currently unreachable upstream):
+        //  - a trailing declaration WITHOUT `;` is dropped at `}` — css-render's
+        //    render() always terminates properties with `;`, so this cannot happen;
+        //  - `&` inside an already-nested `&` rule is not recursed (would emit a
+        //    raw `&`) — the only native-nesting declaration string in all of
+        //    upstream is heatmap's single-level footer rule.
         frame = { kind: 'nested', out: '', sel: trimmed, hostRule: frame }
       } else if (frame.kind === 'keyframes') {
         frame.out += trimmed + ' {'

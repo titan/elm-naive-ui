@@ -94,6 +94,12 @@ matching upstream's `resolveSlot` fallback.
   - **The empty-data guard moved inside `completeDataGaps`.** Upstream's util
     crashes on `[]` (`sortedData[0]` of nothing) and `Heatmap.tsx` guards at
     the call site; here the util returns `[]` itself.
+  - **Day keys are civil-day numbers, not epoch-millis.** Upstream keys its
+    data map by `startOfDay(ts).getTime()`; this port keys by the calendar
+    day index in `zone`. The two agree unless the zone's UTC offset changes
+    mid-range (a DST-style zone), which `Time.customZone` cannot express and
+    no caller supplies — and under such a change the civil-day keys behave
+    more sensibly than epoch-millis. Review-confirmed unreachable divergence.
   - **The loading animation is static.** Upstream mounts a runtime stylesheet
     with a color-hashed class (`heatmap-loading-<hash>`) plus keyframes; the
     port ships the same animation verbatim on the existing `--loading`
