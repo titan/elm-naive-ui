@@ -300,5 +300,12 @@ export const components = {
     // `lodash-es` (`map`) — kept real in `_loader.mjs`.
     cssr: ['popover/src/styles/index.cssr.ts', 'popover/src/styles/rtl.cssr.ts'],
     theme: 'popover/styles/light.ts'
+  },
+  dropdown: {
+    // The menu body is its own element (NOT the popover body): popover only
+    // contributes runtime + shared classes/vars upstream. cssr emits the
+    // whole `.n-dropdown-menu` block family; no rtl.cssr exists upstream.
+    cssr: ['dropdown/src/styles/index.cssr.ts'],
+    theme: 'dropdown/styles/light.ts'
   }
 }

@@ -82,6 +82,7 @@
     "NUI.Theme.Common",
     "NUI.Theme.Descriptions",
     "NUI.Theme.Divider",
+    "NUI.Theme.Dropdown",
     "NUI.Theme.DynamicTags",
     "NUI.Theme.Empty",
     "NUI.Theme.FloatButton",

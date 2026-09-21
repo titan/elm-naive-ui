@@ -50,6 +50,14 @@ const ALLOW = new Set([
   // Tooltip adds this marker via popover's internalExtraClass; no rule targets
   // it anywhere upstream — the popover body rules carry the look.
   'n-tooltip',
+  // Dropdown adds these markers on the menu body (upstream renderPopoverBody
+  // class list); no rule targets `.n-dropdown` or the size variants anywhere
+  // upstream — sizing flows through the size-keyed CSS vars instead.
+  'n-dropdown',
+  'n-dropdown--small-size',
+  'n-dropdown--medium-size',
+  'n-dropdown--large-size',
+  'n-dropdown--huge-size',
   'n-highlight__mark',
   // FormItem.tsx emits n-form-item-feedback__line on each feedback line; no
   // rule targets it (the lines are laid out by the wrapper / inner feedback
