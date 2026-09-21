@@ -91,6 +91,7 @@ import NUI.Theme.Layout as LayoutTheme
 import NUI.Theme.Tag as TagTheme
 import NUI.Thing as Thing
 import NUI.Timeline as Timeline
+import NUI.Tooltip as Tooltip
 import NUI.Types as T
 import Time
 
@@ -2522,6 +2523,88 @@ pPassthroughOpts =
         , arrowWrapperStyle = Just "background:black"
         , attributes = [ Element.htmlAttribute (HA.class "my-root") ]
     }
+
+
+{-| The tooltip defaults (the popover's) — bound for record updates
+(`{ Tooltip.defaults | … }` is a parse error).
+-}
+tD : Tooltip.Options Msg
+tD =
+    Tooltip.defaults
+
+
+tNoArrowOpts : Tooltip.Options Msg
+tNoArrowOpts =
+    { tD | showArrow = False }
+
+
+tOverlapOpts : Tooltip.Options Msg
+tOverlapOpts =
+    { tD | overlap = True }
+
+
+{-| A caller-supplied `extraClasses` list — the port must still prepend
+`n-tooltip` (upstream `internalExtraClass.concat('tooltip')`).
+-}
+tExtraOpts : Tooltip.Options Msg
+tExtraOpts =
+    { tD | extraClasses = [ "caller-class" ] }
+
+
+{-| The full 15-entry `--n-*` list `NUI.Tooltip.cssVars` must emit against
+`Theme.default` (light): the popover's names/order, with `--n-text-color` =
+common `baseColor` (`#FFF`) and `--n-color` = the pinned `rgba(38, 38, 38, 1)`.
+-}
+expectedTooltipLightVars : List ( String, String )
+expectedTooltipLightVars =
+    [ ( "--n-box-shadow", "0 3px 6px -4px rgba(0, 0, 0, .12), 0 6px 16px 0 rgba(0, 0, 0, .08), 0 9px 28px 8px rgba(0, 0, 0, .05)" )
+    , ( "--n-bezier", "cubic-bezier(.4, 0, .2, 1)" )
+    , ( "--n-bezier-ease-in", "cubic-bezier(.4, 0, 1, 1)" )
+    , ( "--n-bezier-ease-out", "cubic-bezier(0, 0, .2, 1)" )
+    , ( "--n-font-size", "14px" )
+    , ( "--n-text-color", "#FFF" )
+    , ( "--n-color", "rgba(38, 38, 38, 1)" )
+    , ( "--n-divider-color", "rgb(239, 239, 245)" )
+    , ( "--n-border-radius", "3px" )
+    , ( "--n-arrow-height", "6px" )
+    , ( "--n-arrow-offset", "10px" )
+    , ( "--n-arrow-offset-vertical", "10px" )
+    , ( "--n-padding", "8px 14px" )
+    , ( "--n-space", "6px" )
+    , ( "--n-space-arrow", "10px" )
+    ]
+
+
+{-| The full 15-entry list against `Theme.dark`: `--n-color` = common
+`popoverColor` (`rgb(72, 72, 78)`), `--n-text-color` = common `textColor2`
+(`rgba(255, 255, 255, 0.82)`), box-shadow/divider from the dark common
+(dark tooltip ≡ dark popover).
+-}
+expectedTooltipDarkVars : List ( String, String )
+expectedTooltipDarkVars =
+    [ ( "--n-box-shadow", "0 3px 6px -4px rgba(0, 0, 0, .24), 0 6px 12px 0 rgba(0, 0, 0, .16), 0 9px 18px 8px rgba(0, 0, 0, .10)" )
+    , ( "--n-bezier", "cubic-bezier(.4, 0, .2, 1)" )
+    , ( "--n-bezier-ease-in", "cubic-bezier(.4, 0, 1, 1)" )
+    , ( "--n-bezier-ease-out", "cubic-bezier(0, 0, .2, 1)" )
+    , ( "--n-font-size", "14px" )
+    , ( "--n-text-color", "rgba(255, 255, 255, 0.82)" )
+    , ( "--n-color", "rgb(72, 72, 78)" )
+    , ( "--n-divider-color", "rgba(255, 255, 255, 0.09)" )
+    , ( "--n-border-radius", "3px" )
+    , ( "--n-arrow-height", "6px" )
+    , ( "--n-arrow-offset", "10px" )
+    , ( "--n-arrow-offset-vertical", "10px" )
+    , ( "--n-padding", "8px 14px" )
+    , ( "--n-space", "6px" )
+    , ( "--n-space-arrow", "10px" )
+    ]
+
+
+{-| A var list minus the two tooltip-overridden colour keys (the 13 shared).
+-}
+stripColorVars : List ( String, String ) -> List ( String, String )
+stripColorVars =
+    List.filter (\( k, _ ) -> k /= "--n-color" && k /= "--n-text-color" )
 
 
 {-| The full 15-entry `--n-*` list `NUI.Popover.cssVars` must emit against
@@ -5158,6 +5241,38 @@ checks =
     , eq "popover placement: Right" "right" (Popover.placementName Popover.Right)
     , eq "popover placement: RightStart" "right-start" (Popover.placementName Popover.RightStart)
     , eq "popover placement: RightEnd" "right-end" (Popover.placementName Popover.RightEnd)
+
+    -- tooltip: defaults (the popover's) -------------------------------------
+    , eq "tooltip defaults == popover defaults" Popover.defaults Tooltip.defaults
+    , eq "tooltip defaults: showArrow True" True tD.showArrow
+    , eq "tooltip defaults: overlap False" False tD.overlap
+    , eq "tooltip defaults: extraClasses []" True (List.isEmpty tD.extraClasses)
+    , eq "tooltip defaults: rtl False" False tD.rtl
+
+    -- tooltip: placementName / API through the alias ------------------------
+    , eq "tooltip placementName: Top" "top" (Tooltip.placementName Popover.Top)
+    , eq "tooltip placementName: BottomEnd" "bottom-end" (Tooltip.placementName Popover.BottomEnd)
+    , eq "tooltip placementName: LeftStart" "left-start" (Tooltip.placementName Popover.LeftStart)
+
+    -- tooltip: cssVars (theme math) -----------------------------------------
+    , eq "tooltip vars: 15 keys (light)" 15 (List.length (Tooltip.cssVars light))
+    , eq "tooltip vars: full 15-list light (name+value, in order)" expectedTooltipLightVars (Tooltip.cssVars light)
+    , eq "tooltip light vars: --n-color" (Just "rgba(38, 38, 38, 1)") (lookup "--n-color" (Tooltip.cssVars light))
+    , eq "tooltip light vars: --n-text-color" (Just "#FFF") (lookup "--n-text-color" (Tooltip.cssVars light))
+    , eq "tooltip light vars: --n-padding = popover padding" (Just "8px 14px") (lookup "--n-padding" (Tooltip.cssVars light))
+    , eq "tooltip light vars: --n-space = popover space" (Just "6px") (lookup "--n-space" (Tooltip.cssVars light))
+    , eq "tooltip vars: 15 keys (dark)" 15 (List.length (Tooltip.cssVars dark))
+    , eq "tooltip vars: full 15-list dark (name+value, in order)" expectedTooltipDarkVars (Tooltip.cssVars dark)
+    , eq "tooltip dark vars: --n-color = popoverColor" (Just "rgb(72, 72, 78)") (lookup "--n-color" (Tooltip.cssVars dark))
+    , eq "tooltip dark vars: --n-text-color = textColor2" (Just "rgba(255, 255, 255, 0.82)") (lookup "--n-text-color" (Tooltip.cssVars dark))
+
+    -- tooltip: differs from popover ONLY in the two colour keys (light) -----
+    , eq "tooltip vs popover (light): each 15 vars" ( 15, 15 ) ( List.length (Tooltip.cssVars light), List.length (Popover.cssVars light) )
+    , eq "tooltip vs popover (light): the other 13 vars are identical" (stripColorVars (Popover.cssVars light)) (stripColorVars (Tooltip.cssVars light))
+    , eq "tooltip vs popover (light): 13 shared keys" 13 (List.length (stripColorVars (Tooltip.cssVars light)))
+    , eq "tooltip vs popover (light): --n-color pair (tooltip rgba vs popover #fff)" ( Just "rgba(38, 38, 38, 1)", Just "#fff" ) ( lookup "--n-color" (Tooltip.cssVars light), lookup "--n-color" (Popover.cssVars light) )
+    , eq "tooltip vs popover (light): --n-text-color pair (tooltip #FFF vs popover textColor2)" ( Just "#FFF", Just "rgb(51, 54, 57)" ) ( lookup "--n-text-color" (Tooltip.cssVars light), lookup "--n-text-color" (Popover.cssVars light) )
+    , eq "tooltip vs popover (light): --n-padding pair is identical" ( Just "8px 14px", Just "8px 14px" ) ( lookup "--n-padding" (Tooltip.cssVars light), lookup "--n-padding" (Popover.cssVars light) )
     ]
 
 
@@ -5806,6 +5921,23 @@ liveNodes =
                     (Popover.view Theme.default pPassthroughOpts [ Element.text "content" ])
                 , Element.el [ Element.htmlAttribute (HA.id "live-popover-placement"), Popover.placementAttribute Popover.TopStart ]
                     (Popover.view Theme.default pD [ Element.text "content" ])
+
+                -- Tooltip (the popover body + the n-tooltip marker; a dark mount
+                -- and a dark popover mount to pin the dark differential)
+                , Element.el [ Element.htmlAttribute (HA.id "live-tooltip-default"), Tooltip.placementAttribute Popover.Top ]
+                    (Tooltip.view Theme.default tD [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-tooltip-dark"), Tooltip.placementAttribute Popover.Top ]
+                    (Tooltip.view Theme.dark tD [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-tooltip-no-arrow"), Tooltip.placementAttribute Popover.Top ]
+                    (Tooltip.view Theme.default tNoArrowOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-tooltip-overlap"), Tooltip.placementAttribute Popover.Top ]
+                    (Tooltip.view Theme.default tOverlapOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-tooltip-extra"), Tooltip.placementAttribute Popover.Top ]
+                    (Tooltip.view Theme.default tExtraOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-tooltip-placement"), Tooltip.placementAttribute Popover.BottomEnd ]
+                    (Tooltip.view Theme.default tD [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popover-dark"), Popover.placementAttribute Popover.Top ]
+                    (Popover.view Theme.dark pD [ Element.text "content" ])
                 ]
             )
         ]

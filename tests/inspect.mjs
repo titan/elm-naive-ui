@@ -4211,6 +4211,167 @@ dEq(
   })()
 )
 
+// Tooltip ---------------------------------------------------------------------
+// The body is the popover's; the tooltip adds the `n-tooltip` marker (after
+// `n-popover-shared`, before the conditional modifiers) and swaps the tooltip
+// theme's colour vars. Filter to the `n-popover*`/`n-tooltip*` tokens.
+const TOOLTIP_LIGHT_STYLE =
+  '--n-box-shadow:0 3px 6px -4px rgba(0, 0, 0, .12), 0 6px 16px 0 rgba(0, 0, 0, .08), 0 9px 28px 8px rgba(0, 0, 0, .05)' +
+  ';--n-bezier:cubic-bezier(.4, 0, .2, 1)' +
+  ';--n-bezier-ease-in:cubic-bezier(.4, 0, 1, 1)' +
+  ';--n-bezier-ease-out:cubic-bezier(0, 0, .2, 1)' +
+  ';--n-font-size:14px' +
+  ';--n-text-color:#FFF' +
+  ';--n-color:rgba(38, 38, 38, 1)' +
+  ';--n-divider-color:rgb(239, 239, 245)' +
+  ';--n-border-radius:3px' +
+  ';--n-arrow-height:6px' +
+  ';--n-arrow-offset:10px' +
+  ';--n-arrow-offset-vertical:10px' +
+  ';--n-padding:8px 14px' +
+  ';--n-space:6px' +
+  ';--n-space-arrow:10px'
+
+const TOOLTIP_DARK_STYLE =
+  '--n-box-shadow:0 3px 6px -4px rgba(0, 0, 0, .24), 0 6px 12px 0 rgba(0, 0, 0, .16), 0 9px 18px 8px rgba(0, 0, 0, .10)' +
+  ';--n-bezier:cubic-bezier(.4, 0, .2, 1)' +
+  ';--n-bezier-ease-in:cubic-bezier(.4, 0, 1, 1)' +
+  ';--n-bezier-ease-out:cubic-bezier(0, 0, .2, 1)' +
+  ';--n-font-size:14px' +
+  ';--n-text-color:rgba(255, 255, 255, 0.82)' +
+  ';--n-color:rgb(72, 72, 78)' +
+  ';--n-divider-color:rgba(255, 255, 255, 0.09)' +
+  ';--n-border-radius:3px' +
+  ';--n-arrow-height:6px' +
+  ';--n-arrow-offset:10px' +
+  ';--n-arrow-offset-vertical:10px' +
+  ';--n-padding:8px 14px' +
+  ';--n-space:6px' +
+  ';--n-space-arrow:10px'
+
+const tooltipClasses = (el) =>
+  [...(el ? el.classList : [])]
+    .filter((c) => c.startsWith('n-popover') || c.startsWith('n-tooltip'))
+    .join(' ')
+
+const tipHost = doc.getElementById('live-tooltip-default')
+const tipRoot = doc.querySelector('#live-tooltip-default .n-tooltip')
+dEq('DOM: Tooltip root is a <div>', 'DIV', tagOf(tipRoot))
+dEq(
+  'DOM: Tooltip default classes are n-popover n-popover-shared n-tooltip n-popover-shared--show-arrow',
+  'n-popover n-popover-shared n-tooltip n-popover-shared--show-arrow',
+  tooltipClasses(tipRoot)
+)
+dEq(
+  'DOM: Tooltip default carries 15 --n-* custom properties',
+  15,
+  ((styleAt(tipRoot) || '').match(/--n-[a-z-]+:/g) || []).length
+)
+dEq(
+  'DOM: Tooltip default style is the exact full 15-var light string',
+  TOOLTIP_LIGHT_STYLE,
+  styleAt(tipRoot)
+)
+dTrue(
+  'DOM: Tooltip light --n-color is rgba(38, 38, 38, 1)',
+  !!tipRoot && (styleAt(tipRoot) || '').includes('--n-color:rgba(38, 38, 38, 1)'),
+  styleAt(tipRoot)
+)
+dTrue(
+  'DOM: Tooltip light --n-text-color is #FFF',
+  !!tipRoot && (styleAt(tipRoot) || '').includes('--n-text-color:#FFF'),
+  styleAt(tipRoot)
+)
+dEq(
+  'DOM: Tooltip host wrapper carries v-placement=top',
+  'top',
+  tipHost ? tipHost.getAttribute('v-placement') : null
+)
+dTrue(
+  'DOM: Tooltip body is a direct child of the v-placement host wrapper',
+  !!tipHost && !!tipRoot && tipHost.firstElementChild === tipRoot,
+  clsOf(tipHost ? tipHost.firstElementChild : null)
+)
+
+// representative structure inheritance through the alias (content + arrow)
+dTrue(
+  'DOM: Tooltip renders the n-popover__content wrapper with the children',
+  (() => {
+    const n = tipRoot ? tipRoot.querySelector('.n-popover__content') : null
+    return !!n && /content/.test(n.textContent)
+  })(),
+  clsOf(tipRoot ? tipRoot.querySelector('.n-popover__content') : null)
+)
+const tipArrowWrapper = tipRoot ? tipRoot.querySelector('.n-popover-arrow-wrapper') : null
+const tipArrow = tipArrowWrapper ? tipArrowWrapper.querySelector('.n-popover-arrow') : null
+dTrue(
+  'DOM: Tooltip renders the arrow wrapper > arrow pair as the body last child',
+  !!tipArrowWrapper &&
+    !!tipArrow &&
+    !!tipRoot &&
+    tipRoot.lastElementChild === tipArrowWrapper,
+  clsOf(tipArrowWrapper)
+)
+dEq(
+  'DOM: Tooltip placementAttribute BottomEnd emits v-placement=bottom-end',
+  'bottom-end',
+  (() => {
+    const el = doc.getElementById('live-tooltip-placement')
+    return el ? el.getAttribute('v-placement') : null
+  })()
+)
+
+const tipNoArrow = doc.querySelector('#live-tooltip-no-arrow .n-tooltip')
+dTrue(
+  'DOM: Tooltip showArrow=False removes the arrow and --show-arrow',
+  !!tipNoArrow &&
+    !hasCls(tipNoArrow, 'n-popover-shared--show-arrow') &&
+    !tipNoArrow.querySelector('.n-popover-arrow-wrapper'),
+  clsOf(tipNoArrow)
+)
+const tipOverlap = doc.querySelector('#live-tooltip-overlap .n-tooltip')
+dTrue(
+  'DOM: Tooltip overlap adds --overlap and still suppresses the arrow',
+  !!tipOverlap &&
+    hasCls(tipOverlap, 'n-popover-shared--overlap') &&
+    !hasCls(tipOverlap, 'n-popover-shared--show-arrow') &&
+    !tipOverlap.querySelector('.n-popover-arrow-wrapper'),
+  clsOf(tipOverlap)
+)
+
+const tipExtra = doc.querySelector('#live-tooltip-extra .n-tooltip')
+dTrue(
+  'DOM: Tooltip caller extraClasses keep n-tooltip first and before the caller class',
+  !!tipExtra &&
+    hasCls(tipExtra, 'caller-class') &&
+    [...tipExtra.classList].indexOf('n-tooltip') < [...tipExtra.classList].indexOf('caller-class') &&
+    tooltipClasses(tipExtra) === 'n-popover n-popover-shared n-tooltip n-popover-shared--show-arrow',
+  clsOf(tipExtra)
+)
+
+const tipDark = doc.querySelector('#live-tooltip-dark .n-tooltip')
+dEq(
+  'DOM: Tooltip dark style is the exact full 15-var string',
+  TOOLTIP_DARK_STYLE,
+  styleAt(tipDark)
+)
+dTrue(
+  'DOM: Tooltip dark --n-color is rgb(72, 72, 78)',
+  !!tipDark && (styleAt(tipDark) || '').includes('--n-color:rgb(72, 72, 78)'),
+  styleAt(tipDark)
+)
+dTrue(
+  'DOM: Tooltip dark --n-text-color is rgba(255, 255, 255, 0.82)',
+  !!tipDark && (styleAt(tipDark) || '').includes('--n-text-color:rgba(255, 255, 255, 0.82)'),
+  styleAt(tipDark)
+)
+const popDark = doc.querySelector('#live-popover-dark .n-popover')
+dEq(
+  'DOM: Tooltip dark vars equal the dark popover vars (dark tooltip ≡ dark popover)',
+  styleAt(popDark),
+  styleAt(tipDark)
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
