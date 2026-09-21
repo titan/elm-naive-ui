@@ -3314,6 +3314,234 @@ dTrue(
   styleAt(doc.querySelector('#live-form-item-feedback-style .n-form-item-feedback-wrapper'))
 )
 
+// Descriptions ----------------------------------------------------------------
+const descBasic = doc.querySelector('#live-descriptions-basic .n-descriptions')
+dEq('DOM: Descriptions root is a <div>', 'DIV', tagOf(descBasic))
+dTrue(
+  'DOM: Descriptions root carries n-descriptions + placement/align/size classes (no --bordered)',
+  hasCls(descBasic, 'n-descriptions') &&
+    hasCls(descBasic, 'n-descriptions--top-label-placement') &&
+    hasCls(descBasic, 'n-descriptions--left-label-align') &&
+    hasCls(descBasic, 'n-descriptions--medium-size') &&
+    !hasCls(descBasic, 'n-descriptions--bordered'),
+  clsOf(descBasic)
+)
+dEq(
+  'DOM: Descriptions root carries the 18 --n- vars',
+  18,
+  ((styleAt(descBasic) || '').match(/--n-[a-z-]+:/g) || []).length
+)
+dTrue(
+  'DOM: Descriptions medium has a 14px font-size var',
+  (styleAt(descBasic) || '').includes('--n-font-size:14px'),
+  styleAt(descBasic)
+)
+dEq(
+  'DOM: Descriptions header renders the title text',
+  'Description',
+  (() => {
+    const h = doc.querySelector('#live-descriptions-basic .n-descriptions-header')
+    return h ? h.textContent.trim() : null
+  })()
+)
+dTrue(
+  'DOM: Descriptions renders table-wrapper > table.n-descriptions-table',
+  !!doc.querySelector('#live-descriptions-basic .n-descriptions-table-wrapper > table.n-descriptions-table'),
+  'table'
+)
+const descSpacer = doc.querySelector('#live-descriptions-basic .n-descriptions-table-row')
+dTrue(
+  'DOM: Descriptions top renders a visibility:collapse spacer row',
+  !!descSpacer && (descSpacer.getAttribute('style') || '').includes('visibility:collapse'),
+  descSpacer ? descSpacer.getAttribute('style') : 'missing'
+)
+dEq(
+  'DOM: Descriptions spacer row has 2*column empty <td> (col3 -> 6)',
+  6,
+  descSpacer ? descSpacer.children.length : -1
+)
+dEq(
+  'DOM: Descriptions basic th colspans pin the packer (5 items, one span2)',
+  '2,2,2,4,2',
+  [...doc.querySelectorAll('#live-descriptions-basic th.n-descriptions-table-header')]
+    .map((th) => th.getAttribute('colspan'))
+    .join(',')
+)
+dEq(
+  'DOM: Descriptions basic content-cell colspans mirror the packer',
+  '2,2,2,4,2',
+  [...doc.querySelectorAll('#live-descriptions-basic td.n-descriptions-table-content')]
+    .map((td) => td.getAttribute('colspan'))
+    .join(',')
+)
+dEq(
+  'DOM: Descriptions basic renders 5 header + 5 content cells',
+  '5/5',
+  doc.querySelectorAll('#live-descriptions-basic th.n-descriptions-table-header').length +
+    '/' +
+    doc.querySelectorAll('#live-descriptions-basic td.n-descriptions-table-content').length
+)
+dEq(
+  'DOM: Descriptions renders the caller labels/content (style nodes stripped)',
+  'BreakfastBrunchLunchBreakfast-cBrunch-cLunch-cSupperMidnight SnackSupper-cMidnight Snack-c',
+  (() => {
+    const t = doc.querySelector('#live-descriptions-basic .n-descriptions-table')
+    if (!t) return null
+    const clone = t.cloneNode(true)
+    clone.querySelectorAll('style').forEach((s) => s.remove())
+    return clone.textContent.replace(/\s+/g, '')
+  })()
+)
+
+const descBordered = doc.querySelector('#live-descriptions-bordered .n-descriptions')
+dTrue(
+  'DOM: Descriptions bordered adds .n-descriptions--bordered',
+  hasCls(descBordered, 'n-descriptions--bordered'),
+  clsOf(descBordered)
+)
+dTrue(
+  'DOM: Descriptions bordered uses the bordered th padding var',
+  (styleAt(descBordered) || '').includes('--n-th-padding:12px 16px'),
+  styleAt(descBordered)
+)
+dTrue(
+  'DOM: Descriptions non-bordered th padding var is 0',
+  (styleAt(descBasic) || '').includes('--n-th-padding:0'),
+  styleAt(descBasic)
+)
+
+const descLeft = doc.querySelector('#live-descriptions-left .n-descriptions')
+dTrue(
+  'DOM: Descriptions left adds .n-descriptions--left-label-placement',
+  hasCls(descLeft, 'n-descriptions--left-label-placement'),
+  clsOf(descLeft)
+)
+dEq(
+  'DOM: Descriptions left renders no spacer row (row count == data rows)',
+  1,
+  doc.querySelectorAll('#live-descriptions-left .n-descriptions-table-row').length
+)
+const descCombined = doc.querySelector('#live-descriptions-left td.n-descriptions-table-content')
+dTrue(
+  'DOM: Descriptions left non-bordered cell wraps label + separator + content spans',
+  !!descCombined &&
+    !!descCombined.querySelector('span.n-descriptions-table-content__label') &&
+    !!descCombined.querySelector('span.n-descriptions-table-content__content') &&
+    !!descCombined.querySelector('span.n-descriptions-separator'),
+  descCombined ? descCombined.innerHTML.slice(0, 120) : 'missing'
+)
+dEq(
+  'DOM: Descriptions default separator is ":"',
+  ':',
+  (() => {
+    const s = doc.querySelector('#live-descriptions-left .n-descriptions-separator')
+    return s ? s.textContent : null
+  })()
+)
+dEq(
+  'DOM: Descriptions left cell colspans (3 items, col3)',
+  '2,2,2',
+  [...doc.querySelectorAll('#live-descriptions-left td.n-descriptions-table-content')]
+    .map((td) => td.getAttribute('colspan'))
+    .join(',')
+)
+
+dEq(
+  'DOM: Descriptions left+bordered renders th/td pairs (3 each)',
+  '3/3',
+  doc.querySelectorAll('#live-descriptions-left-bordered th.n-descriptions-table-header').length +
+    '/' +
+    doc.querySelectorAll('#live-descriptions-left-bordered td.n-descriptions-table-content').length
+)
+dEq(
+  'DOM: Descriptions left+bordered header cells have colspan 1',
+  '1,1,1',
+  [...doc.querySelectorAll('#live-descriptions-left-bordered th.n-descriptions-table-header')]
+    .map((th) => th.getAttribute('colspan'))
+    .join(',')
+)
+dEq(
+  'DOM: Descriptions left+bordered last content cell absorbs the row (col3 -> 3)',
+  '1,1,3',
+  [...doc.querySelectorAll('#live-descriptions-left-bordered td.n-descriptions-table-content')]
+    .map((td) => td.getAttribute('colspan'))
+    .join(',')
+)
+dEq(
+  'DOM: Descriptions left+bordered has no __label span (the th carries the label)',
+  0,
+  doc.querySelectorAll('#live-descriptions-left-bordered .n-descriptions-table-content__label').length
+)
+
+dEq(
+  'DOM: Descriptions columns override makes the spacer 2*4 cells',
+  8,
+  doc.querySelectorAll('#live-descriptions-columns .n-descriptions-table-row:first-child td').length
+)
+
+dTrue(
+  'DOM: Descriptions small adds --small-size (font var 14px)',
+  hasCls(doc.querySelector('#live-descriptions-small .n-descriptions'), 'n-descriptions--small-size') &&
+    (styleAt(doc.querySelector('#live-descriptions-small .n-descriptions')) || '').includes('--n-font-size:14px'),
+  styleAt(doc.querySelector('#live-descriptions-small .n-descriptions'))
+)
+dTrue(
+  'DOM: Descriptions large adds --large-size (font var 15px)',
+  hasCls(doc.querySelector('#live-descriptions-large-bordered .n-descriptions'), 'n-descriptions--large-size') &&
+    (styleAt(doc.querySelector('#live-descriptions-large-bordered .n-descriptions')) || '').includes('--n-font-size:15px'),
+  styleAt(doc.querySelector('#live-descriptions-large-bordered .n-descriptions'))
+)
+
+dEq(
+  'DOM: Descriptions separator is configurable',
+  '/',
+  (() => {
+    const s = doc.querySelector('#live-descriptions-separator .n-descriptions-separator')
+    return s ? s.textContent : null
+  })()
+)
+
+dTrue(
+  'DOM: Descriptions labelAlign Center adds --center-label-align',
+  hasCls(doc.querySelector('#live-descriptions-center .n-descriptions'), 'n-descriptions--center-label-align'),
+  clsOf(doc.querySelector('#live-descriptions-center .n-descriptions'))
+)
+
+const descPassTh = doc.querySelector('#live-descriptions-passthrough th.n-descriptions-table-header')
+dTrue(
+  'DOM: Descriptions labelClass/labelStyle land on the header cell',
+  !!descPassTh &&
+    descPassTh.classList.contains('my-label') &&
+    (descPassTh.getAttribute('style') || '').includes('color:red'),
+  descPassTh ? descPassTh.getAttribute('style') : 'missing'
+)
+const descPassTd = doc.querySelector('#live-descriptions-passthrough td.n-descriptions-table-content')
+dTrue(
+  'DOM: Descriptions contentClass/contentStyle land on the content cell',
+  !!descPassTd &&
+    descPassTd.classList.contains('my-content') &&
+    (descPassTd.getAttribute('style') || '').includes('background:blue'),
+  descPassTd ? descPassTd.getAttribute('style') : 'missing'
+)
+
+dTrue(
+  'DOM: Descriptions item labelStyle overrides the parent (th)',
+  (styleAt(doc.querySelector('#live-descriptions-item-style th.n-descriptions-table-header')) || '').includes('color:green'),
+  styleAt(doc.querySelector('#live-descriptions-item-style th.n-descriptions-table-header'))
+)
+dTrue(
+  'DOM: Descriptions item contentStyle overrides the parent (td)',
+  (styleAt(doc.querySelector('#live-descriptions-item-style td.n-descriptions-table-content')) || '').includes('background:yellow'),
+  styleAt(doc.querySelector('#live-descriptions-item-style td.n-descriptions-table-content'))
+)
+
+dTrue(
+  'DOM: Descriptions with no items still renders root + table (no cells)',
+  !!doc.querySelector('#live-descriptions-empty .n-descriptions-table') &&
+    doc.querySelectorAll('#live-descriptions-empty th.n-descriptions-table-header').length === 0,
+  clsOf(doc.querySelector('#live-descriptions-empty .n-descriptions'))
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

@@ -32,6 +32,7 @@ import NUI.Checkbox as Checkbox
 import NUI.Collapse as Collapse
 import NUI.Countdown as Countdown
 import NUI.Css as Css
+import NUI.Descriptions as Descriptions
 import NUI.DynamicInput as DynamicInput
 import NUI.DynamicTags as DynamicTags
 import NUI.Ellipsis as Ellipsis
@@ -2106,6 +2107,144 @@ formItemVarKeys =
     , "--n-label-text-color"
     , "--n-line-height"
     ]
+
+
+
+-- Descriptions -----------------------------------------------------------------
+
+ddflt : Descriptions.Options Msg
+ddflt =
+    Descriptions.defaults
+
+
+ditem : Descriptions.Item Msg
+ditem =
+    Descriptions.itemDefaults
+
+
+{-| A compact `shape index:colspan` per cell, so a whole layout pins as one string.
+-}
+dcell : Descriptions.Cell -> String
+dcell c =
+    (case c.shape of
+        Descriptions.HeaderCell ->
+            "H"
+
+        Descriptions.ContentCell ->
+            "C"
+
+        Descriptions.CombinedCell ->
+            "K"
+    )
+        ++ String.fromInt c.index
+        ++ ":"
+        ++ String.fromInt c.colspan
+
+
+drows : List (List Descriptions.Cell) -> String
+drows rows =
+    rows |> List.map (List.map dcell >> String.join ",") |> String.join "|"
+
+
+dlayout : Int -> Descriptions.Placement -> Bool -> List Int -> String
+dlayout column placement bordered spans =
+    drows (Descriptions.layout { column = column, labelPlacement = placement, bordered = bordered } spans)
+
+
+dvar : Theme.Theme -> Descriptions.Options Msg -> String -> Maybe String
+dvar theme opts key =
+    lookup key (Descriptions.cssVars theme opts)
+
+
+descItem : String -> Descriptions.Item Msg
+descItem lbl =
+    { ditem | label = Just (Element.text lbl), content = [ Element.text (lbl ++ "-c") ] }
+
+
+descItems3 : List (Descriptions.Item Msg)
+descItems3 =
+    [ descItem "A", descItem "B", descItem "C" ]
+
+
+descItems4 : List (Descriptions.Item Msg)
+descItems4 =
+    [ descItem "A", descItem "B", descItem "C", descItem "D" ]
+
+
+descBasicItems : List (Descriptions.Item Msg)
+descBasicItems =
+    [ descItem "Breakfast"
+    , descItem "Brunch"
+    , descItem "Lunch"
+    , { ditem | span = 2, label = Just (Element.text "Supper"), content = [ Element.text "Supper-c" ] }
+    , descItem "Midnight Snack"
+    ]
+
+
+descItemStyled : List (Descriptions.Item Msg)
+descItemStyled =
+    [ { ditem
+        | label = Just (Element.text "L")
+        , labelStyle = Just "color:green"
+        , contentStyle = Just "background:yellow"
+        , content = [ Element.text "L-c" ]
+      }
+    ]
+
+
+descBasicOpts : Descriptions.Options Msg
+descBasicOpts =
+    { ddflt | title = Just (Element.text "Description") }
+
+
+descBorderedOpts : Descriptions.Options Msg
+descBorderedOpts =
+    { ddflt | bordered = True }
+
+
+descLeftOpts : Descriptions.Options Msg
+descLeftOpts =
+    { ddflt | labelPlacement = Descriptions.Left }
+
+
+descLeftBorderedOpts : Descriptions.Options Msg
+descLeftBorderedOpts =
+    { ddflt | labelPlacement = Descriptions.Left, bordered = True }
+
+
+descColumnsOpts : Descriptions.Options Msg
+descColumnsOpts =
+    { ddflt | columns = Just 4 }
+
+
+descSmallOpts : Descriptions.Options Msg
+descSmallOpts =
+    { ddflt | size = Descriptions.Small }
+
+
+descLargeBorderedOpts : Descriptions.Options Msg
+descLargeBorderedOpts =
+    { ddflt | size = Descriptions.Large, bordered = True }
+
+
+descSeparatorOpts : Descriptions.Options Msg
+descSeparatorOpts =
+    { ddflt | labelPlacement = Descriptions.Left, separator = "/" }
+
+
+descCenterOpts : Descriptions.Options Msg
+descCenterOpts =
+    { ddflt | labelAlign = Descriptions.AlignCenter }
+
+
+descPassthroughOpts : Descriptions.Options Msg
+descPassthroughOpts =
+    { ddflt
+        | labelClass = Just "my-label"
+        , labelStyle = Just "color:red"
+        , contentClass = Just "my-content"
+        , contentStyle = Just "background:blue"
+    }
 
 
 
@@ -4508,6 +4647,62 @@ checks =
     , eq "form vars: itemDefaults validation defaults Nothing" Nothing Form.itemDefaults.validation
     , eq "form vars: Form.defaults.inline is False" False Form.defaults.inline
     , eq "form vars: Form.defaults.onSubmit is Nothing" Nothing Form.defaults.onSubmit
+
+    -- descriptions: defaults -------------------------------------------------
+    , eq "desc defaults: column" 3 ddflt.column
+    , eq "desc defaults: columns Nothing" Nothing ddflt.columns
+    , eq "desc defaults: labelPlacement top" Descriptions.Top ddflt.labelPlacement
+    , eq "desc defaults: labelAlign left" Descriptions.AlignLeft ddflt.labelAlign
+    , eq "desc defaults: separator" ":" ddflt.separator
+    , eq "desc defaults: size medium" Descriptions.Medium ddflt.size
+    , eq "desc defaults: bordered False" False ddflt.bordered
+    , eq "desc defaults: title Nothing" Nothing ddflt.title
+    , eq "desc item defaults: span" 1 ditem.span
+    , eq "desc item defaults: label Nothing" Nothing ditem.label
+    , eq "desc item defaults: content empty" [] ditem.content
+
+    -- descriptions: resolvedColumns ------------------------------------------
+    , eq "desc resolvedColumns: column when columns Nothing" 3 (Descriptions.resolvedColumns ddflt)
+    , eq "desc resolvedColumns: columns wins" 4 (Descriptions.resolvedColumns { ddflt | columns = Just 4 })
+
+    -- descriptions: engine (row packing + colspans) --------------------------
+    , eq "desc layout top 4x1 col3" "H0:2,H1:2,H2:2|C0:2,C1:2,C2:2|H3:6|C3:6" (dlayout 3 Descriptions.Top False [ 1, 1, 1, 1 ])
+    , eq "desc layout left 4x1 col3" "K0:2,K1:2,K2:2|K3:6" (dlayout 3 Descriptions.Left False [ 1, 1, 1, 1 ])
+    , eq "desc layout left-bordered 4x1 col3" "H0:1,C0:1,H1:1,C1:1,H2:1,C2:1|H3:1,C3:7" (dlayout 3 Descriptions.Left True [ 1, 1, 1, 1 ])
+    , eq "desc layout top single item spans the row" "H0:6|C0:6" (dlayout 3 Descriptions.Top False [ 1 ])
+    , eq "desc layout no items -> no rows" "" (dlayout 3 Descriptions.Top False [])
+    , eq "desc layout top last item absorbs remainder" "H0:2,H1:4|C0:2,C1:4" (dlayout 3 Descriptions.Top False [ 1, 1 ])
+    , eq "desc layout top span2 mid-row" "H0:2,H1:4|C0:2,C1:4" (dlayout 3 Descriptions.Top False [ 1, 2 ])
+    , eq "desc layout left last cell absorbs remainder" "K0:2,K1:4" (dlayout 3 Descriptions.Left False [ 1, 2 ])
+    , eq "desc layout left-bordered span2" "H0:1,C0:1,H1:1,C1:5" (dlayout 3 Descriptions.Left True [ 1, 2 ])
+    , eq "desc layout col4 4x1 is one logical row" "H0:2,H1:2,H2:2,H3:2|C0:2,C1:2,C2:2,C3:2" (dlayout 4 Descriptions.Top False [ 1, 1, 1, 1 ])
+    , eq "desc layout col1 forces a row per item" "H0:2|C0:2|H1:2|C1:2" (dlayout 1 Descriptions.Top False [ 1, 1 ])
+
+    -- descriptions: cssVars (theme math) -------------------------------------
+    , eq "desc vars: 18 keys in upstream order"
+        [ "--n-title-text-color", "--n-th-padding", "--n-td-padding", "--n-font-size", "--n-bezier", "--n-th-font-weight", "--n-line-height", "--n-th-text-color", "--n-td-text-color", "--n-th-color", "--n-th-color-modal", "--n-th-color-popover", "--n-td-color", "--n-td-color-modal", "--n-td-color-popover", "--n-border-radius", "--n-border-color", "--n-border-color-modal", "--n-border-color-popover" ]
+        (varKeys (Descriptions.cssVars light ddflt))
+    , eq "desc vars: title text color = textColor1" (Just "rgb(31, 34, 37)") (dvar light ddflt "--n-title-text-color")
+    , eq "desc vars: medium th padding (non-bordered) = 0" (Just "0") (dvar light ddflt "--n-th-padding")
+    , eq "desc vars: medium td padding (non-bordered)" (Just "0 0 12px 0") (dvar light ddflt "--n-td-padding")
+    , eq "desc vars: medium bordered th padding" (Just "12px 16px") (dvar light { ddflt | bordered = True } "--n-th-padding")
+    , eq "desc vars: medium bordered td padding" (Just "12px 16px") (dvar light { ddflt | bordered = True } "--n-td-padding")
+    , eq "desc vars: small bordered th padding" (Just "8px 12px") (dvar light { ddflt | bordered = True, size = Descriptions.Small } "--n-th-padding")
+    , eq "desc vars: large bordered td padding" (Just "16px 24px") (dvar light { ddflt | bordered = True, size = Descriptions.Large } "--n-td-padding")
+    , eq "desc vars: medium font size" (Just "14px") (dvar light ddflt "--n-font-size")
+    , eq "desc vars: large font size" (Just "15px") (dvar light { ddflt | size = Descriptions.Large } "--n-font-size")
+    , eq "desc vars: bezier" (Just "cubic-bezier(.4, 0, .2, 1)") (dvar light ddflt "--n-bezier")
+    , eq "desc vars: th font weight" (Just "500") (dvar light ddflt "--n-th-font-weight")
+    , eq "desc vars: line height" (Just "1.6") (dvar light ddflt "--n-line-height")
+    , eq "desc vars: th text color = textColor1" (Just "rgb(31, 34, 37)") (dvar light ddflt "--n-th-text-color")
+    , eq "desc vars: td text color = textColor2" (Just "rgb(51, 54, 57)") (dvar light ddflt "--n-td-text-color")
+    , eq "desc vars: th color = composite(cardColor, tableHeaderColor)" (Just "rgba(250, 250, 252, 1)") (dvar light ddflt "--n-th-color")
+    , eq "desc vars: td color = cardColor" (Just "#fff") (dvar light ddflt "--n-td-color")
+    , eq "desc vars: border radius" (Just "3px") (dvar light ddflt "--n-border-radius")
+    , eq "desc vars: border color = composite(cardColor, dividerColor)" (Just "rgba(239, 239, 245, 1)") (dvar light ddflt "--n-border-color")
+    , eq "desc vars: dark th color" (Just "rgba(38, 38, 42, 1)") (dvar dark ddflt "--n-th-color")
+    , eq "desc vars: dark border color" (Just "rgba(45, 45, 48, 1)") (dvar dark ddflt "--n-border-color")
+    , eq "desc vars: dark title text color" (Just "rgba(255, 255, 255, 0.9)") (dvar dark ddflt "--n-title-text-color")
     ]
 
 
@@ -5036,6 +5231,32 @@ liveNodes =
                     (Form.item Theme.default { fditem | showFeedback = False, feedback = Just "Hidden" } [])
                 , Element.el [ Element.htmlAttribute (HA.id "live-form-item-feedback-style") ]
                     (Form.item Theme.default { fditem | feedback = Just "F", feedbackClass = Just "my-fb", feedbackStyle = Just "color:blue" } [])
+
+                -- Descriptions
+                , Element.el [ Element.htmlAttribute (HA.id "live-descriptions-basic") ]
+                    (Descriptions.view Theme.default descBasicOpts descBasicItems)
+                , Element.el [ Element.htmlAttribute (HA.id "live-descriptions-bordered") ]
+                    (Descriptions.view Theme.default descBorderedOpts descItems3)
+                , Element.el [ Element.htmlAttribute (HA.id "live-descriptions-left") ]
+                    (Descriptions.view Theme.default descLeftOpts descItems3)
+                , Element.el [ Element.htmlAttribute (HA.id "live-descriptions-left-bordered") ]
+                    (Descriptions.view Theme.default descLeftBorderedOpts descItems3)
+                , Element.el [ Element.htmlAttribute (HA.id "live-descriptions-columns") ]
+                    (Descriptions.view Theme.default descColumnsOpts descItems4)
+                , Element.el [ Element.htmlAttribute (HA.id "live-descriptions-small") ]
+                    (Descriptions.view Theme.default descSmallOpts descItems3)
+                , Element.el [ Element.htmlAttribute (HA.id "live-descriptions-large-bordered") ]
+                    (Descriptions.view Theme.default descLargeBorderedOpts descItems3)
+                , Element.el [ Element.htmlAttribute (HA.id "live-descriptions-separator") ]
+                    (Descriptions.view Theme.default descSeparatorOpts descItems3)
+                , Element.el [ Element.htmlAttribute (HA.id "live-descriptions-center") ]
+                    (Descriptions.view Theme.default descCenterOpts descItems3)
+                , Element.el [ Element.htmlAttribute (HA.id "live-descriptions-passthrough") ]
+                    (Descriptions.view Theme.default descPassthroughOpts descItems3)
+                , Element.el [ Element.htmlAttribute (HA.id "live-descriptions-item-style") ]
+                    (Descriptions.view Theme.default descBorderedOpts descItemStyled)
+                , Element.el [ Element.htmlAttribute (HA.id "live-descriptions-empty") ]
+                    (Descriptions.view Theme.default ddflt [])
                 ]
             )
         ]
