@@ -36,8 +36,11 @@ body inside a wrapper that carries the `v-placement` attribute —
 applies `transform: translateX(…) translateY(…)`, z-index, and the `--v-*`
 variables; see vueuc's `v-binder-follower-content`). The wrapper must live
 inside `nui-root` (this port's CSS is doubly scoped; upstream teleports to
-`body` instead). The `--v-*` variables default to `0px` and only matter for
-`arrowPointToCenter` and the arrow `-start`/`-end` offsets.
+`body` instead). Set `--v-offset-left: 0` and `--v-offset-top: 0` on the
+wrapper as vueuc does — the arrow `-start`/`-end` rules read them **without**
+fallbacks, so an unset var degrades the arrow position to `auto` (the
+`--v-target-*` vars carry their own `, 0px` fallbacks and matter only for
+`arrowPointToCenter`).
 
 **Documented gaps:**
 
@@ -322,7 +325,8 @@ bodyNodes theme opts children hasHeaderOrFooter =
 
 {-| The `n-scrollbar` wrapper upstream renders around the body when `scrollable`.
 Its `contentClass`/`contentStyle` carry the hoisted `n-popover__content` pair
-only in the header-less case.
+only in the header-less case. (Upstream also threads a `bodyStyle` through
+`NxScrollbar` but never sets it — deliberately not modelled.)
 -}
 scrollbarChild : Theme -> Maybe (List String) -> Maybe String -> List (Element msg) -> Element msg
 scrollbarChild theme contentClasses contentStyle children =

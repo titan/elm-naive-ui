@@ -41,6 +41,7 @@ import NUI.IconWrapper as IconWrapper
 import NUI.Input as Input
 import NUI.InputNumber as InputNumber
 import NUI.InputOtp as InputOtp
+import NUI.Internal as I
 import NUI.Layout as Layout
 import NUI.LayoutFooter as LayoutFooter
 import NUI.LayoutHeader as LayoutHeader
@@ -2073,6 +2074,17 @@ popoverSection =
                 (Popover.view theme
                     { popoverD | width = Just "220px", raw = True }
                     [ Element.text "Raw: no background, radius or padding." ]
+                )
+            ]
+        , demoRow "Enter-active transition (caller-driven)"
+            [ popoverHost Popover.Top
+                []
+                (Popover.view theme
+                    { popoverD
+                        | width = Just "240px"
+                        , transition = Just I.EnterActive
+                    }
+                    [ Element.text "The popover-transition classes are the caller's clock." ]
                 )
             ]
         , demoRow "Scrollable (n-scrollbar child)"
