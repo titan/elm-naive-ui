@@ -5470,6 +5470,62 @@ pointer-events: all;}.nui-root.nui-root .n-dropdown-menu .n-dropdown-option .n-d
 
       padding: var(--n-padding);}
 
+/* ===== naive-ui: modal ===== */
+.nui-root.nui-root .n-modal-container {
+
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 0;
+    width: 0;
+    display: flex;}.nui-root.nui-root .n-modal-mask {
+
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, .4);}.nui-root.nui-root .n-modal-mask.fade-in-transition-enter-active {
+  transition: all .25s var(--n-bezier-ease-out)!important;}.nui-root.nui-root .n-modal-mask.fade-in-transition-leave-active {
+  transition: all .25s var(--n-bezier-ease-out)!important;}.nui-root.nui-root .n-modal-mask.fade-in-transition-enter-from,
+.nui-root.nui-root .n-modal-mask.fade-in-transition-leave-to {
+  opacity: 0;}.nui-root.nui-root .n-modal-mask.fade-in-transition-leave-from,
+.nui-root.nui-root .n-modal-mask.fade-in-transition-enter-to {
+  opacity: 1;}.nui-root.nui-root .n-modal-body-wrapper {
+
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    overflow: visible;}.nui-root.nui-root .n-modal-body-wrapper .n-modal-scroll-content {
+
+      min-height: 100%;
+      display: flex;
+      position: relative;}.nui-root.nui-root .n-modal-body-wrapper.n-modal-body-wrapper--mask-hidden {
+pointer-events: none;}.nui-root.nui-root .n-modal-body-wrapper.n-modal-body-wrapper--mask-hidden .n-modal-scroll-content > * {
+
+          pointer-events: all;}.nui-root.nui-root .n-modal {
+
+    position: relative;
+    align-self: center;
+    color: var(--n-text-color);
+    margin: auto;
+    box-shadow: var(--n-box-shadow);}.nui-root.nui-root .n-modal.fade-in-scale-up-transition-leave-active {
+  transform-origin: inherit;
+  transition: opacity .25s cubic-bezier(.4, 0, 1, 1), transform .25s cubic-bezier(.4, 0, 1, 1) ;}.nui-root.nui-root .n-modal.fade-in-scale-up-transition-enter-active {
+  transform-origin: inherit;
+  transition: opacity .25s cubic-bezier(0, 0, .2, 1), transform .25s cubic-bezier(0, 0, .2, 1) ;}.nui-root.nui-root .n-modal.fade-in-scale-up-transition-enter-from,
+.nui-root.nui-root .n-modal.fade-in-scale-up-transition-leave-to {
+  opacity: 0;
+  transform:  scale(.5);}.nui-root.nui-root .n-modal.fade-in-scale-up-transition-leave-from,
+.nui-root.nui-root .n-modal.fade-in-scale-up-transition-enter-to {
+  opacity: 1;
+  transform:  scale(1);}.nui-root.nui-root .n-modal .n-draggable {
+
+      cursor: move;
+      user-select: none;}
+
 /* ===== elm-ui bridge =====
  *
  * Components are built from elm-ui elements, and elm-ui styles its own helper classes

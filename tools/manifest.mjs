@@ -307,5 +307,12 @@ export const components = {
     // whole `.n-dropdown-menu` block family; no rtl.cssr exists upstream.
     cssr: ['dropdown/src/styles/index.cssr.ts'],
     theme: 'dropdown/styles/light.ts'
+  },
+  modal: {
+    // Self-positioning mount-body family: own container/mask/body-wrapper
+    // tree (provides popoverBodyInjectionKey = null upstream). cssr pulls the
+    // fade-in + fade-in-scale-up transitions; mask colour is hardcoded cssr.
+    cssr: ['modal/src/styles/index.cssr.ts'],
+    theme: 'modal/styles/light.ts'
   }
 }
