@@ -4332,7 +4332,8 @@ checks =
     -- 57. NUI.Form — trigger filter ---------------------------------------------
     , eq "form trigger: manual (Nothing) runs every rule" [ "f is required" ] (fmsgs (fval Nothing [ freq ] (Just (Form.VString ""))))
     , eq "form trigger: manual runs a blur/change-restricted rule" [ "t" ] (fmsgs (fval Nothing [ fbwd ] (Just (Form.VString ""))))
-    , eq "form trigger: a trigger-less rule runs under any trigger" [ "f is required" ] (fmsgs (fval (Just Form.OnBlur) [ freq ] (Just (Form.VString ""))))
+    , eq "form trigger: a trigger-less rule is EXCLUDED under a passed trigger (upstream-exact)" [] (fval (Just Form.OnBlur) [ freq ] (Just (Form.VString "")))
+    , eq "form trigger: a trigger-less rule still runs for a manual validate" [ "f is required" ] (fmsgs (fval Nothing [ freq ] (Just (Form.VString ""))))
     , eq "form trigger: membership in (blur)" [ "t" ] (fmsgs (fval (Just Form.OnBlur) [ fbwd ] (Just (Form.VString ""))))
     , eq "form trigger: membership in (change)" [ "t" ] (fmsgs (fval (Just Form.OnChange) [ fbwd ] (Just (Form.VString ""))))
     , eq "form trigger: membership out (input) drops the rule" [] (fval (Just Form.OnInput) [ fbwd ] (Just (Form.VString "")))
@@ -4399,6 +4400,9 @@ checks =
     , eq "form range: array above max" [ "f cannot be greater than 2 in length" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeArray, max = Just 2 } ] (Just (Form.VArray [ Form.VString "a", Form.VString "b", Form.VString "c" ]))))
     , eq "form range: array min+max" [ "f must be between 1 and 2 in length" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeArray, min = Just 1, max = Just 2 } ] (Just (Form.VArray [ Form.VString "a", Form.VString "b", Form.VString "c" ]))))
     , eq "form range: array len" [ "f must be exactly 2 in length" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeArray, len = Just 2 } ] (Just (Form.VArray [ Form.VString "a" ]))))
+    , eq "form range: an empty array is NOT skipped (min runs on [])" [ "f cannot be less than 3 in length" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeArray, min = Just 3 } ] (Just (Form.VArray []))))
+    , eq "form range: an empty array + required fails required (not range)" [ "f is required" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeArray, required = True, min = Just 3 } ] (Just (Form.VArray []))))
+    , eq "form range: an empty array + satisfiable max passes when not required" [] (fval Nothing [ { fdflt | type_ = Form.TypeArray, max = Just 3 } ] (Just (Form.VArray [])))
     , eq "form range: skipped for booleans" [] (fval Nothing [ { fdflt | type_ = Form.TypeBoolean, min = Just 5 } ] (Just (Form.VBool True)))
     , eq "form range: two checks fail in one rule (type + range)" [ "f is not a string", "f cannot be less than 5" ] (fmsgs (fval Nothing [ { fdflt | min = Just 5 } ] (Just (Form.VNumber 4))))
     , eq "form range: message=Just collapses two failures into one verbatim line" [ "custom" ] (fmsgs (fval Nothing [ { fdflt | min = Just 5, message = Just "custom" } ] (Just (Form.VNumber 4))))
@@ -4408,7 +4412,9 @@ checks =
     , eq "form enum: non-member fails with the joined list" [ "f must be one of a, b" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeEnum, enum_ = [ "a", "b" ] } ] (Just (Form.VString "c"))))
     , eq "form enum: three entries join with ', '" [ "f must be one of red, green, blue" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeEnum, enum_ = [ "red", "green", "blue" ] } ] (Just (Form.VString "pink"))))
     , eq "form enum: a non-string value is not a member" [ "f must be one of a, b" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeEnum, enum_ = [ "a", "b" ] } ] (Just (Form.VNumber 1))))
-    , eq "form enum: an empty list is inactive" [] (fval Nothing [ { fdflt | type_ = Form.TypeEnum, enum_ = [] } ] (Just (Form.VString "x")))
+    , eq "form enum: an empty list is ACTIVE and always fails (trailing space)" [ "f must be one of " ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeEnum, enum_ = [] } ] (Just (Form.VString "x"))))
+    , eq "form enum: empty string is NOT empty for an enum (fails membership)" [ "f must be one of a, b" ] (fmsgs (fval Nothing [ { fdflt | type_ = Form.TypeEnum, enum_ = [ "a", "b" ] } ] (Just (Form.VString ""))))
+    , eq "form enum: an absent value + non-required skips the check" [] (fval Nothing [ { fdflt | type_ = Form.TypeEnum, enum_ = [ "a", "b" ] } ] Nothing)
 
     -- 64. NUI.Form — whitespace --------------------------------------------------
     , eq "form whitespace: all-whitespace fails with cannot be empty" [ "f cannot be empty" ] (fmsgs (fval Nothing [ { fdflt | whitespace = True } ] (Just (Form.VString "   "))))
@@ -5008,6 +5014,12 @@ liveNodes =
                     (Form.item Theme.default { fditem | contentClass = Just "my-content", contentStyle = Just "background:red" } [ Element.text "Body" ])
                 , Element.el [ Element.htmlAttribute (HA.id "live-form-item-label-width") ]
                     (Form.item Theme.default { fditem | label = Just "Name", labelPlacement = Just Form.Left, labelWidth = Just (Form.Px 120) } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-item-label-width-px80") ]
+                    (Form.item Theme.default { fditem | label = Just "Name", labelPlacement = Just Form.Left, labelWidth = Just (Form.Px 80) } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-item-label-width-custom") ]
+                    (Form.item Theme.default { fditem | label = Just "Name", labelPlacement = Just Form.Left, labelWidth = Just (Form.Custom "10em") } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-form-item-label-width-top") ]
+                    (Form.item Theme.default { fditem | label = Just "Name", labelWidth = Just (Form.Px 80) } [])
                 , Element.el [ Element.htmlAttribute (HA.id "live-form-item-label-style") ]
                     (Form.item Theme.default { fditem | label = Just "Name", labelStyle = Just "text-decoration:underline" } [])
                 , Element.el [ Element.htmlAttribute (HA.id "live-form-item-feedback") ]

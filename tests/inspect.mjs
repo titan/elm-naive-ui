@@ -2966,10 +2966,15 @@ dTrue(
   hasCls(fiDefault, 'n-form-item--top-labelled'),
   clsOf(fiDefault)
 )
-dTrue(
-  'DOM: Form item with no label gets --no-label',
-  hasCls(fiDefault, 'n-form-item--no-label'),
-  clsOf(fiDefault)
+dEq(
+  'DOM: Form item with no label does NOT get --no-label (showLabel default true)',
+  false,
+  hasCls(fiDefault, 'n-form-item--no-label')
+)
+dEq(
+  'DOM: a label-less item renders no label element',
+  0,
+  doc.querySelectorAll('#live-form-item-default .n-form-item-label').length
 )
 dEq(
   'DOM: Form item root carries the 16 --n- vars',
@@ -2985,7 +2990,7 @@ dEq(
   'DOM: Form item blank has no status modifier by default',
   0,
   doc.querySelectorAll(
-    '#live-form-item-default .n-form-item-blank--error-status, #live-form-item-default .n-form-item-blank--warning-status'
+    '#live-form-item-default .n-form-item-blank--error, #live-form-item-default .n-form-item-blank--warning'
   ).length
 )
 dEq(
@@ -2996,10 +3001,15 @@ dEq(
     return b ? b.textContent.trim() : null
   })()
 )
+dTrue(
+  'DOM: the feedback wrapper renders whenever showFeedback (empty when no lines)',
+  hasCls(doc.querySelector('#live-form-item-default .n-form-item-feedback-wrapper'), 'n-form-item-feedback-wrapper'),
+  clsOf(doc.querySelector('#live-form-item-default .n-form-item-feedback-wrapper'))
+)
 dEq(
-  'DOM: an item with no feedback/validation renders no feedback wrapper',
+  'DOM: an empty wrapper carries no inner .n-form-item-feedback',
   0,
-  doc.querySelectorAll('#live-form-item-default .n-form-item-feedback-wrapper').length
+  doc.querySelectorAll('#live-form-item-default .n-form-item-feedback-wrapper .n-form-item-feedback').length
 )
 
 dTrue(
@@ -3084,7 +3094,7 @@ dEq(
   )
 )
 dEq(
-  'DOM: left + MarkLeft + default align has no --reverse-columns-space',
+  'DOM: left + MarkLeft + labelAlign Nothing has no --reverse-columns-space',
   false,
   hasCls(
     doc.querySelector('#live-form-item-left-noalign .n-form-item-label'),
@@ -3139,9 +3149,33 @@ dTrue(
   styleAt(doc.querySelector('#live-form-item-content .n-form-item-blank'))
 )
 dTrue(
-  'DOM: labelWidth Px 120 puts width:120px on the item root',
-  flatStyle(doc.querySelector('#live-form-item-label-width .n-form-item')).includes('width:120px'),
-  styleAt(doc.querySelector('#live-form-item-label-width .n-form-item'))
+  'DOM: labelWidth Px 120 lands on the label element (left placement)',
+  flatStyle(doc.querySelector('#live-form-item-label-width .n-form-item-label')).includes('width:120px'),
+  styleAt(doc.querySelector('#live-form-item-label-width .n-form-item-label'))
+)
+dEq(
+  'DOM: labelWidth Px does not put a width on the item root',
+  false,
+  flatStyle(doc.querySelector('#live-form-item-label-width .n-form-item')).includes('width:')
+)
+dTrue(
+  'DOM: labelWidth Px 80 lands on the label as width:80px',
+  flatStyle(doc.querySelector('#live-form-item-label-width-px80 .n-form-item-label')).includes('width:80px'),
+  styleAt(doc.querySelector('#live-form-item-label-width-px80 .n-form-item-label'))
+)
+dTrue(
+  'DOM: labelWidth Custom is a verbatim width value',
+  flatStyle(doc.querySelector('#live-form-item-label-width-custom .n-form-item-label')).includes('width:10em'),
+  styleAt(doc.querySelector('#live-form-item-label-width-custom .n-form-item-label'))
+)
+dEq(
+  'DOM: top placement renders no width anywhere',
+  false,
+  (() => {
+    const it = doc.getElementById('live-form-item-label-width-top')
+    if (!it) return 'missing'
+    return it.outerHTML.includes('width:')
+  })()
 )
 dTrue(
   'DOM: labelStyle is applied inside the label',
@@ -3190,8 +3224,8 @@ dTrue(
   clsOf(doc.querySelector('#live-form-item-validation-warn .n-form-item-feedback'))
 )
 dTrue(
-  'DOM: a warning marks the blank --warning-status',
-  hasCls(doc.querySelector('#live-form-item-validation-warn .n-form-item-blank'), 'n-form-item-blank--warning-status'),
+  'DOM: a warning marks the blank --warning (bare status word)',
+  hasCls(doc.querySelector('#live-form-item-validation-warn .n-form-item-blank'), 'n-form-item-blank--warning'),
   clsOf(doc.querySelector('#live-form-item-validation-warn .n-form-item-blank'))
 )
 dEq(
@@ -3208,8 +3242,8 @@ dTrue(
   clsOf(doc.querySelector('#live-form-item-validation-error .n-form-item-feedback'))
 )
 dTrue(
-  'DOM: an error marks the blank --error-status',
-  hasCls(doc.querySelector('#live-form-item-validation-error .n-form-item-blank'), 'n-form-item-blank--error-status'),
+  'DOM: an error marks the blank --error (bare status word)',
+  hasCls(doc.querySelector('#live-form-item-validation-error .n-form-item-blank'), 'n-form-item-blank--error'),
   clsOf(doc.querySelector('#live-form-item-validation-error .n-form-item-blank'))
 )
 dTrue(
@@ -3222,18 +3256,23 @@ dTrue(
 )
 dTrue(
   'DOM: validationStatus overrides the blank status too',
-  hasCls(doc.querySelector('#live-form-item-validation-override .n-form-item-blank'), 'n-form-item-blank--warning-status'),
+  hasCls(doc.querySelector('#live-form-item-validation-override .n-form-item-blank'), 'n-form-item-blank--warning'),
   clsOf(doc.querySelector('#live-form-item-validation-override .n-form-item-blank'))
 )
 dTrue(
   'DOM: validationStatus alone still marks the blank',
-  hasCls(doc.querySelector('#live-form-item-status-only .n-form-item-blank'), 'n-form-item-blank--error-status'),
+  hasCls(doc.querySelector('#live-form-item-status-only .n-form-item-blank'), 'n-form-item-blank--error'),
   clsOf(doc.querySelector('#live-form-item-status-only .n-form-item-blank'))
 )
+dTrue(
+  'DOM: a status with no lines still renders the (empty) wrapper',
+  hasCls(doc.querySelector('#live-form-item-status-only .n-form-item-feedback-wrapper'), 'n-form-item-feedback-wrapper'),
+  clsOf(doc.querySelector('#live-form-item-status-only .n-form-item-feedback-wrapper'))
+)
 dEq(
-  'DOM: a status with no lines renders no wrapper',
+  'DOM: status with no lines renders no inner .n-form-item-feedback',
   0,
-  doc.querySelectorAll('#live-form-item-status-only .n-form-item-feedback-wrapper').length
+  doc.querySelectorAll('#live-form-item-status-only .n-form-item-feedback').length
 )
 dEq(
   'DOM: showFeedback False suppresses the wrapper even with a controlled line',
