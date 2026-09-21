@@ -28,6 +28,11 @@ caller-owned-runtime precedent). The rails themselves always render.
 
 **Documented gaps:**
 
+  - The root is an elm-ui element (the `NUI.Progress` / `NUI.Badge` precedent, so the
+    caller's `attributes` land on it), which means elm-ui's own structure classes also
+    sit alongside `n-scrollbar`. Naive UI's rules (scoped `.nui-root.nui-root`) declare
+    every load-bearing property and the bridge restores `flex-basis`, so the result
+    matches; the container and rails remain the root's direct children (`>` hold).
   - `vueuc`'s `VResizeObserver` (content/container resize tracking) is omitted.
   - `trigger` (public `'none' | 'hover'`) is not modelled: it only selects between a
     no-op `Wrapper` and a `Transition`, so it has no static DOM effect. Hover-driven

@@ -3814,7 +3814,15 @@ dEq(
 // Scrollbar -------------------------------------------------------------------
 const scrollRoot = doc.querySelector('#live-scrollbar-default .n-scrollbar')
 dEq('DOM: Scrollbar root is a <div>', 'DIV', tagOf(scrollRoot))
-dEq('DOM: Scrollbar default root class list is exactly n-scrollbar', 'n-scrollbar', clsOf(scrollRoot))
+dEq(
+  'DOM: Scrollbar default root carries exactly the n-scrollbar class (plus elm-ui structure classes)',
+  'n-scrollbar',
+  // The root is an elm-ui element (the Progress/Badge precedent), so elm-ui's own
+  // structural classes (`hc s c wc ct cl`) join ours; assert only the Naive UI ones.
+  [...(scrollRoot ? scrollRoot.classList : [])]
+    .filter((c) => c.startsWith('n-scrollbar'))
+    .join(' ')
+)
 dEq(
   'DOM: Scrollbar root role is none',
   'none',
