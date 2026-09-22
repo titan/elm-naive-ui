@@ -65,10 +65,13 @@ absence. `positiveProps`/`negativeProps` model upstream's
 `type` to `NUI.Types.Kind`; `Primary` is invalid upstream and degrades to
 `Default` (Info glyph + base `--n-icon-color`). No inline-theme class is ever
 emitted (house rule). `titleClass/titleStyle/…` pairs collapse to
-`*Attributes` lists. The close is the ported `n-base-close` **classes-only**
-(its structure CSS is in the generated sheet; dialog's cssr positions it — no
-`--absolute`, sized by `--n-close-size`), `closeFocusable` driving its
-tabindex (0 vs −1).
+`*Attributes` lists — note the style asymmetry: elm-ui layout attributes
+(`Element.width`, `Element.padding`, …) land as elm-ui classes on the node,
+NOT as CSS `style`; only raw `HA.attribute "style"` (or `I.cssVars`)
+reaches the upstream `titleStyle/contentStyle/actionStyle` channel. The
+close is the ported `n-base-close` **classes-only** (its structure CSS is in
+the generated sheet; dialog's cssr positions it — no `--absolute`, sized by
+`--n-close-size`), `closeFocusable` driving its tabindex (0 vs −1).
 
 -}
 
@@ -499,7 +502,10 @@ positiveKind kind =
 
 
 {-| seemly's `getMargin`, reduced to the four sides the `--n-icon-margin-*`
-vars need. Handles the 1–4 value CSS shorthand forms.
+vars need. Handles the 1–4 value CSS shorthand forms. Divergence: >4 values
+returns empty strings where seemly throws — unreachable with the shipped
+theme values (all 4-value); a malformed override yields empty margins, not
+an exception.
 -}
 getMargin : String -> { top : String, right : String, bottom : String, left : String }
 getMargin margin =
