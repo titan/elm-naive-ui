@@ -57,8 +57,16 @@ The visual result is Naive UI's own: the elements carry the `.n-input` BEM
 classes and Naive UI's `--n-*` custom properties, and `NUI.Css` ships Naive
 UI's exact CSS.
 
-Two seams beyond the basic props:
+Three seams beyond the basic props:
 
+  - `autosize` — upstream `autosize: Boolean | {minRows?, maxRows?}`
+    (`Input.tsx:89`); here `Bool` only. `True` emits `n-input--autosize`
+    on the root and suppresses `n-input--resizable` (upstream
+    `Input.tsx:1130-1131` gates `--resizable` on `resizable && !autosize`
+    and fires `--autosize` on the flag alone, ungated on `type`). The
+    height measurement itself (`Input.tsx:339-375` — the minRows/maxRows
+    math, `overflow` toggling) is runtime DOM sizing — caller-owned; the
+    object form maps to the caller setting `rows` / CSS.
   - `loading` — upstream renders its `NBaseSuffix` spinner whenever the
     `loading` prop is set (`Input.tsx:1345-1352`); here `loading = True`.
     DOM (the `NUI.BaseSelection` suffix idiom): `div.n-base-loading
@@ -119,6 +127,7 @@ type alias Options msg =
     , bordered : Bool
     , stateful : Bool
     , resizable : Bool
+    , autosize : Bool
     , rows : Int
     , maxlength : Maybe Int
     , minlength : Maybe Int
@@ -145,6 +154,7 @@ defaults =
     , bordered = True
     , stateful = True
     , resizable = True
+    , autosize = False
     , rows = 3
     , maxlength = Nothing
     , minlength = Nothing
@@ -651,7 +661,8 @@ rootClasses opts isTextarea =
         , I.classIf opts.rtl "n-input--rtl"
         , I.classIf opts.disabled "n-input--disabled"
         , I.classIf isTextarea "n-input--textarea"
-        , I.classIf (isTextarea && opts.resizable) "n-input--resizable"
+        , I.classIf (isTextarea && opts.resizable && not opts.autosize) "n-input--resizable"
+        , I.classIf opts.autosize "n-input--autosize"
         , I.classIf (opts.round && not isTextarea) "n-input--round"
         , I.classIf opts.stateful "n-input--stateful"
         ]
