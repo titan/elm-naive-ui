@@ -85,6 +85,7 @@
     "NUI.Theme.Color",
     "NUI.Theme.Common",
     "NUI.Theme.Descriptions",
+    "NUI.Theme.Dialog",
     "NUI.Theme.Divider",
     "NUI.Theme.Drawer",
     "NUI.Theme.Dropdown",

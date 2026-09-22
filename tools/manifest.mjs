@@ -322,5 +322,13 @@ export const components = {
     // mask colour hardcoded.
     cssr: ['drawer/src/styles/index.cssr.ts', 'drawer/src/styles/rtl.cssr.ts'],
     theme: 'drawer/styles/light.ts'
+  },
+  dialog: {
+    // Pure body component (upstream NDialog): the .n-dialog card rendered
+    // standalone or as Modal's dialog/confirm preset body. cssr carries the
+    // .n-modal .n-dialog width rule (446px) for the preset composition; the
+    // imperative provider/env layer is caller runtime in the port.
+    cssr: ['dialog/src/styles/index.cssr.ts', 'dialog/src/styles/rtl.cssr.ts'],
+    theme: 'dialog/styles/light.ts'
   }
 }

@@ -5767,6 +5767,98 @@ pointer-events: none;}.nui-root.nui-root .n-modal-body-wrapper.n-modal-body-wrap
           margin-left: 0;
           margin-right: 6px;}
 
+/* ===== naive-ui: dialog ===== */
+.nui-root.nui-root .n-dialog {
+
+    --n-icon-margin: var(--n-icon-margin-top) var(--n-icon-margin-right) var(--n-icon-margin-bottom) var(--n-icon-margin-left);
+    word-break: break-word;
+    line-height: var(--n-line-height);
+    position: relative;
+    background: var(--n-color);
+    color: var(--n-text-color);
+    box-sizing: border-box;
+    margin: auto;
+    border-radius: var(--n-border-radius);
+    padding: var(--n-padding);
+    transition: 
+      border-color .3s var(--n-bezier),
+      background-color .3s var(--n-bezier),
+      color .3s var(--n-bezier);}.nui-root.nui-root .n-dialog .n-dialog__icon {
+
+      color: var(--n-icon-color);}.nui-root.nui-root .n-dialog.n-dialog--bordered {
+
+      border: var(--n-border);}.nui-root.nui-root .n-dialog.n-dialog--icon-top .n-dialog__close {
+
+        margin: var(--n-close-margin);}.nui-root.nui-root .n-dialog.n-dialog--icon-top .n-dialog__icon {
+
+        margin: var(--n-icon-margin);}.nui-root.nui-root .n-dialog.n-dialog--icon-top .n-dialog__content {
+
+        text-align: center;}.nui-root.nui-root .n-dialog.n-dialog--icon-top .n-dialog__title {
+
+        justify-content: center;}.nui-root.nui-root .n-dialog.n-dialog--icon-top .n-dialog__action {
+
+        justify-content: center;}.nui-root.nui-root .n-dialog.n-dialog--icon-left .n-dialog__icon {
+
+        margin: var(--n-icon-margin);}.nui-root.nui-root .n-dialog.n-dialog--icon-left.n-dialog--closable .n-dialog__title {
+
+          padding-right: calc(var(--n-close-size) + 6px);}.nui-root.nui-root .n-dialog .n-dialog__close {
+
+      position: absolute;
+      right: 0;
+      top: 0;
+      margin: var(--n-close-margin);
+      transition:
+        background-color .3s var(--n-bezier),
+        color .3s var(--n-bezier);
+      z-index: 1;}.nui-root.nui-root .n-dialog .n-dialog__content {
+
+      font-size: var(--n-font-size);
+      margin: var(--n-content-margin);
+      position: relative;
+      word-break: break-word;}.nui-root.nui-root .n-dialog .n-dialog__content.n-dialog__content--last {
+margin-bottom: 0;}.nui-root.nui-root .n-dialog .n-dialog__action {
+
+      display: flex;
+      justify-content: flex-end;}.nui-root.nui-root .n-dialog .n-dialog__action > *:not(:last-child) {
+
+        margin-right: var(--n-action-space);}.nui-root.nui-root .n-dialog .n-dialog__icon {
+
+      font-size: var(--n-icon-size);
+      transition: color .3s var(--n-bezier);}.nui-root.nui-root .n-dialog .n-dialog__title {
+
+      transition: color .3s var(--n-bezier);
+      display: flex;
+      align-items: center;
+      font-size: var(--n-title-font-size);
+      font-weight: var(--n-title-font-weight);
+      color: var(--n-title-text-color);}.nui-root.nui-root .n-dialog .n-dialog-icon-container {
+
+      display: flex;
+      justify-content: center;}.nui-root.nui-root .n-modal .n-dialog,
+.nui-root.nui-root .n-drawer .n-dialog {
+
+      width: 446px;
+      max-width: calc(100vw - 32px);}.nui-root.nui-root .n-dialog.n-modal {
+
+      width: 446px;
+      max-width: calc(100vw - 32px);}.nui-root.nui-root .n-dialog.n-dialog--rtl {
+
+    --n-icon-margin: var(--n-icon-margin-top) var(--n-icon-margin-left) var(--n-icon-margin-bottom) var(--n-icon-margin-right);
+    direction: rtl;}.nui-root.nui-root .n-dialog.n-dialog--rtl .n-dialog__close {
+
+      right: unset;
+      left: 0;
+      margin-left: 1.8rem;}.nui-root.nui-root .n-dialog.n-dialog--rtl .n-dialog__action {
+
+      direction: rtl;
+      display: flex;}.nui-root.nui-root .n-dialog.n-dialog--rtl .n-dialog__action > *:not(:first-child) {
+
+        margin-right: var(--n-action-space);}.nui-root.nui-root .n-dialog.n-dialog--rtl .n-dialog__action > * {
+
+        margin-right: 0;}.nui-root.nui-root .n-dialog.n-dialog--rtl.n-dialog--icon-left.n-dialog--closable .n-dialog__title {
+
+          padding-right: unset;}
+
 /* ===== elm-ui bridge =====
  *
  * Components are built from elm-ui elements, and elm-ui styles its own helper classes
