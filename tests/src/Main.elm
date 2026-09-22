@@ -6564,7 +6564,7 @@ checks =
     , eq "selectmenu cssVars huge --n-option-font-size 16px" (Just "16px") (lookup "--n-option-font-size" (SelectMenu.cssVars light SelectMenu.Huge))
     , eq "selectmenu cssVars tiny --n-option-height 22px" (Just "22px") (lookup "--n-option-height" (SelectMenu.cssVars light SelectMenu.Tiny))
     , eq "selectmenu cssVars tiny --n-option-font-size 12px" (Just "12px") (lookup "--n-option-font-size" (SelectMenu.cssVars light SelectMenu.Tiny))
-    , eq "selectmenu cssVars: small switches exactly height+font-size" [ "--n-option-font-size", "--n-option-height" ] (changedVarKeys (SelectMenu.cssVars light SelectMenu.Medium) (SelectMenu.cssVars light SelectMenu.Small))
+    , eq "selectmenu cssVars: small switches exactly height (font-size small=medium=14px upstream — the 12/14/14/15/16 scale)" [ "--n-option-height" ] (changedVarKeys (SelectMenu.cssVars light SelectMenu.Medium) (SelectMenu.cssVars light SelectMenu.Small))
     , eq "selectmenu cssVars: --n-option-padding does NOT switch (constant 0 12px)" ( Just "0 12px", Just "0 12px" ) ( lookup "--n-option-padding" (SelectMenu.cssVars light SelectMenu.Tiny), lookup "--n-option-padding" (SelectMenu.cssVars light SelectMenu.Huge) )
 
     -- selectmenu: dark ----------------------------------------------------

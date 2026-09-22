@@ -6486,7 +6486,7 @@ const POPCONFIRM_PANEL_STYLE =
 
 dEq(
   'DOM: Popconfirm root n-* class order = n-popover, n-popover-shared, n-popconfirm',
-  'n-popover n-popover-shared n-popconfirm',
+  'n-popover n-popover-shared n-popconfirm n-popover-shared--show-arrow',
   nClassesStr(pcRoot('live-popconfirm-default'))
 )
 dEq(
@@ -6594,8 +6594,8 @@ dEq(
   ].join('|')
 )
 dEq(
-  'DOM: Popconfirm positiveProps wins AFTER the derived base (Error kind + round 28px); negativeProps round too',
-  'n-button--error-type/28px|n-button--default-type/28px',
+  'DOM: Popconfirm positiveProps wins AFTER the derived base (Error kind + round 28px); negativeProps round too — negative FIRST',
+  'n-button--default-type/28px|n-button--error-type/28px',
   pcButtons('live-popconfirm-props')
     .map((b) => {
       const kind = [...b.classList].find((c) => c.endsWith('-type'))
@@ -6605,9 +6605,13 @@ dEq(
     .join('|')
 )
 dEq(
-  'DOM: Popconfirm prepends n-popconfirm to caller extraClasses (before caller-class)',
-  'n-popover n-popover-shared n-popconfirm caller-class',
-  nClassesStr(pcRoot('live-popconfirm-extra'))
+  'DOM: Popconfirm prepends n-popconfirm to caller extraClasses (before caller-class, before the arrow modifier)',
+  'n-popover n-popover-shared n-popconfirm caller-class n-popover-shared--show-arrow',
+  pcRoot('live-popconfirm-extra')
+    ? [...pcRoot('live-popconfirm-extra').classList]
+        .filter((c) => c.startsWith('n-') || c === 'caller-class')
+        .join(' ')
+    : null
 )
 
 // --- Popselect --------------------------------------------------------------
@@ -6667,9 +6671,9 @@ dTrue(
   clsOf(psRoot('live-popselect-rtl'))
 )
 dTrue(
-  'DOM: Popselect overlap -> n-popover-shared--overlap (the --show-arrow quirk stays — pinned)',
+  'DOM: Popselect overlap -> n-popover-shared--overlap and --show-arrow suppressed (mergedShowArrow = !overlap — the Popover/Dropdown convention)',
   hasCls(psRoot('live-popselect-overlap'), 'n-popover-shared--overlap') &&
-    hasCls(psRoot('live-popselect-overlap'), 'n-popover-shared--show-arrow'),
+    !hasCls(psRoot('live-popselect-overlap'), 'n-popover-shared--show-arrow'),
   clsOf(psRoot('live-popselect-overlap'))
 )
 dTrue(
@@ -6761,7 +6765,11 @@ dEq(
 dEq(
   'DOM: SelectMenu extraClasses appended after the size class',
   'n-base-select-menu n-base-select-menu--medium-size caller-extra',
-  nClassesStr(smRoot('live-selectmenu-extra'))
+  smRoot('live-selectmenu-extra')
+    ? [...smRoot('live-selectmenu-extra').classList]
+        .filter((c) => c.startsWith('n-') || c === 'caller-extra')
+        .join(' ')
+    : null
 )
 dTrue(
   'DOM: SelectMenu header slot -> __header[data-header]; action slot -> __action[data-action] + the inert focus detector',
