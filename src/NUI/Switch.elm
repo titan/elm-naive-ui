@@ -46,6 +46,10 @@ type alias Options msg =
     , disabled : Bool
     , size : Size
     , loading : Bool
+    , spinStrokeWidth : Maybe Int
+    , spinStroke : Maybe String
+    , spinScale : Maybe Float
+    , spinRadius : Maybe Int
     , round : Bool
     , rubberBand : Bool
     , railColor : Maybe String
@@ -66,6 +70,10 @@ defaults =
     , disabled = False
     , size = Medium
     , loading = False
+    , spinStrokeWidth = Nothing
+    , spinStroke = Nothing
+    , spinScale = Nothing
+    , spinRadius = Nothing
     , round = True
     , rubberBand = True
     , railColor = Nothing

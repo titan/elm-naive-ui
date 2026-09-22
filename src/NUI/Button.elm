@@ -58,6 +58,10 @@ type alias Options msg =
     , block : Bool
     , disabled : Bool
     , loading : Bool
+    , spinStrokeWidth : Maybe Int
+    , spinStroke : Maybe String
+    , spinScale : Maybe Float
+    , spinRadius : Maybe Int
     , strong : Bool
     , bordered : Bool
     , color : Maybe String
@@ -81,6 +85,10 @@ defaults =
     , block = False
     , disabled = False
     , loading = False
+    , spinStrokeWidth = Nothing
+    , spinStroke = Nothing
+    , spinScale = Nothing
+    , spinRadius = Nothing
     , strong = False
     , bordered = True
     , color = Nothing
