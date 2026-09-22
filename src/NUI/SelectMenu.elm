@@ -39,7 +39,8 @@ navigation and `--pending` (caller-injected per-option `attributes`),
 `--show-checkmark` lands on EVERY option while `showCheckmark` (upstream
 default true — the padding rule needs it). Options carry `value : String`
 keys (upstream allows numbers); `Custom` renders its node verbatim with no
-toggle wiring. Empty = no flattened rows (groups' children included).
+toggle wiring. Empty = zero flattened rows, group headers included — a
+childless group renders its header, never the empty fallback.
 
 -}
 
@@ -77,8 +78,9 @@ type Value
     | Multiple (List String)
 
 
-{-| One menu row: a leaf option, a group (header + children, one level —
-nested groups are dropped like treemate flattens), or a fully custom node.
+{-| One menu row: a leaf option, a group (header + children — nested
+groups flatten recursively, their header rows included), or a fully custom
+node.
 -}
 type Option msg
     = Option (LeafOption msg)
@@ -229,7 +231,8 @@ headerNode opts =
 
 
 {-| The menu middle: the rows behind `NUI.Scrollbar`, or the empty fallback
-when the flattening produced no rows (groups' children included).
+when the flattening produced zero rows — group headers included, so a
+childless group is one header row, not empty.
 -}
 bodyNode : Theme -> Options msg -> List (Row msg) -> Element msg
 bodyNode theme opts rows =
@@ -238,7 +241,7 @@ bodyNode theme opts rows =
             [ I.classes [ "n-base-select-menu__empty" ]
             , Element.htmlAttribute (HA.attribute "data-empty" "")
             ]
-            (Maybe.withDefault (NUI.Empty.view theme NUI.Empty.defaults []) opts.empty)
+            (Maybe.withDefault (emptyFallback theme opts.size) opts.empty)
 
     else
         let
@@ -248,6 +251,41 @@ bodyNode theme opts rows =
         NUI.Scrollbar.view theme
             { scrollbarDefaults | rtl = opts.rtl }
             [ optionWrapperNode theme opts rows ]
+
+
+{-| The built-in empty fallback — `NEmpty` at the menu's own size (upstream
+`<NEmpty size={this.size} …>`, SelectMenu.tsx; record update needs the plain
+variable, not the qualified name).
+-}
+emptyFallback : Theme -> Size -> Element msg
+emptyFallback theme size =
+    let
+        emptyDefaults =
+            NUI.Empty.defaults
+    in
+    NUI.Empty.view theme { emptyDefaults | size = emptySize size } []
+
+
+{-| `SelectMenu.Size` → `NUI.Empty.Size`: the same five constructors, two
+distinct unions (`NUI.Empty` keeps its own scale incl. `Huge`).
+-}
+emptySize : Size -> NUI.Empty.Size
+emptySize size =
+    case size of
+        Tiny ->
+            NUI.Empty.Tiny
+
+        Small ->
+            NUI.Empty.Small
+
+        Medium ->
+            NUI.Empty.Medium
+
+        Large ->
+            NUI.Empty.Large
+
+        Huge ->
+            NUI.Empty.Huge
 
 
 {-| `div.n-base-select-menu-option-wrapper` — the plain (non-virtual) option
@@ -318,10 +356,12 @@ type Row msg
     | RowCustom (RenderOption msg)
 
 
-{-| Treemate's flatten, one level: leaves become rows, a group becomes its
-header followed by its children as siblings (a group inside a group is
-dropped), a custom passes through. A childless group still contributes its
-header — only zero rows make the menu empty.
+{-| Treemate's flatten/traverse: every node becomes a row. A leaf carries
+its `--grouped` flag, a group's header is always a row followed by its
+children as siblings — nested groups flatten recursively, contributing
+their own header rows (never dropped) — and a custom passes through.
+Emptiness counts headers too: a childless group is one header row, and only
+zero rows make the menu empty.
 -}
 flatten : Bool -> List (Option msg) -> List (Row msg)
 flatten grouped options =
@@ -335,11 +375,7 @@ flattenOne grouped option =
             [ RowOption grouped leaf ]
 
         Group group ->
-            if grouped then
-                []
-
-            else
-                RowGroup group :: flatten True group.children
+            RowGroup group :: flatten True group.children
 
         Custom custom ->
             [ RowCustom custom ]
@@ -410,7 +446,10 @@ groupHeaderNode group =
 
 
 {-| Upstream's selection predicate: multiple mode = value-set membership,
-single mode = equality against a non-null value.
+single mode = equality against a non-null value. A `Single` value under
+`multiple = True` marks nothing selected (upstream would scalar-match a
+non-array value — contradictory-input territory; the port makes the
+impossible state inert).
 -}
 isSelected : Bool -> Value -> String -> Bool
 isSelected multiple value optionValue =
