@@ -3436,6 +3436,24 @@ btnLoadingOpts =
     { base | loading = True }
 
 
+{-| A Button in the loading state carrying all-four `spinProps` overrides (the
+upstream `{...this.spinProps}` spread into `NBaseLoading` — Button.tsx:648).
+-}
+btnSpinPropsOpts : Button.Options Msg
+btnSpinPropsOpts =
+    let
+        base =
+            Button.defaults
+    in
+    { base
+        | loading = True
+        , spinStrokeWidth = Just 6
+        , spinStroke = Just "#ff0000"
+        , spinScale = Just 2
+        , spinRadius = Just 50
+    }
+
+
 
 -- POPCONFIRM / POPSELECT / SELECTMENU OPTION SETS ------------------------------
 
@@ -7084,6 +7102,8 @@ liveNodes =
                 -- true inline svg chain)
                 , Element.el [ Element.htmlAttribute (HA.id "live-switch-loading") ]
                     (Switch.view Theme.default { swD | loading = True } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-switch-spinprops") ]
+                    (Switch.view Theme.default { swD | loading = True, spinStrokeWidth = Just 6, spinStroke = Just "#ff0000" } [])
                 , Element.el [ Element.htmlAttribute (HA.id "live-rtl-alert") ]
                     (Alert.view Theme.default rtlAlertOpts [ Element.text "RTL" ])
                 , Element.el [ Element.htmlAttribute (HA.id "live-rtl-button") ]
@@ -8030,6 +8050,8 @@ liveNodes =
                 -- Button seams (the loading icon + the n-icon-slot wrapper)
                 , Element.el [ Element.htmlAttribute (HA.id "live-button-loading") ]
                     (Button.view Theme.default btnLoadingOpts [ Element.text "Loading" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-button-spinprops") ]
+                    (Button.view Theme.default btnSpinPropsOpts [ Element.text "Loading" ])
                 , Element.el [ Element.htmlAttribute (HA.id "live-button-icon") ]
                     (Button.view Theme.default btnIconOpts [ Element.text "Icon" ])
 

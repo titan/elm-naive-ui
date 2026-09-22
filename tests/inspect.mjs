@@ -873,6 +873,25 @@ dEq(
     ].join('|')
   })()
 )
+dEq(
+  'DOM: Switch loading spinProps partial override (sw6 + stroke; radius/scale baseline)',
+  '6|color:#ff0000|0 0 200 200|97|100|100',
+  (() => {
+    const svg = doc.querySelector(
+      '#live-switch-spinprops .n-switch__button > .n-base-loading .n-base-loading__container svg.n-base-loading__icon'
+    )
+    if (!svg) return null
+    const c = svg.querySelector('circle')
+    return [
+      c.getAttribute('stroke-width'),
+      svg.getAttribute('style'),
+      svg.getAttribute('viewBox'),
+      c.getAttribute('r'),
+      c.getAttribute('cx'),
+      c.getAttribute('cy')
+    ].join('|')
+  })()
+)
 dTrue(
   'DOM: Switch loading .n-base-loading carries NO inline background-image (the data-URI spinner is gone; the svg chain pin above is the presence guard)',
   (() => {
@@ -6500,6 +6519,25 @@ dEq(
       c.getAttribute('stroke-width'),
       c.getAttribute('stroke-dasharray'),
       c.getAttribute('stroke-dashoffset')
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: Button loading spinProps overrides reach the svg (sw6 stroke #ff0000 radius 50 scale 2 -> r=47 viewBox 50)',
+  '6|color:#ff0000|0 0 50 50|47|25|25',
+  (() => {
+    const svg = doc.querySelector(
+      '#live-button-spinprops .n-button__icon .n-base-loading svg.n-base-loading__icon'
+    )
+    if (!svg) return null
+    const c = svg.querySelector('circle')
+    return [
+      c.getAttribute('stroke-width'),
+      svg.getAttribute('style'),
+      svg.getAttribute('viewBox'),
+      c.getAttribute('r'),
+      c.getAttribute('cx'),
+      c.getAttribute('cy')
     ].join('|')
   })()
 )
