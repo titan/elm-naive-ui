@@ -170,8 +170,11 @@ async function dumpComponent(rel) {
     `import * as darkMod from './${darkRel}'`,
     // Naive UI theme modules export their theme object either as `default` or as a
     // named const (e.g. `skeletonLight`); pick whichever carries a `self` function.
+    // A bare dark theme (no `self` of its own — popselect is the first) falls back
+    // to the LIGHT theme's `self` over `commonDark`, mirroring upstream's
+    // `(self || globalSelf || defaultTheme.self)(mergedCommon)` in use-theme.ts.
     `const pick = (m) => (m.default && m.default.self ? m.default : Object.values(m).find((v) => v && typeof v.self === 'function'))`,
-    `export default { light: pick(lightMod).self(commonLight), dark: pick(darkMod).self(commonDark) }`
+    `export default { light: pick(lightMod).self(commonLight), dark: (pick(darkMod) || pick(lightMod)).self(commonDark) }`
   ].join('\n')
   const values = (await loadModuleAt(RESOLVE_DIR, path.join(RESOLVE_DIR, rel), src)).default
   const lightKeys = Object.keys(values.light)

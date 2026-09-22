@@ -1,0 +1,36 @@
+{
+  "light": {
+    "iconSize": "22px",
+    "fontSize": "14px",
+    "iconColor": "#f0a020"
+  },
+  "dark": {
+    "iconSize": "22px",
+    "fontSize": "14px",
+    "iconColor": "#f2c97d"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "iconColor": "warningColor",
+        "fontSize": "fontSize"
+      },
+      "seen": [
+        "iconColor",
+        "fontSize",
+        "iconSize"
+      ]
+    },
+    "dark": {
+      "refs": {
+        "fontSize": "fontSize",
+        "iconColor": "warningColor"
+      },
+      "seen": [
+        "iconSize",
+        "fontSize",
+        "iconColor"
+      ]
+    }
+  }
+}

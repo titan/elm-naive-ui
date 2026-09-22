@@ -15,7 +15,6 @@ export const components = {
       '_internal/icon/src/styles/index.cssr.ts',
       '_internal/loading/src/styles/index.cssr.ts',
       '_internal/menu-mask/src/styles/index.cssr.ts',
-      '_internal/select-menu/src/styles/index.cssr.ts',
       '_internal/selection/src/styles/index.cssr.ts',
       '_internal/slot-machine/src/styles/index.cssr.ts',
       '_internal/wave/src/styles/index.cssr.ts'
@@ -287,6 +286,17 @@ export const components = {
     ],
     theme: '_internal/scrollbar/styles/light.ts'
   },
+  selectMenu: {
+    // `_internal/select-menu` — the body engine Popselect (and later Select)
+    // renders. Owns its block like scrollbar above; moving it out of the
+    // catch-all `internal` entry also extracts the RTL rules
+    // (`n-base-select-menu--rtl`, previously absent).
+    cssr: [
+      '_internal/select-menu/src/styles/index.cssr.ts',
+      '_internal/select-menu/src/styles/rtl.cssr.ts'
+    ],
+    theme: '_internal/select-menu/styles/light.ts'
+  },
   tooltip: {
     // No cssr of its own — the body carries popover's classes/CSS; only the
     // theme overrides five popover vars (upstream builtinThemeOverrides).
@@ -330,5 +340,18 @@ export const components = {
     // imperative provider/env layer is caller runtime in the port.
     cssr: ['dialog/src/styles/index.cssr.ts', 'dialog/src/styles/rtl.cssr.ts'],
     theme: 'dialog/styles/light.ts'
+  },
+  popconfirm: {
+    // Popover default body path + `n-popconfirm` marker (internalExtraClass)
+    // + the panel inside `n-popover__content`. The bare marker has no rule —
+    // cssr only emits `.n-popconfirm …` descendant selectors.
+    cssr: ['popconfirm/src/styles/index.cssr.ts'],
+    theme: 'popconfirm/styles/light.ts'
+  },
+  popselect: {
+    // The select-menu IS the popover-shared body (internalRenderBody lane,
+    // like dropdown): one rule here, the block lives in the selectMenu entry.
+    cssr: ['popselect/src/styles/index.cssr.ts'],
+    theme: 'popselect/styles/light.ts'
   }
 }
