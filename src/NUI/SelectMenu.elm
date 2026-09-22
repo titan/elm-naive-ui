@@ -21,6 +21,9 @@ the future `Select` batch extends it).
       tabindex = focusable ? 0 : -1
       style = 23 css vars
       ├─ div.n-base-select-menu__header [data-header]          — iff header
+      ├─ div.n-base-select-menu__loading                       — iff loading
+      │    > NBaseLoading (strokeWidth 20)                     — replaces the
+      │      scrollbar/empty middle entirely
       ├─ NUI.Scrollbar
       │    > div.n-base-select-menu-option-wrapper             — padding from size
       │        > div.n-base-select-group-header {label}        — group header
@@ -35,7 +38,9 @@ the future `Select` batch extends it).
 Everything runtime is caller-owned (the popover-family precedent): keyboard
 navigation and `--pending` (caller-injected per-option `attributes`),
 `virtualScroll` (the virtual list — the plain option-wrapper path only),
-`loading`, focus handlers, `onTabOut`. `--grouped` is computed from the tree;
+focus handlers, `onTabOut`. `loading` (upstream `Select`'s remote state)
+replaces the middle with the `__loading` row — header and action still
+mount. `--grouped` is computed from the tree;
 `--show-checkmark` lands on EVERY option while `showCheckmark` (upstream
 default true — the padding rule needs it). Options carry `value : String`
 keys (upstream allows numbers); `Custom` renders its node verbatim with no
@@ -126,6 +131,7 @@ type alias Options msg =
     , value : Value
     , showCheckmark : Bool
     , focusable : Bool
+    , loading : Bool
     , header : Maybe (Element msg)
     , action : Maybe (Element msg)
     , empty : Maybe (Element msg)
@@ -147,6 +153,7 @@ defaults =
     , value = Single Nothing
     , showCheckmark = True
     , focusable = False
+    , loading = False
     , header = Nothing
     , action = Nothing
     , empty = Nothing
