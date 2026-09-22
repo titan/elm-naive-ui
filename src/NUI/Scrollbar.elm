@@ -26,6 +26,11 @@ rendered (upstream's `needBar && isShowBar && !isIos`) and `yBarStyle` / `xBarSt
 carry the measured geometry as raw CSS (the `NUI.BackTop` / `NUI.Affix`
 caller-owned-runtime precedent). The rails themselves always render.
 
+**Composition seams.** `extraClasses` (appended after `n-scrollbar`, like a Vue
+fallthrough class) and `attributes` let wrapper components merge themselves onto
+the scrollbar root — `NUI.DrawerContent`'s non-native body uses it for the
+`n-drawer-body` class (the `NUI.Card` seam precedent).
+
 **Documented gaps:**
 
   - The root is an elm-ui element (the `NUI.Progress` / `NUI.Badge` precedent, so the
@@ -89,6 +94,7 @@ type alias Options msg =
     , xBarStyle : Maybe String
     , contentClass : Maybe String
     , contentStyle : Maybe String
+    , extraClasses : List String
     , attributes : List (Element.Attribute msg)
     }
 
@@ -107,6 +113,7 @@ defaults =
     , xBarStyle = Nothing
     , contentClass = Nothing
     , contentStyle = Nothing
+    , extraClasses = []
     , attributes = []
     }
 
@@ -121,7 +128,7 @@ view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     Element.column
         ([ I.classes
-            ("n-scrollbar" :: I.classIf opts.rtl "n-scrollbar--rtl")
+            ("n-scrollbar" :: (I.classIf opts.rtl "n-scrollbar--rtl" ++ opts.extraClasses))
          , I.cssVars (cssVars theme opts)
          , Element.htmlAttribute (HA.attribute "role" "none")
          ]

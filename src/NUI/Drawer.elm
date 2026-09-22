@@ -82,7 +82,10 @@ embeds `NUI.Scrollbar` with `contentClass = "n-drawer-content-wrapper "` +
 your `contentClass`. **Sizing**: `width` (left/right) / `height`
 (top/bottom) resolve per axis with the `defaultWidth`/`defaultHeight`
 fallback (upstream `251`), emitted as the single inline `style` on
-`.n-drawer` (exact upstream pin: `width: 600px;`).
+`.n-drawer` (exact upstream pin: `width: 600px;`). Upstream's deprecated
+`drawerStyle`/`drawerClass` and the `scrollbarProps` escape hatch are not
+modelled; `attributes` is the container passthrough (the `NUI.Modal` house
+rule — upstream's `$attrs` land on `.n-drawer` instead).
 
 `NUI.DrawerContent` is the composition unit (upstream `NDrawerContent`) — see
 its module. Upstream has no `preset` prop (Modal's `Preset` has no analog
@@ -91,7 +94,10 @@ here): the slot is the third `view` argument.
 -}
 
 import Element exposing (Element)
+import Element.Events as Events
+import Html.Attributes as HA
 import NUI.Internal as I
+import NUI.Scrollbar as Scrollbar
 import NUI.Theme exposing (Theme)
 import NUI.Theme.Drawer as DrawerTheme
 
@@ -181,8 +187,261 @@ defaults =
 
 
 view : Theme -> Options msg -> List (Element msg) -> Element msg
-view _ _ _ =
-    Element.none
+view theme opts children =
+    let
+        scrollbarBase =
+            Scrollbar.defaults
+    in
+    Element.row
+        ([ I.classes [ "n-drawer-container" ]
+         , I.cssVars (cssVars theme ++ zIndexVar opts.zIndex)
+         , roleAttr "none"
+         ]
+            ++ opts.attributes
+        )
+        (List.filterMap identity
+            [ maskNode opts
+            , bodyNode theme opts scrollbarBase children
+            ]
+        )
+
+
+{-| The mask — upstream renders it (inside the fade transition) only while
+`show`, and its div carries `onClick=handleMaskClick` (the primary close
+surface; `maskClosable` default true means "pass your close msg").
+-}
+maskNode : Options msg -> Maybe (Element msg)
+maskNode opts =
+    if showMaskOn opts.showMask && (opts.show || leaving opts.maskTransition) then
+        Just
+            (Element.el
+                ([ I.classes
+                    ("n-drawer-mask"
+                        :: I.classIf (opts.showMask == Transparent) "n-drawer-mask--invisible"
+                        ++ phaseClasses "fade-in-transition" opts.maskTransition
+                    )
+                 , Element.htmlAttribute (HA.attribute "aria-hidden" "true")
+                 ]
+                    ++ (case opts.onMaskClick of
+                            Just msg ->
+                                [ Events.onClick msg ]
+
+                            Nothing ->
+                                []
+                       )
+                )
+                Element.none
+            )
+
+    else
+        Nothing
+
+
+{-| Upstream's truthy check: `showMask ? … : null` — only `Hidden`
+(`showMask = false`) removes the mask node.
+-}
+showMaskOn : ShowMask -> Bool
+showMaskOn mask =
+    mask /= Hidden
+
+
+{-| The unclassed `div role="none"` host (upstream keeps it so the drawer has
+a stable anchor) wrapping the whole body tree — the outer render gate.
+-}
+bodyNode : Theme -> Options msg -> Scrollbar.Options msg -> List (Element msg) -> Maybe (Element msg)
+bodyNode theme opts scrollbarBase children =
+    if opts.show || leaving opts.bodyTransition then
+        Just
+            (Element.el
+                [ roleAttr "none" ]
+                (drawerNode theme opts scrollbarBase children)
+            )
+
+    else
+        Nothing
+
+
+{-| `.n-drawer` itself: edge-anchored, sized on the placement's axis; the
+body transition family is derived from `placement` and its phase class is
+forced LAST in the class list (the house invariant).
+-}
+drawerNode : Theme -> Options msg -> Scrollbar.Options msg -> List (Element msg) -> Element msg
+drawerNode theme opts scrollbarBase children =
+    Element.column
+        ([ I.classes
+            ([ "n-drawer"
+             ]
+                ++ I.classIf opts.rtl "n-drawer--rtl"
+                ++ [ "n-drawer--" ++ placementName opts.placement ++ "-placement" ]
+                ++ I.classIf opts.unselectable "n-drawer--unselectable"
+                ++ I.classIf opts.nativeScrollbar "n-drawer--native-scrollbar"
+                ++ phaseClasses (bodyTransitionFamily opts.placement) opts.bodyTransition
+            )
+         , roleAttr "dialog"
+         , Element.htmlAttribute (HA.attribute "aria-modal" "true")
+         ]
+            ++ sizeStyle opts
+        )
+        (List.filterMap identity
+            [ resizeTriggerNode opts
+            , Just (contentWrapper theme opts scrollbarBase children)
+            ]
+        )
+
+
+bodyTransitionFamily : Placement -> String
+bodyTransitionFamily placement =
+    "slide-in-from-" ++ placementName placement ++ "-transition"
+
+
+{-| Upstream's `resize-trigger` — static DOM; the drag (and its hover-delay
+runtime) is caller-owned. `--hover` appears while dragging or hovering.
+-}
+resizeTriggerNode : Options msg -> Maybe (Element msg)
+resizeTriggerNode opts =
+    if opts.resizable then
+        Just
+            (Element.el
+                [ I.classes
+                    ("n-drawer__resize-trigger"
+                        :: I.classIf opts.showResizeTriggerHover "n-drawer__resize-trigger--hover"
+                    )
+                ]
+                Element.none
+            )
+
+    else
+        Nothing
+
+
+{-| The content seam: a plain wrapper div (native, the default — no scrollbar
+node, unlike `NUI.Modal`) or `NUI.Scrollbar` carrying the wrapper class on its
+content. Upstream string-concats `"n-drawer-content-wrapper " + contentClass`.
+-}
+contentWrapper : Theme -> Options msg -> Scrollbar.Options msg -> List (Element msg) -> Element msg
+contentWrapper theme opts scrollbarBase children =
+    if opts.nativeScrollbar then
+        Element.column
+            ([ I.classes ("n-drawer-content-wrapper" :: extraClass opts.contentClass)
+             , roleAttr "none"
+             ]
+                ++ rawStyleAttr opts.contentStyle
+            )
+            children
+
+    else
+        Scrollbar.view theme
+            { scrollbarBase
+                | contentClass =
+                    Just
+                        (String.join " "
+                            ("n-drawer-content-wrapper" :: extraClass opts.contentClass)
+                        )
+                , contentStyle = opts.contentStyle
+            }
+            children
+
+
+{-| Upstream's axis selection: left/right size `width`, top/bottom `height`
+(the other axis is dropped from the merged style — the exact upstream pin is
+a single-axis `style="width: 600px;"`), with the `251px`-style defaults as
+the fallback (`width ?? defaultWidth`).
+-}
+sizeStyle : Options msg -> List (Element.Attribute msg)
+sizeStyle opts =
+    let
+        axis =
+            case opts.placement of
+                Left ->
+                    ( "width", Maybe.withDefault opts.defaultWidth opts.width )
+
+                Right ->
+                    ( "width", Maybe.withDefault opts.defaultWidth opts.width )
+
+                Top ->
+                    ( "height", Maybe.withDefault opts.defaultHeight opts.height )
+
+                Bottom ->
+                    ( "height", Maybe.withDefault opts.defaultHeight opts.height )
+    in
+    styleAttr [ axis ]
+
+
+phaseClasses : String -> Maybe I.TransitionPhase -> List String
+phaseClasses family phase =
+    case phase of
+        Just p ->
+            [ I.transitionClass family p ]
+
+        Nothing ->
+            []
+
+
+leaving : Maybe I.TransitionPhase -> Bool
+leaving phase =
+    case phase of
+        Just p ->
+            I.isLeavePhase p
+
+        Nothing ->
+            False
+
+
+zIndexVar : Maybe Int -> List ( String, String )
+zIndexVar z =
+    case z of
+        Just n ->
+            [ ( "z-index", String.fromInt n ) ]
+
+        Nothing ->
+            []
+
+
+roleAttr : String -> Element.Attribute msg
+roleAttr r =
+    Element.htmlAttribute (HA.attribute "role" r)
+
+
+extraClass : Maybe String -> List String
+extraClass maybeClass =
+    case maybeClass of
+        Just c ->
+            if String.isEmpty c then
+                []
+
+            else
+                [ c ]
+
+        Nothing ->
+            []
+
+
+rawStyleAttr : Maybe String -> List (Element.Attribute msg)
+rawStyleAttr maybeStyle =
+    case maybeStyle of
+        Just style ->
+            [ Element.htmlAttribute (HA.attribute "style" style) ]
+
+        Nothing ->
+            []
+
+
+{-| A `( key, value )` list as the single inline `style` attribute (merging
+several `HA.style` attributes would drop all but the first — the
+`NUI.Card` `styleAttr` precedent).
+-}
+styleAttr : List ( String, String ) -> List (Element.Attribute msg)
+styleAttr pairs =
+    if List.isEmpty pairs then
+        []
+
+    else
+        [ Element.htmlAttribute
+            (HA.attribute
+                "style"
+                (String.join ";" (List.map (\( k, val ) -> k ++ ":" ++ val) pairs))
+            )
+        ]
 
 
 {-| Naive UI's `cssVarsRef` — the container's 25 custom properties, in
@@ -190,5 +449,37 @@ upstream declaration order (the cssr header comment omits
 `--n-resize-trigger-color-hover`; trust `cssVarsRef`).
 -}
 cssVars : Theme -> List ( String, String )
-cssVars _ =
-    []
+cssVars theme =
+    let
+        v =
+            DrawerTheme.vars theme
+
+        common =
+            theme.common
+    in
+    [ ( "--n-line-height", v.lineHeight )
+    , ( "--n-color", v.color )
+    , ( "--n-border-radius", v.borderRadius )
+    , ( "--n-text-color", v.textColor )
+    , ( "--n-box-shadow", v.boxShadow )
+    , ( "--n-bezier", common.cubicBezierEaseInOut )
+    , ( "--n-bezier-out", common.cubicBezierEaseOut )
+    , ( "--n-bezier-in", common.cubicBezierEaseIn )
+    , ( "--n-header-padding", v.headerPadding )
+    , ( "--n-body-padding", v.bodyPadding )
+    , ( "--n-footer-padding", v.footerPadding )
+    , ( "--n-title-text-color", v.titleTextColor )
+    , ( "--n-title-font-size", v.titleFontSize )
+    , ( "--n-title-font-weight", v.titleFontWeight )
+    , ( "--n-header-border-bottom", v.headerBorderBottom )
+    , ( "--n-footer-border-top", v.footerBorderTop )
+    , ( "--n-close-icon-color", v.closeIconColor )
+    , ( "--n-close-icon-color-hover", v.closeIconColorHover )
+    , ( "--n-close-icon-color-pressed", v.closeIconColorPressed )
+    , ( "--n-close-size", v.closeSize )
+    , ( "--n-close-color-hover", v.closeColorHover )
+    , ( "--n-close-color-pressed", v.closeColorPressed )
+    , ( "--n-close-icon-size", v.closeIconSize )
+    , ( "--n-close-border-radius", v.closeBorderRadius )
+    , ( "--n-resize-trigger-color-hover", v.resizableTriggerColorHover )
+    ]

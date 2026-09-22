@@ -25,6 +25,8 @@ import NUI.Countdown as Countdown
 import NUI.Css as Css
 import NUI.Descriptions as Descriptions
 import NUI.Divider as Divider
+import NUI.Drawer as Drawer
+import NUI.DrawerContent as DrawerContent
 import NUI.Dropdown as Dropdown
 import NUI.DynamicInput as DynamicInput
 import NUI.DynamicTags as DynamicTags
@@ -228,6 +230,16 @@ modalD =
 modalCardD : Card.Options msg
 modalCardD =
     Modal.cardDefaults
+
+
+drawerD : Drawer.Options msg
+drawerD =
+    Drawer.defaults
+
+
+drawerContentD : DrawerContent.Options msg
+drawerContentD =
+    DrawerContent.defaults
 
 
 avD : Avatar.Options msg
@@ -599,6 +611,7 @@ body =
     , tooltipSection
     , dropdownSection
     , modalSection
+    , drawerSection
     , rtlSection
     , themeSection
     ]
@@ -2468,6 +2481,133 @@ modalSection =
                         { modalCardD | title = Just (Element.text "Entering") }
                         [ Element.text "fade-in + fade-in-scale-up enter-active classes." ]
                     )
+                )
+            ]
+        ]
+
+
+{-| The drawer's `NDrawerContent` body — title, closable header, footer.
+-}
+drawerBody : Element msg
+drawerBody =
+    DrawerContent.view theme
+        { drawerContentD
+            | title = Just (Element.text "A drawer")
+            , closable = True
+            , footer = Just (Element.text "#footer")
+        }
+        [ Element.text "Edge-anchored, sized on the placement's axis." ]
+
+
+drawerSection : Element msg
+drawerSection =
+    section "Drawer"
+        "The mount-body sibling of Modal — its own container/mask/host tree, edge-anchored (`position: absolute` per placement, the body transition family derived from it) instead of flex-centred. `NDrawerContent` composition (header/body/footer + close), the 3-state mask, the native-scrollbar seam (default: no scrollbar node, unlike Modal) and the resize trigger are DOM; the caller owns the show state, the transition clock, mask-click closing (`onMaskClick` — the mask is interactive here), Esc and the resize drag."
+    <|
+        [ demoRow "Four placements (NDrawerContent composition)"
+            [ modalHost []
+                (Drawer.view theme
+                    { drawerD | show = True, placement = Drawer.Right, width = Just "200px" }
+                    [ drawerBody ]
+                )
+            , modalHost []
+                (Drawer.view theme
+                    { drawerD | show = True, placement = Drawer.Left, width = Just "200px" }
+                    [ drawerBody ]
+                )
+            , modalHost []
+                (Drawer.view theme
+                    { drawerD | show = True, placement = Drawer.Top, height = Just "120px" }
+                    [ drawerBody ]
+                )
+            , modalHost []
+                (Drawer.view theme
+                    { drawerD | show = True, placement = Drawer.Bottom, height = Just "120px" }
+                    [ drawerBody ]
+                )
+            ]
+        , demoRow "Custom content (no DrawerContent)"
+            [ modalHost []
+                (Drawer.view theme
+                    { drawerD | show = True, placement = Drawer.Right, width = Just "220px" }
+                    [ Element.el
+                        [ Element.htmlAttribute
+                            (HA.attribute
+                                "style"
+                                "background:var(--n-color);box-shadow:var(--n-box-shadow);border-radius:3px 0 0 3px;padding:14px 18px;color:var(--n-text-color);height:100%;box-sizing:border-box"
+                            )
+                        ]
+                        (Element.text "You own the box; the wrapper carries `n-drawer-content-wrapper`.")
+                    ]
+                )
+            ]
+        , demoRow "Mask variants + z-index"
+            [ modalHost []
+                (Drawer.view theme
+                    { drawerD
+                        | show = True
+                        , placement = Drawer.Right
+                        , width = Just "180px"
+                        , showMask = Drawer.Transparent
+                    }
+                    [ drawerBody ]
+                )
+            , modalHost []
+                (Drawer.view theme
+                    { drawerD
+                        | show = True
+                        , placement = Drawer.Right
+                        , width = Just "180px"
+                        , showMask = Drawer.Hidden
+                    }
+                    [ drawerBody ]
+                )
+            , modalHost []
+                (Drawer.view theme
+                    { drawerD | show = True, placement = Drawer.Right, width = Just "180px", zIndex = Just 100 }
+                    [ drawerBody ]
+                )
+            ]
+        , demoRow "Scroll seams + resize trigger"
+            [ modalHost []
+                (Drawer.view theme
+                    { drawerD
+                        | show = True
+                        , placement = Drawer.Right
+                        , width = Just "220px"
+                        , nativeScrollbar = False
+                    }
+                    [ DrawerContent.view theme
+                        { drawerContentD
+                            | title = Just (Element.text "Scrollbar body")
+                            , nativeScrollbar = False
+                        }
+                        [ Element.text "Both seams swap to `NUI.Scrollbar` — `n-drawer-body` rides the scrollbar root." ]
+                    ]
+                )
+            , modalHost []
+                (Drawer.view theme
+                    { drawerD
+                        | show = True
+                        , placement = Drawer.Right
+                        , width = Just "220px"
+                        , resizable = True
+                        , showResizeTriggerHover = True
+                    }
+                    [ drawerBody ]
+                )
+            ]
+        , demoRow "Enter-active phase (caller clock)"
+            [ modalHost []
+                (Drawer.view theme
+                    { drawerD
+                        | show = True
+                        , placement = Drawer.Right
+                        , width = Just "220px"
+                        , maskTransition = Just I.EnterActive
+                        , bodyTransition = Just I.EnterActive
+                    }
+                    [ drawerBody ]
                 )
             ]
         ]
