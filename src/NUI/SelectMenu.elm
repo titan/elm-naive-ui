@@ -237,13 +237,18 @@ headerNode opts =
         opts.header
 
 
-{-| The menu middle: the rows behind `NUI.Scrollbar`, or the empty fallback
-when the flattening produced zero rows — group headers included, so a
-childless group is one header row, not empty.
+{-| The menu middle: the `__loading` row while `loading` (upstream replaces
+the scrollbar/empty segment wholesale — header above and action below still
+mount), else the rows behind `NUI.Scrollbar`, or the empty fallback when the
+flattening produced zero rows — group headers included, so a childless
+group is one header row, not empty.
 -}
 bodyNode : Theme -> Options msg -> List (Row msg) -> Element msg
 bodyNode theme opts rows =
-    if List.isEmpty rows then
+    if opts.loading then
+        loadingNode
+
+    else if List.isEmpty rows then
         Element.el
             [ I.classes [ "n-base-select-menu__empty" ]
             , Element.htmlAttribute (HA.attribute "data-empty" "")
@@ -258,6 +263,87 @@ bodyNode theme opts rows =
         NUI.Scrollbar.view theme
             { scrollbarDefaults | rtl = opts.rtl }
             [ optionWrapperNode theme opts rows ]
+
+
+{-| The `__loading` row — a bare `NInternalLoading` at `strokeWidth 20` (the
+`NUI.Button` loading idiom minus its `n-icon-slot` wrapper: same svg, `r 90`
+— the radius-minus-stroke pair of the `0 0 200 200` viewBox). The
+`--n-loading-color` / `--n-loading-size` vars ship with the menu's 23.
+-}
+loadingNode : Element msg
+loadingNode =
+    Element.el
+        [ I.classes [ "n-base-select-menu__loading" ] ]
+        (Element.el
+            [ I.classes [ "n-base-loading" ]
+            , Element.htmlAttribute (HA.attribute "role" "img")
+            , Element.htmlAttribute (HA.attribute "aria-label" "loading")
+            ]
+            (Element.el
+                [ I.classes [ "n-base-loading__transition-wrapper" ] ]
+                (Element.el
+                    [ I.classes [ "n-base-loading__container" ] ]
+                    (Element.html loadingSvg)
+                )
+            )
+        )
+
+
+{-| Upstream `NInternalLoading`'s spinner svg — the `NUI.Button` copy verbatim
+(SMIL children kept; browsers animate the dash arc, jsdom carries the nodes).
+-}
+loadingSvg : Html.Html msg
+loadingSvg =
+    Html.node "svg"
+        [ HA.attribute "viewBox" "0 0 200 200"
+        , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
+        ]
+        [ Html.node "g"
+            []
+            [ Html.node "animateTransform"
+                [ HA.attribute "attributeName" "transform"
+                , HA.attribute "type" "rotate"
+                , HA.attribute "values" "0 100 100;270 100 100"
+                , HA.attribute "begin" "0s"
+                , HA.attribute "dur" "1.6s"
+                , HA.attribute "fill" "freeze"
+                , HA.attribute "repeatCount" "indefinite"
+                ]
+                []
+            , Html.node "circle"
+                [ HA.attribute "class" "n-base-loading__icon"
+                , HA.attribute "fill" "none"
+                , HA.attribute "stroke" "currentColor"
+                , HA.attribute "stroke-width" "20"
+                , HA.attribute "stroke-linecap" "round"
+                , HA.attribute "cx" "100"
+                , HA.attribute "cy" "100"
+                , HA.attribute "r" "90"
+                , HA.attribute "stroke-dasharray" "567"
+                , HA.attribute "stroke-dashoffset" "1848"
+                ]
+                [ Html.node "animateTransform"
+                    [ HA.attribute "attributeName" "transform"
+                    , HA.attribute "type" "rotate"
+                    , HA.attribute "values" "0 100 100;135 100 100;450 100 100"
+                    , HA.attribute "begin" "0s"
+                    , HA.attribute "dur" "1.6s"
+                    , HA.attribute "fill" "freeze"
+                    , HA.attribute "repeatCount" "indefinite"
+                    ]
+                    []
+                , Html.node "animate"
+                    [ HA.attribute "attributeName" "stroke-dashoffset"
+                    , HA.attribute "values" "567;142;567"
+                    , HA.attribute "begin" "0s"
+                    , HA.attribute "dur" "1.6s"
+                    , HA.attribute "fill" "freeze"
+                    , HA.attribute "repeatCount" "indefinite"
+                    ]
+                    []
+                ]
+            ]
+        ]
 
 
 {-| The built-in empty fallback — `NEmpty` at the menu's own size (upstream
