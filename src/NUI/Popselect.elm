@@ -30,7 +30,7 @@ in a `placementAttribute` wrapper, default placement **bottom**):
 
     div.n-base-select-menu .n-base-select-menu--{size}-size
         [--rtl] [--multiple] .n-popselect-menu .n-popover-shared
-        [rtl] [overlap] .n-popover-shared--show-arrow (ALWAYS) [center-arrow]
+        [rtl] [overlap] .n-popover-shared--show-arrow [center-arrow]
         [popover-transition-*]
       tabindex = 0 (focusable)
       style = 23 menu vars → --n-menu-box-shadow → [width?] → 15 popover vars
@@ -39,8 +39,10 @@ in a `placementAttribute` wrapper, default placement **bottom**):
 
 There is **no `n-popover` class, no `n-popover__content` wrapper, no arrow
 node** — the internalRenderBody path (identical to Dropdown). The
-`--show-arrow` modifier is always emitted (upstream removed the prop but the
-popover default keeps the class — a margin-only cosmetic quirk; pinned).
+`--show-arrow` modifier follows the popover's `mergedShowArrow =
+!overlap && showArrow` (popselect omits the prop, so the default `true`
+survives — present unless `overlap`, even though no arrow node renders on
+this path; a margin-only cosmetic quirk; pinned).
 
 **Selection** is pure: `value` (`SelectMenu.Value`) drives `--selected` +
 the checkmark per option; clicking a non-disabled leaf fires
@@ -191,17 +193,18 @@ menuSize size =
 
 {-| The classes the popover's body-swap merge contributes after the menu's
 own (the panel's `n-popselect-menu` first, then the `internalRenderBody`
-class list, transition class last). `--show-arrow` is always there —
-popselect omits the `showArrow` prop, so the popover's default `true`
-survives even though no arrow node renders on this path (a margin-only
-cosmetic quirk; pinned).
+class list, transition class last). `--show-arrow` follows the popover's
+`mergedShowArrow = !overlap && showArrow` (`NUI.Popover`/`NUI.Dropdown`
+convention) — popselect omits `showArrow`, so the default `true` survives:
+present unless `overlap`, even though no arrow node renders on this path
+(a margin-only cosmetic quirk; pinned).
 -}
 popoverSharedClasses : Options msg -> List String
 popoverSharedClasses opts =
     [ "n-popselect-menu", "n-popover-shared" ]
         ++ I.classIf opts.rtl "n-popover--rtl"
         ++ I.classIf opts.overlap "n-popover-shared--overlap"
-        ++ [ "n-popover-shared--show-arrow" ]
+        ++ I.classIf (not opts.overlap) "n-popover-shared--show-arrow"
         ++ I.classIf opts.arrowPointToCenter "n-popover-shared--center-arrow"
         ++ (case opts.transition of
                 Just phase ->
