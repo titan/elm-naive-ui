@@ -6698,6 +6698,12 @@ const smStyle = (id) => styleAt(smRoot(id))
 const smOptions = (id) => [...doc.querySelectorAll('#' + id + ' .n-base-select-option')]
 const smHeaders = (id) => [...doc.querySelectorAll('#' + id + ' .n-base-select-group-header')]
 const smWrapper = (id) => doc.querySelector('#' + id + ' .n-base-select-menu-option-wrapper')
+// The n-empty fallback's size-keyed var (NUI.Empty cssVars keys --n-icon-size on size).
+const smIconSize = (id) => {
+  const el = doc.querySelector('#' + id + ' .n-empty')
+  const m = styleAt(el) ? styleAt(el).match(/--n-icon-size:\s*([^;]+)/) : null
+  return m ? m[1].trim() : null
+}
 const smFocusDetector = (id) =>
   smRoot(id)
     ? [...smRoot(id).querySelectorAll('div[tabindex="0"]')].filter((d) =>
@@ -6827,11 +6833,48 @@ dTrue(
     return hs.length + '|' + (hs[0] ? hs[0].textContent : '?')
   })()
 )
-dTrue(
-  'DOM: SelectMenu nested Group dropped (one header total; nested header text absent)',
-  smHeaders('live-selectmenu-nested').length === 1 &&
-    !(doc.querySelector('#live-selectmenu-nested').textContent || '').includes('InnerGroup'),
-  (doc.querySelector('#live-selectmenu-nested') || {}).textContent
+dEq(
+  'DOM: SelectMenu nested Group rendered recursively, treemate-true (two headers Outer+InnerGroup, nested header text present, both leaves --grouped)',
+  '2|Outer,InnerGroup|2|2',
+  (() => {
+    const id = 'live-selectmenu-nested'
+    const hs = smHeaders(id)
+    return [
+      hs.length,
+      hs.map((h) => h.textContent).join(','),
+      smOptions(id).length,
+      doc.querySelectorAll(`#${id} .n-base-select-option--grouped`).length
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: SelectMenu childless Group still renders its header (treemate pushes every node) and NO __empty, with zero option rows',
+  '1|Solo|absent|0',
+  (() => {
+    const id = 'live-selectmenu-childless-group'
+    const hs = smHeaders(id)
+    return [
+      hs.length,
+      hs.map((h) => h.textContent).join(','),
+      doc.querySelector(`#${id} .n-base-select-menu__empty`) ? 'present' : 'absent',
+      smOptions(id).length
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: SelectMenu Group of only nested Groups renders the outer header AND the nested header + its leaf (not empty, leaf --grouped)',
+  '2|Outer,InnerGroup|1|1|absent',
+  (() => {
+    const id = 'live-selectmenu-nested-only'
+    const hs = smHeaders(id)
+    return [
+      hs.length,
+      hs.map((h) => h.textContent).join(','),
+      smOptions(id).length,
+      doc.querySelectorAll(`#${id} .n-base-select-option--grouped`).length,
+      doc.querySelector(`#${id} .n-base-select-menu__empty`) ? 'present' : 'absent'
+    ].join('|')
+  })()
 )
 dEq(
   'DOM: SelectMenu multiple mode marks membership --selected + shows the checkmark',
@@ -6871,6 +6914,11 @@ dEq(
       doc.querySelector(`#${id} .n-base-select-menu-option-wrapper`) ? 'present' : 'absent'
     ].join('|')
   })()
+)
+dEq(
+  'DOM: SelectMenu empty fallback n-empty carries the menu size (--n-icon-size: default Medium 40px / Huge 52px)',
+  '40px|52px',
+  [smIconSize('live-selectmenu-empty'), smIconSize('live-selectmenu-empty-huge')].join('|')
 )
 dEq(
   'DOM: SelectMenu empty slot replaces the n-empty fallback',
