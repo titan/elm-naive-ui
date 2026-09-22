@@ -34,6 +34,7 @@ import Element exposing (Element)
 import Element.Events as Events
 import Html.Attributes as HA
 import NUI.Internal as I
+import NUI.Internal.Loading as Loading
 import NUI.Theme exposing (Theme)
 import NUI.Theme.Switch as SwitchTheme
 import NUI.Types exposing (Size(..))
@@ -89,7 +90,7 @@ view theme opts _ =
 
         knobIcon =
             if opts.loading then
-                Just (loadingEl v)
+                Just loadingEl
 
             else
                 let
@@ -216,66 +217,38 @@ railStyleAttrs opts =
                 (f opts.value)
 
 
-{-| Naive UI renders `NBaseLoading` (an animated SVG arc). elm/html cannot
-create SVG namespaced nodes (no elm/svg dependency), so the exact spinner SVG
-— same geometry and SMIL animation — is embedded as a data-URI background
-with the theme's loading colour baked in (a background SVG cannot use
-`var(--n-loading-color)`). Sizing (`1em`) that normally comes from the
-`n-base-loading` cssr (not part of the extracted stylesheet) is inlined too.
+{-| Naive UI renders the real `NBaseLoading` here (upstream `Switch.tsx`:
+`<NBaseLoading strokeWidth={20} />` — no `stroke` prop). The arc picks its
+color up from the shipped stylesheet — `.n-switch .n-base-loading { color:
+var(--n-loading-color) }` resolves through `stroke="currentColor"`, and the
+base `n-base-loading` rules carry the `1em` sizing — so no color is baked
+and no sizing is inlined. The svg is `NUI.Internal.Loading.spinner` via
+elm/svg, a true SVG-namespaced element (the old data-URI background
+workaround predates both this stylesheet extraction and elm/svg's arrival:
+`Html.node "svg"` lands in the HTML namespace, which no browser renders).
 -}
-loadingEl : SwitchTheme.Vars -> Element msg
-loadingEl v =
+loadingEl : Element msg
+loadingEl =
     Element.el
-        ([ I.classes [ "n-base-loading" ]
-         , Element.htmlAttribute (HA.attribute "role" "img")
-         , Element.htmlAttribute (HA.attribute "aria-label" "loading")
-         ]
-            ++ List.map
-                (\( k, val ) -> Element.htmlAttribute (HA.style k val))
-                (loadingStyles v.loadingColor)
-        )
-        Element.none
-
-
-loadingStyles : String -> List ( String, String )
-loadingStyles color =
-    [ ( "width", "1em" )
-    , ( "height", "1em" )
-    , ( "line-height", "0" )
-    , ( "background-image", "url(\"data:image/svg+xml," ++ encodeSvg (spinnerSvg color) ++ "\")" )
-    , ( "background-repeat", "no-repeat" )
-    , ( "background-position", "center" )
-    , ( "background-size", "100% 100%" )
-    ]
-
-
-{-| `NBaseLoading` with the switch's `strokeWidth = 20` (radius 100, scale 1).
--}
-spinnerSvg : String -> String
-spinnerSvg color =
-    String.concat
-        [ "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 200 200\">"
-        , "<g>"
-        , "<animateTransform attributeName=\"transform\" type=\"rotate\" values=\"0 100 100;270 100 100\" begin=\"0s\" dur=\"1.6s\" fill=\"freeze\" repeatCount=\"indefinite\"/>"
-        , "<circle cx=\"100\" cy=\"100\" r=\"90\" fill=\"none\" stroke=\""
-        , color
-        , "\" stroke-width=\"20\" stroke-linecap=\"round\" stroke-dasharray=\"567\" stroke-dashoffset=\"1848\">"
-        , "<animateTransform attributeName=\"transform\" type=\"rotate\" values=\"0 100 100;135 100 100;450 100 100\" begin=\"0s\" dur=\"1.6s\" fill=\"freeze\" repeatCount=\"indefinite\"/>"
-        , "<animate attributeName=\"stroke-dashoffset\" values=\"567;142;567\" begin=\"0s\" dur=\"1.6s\" fill=\"freeze\" repeatCount=\"indefinite\"/>"
-        , "</circle>"
-        , "</g>"
-        , "</svg>"
+        [ I.classes [ "n-base-loading" ]
+        , Element.htmlAttribute (HA.attribute "role" "img")
+        , Element.htmlAttribute (HA.attribute "aria-label" "loading")
         ]
-
-
-encodeSvg : String -> String
-encodeSvg svg =
-    svg
-        |> String.replace "%" "%25"
-        |> String.replace "<" "%3C"
-        |> String.replace ">" "%3E"
-        |> String.replace "\"" "%22"
-        |> String.replace "#" "%23"
+        (Element.el
+            [ I.classes [ "n-base-loading__transition-wrapper" ] ]
+            (Element.el
+                [ I.classes [ "n-base-loading__container" ] ]
+                (Element.html
+                    (Loading.spinner
+                        { strokeWidth = 20
+                        , radius = 100
+                        , scale = 1
+                        , stroke = Nothing
+                        }
+                    )
+                )
+            )
+        )
 
 
 {-| Port of `Switch.tsx`'s `cssVarsRef` (the `CSS.supports('width', 'max(1px)')`

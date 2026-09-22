@@ -5,7 +5,7 @@
 // component can ship uncompiled, and consumers cannot import it. That happened twice
 // (the Calendar batch and the pagination/input-number/layout batch), so it gets a gate.
 //
-// Two modules are deliberately private: they are implementation details reached
+// Three modules are deliberately private: they are implementation details reached
 // through a public module, so exposing them would only widen the API surface.
 import fs from 'fs'
 import path from 'path'
@@ -16,7 +16,8 @@ const root = path.resolve(here, '..', '..')
 
 const INTERNAL = new Set([
   'NUI.Css.Generated', // GENERATED stylesheet, reached via NUI.Css
-  'NUI.Qrcodegen' // vendored QR encoder, reached via NUI.QrCode
+  'NUI.Qrcodegen', // vendored QR encoder, reached via NUI.QrCode
+  'NUI.Internal.Loading' // shared NBaseLoading spinner svg, reached via the components
 ])
 
 const modules = new Set()
@@ -53,4 +54,4 @@ if (missing.length || extra.length) {
   process.exit(1)
 }
 
-console.log('\nOK: elm.json exposes every module (minus the two deliberate internals)')
+console.log('\nOK: elm.json exposes every module (minus the deliberate internals)')

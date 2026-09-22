@@ -25,9 +25,9 @@ and Naive UI's `--n-*` custom properties, and `NUI.Css` ships Naive UI's exact C
 
 import Element exposing (Element)
 import Element.Events as Events
-import Html as Html
 import Html.Attributes as HA
 import NUI.Internal as I
+import NUI.Internal.Loading as Loading
 import NUI.Theme exposing (Theme)
 import NUI.Theme.Button as ButtonTheme
 import NUI.Theme.Color as Color
@@ -838,8 +838,9 @@ borderRadiusOf size v =
 
 {-| The loading spinner — upstream's `NBaseLoading` (`strokeWidth: 20`, the
 radius/scale defaults) carrying the `n-icon-slot` class, exactly as
-`Button.tsx` renders it under `span.n-button__icon` while loading. SMIL
-children kept (browsers animate the dash arc; jsdom just carries the nodes).
+`Button.tsx` renders it under `span.n-button__icon` while loading. The svg is
+`NUI.Internal.Loading.spinner`, the library's single source (SMIL children
+kept — browsers animate the dash arc; jsdom just carries the nodes).
 -}
 loadingEl : Element msg
 loadingEl =
@@ -852,60 +853,14 @@ loadingEl =
             [ I.classes [ "n-base-loading__transition-wrapper" ] ]
             (Element.el
                 [ I.classes [ "n-base-loading__container" ] ]
-                (Element.html loadingSvg)
+                (Element.html
+                    (Loading.spinner
+                        { strokeWidth = 20
+                        , radius = 100
+                        , scale = 1
+                        , stroke = Nothing
+                        }
+                    )
+                )
             )
         )
-
-
-loadingSvg : Html.Html msg
-loadingSvg =
-    Html.node "svg"
-        [ HA.attribute "viewBox" "0 0 200 200"
-        , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
-        ]
-        [ Html.node "g"
-            []
-            [ Html.node "animateTransform"
-                [ HA.attribute "attributeName" "transform"
-                , HA.attribute "type" "rotate"
-                , HA.attribute "values" "0 100 100;270 100 100"
-                , HA.attribute "begin" "0s"
-                , HA.attribute "dur" "1.6s"
-                , HA.attribute "fill" "freeze"
-                , HA.attribute "repeatCount" "indefinite"
-                ]
-                []
-            , Html.node "circle"
-                [ HA.attribute "class" "n-base-loading__icon"
-                , HA.attribute "fill" "none"
-                , HA.attribute "stroke" "currentColor"
-                , HA.attribute "stroke-width" "20"
-                , HA.attribute "stroke-linecap" "round"
-                , HA.attribute "cx" "100"
-                , HA.attribute "cy" "100"
-                , HA.attribute "r" "90"
-                , HA.attribute "stroke-dasharray" "567"
-                , HA.attribute "stroke-dashoffset" "1848"
-                ]
-                [ Html.node "animateTransform"
-                    [ HA.attribute "attributeName" "transform"
-                    , HA.attribute "type" "rotate"
-                    , HA.attribute "values" "0 100 100;135 100 100;450 100 100"
-                    , HA.attribute "begin" "0s"
-                    , HA.attribute "dur" "1.6s"
-                    , HA.attribute "fill" "freeze"
-                    , HA.attribute "repeatCount" "indefinite"
-                    ]
-                    []
-                , Html.node "animate"
-                    [ HA.attribute "attributeName" "stroke-dashoffset"
-                    , HA.attribute "values" "567;142;567"
-                    , HA.attribute "begin" "0s"
-                    , HA.attribute "dur" "1.6s"
-                    , HA.attribute "fill" "freeze"
-                    , HA.attribute "repeatCount" "indefinite"
-                    ]
-                    []
-                ]
-            ]
-        ]

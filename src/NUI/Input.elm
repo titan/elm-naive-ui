@@ -91,6 +91,7 @@ import Html exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
 import NUI.Internal as I
+import NUI.Internal.Loading as Loading
 import NUI.Theme exposing (Theme)
 import NUI.Theme.Input as InputTheme
 import NUI.Types as T exposing (Size(..))
@@ -500,9 +501,14 @@ clearPath =
 {-| The loading suffix — upstream mounts `NBaseSuffix` with `loading` and
 `showArrow` / `showClear` both false (`Input.tsx:1345-1352`), which is the
 `NUI.BaseSelection` suffix idiom reduced to the spinner alone: `NBaseLoading`
-at strokeWidth 24 / scale 0.85, `role="img"` `aria-label="loading"`, no
-idle placeholder slot. It renders between the clear icon and the suffix
-slot — `internalLoadingBeforeSuffix` defaults true (`Input.tsx:1353-1359`).
+at strokeWidth 24 / scale 0.85 (radius 100), `role="img"`
+`aria-label="loading"`, no idle placeholder slot. It renders between the
+clear icon and the suffix slot — `internalLoadingBeforeSuffix` defaults
+true (`Input.tsx:1353-1359`). Loading svgs render through
+`NUI.Internal.Loading` (single source; upstream's `scale` is pure svg
+geometry, `scaledRadius = radius / scale`, so the geometry renders the exact
+`100 / 0.85` forms — circle `r` 88, dash 567 / 1848), and the svg now also
+carries the upstream class `n-base-loading__icon`.
 -}
 loadingArea : Options msg -> List (Element msg)
 loadingArea opts =
@@ -519,69 +525,17 @@ loadingArea opts =
                 [ I.classes [ "n-base-loading__transition-wrapper" ] ]
                 (Element.el
                     [ I.classes [ "n-base-loading__container" ] ]
-                    (Element.html loadingSvg)
+                    (Element.html
+                        (Loading.spinner
+                            { strokeWidth = 24
+                            , radius = 100
+                            , scale = 0.85
+                            , stroke = Nothing
+                            }
+                        )
+                    )
                 )
             )
-        ]
-
-
-{-| The suffix spinner — a local copy of `NUI.BaseSelection`'s strokeWidth 24
-/ scale 0.85 geometry (radius 100: upstream's `scale` is pure svg geometry,
-`scaledRadius = radius / scale`, so the literals are the exact `100 / 0.85`
-forms, circle `r` 88, dash 567 / 1848). The port convention is local copies,
-not cross-module internal imports.
--}
-loadingSvg : Html msg
-loadingSvg =
-    Html.node "svg"
-        [ HA.attribute "viewBox" "0 0 235.29411764705884 235.29411764705884"
-        , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
-        ]
-        [ Html.node "g"
-            []
-            [ Html.node "animateTransform"
-                [ HA.attribute "attributeName" "transform"
-                , HA.attribute "type" "rotate"
-                , HA.attribute "values" "0 117.64705882352942 117.64705882352942;270 117.64705882352942 117.64705882352942"
-                , HA.attribute "begin" "0s"
-                , HA.attribute "dur" "1.6s"
-                , HA.attribute "fill" "freeze"
-                , HA.attribute "repeatCount" "indefinite"
-                ]
-                []
-            , Html.node "circle"
-                [ HA.attribute "class" "n-base-loading__icon"
-                , HA.attribute "fill" "none"
-                , HA.attribute "stroke" "currentColor"
-                , HA.attribute "stroke-width" "24"
-                , HA.attribute "stroke-linecap" "round"
-                , HA.attribute "cx" "117.64705882352942"
-                , HA.attribute "cy" "117.64705882352942"
-                , HA.attribute "r" "88"
-                , HA.attribute "stroke-dasharray" "567"
-                , HA.attribute "stroke-dashoffset" "1848"
-                ]
-                [ Html.node "animateTransform"
-                    [ HA.attribute "attributeName" "transform"
-                    , HA.attribute "type" "rotate"
-                    , HA.attribute "values" "0 117.64705882352942 117.64705882352942;135 117.64705882352942 117.64705882352942;450 117.64705882352942 117.64705882352942"
-                    , HA.attribute "begin" "0s"
-                    , HA.attribute "dur" "1.6s"
-                    , HA.attribute "fill" "freeze"
-                    , HA.attribute "repeatCount" "indefinite"
-                    ]
-                    []
-                , Html.node "animate"
-                    [ HA.attribute "attributeName" "stroke-dashoffset"
-                    , HA.attribute "values" "567;142;567"
-                    , HA.attribute "begin" "0s"
-                    , HA.attribute "dur" "1.6s"
-                    , HA.attribute "fill" "freeze"
-                    , HA.attribute "repeatCount" "indefinite"
-                    ]
-                    []
-                ]
-            ]
         ]
 
 
