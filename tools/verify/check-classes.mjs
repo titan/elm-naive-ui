@@ -50,6 +50,10 @@ const ALLOW = new Set([
   // Tooltip adds this marker via popover's internalExtraClass; no rule targets
   // it anywhere upstream — the popover body rules carry the look.
   'n-tooltip',
+  // Popconfirm's panel marker (upstream PopconfirmPanel.tsx); the popconfirm
+  // cssr styles only __body/__icon/__action — the panel div carries the vars
+  // and no rule of its own.
+  'n-popconfirm__panel',
   // Dropdown adds these markers on the menu body (upstream renderPopoverBody
   // class list); no rule targets `.n-dropdown` or the size variants anywhere
   // upstream — sizing flows through the size-keyed CSS vars instead.
