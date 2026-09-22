@@ -7754,6 +7754,8 @@ liveNodes =
                     )
                 , Element.el [ Element.htmlAttribute (HA.id "live-selectmenu-empty") ]
                     (SelectMenu.view Theme.default smD [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-selectmenu-empty-huge") ]
+                    (SelectMenu.view Theme.default { smD | size = SelectMenu.Huge } [])
                 , Element.el [ Element.htmlAttribute (HA.id "live-selectmenu-emptyslot") ]
                     (SelectMenu.view Theme.default { smD | empty = Just (Element.text "Nothing here") } [])
                 , Element.el [ Element.htmlAttribute (HA.id "live-selectmenu-custom") ]
@@ -7769,6 +7771,27 @@ liveNodes =
                             , children =
                                 [ smLeaf "inner1" "Inner1"
                                 , SelectMenu.Group { label = "InnerGroup", children = [ smLeaf "deep" "Deep" ], attributes = [] }
+                                ]
+                            , attributes = []
+                            }
+                        ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-selectmenu-childless-group") ]
+                    (SelectMenu.view Theme.default
+                        smD
+                        [ SelectMenu.Group { label = "Solo", children = [], attributes = [] } ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-selectmenu-nested-only") ]
+                    (SelectMenu.view Theme.default
+                        smD
+                        [ SelectMenu.Group
+                            { label = "Outer"
+                            , children =
+                                [ SelectMenu.Group
+                                    { label = "InnerGroup"
+                                    , children = [ smLeaf "deep" "Deep" ]
+                                    , attributes = []
+                                    }
                                 ]
                             , attributes = []
                             }
