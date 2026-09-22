@@ -14,6 +14,7 @@ import NUI.Avatar as Avatar
 import NUI.AvatarGroup as AvatarGroup
 import NUI.BackTop as BackTop
 import NUI.Badge as Badge
+import NUI.BaseSelection as BaseSelection
 import NUI.Breadcrumb as Breadcrumb
 import NUI.Button as Button
 import NUI.ButtonGroup as ButtonGroup
@@ -66,6 +67,7 @@ import NUI.Radio as Radio
 import NUI.Rate as Rate
 import NUI.Result as Result
 import NUI.Scrollbar as Scrollbar
+import NUI.Select as Select
 import NUI.SelectMenu as SelectMenu
 import NUI.Skeleton as Skeleton
 import NUI.Space as Space
@@ -229,6 +231,16 @@ popselectD =
 selectMenuD : SelectMenu.Options msg
 selectMenuD =
     SelectMenu.defaults
+
+
+selectD : Select.Options msg
+selectD =
+    Select.defaults
+
+
+selMenuD : Select.MenuOptions msg
+selMenuD =
+    Select.menuDefaults
 
 
 tooltipD : Tooltip.Options msg
@@ -634,6 +646,7 @@ body =
     , popoverSection
     , popconfirmSection
     , popselectSection
+    , selectSection
     , tooltipSection
     , dropdownSection
     , modalSection
@@ -2290,6 +2303,166 @@ popselectOptions =
         , attributes = []
         }
     ]
+
+
+selectSection : Element msg
+selectSection =
+    section "Select"
+        "Naive UI's select — a bare `.n-select` wrapper around the `NUI.BaseSelection` trigger (every var lives there); the menu is a separate caller-mounted body (upstream opens it in its own follower), `Select.menu` here. `view` derives the display from `value` + options: the single label (unknown values show themselves while `fallbackOption` is on), the multiple tags (same fallback; unknowns drop when off) with the numeric `maxTagCount` slice's `+N` counter, and the clear icon — `clearable && (hover || active) && selected`; `pattern` flows to the filter input, `filterOptions` being the pure default filter. The caller owns the show state, positioning and keyboard."
+    <|
+        [ demoRow "Single (leaves + group)"
+            [ Select.view theme
+                { selectD | attributes = [ Element.width (Element.px 200) ] }
+                selectOptions
+            ]
+        , demoRow "Selected + clearable (hover)"
+            [ Select.view theme
+                { selectD
+                    | value = SelectMenu.Single (Just "drive")
+                    , clearable = True
+                    , hover = True
+                    , attributes = [ Element.width (Element.px 200) ]
+                }
+                selectOptions
+            ]
+        , demoRow "Filterable (active, empty pattern)"
+            [ Select.view theme
+                { selectD
+                    | filterable = True
+                    , active = True
+                    , pattern = ""
+                    , attributes = [ Element.width (Element.px 200) ]
+                }
+                selectOptions
+            ]
+        , demoRow "Multiple (maxTagCount 3 + fallback)"
+            [ Select.view theme
+                { selectD
+                    | multiple = True
+                    , maxTagCount = Just 3
+                    , value = SelectMenu.Multiple [ "a", "b", "c", "d", "ghost" ]
+                    , attributes = [ Element.width (Element.px 260) ]
+                }
+                letterOptions
+            ]
+        , demoRow "Multiple filterable (pattern)"
+            [ Select.view theme
+                { selectD
+                    | multiple = True
+                    , filterable = True
+                    , active = True
+                    , pattern = "dri"
+                    , value = SelectMenu.Multiple [ "drive" ]
+                    , attributes = [ Element.width (Element.px 260) ]
+                }
+                selectOptions
+            ]
+        , demoRow "Sizes · status · disabled"
+            [ Select.view theme
+                { selectD
+                    | size = Select.Small
+                    , value = SelectMenu.Single (Just "drive")
+                    , attributes = [ Element.width (Element.px 200) ]
+                }
+                selectOptions
+            , Select.view theme
+                { selectD
+                    | size = Select.Large
+                    , value = SelectMenu.Single (Just "drive")
+                    , attributes = [ Element.width (Element.px 240) ]
+                }
+                selectOptions
+            , Select.view theme
+                { selectD
+                    | status = Just BaseSelection.Warning
+                    , value = SelectMenu.Single (Just "drive")
+                    , attributes = [ Element.width (Element.px 200) ]
+                }
+                selectOptions
+            , Select.view theme
+                { selectD
+                    | disabled = True
+                    , value = SelectMenu.Single (Just "drive")
+                    , attributes = [ Element.width (Element.px 200) ]
+                }
+                selectOptions
+            ]
+        , demoRow "Menu: loading (the __loading row)"
+            [ Select.menu theme
+                { selMenuD
+                    | loading = True
+                    , attributes = [ Element.width (Element.px 200) ]
+                }
+                [ SelectMenu.Option { value = "a", label = "A", disabled = False, attributes = [] }
+                , SelectMenu.Option { value = "b", label = "B", disabled = False, attributes = [] }
+                ]
+            ]
+        , demoRow "Menu: header · action · selected"
+            [ Select.menu theme
+                { selMenuD
+                    | header = Just (Element.text "Header")
+                    , action = Just (Element.text "#action")
+                    , value = SelectMenu.Single (Just "drive")
+                    , attributes = [ Element.width (Element.px 200) ]
+                }
+                selectOptions
+            ]
+        ]
+
+
+{-| The select rows — leaves (one disabled) and a group (the flatten renders
+the header followed by its children as siblings).
+-}
+selectOptions : List (SelectMenu.Option msg)
+selectOptions =
+    [ SelectMenu.Option
+        { value = "drive"
+        , label = "Drive My Car"
+        , disabled = False
+        , attributes = []
+        }
+    , SelectMenu.Option
+        { value = "nowhere-man"
+        , label = "Nowhere Man"
+        , disabled = True
+        , attributes = []
+        }
+    , SelectMenu.Group
+        { label = "Rubber Soul"
+        , children =
+            [ SelectMenu.Option
+                { value = "in-my-life"
+                , label = "In My Life"
+                , disabled = False
+                , attributes = []
+                }
+            , SelectMenu.Option
+                { value = "the-word"
+                , label = "The Word"
+                , disabled = False
+                , attributes = []
+                }
+            ]
+        , attributes = []
+        }
+    ]
+
+
+{-| The lettered rows the multiple demos select from (the `ghost` value in
+the maxTagCount demo is absent here — the `fallbackOption` tag).
+-}
+letterOptions : List (SelectMenu.Option msg)
+letterOptions =
+    List.map
+        (\letter ->
+            SelectMenu.Option
+                { value = String.toLower letter
+                , label = letter
+                , disabled = False
+                , attributes = []
+                }
+        )
+        [ "A", "B", "C", "D", "E" ]
 
 
 tooltipSection : Element msg

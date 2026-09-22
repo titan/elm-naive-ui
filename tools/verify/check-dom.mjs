@@ -96,6 +96,11 @@ const targets = {
   // `n-popselect-menu` + the popover-shared classes on one element), so adding
   // `.n-base-select-menu` would select the same node twice.
   '.n-popselect-menu': true,
+  // The select wrapper carries no --n-* vars of its own — they live on the
+  // .n-base-selection trigger inside it (the menu body is a separate root).
+  '.n-select': false,
+  '.n-base-selection': true,
+  '.n-select-menu': true,
   '.n-tooltip': true,
   '.n-dropdown': true,
   // The modal container carries the 4-var set (bezier/box-shadow/color/text).

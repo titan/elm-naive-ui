@@ -118,6 +118,7 @@ bridge, tests).
 | `NUI.Radio`       | ✅ |
 | `NUI.Rate`        | ✅ |
 | `NUI.Result`      | ✅ |
+| `NUI.Select`      | ✅ |
 | `NUI.Skeleton`    | ✅ |
 | `NUI.Space`       | ✅ |
 | `NUI.Spin`        | ✅ |
