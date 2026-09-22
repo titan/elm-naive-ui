@@ -18,6 +18,19 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$here"
 export ELM_HOME="${ELM_HOME:-/tmp/elm-home}"
 
+# Stale-interface guard: a changed src/ or elm.json can leave elm-stuff interface
+# files that hide TYPE errors (bit us once: a stub commit broke Popselect's record
+# literal and `elm make --docs` still passed). elm-stuff is only trustworthy when
+# no build input is newer than it — bust it exactly then (warm runs cost one find).
+bust_stale_elm_stuff() {
+  local dir="$1"
+  if [ -d "$dir/elm-stuff" ] \
+    && find "$dir/elm.json" "$dir/src" -newer "$dir/elm-stuff" -print -quit 2>/dev/null | grep -q .; then
+    echo "  (busting stale elm-stuff in $dir)"
+    rm -rf "$dir/elm-stuff"
+  fi
+}
+
 if [ ! -d "$ELM_HOME/0.19.1/packages/mdgriffith/elm-ui" ]; then
   echo "== installing elm packages into $ELM_HOME =="
   ./scripts/install-elm-packages.sh
@@ -33,15 +46,18 @@ echo "== 3/8 module exposure =="
 node tools/verify/check-exposure.mjs
 
 echo "== 4/8 library build =="
-elm make
+bust_stale_elm_stuff "$here"
+elm make --output=/dev/null
 
 echo "== 5/8 example build =="
+bust_stale_elm_stuff "$here/examples"
 ( cd examples && elm make src/Main.elm --output=index.html )
 
 echo "== 6/8 component DOM/bridge =="
 node tools/verify/check-dom.mjs examples/index.html
 
 echo "== 7/8 foundation tests =="
+bust_stale_elm_stuff "$here/tests"
 bash tests/run.sh
 
 echo "== 8/8 elm-format =="
