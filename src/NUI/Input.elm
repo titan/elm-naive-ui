@@ -57,6 +57,23 @@ The visual result is Naive UI's own: the elements carry the `.n-input` BEM
 classes and Naive UI's `--n-*` custom properties, and `NUI.Css` ships Naive
 UI's exact CSS.
 
+Two seams beyond the basic props:
+
+  - `loading` — upstream renders its `NBaseSuffix` spinner whenever the
+    `loading` prop is set (`Input.tsx:1345-1352`); here `loading = True`.
+    DOM (the `NUI.BaseSelection` suffix idiom): `div.n-base-loading
+    .n-base-suffix` (strokeWidth 24, scale 0.85, `role="img"
+    aria-label="loading"`) > `__transition-wrapper` > `__container` > the
+    spinner svg. It renders inside `.n-input__suffix` — which now appears
+    for loading alone too — in upstream order `[clear, loading, suffix
+    slot]` (`internalLoadingBeforeSuffix` defaults true).
+  - `inputAttributes` — upstream's `inputProps`: raw attributes onto the
+    inner `<input>` / `<textarea>` element (upstream demos pass
+    `autocomplete='disabled'`, `id`, `max`). `type` / `value` /
+    `placeholder` / `maxlength` / `minlength` / `disabled` / `readonly` /
+    `rows` are owned by the fields above and always render first; the raw
+    list appends last (last-wins).
+
 -}
 
 import Element exposing (Element)
@@ -106,6 +123,8 @@ type alias Options msg =
     , prefix : Maybe (Element msg)
     , suffix : Maybe (Element msg)
     , rtl : Bool
+    , loading : Bool
+    , inputAttributes : List (Html.Attribute msg)
     }
 
 
@@ -130,6 +149,8 @@ defaults =
     , prefix = Nothing
     , suffix = Nothing
     , rtl = False
+    , loading = False
+    , inputAttributes = []
     }
 
 
