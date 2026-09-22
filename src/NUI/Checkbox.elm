@@ -37,6 +37,7 @@ import NUI.Theme exposing (Theme)
 import NUI.Theme.Checkbox as CheckboxTheme
 import NUI.Types exposing (Size(..))
 import Svg
+import Svg.Attributes as SA
 
 
 type alias Options msg =
@@ -244,7 +245,10 @@ mark : String -> String -> String -> Element msg
 mark iconClass viewBox path =
     Element.html
         (Svg.node "svg"
-            [ HA.class iconClass
+            -- SA.class, not HA.class: the svg renders in the SVG namespace
+            -- (Svg.node), where a `className` property fact throws — Svg's
+            -- class is a plain `class` attribute.
+            [ SA.class iconClass
             , HA.attribute "viewBox" viewBox
             ]
             [ Svg.node "path" [ HA.attribute "d" path ] [] ]

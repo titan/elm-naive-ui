@@ -7543,6 +7543,18 @@ dEq(
     ].join('|')
   })()
 )
+// RED until the loading-svg batch: SelectMenu's __loading spinner was a
+// local Button-verbatim copy missing the svg-level n-base-loading__icon class
+// (upstream always emits it; `.n-base-loading__container .n-base-loading__icon`
+// sizes it) and rendered HTML-namespace via Html.node.
+dEq(
+  'DOM: SelectMenu loading svg carries class n-base-loading__icon AND namespaceURI http://www.w3.org/2000/svg (NUI.Internal.Loading single source)',
+  'true|http://www.w3.org/2000/svg',
+  (() => {
+    const svg = doc.querySelector('#live-selectmenu-loading .n-base-select-menu__loading svg')
+    return svg ? [svg.classList.contains('n-base-loading__icon'), svg.namespaceURI].join('|') : null
+  })()
+)
 dEq(
   'DOM: SelectMenu loading keeps header + action mounted (loading replaces only the middle)',
   'present|present|present',

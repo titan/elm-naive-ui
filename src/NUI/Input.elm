@@ -95,6 +95,7 @@ import NUI.Internal.Loading as Loading
 import NUI.Theme exposing (Theme)
 import NUI.Theme.Input as InputTheme
 import NUI.Types as T exposing (Size(..))
+import Svg
 
 
 {-| Naive UI's `type` prop (`text` | `password` | `textarea`).
@@ -471,24 +472,24 @@ baseIcon icon =
 -}
 clearIcon : Html msg
 clearIcon =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "viewBox" "0 0 16 16"
         , HA.attribute "version" "1.1"
         , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
         , HA.attribute "width" "1em"
         , HA.attribute "height" "1em"
         ]
-        [ Html.node "g"
+        [ Svg.node "g"
             [ HA.attribute "stroke" "none"
             , HA.attribute "stroke-width" "1"
             , HA.attribute "fill" "none"
             , HA.attribute "fill-rule" "evenodd"
             ]
-            [ Html.node "g"
+            [ Svg.node "g"
                 [ HA.attribute "fill" "currentColor"
                 , HA.attribute "fill-rule" "nonzero"
                 ]
-                [ Html.node "path" [ HA.attribute "d" clearPath ] [] ]
+                [ Svg.node "path" [ HA.attribute "d" clearPath ] [] ]
             ]
         ]
 

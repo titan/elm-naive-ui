@@ -55,6 +55,7 @@ import Html
 import Html.Attributes as HA
 import NUI.Empty
 import NUI.Internal as I
+import NUI.Internal.Loading as Loading
 import NUI.Scrollbar
 import NUI.Theme exposing (Theme)
 import NUI.Theme.SelectMenu as SelectMenuTheme
@@ -266,10 +267,14 @@ bodyNode theme opts rows =
             [ optionWrapperNode theme opts rows ]
 
 
-{-| The `__loading` row — a bare `NInternalLoading` at `strokeWidth 20` (the
-`NUI.Button` loading idiom minus its `n-icon-slot` wrapper: same svg, `r 90`
-— the radius-minus-stroke pair of the `0 0 200 200` viewBox). The
+{-| The `__loading` row — a bare `NInternalLoading` at `strokeWidth 20`, the
+same geometry as `NUI.Button`'s spinner minus its `n-icon-slot` wrapper (the
+svg is `NUI.Internal.Loading.spinner`, the library's single source). The
 `--n-loading-color` / `--n-loading-size` vars ship with the menu's 23.
+Upstream's `<NInternalLoading/>` here takes no props — its default
+`strokeWidth` is 28, so the port's 20 is a deliberate inherited divergence
+(the pre-batch local copy was Button-verbatim); keep 20 unless a fidelity
+sweep rules otherwise.
 -}
 loadingNode : Element msg
 loadingNode =
@@ -284,67 +289,14 @@ loadingNode =
                 [ I.classes [ "n-base-loading__transition-wrapper" ] ]
                 (Element.el
                     [ I.classes [ "n-base-loading__container" ] ]
-                    (Element.html loadingSvg)
+                    (Element.html
+                        (Loading.spinner
+                            { strokeWidth = 20, radius = 100, scale = 1, stroke = Nothing }
+                        )
+                    )
                 )
             )
         )
-
-
-{-| Upstream `NInternalLoading`'s spinner svg — the `NUI.Button` copy verbatim
-(SMIL children kept; browsers animate the dash arc, jsdom carries the nodes).
--}
-loadingSvg : Html.Html msg
-loadingSvg =
-    Svg.node "svg"
-        [ HA.attribute "viewBox" "0 0 200 200"
-        , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
-        ]
-        [ Svg.node "g"
-            []
-            [ Svg.node "animateTransform"
-                [ HA.attribute "attributeName" "transform"
-                , HA.attribute "type" "rotate"
-                , HA.attribute "values" "0 100 100;270 100 100"
-                , HA.attribute "begin" "0s"
-                , HA.attribute "dur" "1.6s"
-                , HA.attribute "fill" "freeze"
-                , HA.attribute "repeatCount" "indefinite"
-                ]
-                []
-            , Svg.node "circle"
-                [ HA.attribute "class" "n-base-loading__icon"
-                , HA.attribute "fill" "none"
-                , HA.attribute "stroke" "currentColor"
-                , HA.attribute "stroke-width" "20"
-                , HA.attribute "stroke-linecap" "round"
-                , HA.attribute "cx" "100"
-                , HA.attribute "cy" "100"
-                , HA.attribute "r" "90"
-                , HA.attribute "stroke-dasharray" "567"
-                , HA.attribute "stroke-dashoffset" "1848"
-                ]
-                [ Svg.node "animateTransform"
-                    [ HA.attribute "attributeName" "transform"
-                    , HA.attribute "type" "rotate"
-                    , HA.attribute "values" "0 100 100;135 100 100;450 100 100"
-                    , HA.attribute "begin" "0s"
-                    , HA.attribute "dur" "1.6s"
-                    , HA.attribute "fill" "freeze"
-                    , HA.attribute "repeatCount" "indefinite"
-                    ]
-                    []
-                , Svg.node "animate"
-                    [ HA.attribute "attributeName" "stroke-dashoffset"
-                    , HA.attribute "values" "567;142;567"
-                    , HA.attribute "begin" "0s"
-                    , HA.attribute "dur" "1.6s"
-                    , HA.attribute "fill" "freeze"
-                    , HA.attribute "repeatCount" "indefinite"
-                    ]
-                    []
-                ]
-            ]
-        ]
 
 
 {-| The built-in empty fallback — `NEmpty` at the menu's own size (upstream

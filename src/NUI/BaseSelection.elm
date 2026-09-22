@@ -113,6 +113,7 @@ import NUI.Tag
 import NUI.Theme exposing (Theme)
 import NUI.Theme.InternalSelection as InternalSelectionTheme
 import NUI.Types as T
+import Svg
 
 
 
@@ -719,12 +720,12 @@ emptyEl c =
 -}
 chevronDownSvg : Html.Html msg
 chevronDownSvg =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "viewBox" "0 0 16 16"
         , HA.attribute "fill" "none"
         , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
         ]
-        [ Html.node "path"
+        [ Svg.node "path"
             [ HA.attribute "d" chevronDownPath
             , HA.attribute "fill" "currentColor"
             ]
@@ -742,22 +743,22 @@ circle, verbatim structure (the `.n-base-icon svg` rule sizes it).
 -}
 clearIcon : Html.Html msg
 clearIcon =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "viewBox" "0 0 16 16"
         , HA.attribute "version" "1.1"
         , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
         ]
-        [ Html.node "g"
+        [ Svg.node "g"
             [ HA.attribute "stroke" "none"
             , HA.attribute "stroke-width" "1"
             , HA.attribute "fill" "none"
             , HA.attribute "fill-rule" "evenodd"
             ]
-            [ Html.node "g"
+            [ Svg.node "g"
                 [ HA.attribute "fill" "currentColor"
                 , HA.attribute "fill-rule" "nonzero"
                 ]
-                [ Html.node "path" [ HA.attribute "d" clearPath ] [] ]
+                [ Svg.node "path" [ HA.attribute "d" clearPath ] [] ]
             ]
         ]
 
