@@ -159,6 +159,7 @@ menuOptions theme opts =
     , value = opts.value
     , showCheckmark = opts.showCheckmark
     , focusable = True
+    , loading = False
     , header = opts.header
     , action = opts.action
     , empty = opts.empty

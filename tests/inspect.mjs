@@ -6956,6 +6956,490 @@ dEq(
   })()
 )
 
+// --- BaseSelection ----------------------------------------------------------
+const bsRoot = (id) => doc.querySelector('#' + id + ' .n-base-selection')
+const bsLabel = (id) => doc.querySelector('#' + id + ' .n-base-selection-label')
+const bsTagsEl = (id) => doc.querySelector('#' + id + ' .n-base-selection-tags')
+const bsPh = (id) => doc.querySelector('#' + id + ' .n-base-selection-placeholder')
+const bsWrappers = (id) => [...doc.querySelectorAll('#' + id + ' .n-base-selection-tag-wrapper')]
+const bsTagTexts = (id) =>
+  [...doc.querySelectorAll('#' + id + ' .n-base-selection-tag-wrapper .n-tag')].map((t) => t.textContent)
+
+const BS_MEDIUM_VARS = [
+  ['--n-bezier', 'cubic-bezier(.4, 0, .2, 1)'],
+  ['--n-border', '1px solid rgb(224, 224, 230)'],
+  ['--n-border-active', '1px solid #18a058'],
+  ['--n-border-focus', '1px solid #36ad6a'],
+  ['--n-border-hover', '1px solid #36ad6a'],
+  ['--n-border-radius', '3px'],
+  ['--n-box-shadow-active', '0 0 0 2px rgba(24, 160, 88, 0.2)'],
+  ['--n-box-shadow-focus', '0 0 0 2px rgba(24, 160, 88, 0.2)'],
+  ['--n-box-shadow-hover', 'none'],
+  ['--n-caret-color', '#18a058'],
+  ['--n-color', 'rgba(255, 255, 255, 1)'],
+  ['--n-color-active', 'rgba(255, 255, 255, 1)'],
+  ['--n-color-disabled', 'rgb(250, 250, 252)'],
+  ['--n-font-size', '14px'],
+  ['--n-height', '34px'],
+  ['--n-padding-single-top', '0'],
+  ['--n-padding-multiple-top', '3px'],
+  ['--n-padding-single-right', '26px'],
+  ['--n-padding-multiple-right', '26px'],
+  ['--n-padding-single-left', '12px'],
+  ['--n-padding-multiple-left', '12px'],
+  ['--n-padding-single-bottom', '0'],
+  ['--n-padding-multiple-bottom', '0'],
+  ['--n-placeholder-color', 'rgba(194, 194, 194, 1)'],
+  ['--n-placeholder-color-disabled', 'rgba(209, 209, 209, 1)'],
+  ['--n-text-color', 'rgb(51, 54, 57)'],
+  ['--n-text-color-disabled', 'rgba(194, 194, 194, 1)'],
+  ['--n-arrow-color', 'rgba(194, 194, 194, 1)'],
+  ['--n-arrow-color-disabled', 'rgba(209, 209, 209, 1)'],
+  ['--n-loading-color', '#18a058'],
+  ['--n-color-active-warning', 'rgba(255, 255, 255, 1)'],
+  ['--n-box-shadow-focus-warning', '0 0 0 2px rgba(240, 160, 32, 0.2)'],
+  ['--n-box-shadow-active-warning', '0 0 0 2px rgba(240, 160, 32, 0.2)'],
+  ['--n-box-shadow-hover-warning', 'none'],
+  ['--n-border-warning', '1px solid #f0a020'],
+  ['--n-border-focus-warning', '1px solid #fcb040'],
+  ['--n-border-hover-warning', '1px solid #fcb040'],
+  ['--n-border-active-warning', '1px solid #f0a020'],
+  ['--n-color-active-error', 'rgba(255, 255, 255, 1)'],
+  ['--n-box-shadow-focus-error', '0 0 0 2px rgba(208, 48, 80, 0.2)'],
+  ['--n-box-shadow-active-error', '0 0 0 2px rgba(208, 48, 80, 0.2)'],
+  ['--n-box-shadow-hover-error', 'none'],
+  ['--n-border-error', '1px solid #d03050'],
+  ['--n-border-focus-error', '1px solid #de576d'],
+  ['--n-border-hover-error', '1px solid #de576d'],
+  ['--n-border-active-error', '1px solid #d03050'],
+  ['--n-clear-size', '16px'],
+  ['--n-clear-color', 'rgba(194, 194, 194, 1)'],
+  ['--n-clear-color-hover', 'rgba(146, 146, 146, 1)'],
+  ['--n-clear-color-pressed', 'rgba(175, 175, 175, 1)'],
+  ['--n-arrow-size', '16px'],
+  ['--n-font-weight', '400']
+]
+const BASESELECTION_MEDIUM_STYLE = BS_MEDIUM_VARS.map(([k, v]) => k + ':' + v).join(';')
+
+dEq(
+  'DOM: BaseSelection root style = the exact 52-var string in upstream declaration order (light, medium)',
+  BASESELECTION_MEDIUM_STYLE,
+  styleAt(bsRoot('live-basesel-default'))
+)
+dEq(
+  'DOM: BaseSelection root carries exactly 52 --n-* custom properties',
+  52,
+  countVars(bsRoot('live-basesel-default'))
+)
+dEq(
+  'DOM: BaseSelection default n-* class set = n-base-selection alone',
+  'n-base-selection',
+  nClassesStr(bsRoot('live-basesel-default'))
+)
+dEq(
+  'DOM: BaseSelection combined n-* class order (rtl, error status, active, selected boost, disabled, multiple, focus)',
+  'n-base-selection n-base-selection--rtl n-base-selection--error-status n-base-selection--active n-base-selection--selected n-base-selection--disabled n-base-selection--multiple n-base-selection--focus',
+  nClassesStr(bsRoot('live-basesel-classes'))
+)
+dTrue(
+  'DOM: BaseSelection status warning/error/success classes (success = class only)',
+  hasCls(bsRoot('live-basesel-status-warning'), 'n-base-selection--warning-status') &&
+    hasCls(bsRoot('live-basesel-status-error'), 'n-base-selection--error-status') &&
+    hasCls(bsRoot('live-basesel-status-success'), 'n-base-selection--success-status'),
+  nClassesStr(bsRoot('live-basesel-status-warning')) + ' | ' + nClassesStr(bsRoot('live-basesel-status-success'))
+)
+dEq(
+  'DOM: BaseSelection active (no pattern) -> --active but NOT --selected',
+  'true|false',
+  [
+    hasCls(bsRoot('live-basesel-active'), 'n-base-selection--active'),
+    hasCls(bsRoot('live-basesel-active'), 'n-base-selection--selected')
+  ].join('|')
+)
+dEq(
+  'DOM: BaseSelection active + pattern, no selection -> the --selected boost',
+  'true|true',
+  [
+    hasCls(bsRoot('live-basesel-selected-boost'), 'n-base-selection--active'),
+    hasCls(bsRoot('live-basesel-selected-boost'), 'n-base-selection--selected')
+  ].join('|')
+)
+dEq('DOM: BaseSelection focused -> --focus', true, hasCls(bsRoot('live-basesel-focus'), 'n-base-selection--focus'))
+dEq('DOM: BaseSelection rtl -> --rtl', true, hasCls(bsRoot('live-basesel-rtl'), 'n-base-selection--rtl'))
+
+dEq(
+  'DOM: BaseSelection single non-filterable empty -> label[tabindex=0] > placeholder.__overlay > __inner; no __input',
+  '0|Please Select|present|absent',
+  (() => {
+    const id = 'live-basesel-default'
+    const inner = doc.querySelector(`#${id} .n-base-selection-placeholder__inner`)
+    return [
+      bsLabel(id) ? bsLabel(id).getAttribute('tabindex') : null,
+      inner ? inner.textContent : null,
+      hasCls(bsPh(id), 'n-base-selection-overlay') ? 'present' : 'absent',
+      doc.querySelector(`#${id} .n-base-selection-input`) ? 'present' : 'absent'
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: BaseSelection single non-filterable selected -> __input[title] > __content label; no placeholder',
+  'Drive My Car|Drive My Car|absent',
+  (() => {
+    const id = 'live-basesel-single-selected'
+    const input = doc.querySelector(`#${id} .n-base-selection-input`)
+    const content = doc.querySelector(`#${id} .n-base-selection-input__content`)
+    return [
+      input ? input.getAttribute('title') : null,
+      content ? content.textContent : null,
+      doc.querySelector(`#${id} .n-base-selection-placeholder`) ? 'present' : 'absent'
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: BaseSelection single filterable empty -> input[value="",tabindex=-1] + placeholder.__overlay > __wrapper; no __render-label',
+  '|-1|Please Select|absent',
+  (() => {
+    const id = 'live-basesel-single-filterable-empty'
+    const input = doc.querySelector(`#${id} input.n-base-selection-input`)
+    const wrap = doc.querySelector(`#${id} .n-base-selection-placeholder .n-base-selection-overlay__wrapper`)
+    return [
+      input ? input.value : null,
+      input ? input.getAttribute('tabindex') : null,
+      wrap ? wrap.textContent : null,
+      doc.querySelector(`#${id} .n-base-selection-label__render-label`) ? 'present' : 'absent'
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: BaseSelection single filterable selected(inactive) -> input + __render-label.__overlay > __wrapper label; no placeholder',
+  '|Drive My Car|present|absent',
+  (() => {
+    const id = 'live-basesel-single-filterable-selected'
+    const input = doc.querySelector(`#${id} input.n-base-selection-input`)
+    const wrap = doc.querySelector(`#${id} .n-base-selection-label__render-label .n-base-selection-overlay__wrapper`)
+    const rl = doc.querySelector(`#${id} .n-base-selection-label__render-label`)
+    return [
+      input ? input.value : null,
+      wrap ? wrap.textContent : null,
+      hasCls(rl, 'n-base-selection-overlay') ? 'present' : 'absent',
+      doc.querySelector(`#${id} .n-base-selection-placeholder`) ? 'present' : 'absent'
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: BaseSelection single filterable active+pattern (selected) -> input value=pattern; NO overlays',
+  'dri|absent|absent',
+  (() => {
+    const id = 'live-basesel-single-filterable-active'
+    const input = doc.querySelector(`#${id} input.n-base-selection-input`)
+    return [
+      input ? input.value : null,
+      doc.querySelector(`#${id} .n-base-selection-label__render-label`) ? 'present' : 'absent',
+      doc.querySelector(`#${id} .n-base-selection-placeholder`) ? 'present' : 'absent'
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: BaseSelection single filterable active+empty pattern -> placeholder __wrapper holds the SELECTED label (filterablePlaceholder quirk)',
+  '|Drive My Car|absent',
+  (() => {
+    const id = 'live-basesel-single-filterable-active-empty'
+    const input = doc.querySelector(`#${id} input.n-base-selection-input`)
+    const wrap = doc.querySelector(`#${id} .n-base-selection-placeholder .n-base-selection-overlay__wrapper`)
+    return [
+      input ? input.value : null,
+      wrap ? wrap.textContent : null,
+      doc.querySelector(`#${id} .n-base-selection-label__render-label`) ? 'present' : 'absent'
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: BaseSelection disabled -> label has NO tabindex',
+  null,
+  bsLabel('live-basesel-disabled') ? bsLabel('live-basesel-disabled').getAttribute('tabindex') : 'missing-label'
+)
+dEq(
+  'DOM: BaseSelection filterable title rules (inactive selected -> title on label; active -> no title)',
+  'Drive My Car|null',
+  (() => {
+    const a = bsLabel('live-basesel-single-filterable-selected')
+    const b = bsLabel('live-basesel-single-filterable-active')
+    return [a ? a.getAttribute('title') : 'missing-label', b ? b.getAttribute('title') : 'missing-label'].join('|')
+  })()
+)
+dEq(
+  'DOM: BaseSelection multiple -> tags[tabindex=0] + 2 wrappers/2 NTag (value order); no input-tag; no placeholder',
+  '0|2|2|A,B|absent|absent',
+  (() => {
+    const id = 'live-basesel-multiple'
+    return [
+      bsTagsEl(id) ? bsTagsEl(id).getAttribute('tabindex') : null,
+      String(bsWrappers(id).length),
+      String(doc.querySelectorAll(`#${id} .n-base-selection-tag-wrapper .n-tag`).length),
+      bsTagTexts(id).join(','),
+      doc.querySelector(`#${id} .n-base-selection-input-tag`) ? 'present' : 'absent',
+      doc.querySelector(`#${id} .n-base-selection-placeholder`) ? 'present' : 'absent'
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: BaseSelection multiple ellipsisTag Just 3 -> 3 wrappers, last NTag text "+3"',
+  '3|A,B,+3',
+  (() => {
+    const id = 'live-basesel-multiple-ellipsis'
+    return [String(bsWrappers(id).length), bsTagTexts(id).join(',')].join('|')
+  })()
+)
+dEq(
+  'DOM: BaseSelection multiple filterable -> input-tag__input[value=pattern,tabindex=-1] + __mirror text=pattern',
+  'dri|-1|dri',
+  (() => {
+    const id = 'live-basesel-multiple-filterable'
+    const input = doc.querySelector(`#${id} .n-base-selection-input-tag__input`)
+    const mirror = doc.querySelector(`#${id} .n-base-selection-input-tag__mirror`)
+    return [
+      input ? input.value : null,
+      input ? input.getAttribute('tabindex') : null,
+      mirror ? mirror.textContent : null
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: BaseSelection multiple unselected -> placeholder is a SIBLING after the tags div (not nested)',
+  'true|true|Please Select',
+  (() => {
+    const id = 'live-basesel-multiple-placeholder'
+    const ph = bsPh(id)
+    const tags = bsTagsEl(id)
+    const inner = doc.querySelector(`#${id} .n-base-selection-placeholder__inner`)
+    return [
+      !!ph && !!tags && ph.previousElementSibling === tags,
+      !!ph && !!tags && !tags.contains(ph),
+      inner ? inner.textContent : null
+    ].join('|')
+  })()
+)
+
+dTrue(
+  'DOM: BaseSelection loading -> n-base-loading.n-base-suffix with the spinner (no clear/arrow idle slot)',
+  !!doc.querySelector('#live-basesel-loading .n-base-suffix.n-base-loading') &&
+    !!doc.querySelector('#live-basesel-loading .n-base-loading__transition-wrapper') &&
+    doc.querySelector('#live-basesel-loading .n-base-clear__clear') === null &&
+    doc.querySelector('#live-basesel-loading .n-base-suffix__arrow') === null,
+  clsOf(doc.querySelector('#live-basesel-loading .n-base-suffix'))
+)
+dEq(
+  'DOM: BaseSelection showClear -> n-base-clear > __clear[data-clear]',
+  'present|present|true|',
+  (() => {
+    const id = 'live-basesel-clear'
+    const clear = doc.querySelector(`#${id} .n-base-clear__clear`)
+    return [
+      doc.querySelector(`#${id} .n-base-clear`) ? 'present' : 'absent',
+      clear ? 'present' : 'absent',
+      clear ? String(clear.hasAttribute('data-clear')) : 'absent',
+      clear ? clear.getAttribute('data-clear') : 'absent'
+    ].join('|')
+  })()
+)
+dTrue(
+  'DOM: BaseSelection default -> n-base-clear > __placeholder > .n-base-icon.n-base-suffix__arrow > ChevronDown svg (d startsWith M3.14645 5.64645)',
+  (() => {
+    const id = 'live-basesel-default'
+    const p = doc.querySelector(`#${id} .n-base-clear__placeholder .n-base-icon.n-base-suffix__arrow svg path`)
+    return (
+      !!doc.querySelector(`#${id} .n-base-clear`) &&
+      !!doc.querySelector(`#${id} .n-base-icon.n-base-suffix__arrow`) &&
+      !!p &&
+      (p.getAttribute('d') || '').startsWith('M3.14645 5.64645')
+    )
+  })(),
+  clsOf(doc.querySelector('#live-basesel-default .n-base-suffix__arrow'))
+)
+dTrue(
+  'DOM: BaseSelection arrow slot replaces the svg content (wrapper stays, no ChevronDown path)',
+  (() => {
+    const id = 'live-basesel-arrow-slot'
+    const root = doc.querySelector('#' + id)
+    return (
+      !!doc.querySelector(`#${id} .n-base-suffix__arrow`) &&
+      doc.querySelectorAll(`#${id} .n-base-suffix__arrow svg path`).length === 0 &&
+      !!root &&
+      (root.textContent || '').includes('slot-arrow')
+    )
+  })(),
+  doc.querySelector('#live-basesel-arrow-slot .n-base-suffix__arrow')
+    ? doc.querySelector('#live-basesel-arrow-slot .n-base-suffix__arrow').textContent
+    : 'missing'
+)
+dEq(
+  'DOM: BaseSelection showArrow False (not loading) -> no clear/arrow nodes (differential vs the default which has them)',
+  'present|absent|absent|absent',
+  (() => {
+    const d = 'live-basesel-default'
+    const id = 'live-basesel-noarrow'
+    return [
+      doc.querySelector(`#${d} .n-base-suffix__arrow`) ? 'present' : 'absent',
+      doc.querySelector(`#${id} .n-base-clear`) ? 'present' : 'absent',
+      doc.querySelector(`#${id} .n-base-suffix__arrow`) ? 'present' : 'absent',
+      doc.querySelector(`#${id} .n-base-clear__placeholder`) ? 'present' : 'absent'
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: BaseSelection bordered True -> __border + __state-border',
+  'present|present',
+  [
+    doc.querySelector('#live-basesel-default .n-base-selection__border') ? 'present' : 'absent',
+    doc.querySelector('#live-basesel-default .n-base-selection__state-border') ? 'present' : 'absent'
+  ].join('|')
+)
+dEq(
+  'DOM: BaseSelection bordered False -> neither border node (differential vs the default which has both)',
+  'present|present|absent|absent',
+  [
+    doc.querySelector('#live-basesel-default .n-base-selection__border') ? 'present' : 'absent',
+    doc.querySelector('#live-basesel-default .n-base-selection__state-border') ? 'present' : 'absent',
+    doc.querySelector('#live-basesel-unbordered .n-base-selection__border') ? 'present' : 'absent',
+    doc.querySelector('#live-basesel-unbordered .n-base-selection__state-border') ? 'present' : 'absent'
+  ].join('|')
+)
+
+// --- Select -----------------------------------------------------------------
+const selWrapper = (id) => doc.querySelector('#' + id + ' .n-select')
+const selContent = (id) => doc.querySelector('#' + id + ' .n-base-selection-input__content')
+const SELECT_MENU_BOX_SHADOW =
+  '0 3px 6px -4px rgba(0, 0, 0, .12), 0 6px 16px 0 rgba(0, 0, 0, .08), 0 9px 28px 8px rgba(0, 0, 0, .05)'
+
+dEq(
+  'DOM: Select.view root = a bare .n-select wrapper (no extra n-* classes, no css vars)',
+  'n-select|0',
+  [
+    nClassesStr(selWrapper('live-select-single-selected')),
+    String(countVars(selWrapper('live-select-single-selected')))
+  ].join('|')
+)
+dEq(
+  'DOM: Select.view single selected -> trigger __content = the option label',
+  'Drive My Car',
+  selContent('live-select-single-selected') ? selContent('live-select-single-selected').textContent : null
+)
+dEq(
+  'DOM: Select.view single value missing + fallback -> label = the value itself',
+  'ghost',
+  selContent('live-select-single-fallback') ? selContent('live-select-single-fallback').textContent : null
+)
+dEq(
+  'DOM: Select.view single fallbackOption False -> placeholder path (no __content, placeholder shown)',
+  'absent|Please Select',
+  (() => {
+    const id = 'live-select-single-fallback-off'
+    const inner = doc.querySelector(`#${id} .n-base-selection-placeholder__inner`)
+    return [selContent(id) ? 'present' : 'absent', inner ? inner.textContent : null].join('|')
+  })()
+)
+dEq('DOM: Select.view multiple -> one tag per value, in VALUE order', 'A,B,C', bsTagTexts('live-select-multiple').join(','))
+dEq(
+  'DOM: Select.view multiple with an unknown value + fallback -> appended label=value tag',
+  'A,ghost',
+  bsTagTexts('live-select-multiple-fallback').join(',')
+)
+dEq(
+  'DOM: Select.view multiple fallbackOption False -> unknown value dropped',
+  'A|1',
+  (() => {
+    const id = 'live-select-multiple-fallback-off'
+    return [bsTagTexts(id).join(','), String(bsWrappers(id).length)].join('|')
+  })()
+)
+dEq(
+  'DOM: Select.view multiple maxTagCount 3 of 5 -> 3 tags + the +2 ellipsis tag',
+  '4|A,B,C,+2',
+  (() => {
+    const id = 'live-select-multiple-maxtag'
+    return [String(bsWrappers(id).length), bsTagTexts(id).join(',')].join('|')
+  })()
+)
+dEq(
+  'DOM: Select.view showClear = clearable && !disabled && (hover||active) && selected',
+  'shown|shown|hidden|hidden|hidden|hidden',
+  [
+    'live-select-clear-hover',
+    'live-select-clear-active',
+    'live-select-clear-neither',
+    'live-select-clear-unselected',
+    'live-select-clear-notclearable',
+    'live-select-clear-disabled'
+  ]
+    .map((id) => (doc.querySelector(`#${id} .n-base-clear__clear`) ? 'shown' : 'hidden'))
+    .join('|')
+)
+
+// --- Select.menu ------------------------------------------------------------
+const selMenuRoot = (id) => doc.querySelector('#' + id + ' .n-base-select-menu')
+dEq(
+  'DOM: Select.menu root classes = n-base-select-menu + --medium-size + n-select-menu',
+  'n-base-select-menu n-base-select-menu--medium-size n-select-menu',
+  nClassesStr(selMenuRoot('live-select-menu-default'))
+)
+dEq(
+  'DOM: Select.menu is focusable (tabindex 0)',
+  '0',
+  selMenuRoot('live-select-menu-default') ? selMenuRoot('live-select-menu-default').getAttribute('tabindex') : null
+)
+dEq(
+  'DOM: Select.menu style = the 23 menu vars then --n-menu-box-shadow LAST',
+  SELECTMENU_MEDIUM_STYLE + ';--n-menu-box-shadow:' + SELECT_MENU_BOX_SHADOW,
+  styleAt(selMenuRoot('live-select-menu-default'))
+)
+dEq(
+  'DOM: Select.menu carries exactly 24 --n-* custom properties (23 menu + box-shadow)',
+  24,
+  countVars(selMenuRoot('live-select-menu-default'))
+)
+dEq(
+  'DOM: Select.menu transition EnterActive -> fade-in-scale-up-transition-enter-active appended',
+  'n-base-select-menu n-base-select-menu--medium-size n-select-menu fade-in-scale-up-transition-enter-active',
+  nClassesStr(selMenuRoot('live-select-menu-transition'))
+)
+
+// --- SelectMenu loading row -------------------------------------------------
+dEq(
+  'DOM: SelectMenu loading -> __loading row present (+ spinner stroke-width 20); option-wrapper and __empty both absent',
+  'present|20|absent|absent',
+  (() => {
+    const id = 'live-selectmenu-loading'
+    const row = doc.querySelector(`#${id} .n-base-select-menu__loading`)
+    const circle = doc.querySelector(`#${id} .n-base-select-menu__loading svg circle`)
+    return [
+      row ? 'present' : 'absent',
+      circle ? circle.getAttribute('stroke-width') : null,
+      doc.querySelector(`#${id} .n-base-select-menu-option-wrapper`) ? 'present' : 'absent',
+      doc.querySelector(`#${id} .n-base-select-menu__empty`) ? 'present' : 'absent'
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: SelectMenu loading keeps header + action mounted (loading replaces only the middle)',
+  'present|present|present',
+  (() => {
+    const id = 'live-selectmenu-loading-header-action'
+    return [
+      doc.querySelector(`#${id} .n-base-select-menu__loading`) ? 'present' : 'absent',
+      doc.querySelector(`#${id} .n-base-select-menu__header[data-header]`) ? 'present' : 'absent',
+      doc.querySelector(`#${id} .n-base-select-menu__action[data-action]`) ? 'present' : 'absent'
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: SelectMenu not loading -> no __loading node (differential vs the loading render which has one)',
+  'present|absent',
+  [
+    doc.querySelector('#live-selectmenu-loading .n-base-select-menu__loading') ? 'present' : 'absent',
+    doc.querySelector('#live-selectmenu-default .n-base-select-menu__loading') ? 'present' : 'absent'
+  ].join('|')
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

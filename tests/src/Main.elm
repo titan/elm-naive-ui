@@ -23,6 +23,7 @@ import NUI.Avatar as Avatar
 import NUI.AvatarGroup as AvatarGroup
 import NUI.BackTop as BackTop
 import NUI.Badge as Badge
+import NUI.BaseSelection as BaseSelection
 import NUI.Breadcrumb as Breadcrumb
 import NUI.Button as Button
 import NUI.ButtonGroup as ButtonGroup
@@ -76,6 +77,7 @@ import NUI.Radio as Radio
 import NUI.Rate as Rate
 import NUI.Result as Result
 import NUI.Scrollbar as Scrollbar
+import NUI.Select as Select
 import NUI.SelectMenu as SelectMenu
 import NUI.Skeleton as Skeleton
 import NUI.Space as Space
@@ -95,7 +97,9 @@ import NUI.Theme.Heatmap as HeatmapTheme
 import NUI.Theme.Icon as IconTheme
 import NUI.Theme.IconWrapper as IconWrapperTheme
 import NUI.Theme.InputOtp as InputOtpTheme
+import NUI.Theme.InternalSelection as InternalSelectionTheme
 import NUI.Theme.Layout as LayoutTheme
+import NUI.Theme.Select as SelectTheme
 import NUI.Theme.Tag as TagTheme
 import NUI.Thing as Thing
 import NUI.Timeline as Timeline
@@ -3549,6 +3553,151 @@ smD =
 
 
 
+-- SELECT / BASESELECTION OPTION SETS -------------------------------------------
+
+
+{-| The plain defaults bindings (`{ X.defaults | … }` is a parse error).
+-}
+bsD : BaseSelection.Options Msg
+bsD =
+    BaseSelection.defaults
+
+
+selD : Select.Options Msg
+selD =
+    Select.defaults
+
+
+{-| The menu options — `NUI.Select.menuDefaults` is unexposed, so the record is
+spelled out (upstream `InternalSelectMenu` defaults: absent `size` = medium).
+-}
+selMenuD : Select.MenuOptions Msg
+selMenuD =
+    { size = Nothing
+    , multiple = False
+    , value = SelectMenu.Single Nothing
+    , showCheckmark = True
+    , loading = False
+    , header = Nothing
+    , action = Nothing
+    , empty = Nothing
+    , onToggle = Nothing
+    , scrollbarProps = Nothing
+    , transition = Nothing
+    , rtl = False
+    , attributes = []
+    }
+
+
+{-| One `NUI.BaseSelection` multiple-mode tag (the wrapper + `NTag` pair).
+-}
+bsTag : String -> String -> BaseSelection.Tag Msg
+bsTag value label =
+    BaseSelection.Tag { value = value, label = label, disabled = False }
+
+
+{-| The options the trigger-derivation live renders select from.
+-}
+selOptions : List (SelectMenu.Option Msg)
+selOptions =
+    [ smLeaf "a" "A"
+    , smLeaf "b" "B"
+    , smLeaf "c" "C"
+    , smLeaf "d" "D"
+    , smLeaf "e" "E"
+    , smLeaf "drive" "Drive My Car"
+    ]
+
+
+{-| The small option set the `filterOptions` pins match against.
+-}
+selFilterOpts : List (SelectMenu.Option Msg)
+selFilterOpts =
+    [ smLeaf "drive" "Drive My Car", smLeaf "walk" "Walk" ]
+
+
+{-| A comparable shape for a `NUI.SelectMenu.Option` list (the records carry
+`Element`s, so `==` is unavailable).
+-}
+smShape : List (SelectMenu.Option msg) -> List String
+smShape options =
+    List.map
+        (\option ->
+            case option of
+                SelectMenu.Option leaf ->
+                    "opt:" ++ leaf.value
+
+                SelectMenu.Group group ->
+                    "group:" ++ group.label ++ "[" ++ String.join "," (smShape group.children) ++ "]"
+
+                SelectMenu.Custom custom ->
+                    "custom:" ++ custom.key
+        )
+        options
+
+
+{-| The 52-entry list `NUI.BaseSelection.cssVars` must emit for `Medium` (light):
+upstream `Selection.tsx` `cssVarsRef` declaration order; values equal the
+`Select.spec.tsx.snap` medium variant.
+-}
+expectedBaseSelectionVarsMedium : List ( String, String )
+expectedBaseSelectionVarsMedium =
+    [ ( "--n-bezier", "cubic-bezier(.4, 0, .2, 1)" )
+    , ( "--n-border", "1px solid rgb(224, 224, 230)" )
+    , ( "--n-border-active", "1px solid #18a058" )
+    , ( "--n-border-focus", "1px solid #36ad6a" )
+    , ( "--n-border-hover", "1px solid #36ad6a" )
+    , ( "--n-border-radius", "3px" )
+    , ( "--n-box-shadow-active", "0 0 0 2px rgba(24, 160, 88, 0.2)" )
+    , ( "--n-box-shadow-focus", "0 0 0 2px rgba(24, 160, 88, 0.2)" )
+    , ( "--n-box-shadow-hover", "none" )
+    , ( "--n-caret-color", "#18a058" )
+    , ( "--n-color", "rgba(255, 255, 255, 1)" )
+    , ( "--n-color-active", "rgba(255, 255, 255, 1)" )
+    , ( "--n-color-disabled", "rgb(250, 250, 252)" )
+    , ( "--n-font-size", "14px" )
+    , ( "--n-height", "34px" )
+    , ( "--n-padding-single-top", "0" )
+    , ( "--n-padding-multiple-top", "3px" )
+    , ( "--n-padding-single-right", "26px" )
+    , ( "--n-padding-multiple-right", "26px" )
+    , ( "--n-padding-single-left", "12px" )
+    , ( "--n-padding-multiple-left", "12px" )
+    , ( "--n-padding-single-bottom", "0" )
+    , ( "--n-padding-multiple-bottom", "0" )
+    , ( "--n-placeholder-color", "rgba(194, 194, 194, 1)" )
+    , ( "--n-placeholder-color-disabled", "rgba(209, 209, 209, 1)" )
+    , ( "--n-text-color", "rgb(51, 54, 57)" )
+    , ( "--n-text-color-disabled", "rgba(194, 194, 194, 1)" )
+    , ( "--n-arrow-color", "rgba(194, 194, 194, 1)" )
+    , ( "--n-arrow-color-disabled", "rgba(209, 209, 209, 1)" )
+    , ( "--n-loading-color", "#18a058" )
+    , ( "--n-color-active-warning", "rgba(255, 255, 255, 1)" )
+    , ( "--n-box-shadow-focus-warning", "0 0 0 2px rgba(240, 160, 32, 0.2)" )
+    , ( "--n-box-shadow-active-warning", "0 0 0 2px rgba(240, 160, 32, 0.2)" )
+    , ( "--n-box-shadow-hover-warning", "none" )
+    , ( "--n-border-warning", "1px solid #f0a020" )
+    , ( "--n-border-focus-warning", "1px solid #fcb040" )
+    , ( "--n-border-hover-warning", "1px solid #fcb040" )
+    , ( "--n-border-active-warning", "1px solid #f0a020" )
+    , ( "--n-color-active-error", "rgba(255, 255, 255, 1)" )
+    , ( "--n-box-shadow-focus-error", "0 0 0 2px rgba(208, 48, 80, 0.2)" )
+    , ( "--n-box-shadow-active-error", "0 0 0 2px rgba(208, 48, 80, 0.2)" )
+    , ( "--n-box-shadow-hover-error", "none" )
+    , ( "--n-border-error", "1px solid #d03050" )
+    , ( "--n-border-focus-error", "1px solid #de576d" )
+    , ( "--n-border-hover-error", "1px solid #de576d" )
+    , ( "--n-border-active-error", "1px solid #d03050" )
+    , ( "--n-clear-size", "16px" )
+    , ( "--n-clear-color", "rgba(194, 194, 194, 1)" )
+    , ( "--n-clear-color-hover", "rgba(146, 146, 146, 1)" )
+    , ( "--n-clear-color-pressed", "rgba(175, 175, 175, 1)" )
+    , ( "--n-arrow-size", "16px" )
+    , ( "--n-font-weight", "400" )
+    ]
+
+
+
 -- CHECKS -----------------------------------------------------------------------
 
 
@@ -6574,6 +6723,134 @@ checks =
     , eq "selectmenu cssVars dark: --n-option-color-active stays transparent" (Just "rgba(0, 0, 0, 0)") (lookup "--n-option-color-active" (SelectMenu.cssVars dark SelectMenu.Medium))
     , eq "selectmenu cssVars dark: --n-height identical to light" (Just "calc(var(--n-option-height) * 7.6)") (lookup "--n-height" (SelectMenu.cssVars dark SelectMenu.Medium))
     , eq "selectmenu cssVars non-empty (stub differential: [] vs 23)" True (not (List.isEmpty (SelectMenu.cssVars light SelectMenu.Medium)))
+
+    -- basesel: defaults ----------------------------------------------------
+    , eq "basesel defaults: size Medium" BaseSelection.Medium bsD.size
+    , eq "basesel defaults: multiple False" False bsD.multiple
+    , eq "basesel defaults: filterable False" False bsD.filterable
+    , eq "basesel defaults: active False" False bsD.active
+    , eq "basesel defaults: focused False" False bsD.focused
+    , eq "basesel defaults: disabled False" False bsD.disabled
+    , eq "basesel defaults: bordered True" True bsD.bordered
+    , eq "basesel defaults: status Nothing" Nothing bsD.status
+    , eq "basesel defaults: loading False" False bsD.loading
+    , eq "basesel defaults: showClear False" False bsD.showClear
+    , eq "basesel defaults: showArrow True" True bsD.showArrow
+    , eq "basesel defaults: placeholder 'Please Select'" "Please Select" bsD.placeholder
+    , eq "basesel defaults: pattern ''" "" bsD.pattern
+    , eq "basesel defaults: selectedLabel Nothing" Nothing bsD.selectedLabel
+    , eq "basesel defaults: tags []" True (List.isEmpty bsD.tags)
+    , eq "basesel defaults: ellipsisTag Nothing" Nothing bsD.ellipsisTag
+    , eq "basesel defaults: arrow Nothing" True (isNothing bsD.arrow)
+    , eq "basesel defaults: onClear Nothing" Nothing bsD.onClear
+    , eq "basesel defaults: onPatternInput Nothing" Nothing bsD.onPatternInput
+    , eq "basesel defaults: onDeleteTag Nothing" Nothing bsD.onDeleteTag
+    , eq "basesel defaults: rtl False" False bsD.rtl
+    , eq "basesel defaults: attributes []" True (List.isEmpty bsD.attributes)
+
+    -- basesel: cssVars exact 52 (upstream order, light medium) --------------
+    , eq "basesel cssVars: 52 keys (light medium)" 52 (List.length (BaseSelection.cssVars light BaseSelection.Medium))
+    , eq "basesel cssVars: exact 52-list light medium (name+value, order)" expectedBaseSelectionVarsMedium (BaseSelection.cssVars light BaseSelection.Medium)
+    , eq "basesel cssVars: slot 1 --n-bezier" (Just "--n-bezier") (listAt 0 (BaseSelection.cssVars light BaseSelection.Medium) |> Maybe.map Tuple.first)
+    , eq "basesel cssVars: slot 15 --n-height (right after --n-font-size)" (Just "--n-height") (listAt 14 (BaseSelection.cssVars light BaseSelection.Medium) |> Maybe.map Tuple.first)
+    , eq "basesel cssVars: slot 23 --n-padding-multiple-bottom (last padding var)" (Just "--n-padding-multiple-bottom") (listAt 22 (BaseSelection.cssVars light BaseSelection.Medium) |> Maybe.map Tuple.first)
+    , eq "basesel cssVars: slot 52 --n-font-weight (last)" (Just "--n-font-weight") (listAt 51 (BaseSelection.cssVars light BaseSelection.Medium) |> Maybe.map Tuple.first)
+    , eq "basesel cssVars: non-empty (stub differential: [] vs 52)" True (not (List.isEmpty (BaseSelection.cssVars light BaseSelection.Medium)))
+
+    -- basesel: cssVars padding split (single `0 26px 0 12px` / multiple `3px 26px 0 12px`)
+    , eq "basesel cssVars: --n-padding-single-top 0" (Just "0") (lookup "--n-padding-single-top" (BaseSelection.cssVars light BaseSelection.Medium))
+    , eq "basesel cssVars: --n-padding-single-right 26px" (Just "26px") (lookup "--n-padding-single-right" (BaseSelection.cssVars light BaseSelection.Medium))
+    , eq "basesel cssVars: --n-padding-single-bottom 0" (Just "0") (lookup "--n-padding-single-bottom" (BaseSelection.cssVars light BaseSelection.Medium))
+    , eq "basesel cssVars: --n-padding-single-left 12px" (Just "12px") (lookup "--n-padding-single-left" (BaseSelection.cssVars light BaseSelection.Medium))
+    , eq "basesel cssVars: --n-padding-multiple-top 3px" (Just "3px") (lookup "--n-padding-multiple-top" (BaseSelection.cssVars light BaseSelection.Medium))
+    , eq "basesel cssVars: --n-padding-multiple-right 26px" (Just "26px") (lookup "--n-padding-multiple-right" (BaseSelection.cssVars light BaseSelection.Medium))
+    , eq "basesel cssVars: --n-padding-multiple-bottom 0" (Just "0") (lookup "--n-padding-multiple-bottom" (BaseSelection.cssVars light BaseSelection.Medium))
+    , eq "basesel cssVars: --n-padding-multiple-left 12px" (Just "12px") (lookup "--n-padding-multiple-left" (BaseSelection.cssVars light BaseSelection.Medium))
+
+    -- basesel: cssVars size-keyed (height 22/28/34/40, font-size 12/14/14/15)
+    , eq "basesel cssVars tiny --n-height 22px" (Just "22px") (lookup "--n-height" (BaseSelection.cssVars light BaseSelection.Tiny))
+    , eq "basesel cssVars tiny --n-font-size 12px" (Just "12px") (lookup "--n-font-size" (BaseSelection.cssVars light BaseSelection.Tiny))
+    , eq "basesel cssVars small --n-height 28px" (Just "28px") (lookup "--n-height" (BaseSelection.cssVars light BaseSelection.Small))
+    , eq "basesel cssVars small --n-font-size 14px" (Just "14px") (lookup "--n-font-size" (BaseSelection.cssVars light BaseSelection.Small))
+    , eq "basesel cssVars medium --n-height 34px" (Just "34px") (lookup "--n-height" (BaseSelection.cssVars light BaseSelection.Medium))
+    , eq "basesel cssVars medium --n-font-size 14px" (Just "14px") (lookup "--n-font-size" (BaseSelection.cssVars light BaseSelection.Medium))
+    , eq "basesel cssVars large --n-height 40px" (Just "40px") (lookup "--n-height" (BaseSelection.cssVars light BaseSelection.Large))
+    , eq "basesel cssVars large --n-font-size 15px" (Just "15px") (lookup "--n-font-size" (BaseSelection.cssVars light BaseSelection.Large))
+    , eq "basesel cssVars: small vs medium switches exactly --n-height (font-size small=medium=14px)" [ "--n-height" ] (changedVarKeys (BaseSelection.cssVars light BaseSelection.Medium) (BaseSelection.cssVars light BaseSelection.Small))
+    , eq "basesel cssVars: medium vs large switches exactly height+font-size" [ "--n-font-size", "--n-height" ] (List.sort (changedVarKeys (BaseSelection.cssVars light BaseSelection.Medium) (BaseSelection.cssVars light BaseSelection.Large)))
+
+    -- basesel: cssVars cross-check against `NUI.Theme.InternalSelection.vars`
+    , eq "basesel cssVars: --n-border = theme.border" (Just (InternalSelectionTheme.vars light).border) (lookup "--n-border" (BaseSelection.cssVars light BaseSelection.Medium))
+    , eq "basesel cssVars: --n-caret-color = theme.caretColor" (Just (InternalSelectionTheme.vars light).caretColor) (lookup "--n-caret-color" (BaseSelection.cssVars light BaseSelection.Medium))
+    , eq "basesel cssVars: --n-color = theme.color" (Just (InternalSelectionTheme.vars light).color) (lookup "--n-color" (BaseSelection.cssVars light BaseSelection.Medium))
+    , eq "basesel cssVars: --n-clear-size = theme.clearSize" (Just (InternalSelectionTheme.vars light).clearSize) (lookup "--n-clear-size" (BaseSelection.cssVars light BaseSelection.Medium))
+    , eq "basesel cssVars: --n-arrow-size = theme.arrowSize" (Just (InternalSelectionTheme.vars light).arrowSize) (lookup "--n-arrow-size" (BaseSelection.cssVars light BaseSelection.Medium))
+    , eq "basesel cssVars: --n-font-weight = theme.fontWeight" (Just (InternalSelectionTheme.vars light).fontWeight) (lookup "--n-font-weight" (BaseSelection.cssVars light BaseSelection.Medium))
+    , eq "basesel cssVars: --n-placeholder-color = theme.placeholderColor" (Just (InternalSelectionTheme.vars light).placeholderColor) (lookup "--n-placeholder-color" (BaseSelection.cssVars light BaseSelection.Medium))
+    , eq "basesel cssVars: --n-height medium = theme.heightMedium" (Just (InternalSelectionTheme.vars light).heightMedium) (lookup "--n-height" (BaseSelection.cssVars light BaseSelection.Medium))
+    , eq "basesel cssVars: --n-font-size medium = theme.fontSizeMedium" (Just (InternalSelectionTheme.vars light).fontSizeMedium) (lookup "--n-font-size" (BaseSelection.cssVars light BaseSelection.Medium))
+    , eq "basesel cssVars: --n-height tiny = theme.heightTiny" (Just (InternalSelectionTheme.vars light).heightTiny) (lookup "--n-height" (BaseSelection.cssVars light BaseSelection.Tiny))
+    , eq "basesel cssVars: --n-font-size large = theme.fontSizeLarge" (Just (InternalSelectionTheme.vars light).fontSizeLarge) (lookup "--n-font-size" (BaseSelection.cssVars light BaseSelection.Large))
+
+    -- select: defaults ------------------------------------------------------
+    , eq "select defaults: size Medium" Select.Medium selD.size
+    , eq "select defaults: menuSize Nothing" Nothing selD.menuSize
+    , eq "select defaults: multiple False" False selD.multiple
+    , eq "select defaults: filterable False" False selD.filterable
+    , eq "select defaults: value Single Nothing" (SelectMenu.Single Nothing) selD.value
+    , eq "select defaults: placeholder 'Please Select'" "Please Select" selD.placeholder
+    , eq "select defaults: clearable False" False selD.clearable
+    , eq "select defaults: hover False" False selD.hover
+    , eq "select defaults: active False" False selD.active
+    , eq "select defaults: focused False" False selD.focused
+    , eq "select defaults: disabled False" False selD.disabled
+    , eq "select defaults: bordered True" True selD.bordered
+    , eq "select defaults: status Nothing" Nothing selD.status
+    , eq "select defaults: loading False" False selD.loading
+    , eq "select defaults: showArrow True" True selD.showArrow
+    , eq "select defaults: maxTagCount Nothing" Nothing selD.maxTagCount
+    , eq "select defaults: fallbackOption True" True selD.fallbackOption
+    , eq "select defaults: pattern ''" "" selD.pattern
+    , eq "select defaults: arrow Nothing" True (isNothing selD.arrow)
+    , eq "select defaults: onClear Nothing" Nothing selD.onClear
+    , eq "select defaults: onPatternInput Nothing" Nothing selD.onPatternInput
+    , eq "select defaults: onDeleteTag Nothing" Nothing selD.onDeleteTag
+    , eq "select defaults: onUpdateValue Nothing" Nothing selD.onUpdateValue
+    , eq "select defaults: rtl False" False selD.rtl
+    , eq "select defaults: attributes []" True (List.isEmpty selD.attributes)
+
+    -- select: toggleValue (the pure toggle; single has no cancelable) -------
+    , eq "select toggleValue multiple removes a member (order kept)" (SelectMenu.Multiple [ "a" ]) (Select.toggleValue True (SelectMenu.Multiple [ "a", "b" ]) "b")
+    , eq "select toggleValue multiple removes middle (order kept)" (SelectMenu.Multiple [ "a", "c" ]) (Select.toggleValue True (SelectMenu.Multiple [ "a", "b", "c" ]) "b")
+    , eq "select toggleValue multiple appends a new value" (SelectMenu.Multiple [ "a", "b" ]) (Select.toggleValue True (SelectMenu.Multiple [ "a" ]) "b")
+    , eq "select toggleValue multiple on empty list appends" (SelectMenu.Multiple [ "k" ]) (Select.toggleValue True (SelectMenu.Multiple []) "k")
+    , eq "select toggleValue multiple: non-list current starts [key]" (SelectMenu.Multiple [ "k" ]) (Select.toggleValue True (SelectMenu.Single Nothing) "k")
+    , eq "select toggleValue multiple: Single (Just x) starts [key]" (SelectMenu.Multiple [ "k" ]) (Select.toggleValue True (SelectMenu.Single (Just "x")) "k")
+    , eq "select toggleValue single selects the key" (SelectMenu.Single (Just "b")) (Select.toggleValue False (SelectMenu.Single (Just "a")) "b")
+    , eq "select toggleValue single from null selects" (SelectMenu.Single (Just "a")) (Select.toggleValue False (SelectMenu.Single Nothing) "a")
+    , eq "select toggleValue single re-select stays (no cancelable)" (SelectMenu.Single (Just "a")) (Select.toggleValue False (SelectMenu.Single (Just "a")) "a")
+    , eq "select toggleValue single ignores a Multiple current" (SelectMenu.Single (Just "k")) (Select.toggleValue False (SelectMenu.Multiple [ "a" ]) "k")
+
+    -- select: filterOptions (trim + case-insensitive substring; label then value)
+    , eq "select filterOptions: empty pattern is identity" (smShape selFilterOpts) (smShape (Select.filterOptions "" selFilterOpts))
+    , eq "select filterOptions: whitespace-only pattern is identity (trim)" (smShape selFilterOpts) (smShape (Select.filterOptions "   " selFilterOpts))
+    , eq "select filterOptions: case-insensitive substring on the label" [ "opt:drive" ] (smShape (Select.filterOptions "DRIV" selFilterOpts))
+    , eq "select filterOptions: trimmed pattern still matches" [ "opt:drive" ] (smShape (Select.filterOptions "  drive  " selFilterOpts))
+    , eq "select filterOptions: falls back to the value when the label misses" [ "opt:aliased" ] (smShape (Select.filterOptions "alias" [ smLeaf "aliased" "A", smLeaf "x" "X" ]))
+    , eq "select filterOptions: no match -> []" [] (smShape (Select.filterOptions "zzz" selFilterOpts))
+    , eq "select filterOptions: group children filtered, group kept when non-empty" [ "group:G[opt:alpha]" ] (smShape (Select.filterOptions "alpha" [ SelectMenu.Group { label = "G", children = [ smLeaf "alpha" "Alpha", smLeaf "beta" "Beta" ], attributes = [] } ]))
+    , eq "select filterOptions: group dropped when its children all miss" [] (smShape (Select.filterOptions "zzz" [ SelectMenu.Group { label = "G", children = [ smLeaf "alpha" "Alpha" ], attributes = [] } ]))
+    , eq "select filterOptions: nested groups recursed, inner dropped when empty" [ "group:Outer[opt:alpha]" ] (smShape (Select.filterOptions "alpha" [ SelectMenu.Group { label = "Outer", children = [ smLeaf "alpha" "Alpha", SelectMenu.Group { label = "Inner", children = [ smLeaf "beta" "Beta" ], attributes = [] } ], attributes = [] } ]))
+    , eq "select filterOptions: Custom rows pass through while leaves filter out" [ "custom:c" ] (smShape (Select.filterOptions "zzz" [ SelectMenu.Custom { key = "c", node = Element.text "x" }, smLeaf "alpha" "Alpha" ]))
+
+    -- select: menuVars (23 menu vars + Select's own --n-menu-box-shadow) ----
+    , eq "select menuVars: 24 keys (light medium)" 24 (List.length (Select.menuVars light Select.Medium))
+    , eq "select menuVars: first 23 == the SelectMenu var block (order)" expectedSelectMenuVarsMedium (List.take 23 (Select.menuVars light Select.Medium))
+    , eq "select menuVars: slot 24 --n-menu-box-shadow (LAST)" (Just ( "--n-menu-box-shadow", popselectShadow )) (listAt 23 (Select.menuVars light Select.Medium))
+    , eq "select menuVars: last key --n-menu-box-shadow" (Just "--n-menu-box-shadow") (List.reverse (Select.menuVars light Select.Medium) |> List.head |> Maybe.map Tuple.first)
+    , eq "select menuVars: --n-menu-box-shadow = SelectTheme.menuBoxShadow" (Just (SelectTheme.vars light).menuBoxShadow) (lookup "--n-menu-box-shadow" (Select.menuVars light Select.Medium))
+    , eq "select menuVars: non-empty (stub differential: [] vs 24)" True (not (List.isEmpty (Select.menuVars light Select.Medium)))
+    , eq "select menuVars: size switch small -> --n-option-height 28px" (Just "28px") (lookup "--n-option-height" (Select.menuVars light Select.Small))
     ]
 
 
@@ -7808,6 +8085,124 @@ liveNodes =
                     (SelectMenu.view Theme.default { smD | rtl = True } [ smLeaf "a" "A" ])
                 , Element.el [ Element.htmlAttribute (HA.id "live-selectmenu-extra") ]
                     (SelectMenu.view Theme.default { smD | extraClasses = [ "caller-extra" ] } [ smLeaf "a" "A" ])
+
+                -- SelectMenu loading row (Select's remote state replaces the middle)
+                , Element.el [ Element.htmlAttribute (HA.id "live-selectmenu-loading") ]
+                    (SelectMenu.view Theme.default { smD | loading = True } [ smLeaf "a" "A", smLeaf "b" "B" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-selectmenu-loading-header-action") ]
+                    (SelectMenu.view Theme.default
+                        { smD
+                            | loading = True
+                            , header = Just (Element.text "Header")
+                            , action = Just (Element.text "Action")
+                        }
+                        [ smLeaf "a" "A" ]
+                    )
+
+                -- BaseSelection (the trigger engine)
+                , Element.el [ Element.htmlAttribute (HA.id "live-basesel-default") ]
+                    (BaseSelection.view Theme.default bsD)
+                , Element.el [ Element.htmlAttribute (HA.id "live-basesel-single-selected") ]
+                    (BaseSelection.view Theme.default { bsD | selectedLabel = Just "Drive My Car" })
+                , Element.el [ Element.htmlAttribute (HA.id "live-basesel-single-filterable-empty") ]
+                    (BaseSelection.view Theme.default { bsD | filterable = True })
+                , Element.el [ Element.htmlAttribute (HA.id "live-basesel-single-filterable-selected") ]
+                    (BaseSelection.view Theme.default { bsD | filterable = True, selectedLabel = Just "Drive My Car" })
+                , Element.el [ Element.htmlAttribute (HA.id "live-basesel-single-filterable-active") ]
+                    (BaseSelection.view Theme.default
+                        { bsD | filterable = True, active = True, selectedLabel = Just "Drive My Car", pattern = "dri" }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-basesel-single-filterable-active-empty") ]
+                    (BaseSelection.view Theme.default
+                        { bsD | filterable = True, active = True, selectedLabel = Just "Drive My Car", pattern = "" }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-basesel-disabled") ]
+                    (BaseSelection.view Theme.default { bsD | disabled = True })
+                , Element.el [ Element.htmlAttribute (HA.id "live-basesel-multiple") ]
+                    (BaseSelection.view Theme.default { bsD | multiple = True, tags = [ bsTag "a" "A", bsTag "b" "B" ] })
+                , Element.el [ Element.htmlAttribute (HA.id "live-basesel-multiple-ellipsis") ]
+                    (BaseSelection.view Theme.default
+                        { bsD | multiple = True, tags = [ bsTag "a" "A", bsTag "b" "B" ], ellipsisTag = Just 3 }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-basesel-multiple-filterable") ]
+                    (BaseSelection.view Theme.default
+                        { bsD | multiple = True, filterable = True, pattern = "dri", tags = [ bsTag "a" "A" ] }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-basesel-multiple-placeholder") ]
+                    (BaseSelection.view Theme.default { bsD | multiple = True })
+                , Element.el [ Element.htmlAttribute (HA.id "live-basesel-status-warning") ]
+                    (BaseSelection.view Theme.default { bsD | status = Just BaseSelection.Warning })
+                , Element.el [ Element.htmlAttribute (HA.id "live-basesel-status-error") ]
+                    (BaseSelection.view Theme.default { bsD | status = Just BaseSelection.Error })
+                , Element.el [ Element.htmlAttribute (HA.id "live-basesel-status-success") ]
+                    (BaseSelection.view Theme.default { bsD | status = Just BaseSelection.Success })
+                , Element.el [ Element.htmlAttribute (HA.id "live-basesel-active") ]
+                    (BaseSelection.view Theme.default { bsD | active = True })
+                , Element.el [ Element.htmlAttribute (HA.id "live-basesel-selected-boost") ]
+                    (BaseSelection.view Theme.default { bsD | active = True, pattern = "x" })
+                , Element.el [ Element.htmlAttribute (HA.id "live-basesel-focus") ]
+                    (BaseSelection.view Theme.default { bsD | focused = True })
+                , Element.el [ Element.htmlAttribute (HA.id "live-basesel-rtl") ]
+                    (BaseSelection.view Theme.default { bsD | rtl = True })
+                , Element.el [ Element.htmlAttribute (HA.id "live-basesel-classes") ]
+                    (BaseSelection.view Theme.default
+                        { bsD
+                            | rtl = True
+                            , status = Just BaseSelection.Error
+                            , active = True
+                            , pattern = "x"
+                            , multiple = True
+                            , focused = True
+                            , disabled = True
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-basesel-loading") ]
+                    (BaseSelection.view Theme.default { bsD | loading = True, selectedLabel = Just "Drive My Car" })
+                , Element.el [ Element.htmlAttribute (HA.id "live-basesel-clear") ]
+                    (BaseSelection.view Theme.default { bsD | showClear = True, selectedLabel = Just "Drive My Car" })
+                , Element.el [ Element.htmlAttribute (HA.id "live-basesel-arrow-slot") ]
+                    (BaseSelection.view Theme.default { bsD | arrow = Just (Element.text "slot-arrow") })
+                , Element.el [ Element.htmlAttribute (HA.id "live-basesel-noarrow") ]
+                    (BaseSelection.view Theme.default { bsD | showArrow = False })
+                , Element.el [ Element.htmlAttribute (HA.id "live-basesel-unbordered") ]
+                    (BaseSelection.view Theme.default { bsD | bordered = False })
+
+                -- Select.view (the trigger derivation)
+                , Element.el [ Element.htmlAttribute (HA.id "live-select-single-selected") ]
+                    (Select.view Theme.default { selD | value = SelectMenu.Single (Just "drive") } selOptions)
+                , Element.el [ Element.htmlAttribute (HA.id "live-select-single-fallback") ]
+                    (Select.view Theme.default { selD | value = SelectMenu.Single (Just "ghost") } selOptions)
+                , Element.el [ Element.htmlAttribute (HA.id "live-select-single-fallback-off") ]
+                    (Select.view Theme.default { selD | value = SelectMenu.Single (Just "ghost"), fallbackOption = False } selOptions)
+                , Element.el [ Element.htmlAttribute (HA.id "live-select-multiple") ]
+                    (Select.view Theme.default { selD | multiple = True, value = SelectMenu.Multiple [ "a", "b", "c" ] } selOptions)
+                , Element.el [ Element.htmlAttribute (HA.id "live-select-multiple-fallback") ]
+                    (Select.view Theme.default { selD | multiple = True, value = SelectMenu.Multiple [ "a", "ghost" ] } selOptions)
+                , Element.el [ Element.htmlAttribute (HA.id "live-select-multiple-fallback-off") ]
+                    (Select.view Theme.default { selD | multiple = True, fallbackOption = False, value = SelectMenu.Multiple [ "a", "ghost" ] } selOptions)
+                , Element.el [ Element.htmlAttribute (HA.id "live-select-multiple-maxtag") ]
+                    (Select.view Theme.default
+                        { selD | multiple = True, maxTagCount = Just 3, value = SelectMenu.Multiple [ "a", "b", "c", "d", "e" ] }
+                        selOptions
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-select-clear-hover") ]
+                    (Select.view Theme.default { selD | clearable = True, hover = True, value = SelectMenu.Single (Just "drive") } selOptions)
+                , Element.el [ Element.htmlAttribute (HA.id "live-select-clear-active") ]
+                    (Select.view Theme.default { selD | clearable = True, active = True, value = SelectMenu.Single (Just "drive") } selOptions)
+                , Element.el [ Element.htmlAttribute (HA.id "live-select-clear-neither") ]
+                    (Select.view Theme.default { selD | clearable = True, value = SelectMenu.Single (Just "drive") } selOptions)
+                , Element.el [ Element.htmlAttribute (HA.id "live-select-clear-unselected") ]
+                    (Select.view Theme.default { selD | clearable = True, hover = True, value = SelectMenu.Single Nothing } selOptions)
+                , Element.el [ Element.htmlAttribute (HA.id "live-select-clear-notclearable") ]
+                    (Select.view Theme.default { selD | hover = True, active = True, value = SelectMenu.Single (Just "drive") } selOptions)
+                , Element.el [ Element.htmlAttribute (HA.id "live-select-clear-disabled") ]
+                    (Select.view Theme.default { selD | clearable = True, hover = True, disabled = True, value = SelectMenu.Single (Just "drive") } selOptions)
+
+                -- Select.menu (the n-select-menu body = SelectMenu.view + n-select-menu)
+                , Element.el [ Element.htmlAttribute (HA.id "live-select-menu-default") ]
+                    (Select.menu Theme.default selMenuD [ smLeaf "a" "A" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-select-menu-transition") ]
+                    (Select.menu Theme.default { selMenuD | transition = Just Internal.EnterActive } [ smLeaf "a" "A" ])
                 ]
             )
         ]
