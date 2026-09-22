@@ -147,6 +147,8 @@ import NUI.Internal as I
 import NUI.Scrollbar
 import NUI.SelectMenu as SelectMenu
 import NUI.Theme exposing (Theme)
+import NUI.Theme.Mention as MentionTheme
+import NUI.Types
 
 
 
@@ -257,7 +259,74 @@ the module docstring (no `display: inline-flex` — the wrapper cssr is
 -}
 view : Theme -> Options msg -> Element msg
 view theme opts =
-    Element.none
+    Element.el
+        ([ I.classes [ "n-mention" ] ] ++ opts.attributes)
+        (NUI.Input.view theme (inputOptions opts))
+
+
+{-| The trigger's options — `Options` onto `NUI.Input.Options` per the
+module docstring: everything passes straight through except `placeholder`
+(the input's `Maybe String`; `Nothing` for the empty string — Mention's
+upstream default), `size` (the input's own union — Mention has no `tiny`)
+and `type_` (the input's three-valued union — Mention has no `password`).
+Mention exercises no other input feature — `clearable` / `loading` /
+`prefix` / `suffix` / `inputAttributes` stay at the input's defaults (no
+clear icon, no trigger spinner, no slots, no `inputProps` upstream).
+-}
+inputOptions : Options msg -> NUI.Input.Options msg
+inputOptions opts =
+    let
+        d =
+            NUI.Input.defaults
+    in
+    { d
+        | value = opts.value
+        , onInput = opts.onInput
+        , placeholder =
+            if String.isEmpty opts.placeholder then
+                Nothing
+
+            else
+                Just opts.placeholder
+        , size = inputSize opts.size
+        , type_ = inputType_ opts.type_
+        , autosize = opts.autosize
+        , status = opts.status
+        , disabled = opts.disabled
+        , bordered = opts.bordered
+        , rtl = opts.rtl
+    }
+
+
+{-| `Mention.Size` onto the input's — the same three constructors, two
+distinct unions (`NUI.Input` keeps the full four-size scale upstream's
+`InputSize` has; Mention has no `tiny`).
+-}
+inputSize : Size -> NUI.Types.Size
+inputSize size =
+    case size of
+        Small ->
+            NUI.Types.Small
+
+        Medium ->
+            NUI.Types.Medium
+
+        Large ->
+            NUI.Types.Large
+
+
+{-| `Mention.Type` onto the input's — upstream's union is two-valued
+(`'text' | 'textarea'`, no `password`); `NUI.Input.InputType` keeps the
+three-valued upstream union.
+-}
+inputType_ : Type -> NUI.Input.InputType
+inputType_ type_ =
+    case type_ of
+        Text ->
+            NUI.Input.Text
+
+        Textarea ->
+            NUI.Input.Textarea
 
 
 {-| The `n-mention-menu` body — `NUI.SelectMenu.view` carrying
@@ -271,7 +340,52 @@ content-sized (upstream passes the follower no `width`).
 -}
 menu : Theme -> MenuOptions msg -> List (SelectMenu.Option msg) -> Element msg
 menu theme mopts options =
-    Element.none
+    SelectMenu.view theme (menuOptions theme mopts) options
+
+
+{-| The menu assembled through `NUI.SelectMenu`'s composition seams (the
+`AutoComplete.menuOptions` precedent): Mention's own `n-mention-menu` class
+and the follower's `fade-in-scale-up-transition` phase ride `extraClasses`
+after the menu's own classes; the merged root style (`menuVars`, 23 + 1
+vars) rides `attributes`, applied after the menu's own so its superset wins
+by last-wins. Everything else is hardcoded per the module docstring —
+Medium (upstream passes no `size`, the menu defaults it), not focusable
+(the prop is omitted upstream → tabindex -1), `Single Nothing` (never
+`--selected`, no checkmark node), single mode; the `showCheckmark` default
+stays on (`--show-checkmark` still lands on rows, the padding rule needs
+it). THE divergence from AutoComplete: `loading = mopts.loading` — loading
+lands on the menu's `__loading` row, never the input spinner.
+`scrollbarProps` has no `SelectMenu` seam (the plain option-wrapper path is
+the port's render) — the field stays for the caller.
+-}
+menuOptions : Theme -> MenuOptions msg -> SelectMenu.Options msg
+menuOptions theme mopts =
+    let
+        d =
+            SelectMenu.defaults
+    in
+    { d
+        | size = SelectMenu.Medium
+        , multiple = False
+        , value = SelectMenu.Single Nothing
+        , showCheckmark = True
+        , focusable = False
+        , loading = mopts.loading
+        , empty = mopts.empty
+        , onToggle = mopts.onToggle
+        , rtl = mopts.rtl
+        , extraClasses =
+            "n-mention-menu"
+                :: (case mopts.transition of
+                        Just phase ->
+                            [ I.transitionClass "fade-in-scale-up-transition" phase ]
+
+                        Nothing ->
+                            []
+                   )
+        , attributes =
+            I.cssVars (menuVars theme) :: mopts.attributes
+    }
 
 
 
@@ -284,4 +398,5 @@ live in `NUI.Input.cssVars`.
 -}
 menuVars : Theme -> List ( String, String )
 menuVars theme =
-    []
+    SelectMenu.cssVars theme SelectMenu.Medium
+        ++ [ ( "--n-menu-box-shadow", (MentionTheme.vars theme).menuBoxShadow ) ]
