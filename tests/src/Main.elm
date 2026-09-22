@@ -33,6 +33,8 @@ import NUI.Collapse as Collapse
 import NUI.Countdown as Countdown
 import NUI.Css as Css
 import NUI.Descriptions as Descriptions
+import NUI.Drawer as Drawer
+import NUI.DrawerContent as DrawerContent
 import NUI.Dropdown as Dropdown
 import NUI.DynamicInput as DynamicInput
 import NUI.DynamicTags as DynamicTags
@@ -111,11 +113,13 @@ type Msg
     = NoOp
     | Selected String
     | ModalClose
+    | DrawerClose
+    | DrawerMaskClick
 
 
-{-| The model is a counter of dropdown `onSelect` / modal `onClose` dispatches —
-the only observable way to prove the click wiring fires (and that disabled /
-submenu clicks do not).
+{-| The model is a counter of dropdown `onSelect` / modal `onClose` / drawer
+`onClose`/`onMaskClick` dispatches — the only observable way to prove the click
+wiring fires (and that disabled / submenu clicks do not).
 -}
 update : Msg -> Int -> Int
 update msg count =
@@ -127,6 +131,12 @@ update msg count =
             count + 1
 
         ModalClose ->
+            count + 1
+
+        DrawerClose ->
+            count + 1
+
+        DrawerMaskClick ->
             count + 1
 
 
@@ -3049,6 +3059,154 @@ mCardSeamOpts =
 
 
 
+-- DRAWER OPTION SETS ------------------------------------------------------------
+
+
+drD : Drawer.Options Msg
+drD =
+    Drawer.defaults
+
+
+drContentD : DrawerContent.Options Msg
+drContentD =
+    DrawerContent.defaults
+
+
+drLightVars : List ( String, String )
+drLightVars =
+    Drawer.cssVars Theme.default
+
+
+drDarkVars : List ( String, String )
+drDarkVars =
+    Drawer.cssVars Theme.dark
+
+
+{-| `boxShadow3` — identical literal in the light and dark themes.
+-}
+drawerShadow : String
+drawerShadow =
+    "0 6px 16px -9px rgba(0, 0, 0, .08), 0 9px 28px 0 rgba(0, 0, 0, .05), 0 12px 48px 16px rgba(0, 0, 0, .03)"
+
+
+{-| The 25-entry list `NUI.Drawer.cssVars` must emit against `Theme.default` —
+upstream `cssVarsRef` declaration order (`Drawer.tsx:267-322`).
+-}
+expectedDrawerLightVars : List ( String, String )
+expectedDrawerLightVars =
+    [ ( "--n-line-height", "1.6" )
+    , ( "--n-color", "#fff" )
+    , ( "--n-border-radius", "3px" )
+    , ( "--n-text-color", "rgb(51, 54, 57)" )
+    , ( "--n-box-shadow", drawerShadow )
+    , ( "--n-bezier", "cubic-bezier(.4, 0, .2, 1)" )
+    , ( "--n-bezier-out", "cubic-bezier(0, 0, .2, 1)" )
+    , ( "--n-bezier-in", "cubic-bezier(.4, 0, 1, 1)" )
+    , ( "--n-header-padding", "16px 24px" )
+    , ( "--n-body-padding", "16px 24px" )
+    , ( "--n-footer-padding", "16px 24px" )
+    , ( "--n-title-text-color", "rgb(31, 34, 37)" )
+    , ( "--n-title-font-size", "18px" )
+    , ( "--n-title-font-weight", "500" )
+    , ( "--n-header-border-bottom", "1px solid rgb(239, 239, 245)" )
+    , ( "--n-footer-border-top", "1px solid rgb(239, 239, 245)" )
+    , ( "--n-close-icon-color", "rgba(102, 102, 102, 1)" )
+    , ( "--n-close-icon-color-hover", "rgba(102, 102, 102, 1)" )
+    , ( "--n-close-icon-color-pressed", "rgba(102, 102, 102, 1)" )
+    , ( "--n-close-size", "22px" )
+    , ( "--n-close-color-hover", "rgba(0, 0, 0, .09)" )
+    , ( "--n-close-color-pressed", "rgba(0, 0, 0, .13)" )
+    , ( "--n-close-icon-size", "18px" )
+    , ( "--n-close-border-radius", "3px" )
+    , ( "--n-resize-trigger-color-hover", "#36ad6a" )
+    ]
+
+
+{-| A `DrawerContent.view` mount carrying a header slot + title + closable +
+footer + body class/style + header class.
+-}
+drContentFullOpts : DrawerContent.Options Msg
+drContentFullOpts =
+    let
+        base =
+            DrawerContent.defaults
+    in
+    { base
+        | title = Just (Element.text "Title")
+        , closable = True
+        , footer = Just (Element.text "Footer")
+        , headerClass = Just "hdr-x"
+        , bodyClass = Just "body-x"
+        , bodyStyle = Just "color:red"
+        , bodyContentClass = Just "bodyc-x"
+        , bodyContentStyle = Just "color:blue"
+        , footerClass = Just "ftr-x"
+    }
+
+
+{-| `header` slot + `title` both set — the slot must win inside `__main`.
+-}
+drContentHeaderWinsOpts : DrawerContent.Options Msg
+drContentHeaderWinsOpts =
+    let
+        base =
+            DrawerContent.defaults
+    in
+    { base
+        | header = Just (Element.text "SLOT")
+        , title = Just (Element.text "TITLE")
+    }
+
+
+{-| `closable` + `onClose` only — the header renders for the close button alone.
+-}
+drContentCloseOpts : DrawerContent.Options Msg
+drContentCloseOpts =
+    let
+        base =
+            DrawerContent.defaults
+    in
+    { base | closable = True, onClose = Just DrawerClose }
+
+
+{-| `nativeScrollbar = False` with the upstream quirk fields set: `bodyClass` /
+`bodyStyle` must NOT be applied in the scrollbar branch (only the static
+`n-drawer-body` class on the scrollbar root), while `bodyContentClass` /
+`bodyContentStyle` are.
+-}
+drContentNonNativeOpts : DrawerContent.Options Msg
+drContentNonNativeOpts =
+    let
+        base =
+            DrawerContent.defaults
+    in
+    { base
+        | nativeScrollbar = False
+        , title = Just (Element.text "Scroll")
+        , bodyClass = Just "should-not-appear"
+        , bodyStyle = Just "color:red"
+        , bodyContentClass = Just "bodyc-x"
+        , bodyContentStyle = Just "color:blue"
+        , footer = Just (Element.text "Footer")
+    }
+
+
+{-| A plain `Scrollbar.view` with the new `extraClasses` seam exercised — the
+seam `NUI.DrawerContent`'s non-native body rides on.
+-}
+mScrollbarSeamOpts : Scrollbar.Options Msg
+mScrollbarSeamOpts =
+    let
+        base =
+            Scrollbar.defaults
+    in
+    { base
+        | extraClasses = [ "seam-x" ]
+        , attributes = [ Element.htmlAttribute (HA.attribute "data-seam" "on") ]
+    }
+
+
+
 -- CHECKS -----------------------------------------------------------------------
 
 
@@ -5808,6 +5966,79 @@ checks =
     , eq "modal dark: --n-box-shadow identical to light" (Just modalShadow) (lookup "--n-box-shadow" mDarkVars)
     , eq "modal dark: --n-bezier-ease-out identical to light" (Just "cubic-bezier(0, 0, .2, 1)") (lookup "--n-bezier-ease-out" mDarkVars)
     , eq "modal light/dark differ in exactly color + text-color" [ "--n-color", "--n-text-color" ] (changedVarKeys mLightVars mDarkVars)
+
+    -- drawer: defaults -------------------------------------------------------
+    , eq "drawer defaults: show False" False drD.show
+    , eq "drawer defaults: placement Right" Drawer.Right drD.placement
+    , eq "drawer defaults: showMask Visible" Drawer.Visible drD.showMask
+    , eq "drawer defaults: nativeScrollbar True" True drD.nativeScrollbar
+    , eq "drawer defaults: resizable False" False drD.resizable
+    , eq "drawer defaults: showResizeTriggerHover False" False drD.showResizeTriggerHover
+    , eq "drawer defaults: unselectable False" False drD.unselectable
+    , eq "drawer defaults: rtl False" False drD.rtl
+    , eq "drawer defaults: width Nothing" Nothing drD.width
+    , eq "drawer defaults: height Nothing" Nothing drD.height
+    , eq "drawer defaults: defaultWidth 251px" "251px" drD.defaultWidth
+    , eq "drawer defaults: defaultHeight 251px" "251px" drD.defaultHeight
+    , eq "drawer defaults: contentClass Nothing" Nothing drD.contentClass
+    , eq "drawer defaults: contentStyle Nothing" Nothing drD.contentStyle
+    , eq "drawer defaults: zIndex Nothing" Nothing drD.zIndex
+    , eq "drawer defaults: maskTransition Nothing" Nothing drD.maskTransition
+    , eq "drawer defaults: bodyTransition Nothing" Nothing drD.bodyTransition
+    , eq "drawer defaults: onMaskClick Nothing" Nothing drD.onMaskClick
+    , eq "drawer defaults: attributes []" True (List.isEmpty drD.attributes)
+
+    -- drawer: placementName -------------------------------------------------
+    , eq "drawer placementName: Left" "left" (Drawer.placementName Drawer.Left)
+    , eq "drawer placementName: Right" "right" (Drawer.placementName Drawer.Right)
+    , eq "drawer placementName: Top" "top" (Drawer.placementName Drawer.Top)
+    , eq "drawer placementName: Bottom" "bottom" (Drawer.placementName Drawer.Bottom)
+
+    -- drawer: DrawerContent.defaults ----------------------------------------
+    , eq "drawer content defaults: closable False" False drContentD.closable
+    , eq "drawer content defaults: nativeScrollbar True" True drContentD.nativeScrollbar
+    , eq "drawer content defaults: title Nothing" True (isNothing drContentD.title)
+    , eq "drawer content defaults: header Nothing" True (isNothing drContentD.header)
+    , eq "drawer content defaults: footer Nothing" True (isNothing drContentD.footer)
+    , eq "drawer content defaults: onClose Nothing" Nothing drContentD.onClose
+    , eq "drawer content defaults: headerClass Nothing" Nothing drContentD.headerClass
+    , eq "drawer content defaults: headerStyle Nothing" Nothing drContentD.headerStyle
+    , eq "drawer content defaults: bodyClass Nothing" Nothing drContentD.bodyClass
+    , eq "drawer content defaults: bodyStyle Nothing" Nothing drContentD.bodyStyle
+    , eq "drawer content defaults: bodyContentClass Nothing" Nothing drContentD.bodyContentClass
+    , eq "drawer content defaults: bodyContentStyle Nothing" Nothing drContentD.bodyContentStyle
+    , eq "drawer content defaults: footerClass Nothing" Nothing drContentD.footerClass
+    , eq "drawer content defaults: footerStyle Nothing" Nothing drContentD.footerStyle
+
+    -- drawer: cssVars (exact 25-tuple order + values, light) ----------------
+    , eq "drawer vars: 25 keys (light)" 25 (List.length drLightVars)
+    , eq "drawer vars: exact 25-list light (name+value, order)" expectedDrawerLightVars drLightVars
+    , eq "drawer vars: slot 1 --n-line-height" (Just "--n-line-height") (listAt 0 drLightVars |> Maybe.map Tuple.first)
+    , eq "drawer vars: slot 8 --n-bezier-in (last bezier)" (Just "--n-bezier-in") (listAt 7 drLightVars |> Maybe.map Tuple.first)
+    , eq "drawer vars: slot 25 is --n-resize-trigger-color-hover (cssr comment omits it)" (Just "--n-resize-trigger-color-hover") (listAt 24 drLightVars |> Maybe.map Tuple.first)
+    , eq "drawer light: --n-color #fff" (Just "#fff") (lookup "--n-color" drLightVars)
+    , eq "drawer light: --n-line-height 1.6" (Just "1.6") (lookup "--n-line-height" drLightVars)
+    , eq "drawer light: --n-border-radius 3px" (Just "3px") (lookup "--n-border-radius" drLightVars)
+    , eq "drawer light: --n-header-border-bottom 1px solid dividerColor" (Just "1px solid rgb(239, 239, 245)") (lookup "--n-header-border-bottom" drLightVars)
+    , eq "drawer light: --n-resize-trigger-color-hover primaryColorHover #36ad6a" (Just "#36ad6a") (lookup "--n-resize-trigger-color-hover" drLightVars)
+
+    -- drawer: cssVars dark (common-ref deltas only) -------------------------
+    , eq "drawer vars: 25 keys (dark)" 25 (List.length drDarkVars)
+    , eq "drawer dark: exactly 11 keys differ from light (common refs)" 11 (List.length (changedVarKeys drLightVars drDarkVars))
+    , eq "drawer dark: differ-set = the 11 common-ref keys" [ "--n-color", "--n-text-color", "--n-title-text-color", "--n-header-border-bottom", "--n-footer-border-top", "--n-close-icon-color", "--n-close-icon-color-hover", "--n-close-icon-color-pressed", "--n-close-color-hover", "--n-close-color-pressed", "--n-resize-trigger-color-hover" ] (changedVarKeys drLightVars drDarkVars)
+    , eq "drawer dark: --n-color modalColor rgb(44, 44, 50)" (Just "rgb(44, 44, 50)") (lookup "--n-color" drDarkVars)
+    , eq "drawer dark: --n-text-color rgba(255, 255, 255, 0.82)" (Just "rgba(255, 255, 255, 0.82)") (lookup "--n-text-color" drDarkVars)
+    , eq "drawer dark: --n-title-text-color rgba(255, 255, 255, 0.9)" (Just "rgba(255, 255, 255, 0.9)") (lookup "--n-title-text-color" drDarkVars)
+    , eq "drawer dark: --n-header-border-bottom rgba(255, 255, 255, 0.09)" (Just "1px solid rgba(255, 255, 255, 0.09)") (lookup "--n-header-border-bottom" drDarkVars)
+    , eq "drawer dark: --n-close-icon-color rgba(255, 255, 255, 0.52)" (Just "rgba(255, 255, 255, 0.52)") (lookup "--n-close-icon-color" drDarkVars)
+    , eq "drawer dark: --n-close-color-hover rgba(255, 255, 255, .12)" (Just "rgba(255, 255, 255, .12)") (lookup "--n-close-color-hover" drDarkVars)
+    , eq "drawer dark: --n-close-color-pressed rgba(255, 255, 255, .08)" (Just "rgba(255, 255, 255, .08)") (lookup "--n-close-color-pressed" drDarkVars)
+    , eq "drawer dark: --n-resize-trigger-color-hover primaryColorHover #7fe7c4" (Just "#7fe7c4") (lookup "--n-resize-trigger-color-hover" drDarkVars)
+    , eq "drawer dark: --n-box-shadow identical to light" (Just drawerShadow) (lookup "--n-box-shadow" drDarkVars)
+    , eq "drawer dark: --n-header-padding identical to light" (Just "16px 24px") (lookup "--n-header-padding" drDarkVars)
+    , eq "drawer dark: --n-close-size identical to light" (Just "22px") (lookup "--n-close-size" drDarkVars)
+    , eq "drawer dark: --n-title-font-weight identical to light" (Just "500") (lookup "--n-title-font-weight" drDarkVars)
+    , eq "drawer dark: beziers identical to light (common only)" ( Just "cubic-bezier(.4, 0, .2, 1)", Just "cubic-bezier(0, 0, .2, 1)", Just "cubic-bezier(.4, 0, 1, 1)" ) ( lookup "--n-bezier" drDarkVars, lookup "--n-bezier-out" drDarkVars, lookup "--n-bezier-in" drDarkVars )
     ]
 
 
@@ -6598,6 +6829,177 @@ liveNodes =
                     )
                 , Element.el [ Element.htmlAttribute (HA.id "live-card-seam") ]
                     (Card.view Theme.default mCardSeamOpts [ Element.text "Seam" ])
+
+                -- Drawer (the mount-body sibling: container > mask + unclassed
+                -- host > .n-drawer > content seam; the fixed positioning is
+                -- irrelevant to the DOM probes)
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-default") ]
+                    (Drawer.view Theme.default
+                        { drD | show = True, placement = Drawer.Right, width = Just "200px" }
+                        [ DrawerContent.view Theme.default
+                            { drContentD | title = Just (Element.text "Title"), closable = True, onClose = Just DrawerClose, footer = Just (Element.text "Footer") }
+                            [ Element.text "Body" ]
+                        ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-left") ]
+                    (Drawer.view Theme.default
+                        { drD | show = True, placement = Drawer.Left }
+                        [ DrawerContent.view Theme.default drContentD [ Element.text "Left" ] ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-top") ]
+                    (Drawer.view Theme.default
+                        { drD | show = True, placement = Drawer.Top, height = Just "120px" }
+                        [ DrawerContent.view Theme.default drContentD [ Element.text "Top" ] ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-bottom") ]
+                    (Drawer.view Theme.default
+                        { drD | show = True, placement = Drawer.Bottom }
+                        [ DrawerContent.view Theme.default drContentD [ Element.text "Bottom" ] ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-mask-transparent") ]
+                    (Drawer.view Theme.default
+                        { drD | show = True, showMask = Drawer.Transparent }
+                        [ DrawerContent.view Theme.default drContentD [ Element.text "T" ] ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-mask-hidden") ]
+                    (Drawer.view Theme.default
+                        { drD | show = True, showMask = Drawer.Hidden }
+                        [ DrawerContent.view Theme.default drContentD [ Element.text "H" ] ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-hidden") ]
+                    (Drawer.view Theme.default drD [ Element.text "Hidden" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-mask-leave") ]
+                    (Drawer.view Theme.default
+                        { drD | maskTransition = Just Internal.LeaveActive }
+                        [ Element.text "Mask leave" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-body-leave") ]
+                    (Drawer.view Theme.default
+                        { drD | bodyTransition = Just Internal.LeaveTo }
+                        [ Element.text "Body leave" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-phase") ]
+                    (Drawer.view Theme.default
+                        { drD
+                            | show = True
+                            , placement = Drawer.Left
+                            , maskTransition = Just Internal.EnterActive
+                            , bodyTransition = Just Internal.EnterFrom
+                        }
+                        [ Element.text "Phased" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-phase-right") ]
+                    (Drawer.view Theme.default
+                        { drD | show = True, placement = Drawer.Right, bodyTransition = Just Internal.LeaveFrom }
+                        [ Element.text "Phased right" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-phase-top") ]
+                    (Drawer.view Theme.default
+                        { drD | show = True, placement = Drawer.Top, bodyTransition = Just Internal.EnterActive }
+                        [ Element.text "Phased top" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-phase-bottom") ]
+                    (Drawer.view Theme.default
+                        { drD | show = True, placement = Drawer.Bottom, bodyTransition = Just Internal.EnterActive }
+                        [ Element.text "Phased bottom" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-zindex") ]
+                    (Drawer.view Theme.default
+                        { drD | show = True, zIndex = Just 100 }
+                        [ Element.text "Z" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-left-height") ]
+                    (Drawer.view Theme.default
+                        { drD | show = True, placement = Drawer.Left, height = Just "77px" }
+                        [ Element.text "LH" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-top-width") ]
+                    (Drawer.view Theme.default
+                        { drD | show = True, placement = Drawer.Top, width = Just "99px" }
+                        [ Element.text "TW" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-defaultwidth") ]
+                    (Drawer.view Theme.default
+                        { drD | show = True, placement = Drawer.Right, defaultWidth = "300px" }
+                        [ Element.text "DW" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-zindex0") ]
+                    (Drawer.view Theme.default
+                        { drD | show = True, zIndex = Just 0 }
+                        [ Element.text "Z0" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-rtl") ]
+                    (Drawer.view Theme.default
+                        { drD | show = True, rtl = True }
+                        [ Element.text "RTL" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-unselectable") ]
+                    (Drawer.view Theme.default
+                        { drD | show = True, rtl = True, unselectable = True }
+                        [ Element.text "U" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-resizable") ]
+                    (Drawer.view Theme.default
+                        { drD | show = True, resizable = True, showResizeTriggerHover = True }
+                        [ Element.text "R" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-resizable-plain") ]
+                    (Drawer.view Theme.default
+                        { drD | show = True, resizable = True }
+                        [ Element.text "R2" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-nonnative") ]
+                    (Drawer.view Theme.default
+                        { drD
+                            | show = True
+                            , nativeScrollbar = False
+                            , contentClass = Just "cw-x"
+                            , contentStyle = Just "color:green"
+                        }
+                        [ Element.text "Non-native" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-contentclass") ]
+                    (Drawer.view Theme.default
+                        { drD | show = True, contentClass = Just "cw-y", contentStyle = Just "color:orange" }
+                        [ Element.text "Native + contentClass" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-maskclick") ]
+                    (Drawer.view Theme.default
+                        { drD | show = True, onMaskClick = Just DrawerMaskClick }
+                        [ Element.text "Mask click" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-dark") ]
+                    (Drawer.view Theme.dark
+                        { drD | show = True, width = Just "180px" }
+                        [ Element.text "Dark" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-content-close") ]
+                    (Drawer.view Theme.default
+                        { drD | show = True, width = Just "180px" }
+                        [ DrawerContent.view Theme.default drContentCloseOpts [ Element.text "C" ] ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-content-headerwins") ]
+                    (Drawer.view Theme.default
+                        { drD | show = True }
+                        [ DrawerContent.view Theme.default drContentHeaderWinsOpts [ Element.text "B" ] ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-content-nohdr") ]
+                    (Drawer.view Theme.default
+                        { drD | show = True }
+                        [ DrawerContent.view Theme.default drContentD [ Element.text "No header" ] ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-content-full") ]
+                    (Drawer.view Theme.default
+                        { drD | show = True }
+                        [ DrawerContent.view Theme.default drContentFullOpts [ Element.text "Full" ] ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-drawer-content-nonnative") ]
+                    (Drawer.view Theme.default
+                        { drD | show = True, nativeScrollbar = False }
+                        [ DrawerContent.view Theme.default drContentNonNativeOpts [ Element.text "Scroll body" ] ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-scrollbar-seam") ]
+                    (Scrollbar.view Theme.default mScrollbarSeamOpts [ Element.text "Seam" ])
                 ]
             )
         ]

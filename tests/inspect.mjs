@@ -5311,6 +5311,548 @@ dEq(
   mCount()
 )
 
+// Drawer -----------------------------------------------------------------------
+// The container is the mount root (role=none, the 25 vars [+ z-index]); the mask
+// and an UNCLASSED host div[role=none] follow; `.n-drawer` (role=dialog) hangs off
+// the host. elm-ui structure classes precede the n-* ones, so class assertions
+// normalize to the n-* subset — EXCEPT the phase-class-LAST ones, which read the
+// FULL class list (house invariant).
+const drContainer = (id) => doc.querySelector('#' + id + ' .n-drawer-container')
+const drMask = (id) => doc.querySelector('#' + id + ' .n-drawer-mask')
+const drEl = (id) => doc.querySelector('#' + id + ' .n-drawer')
+const drHost = (id) => {
+  const d = drEl(id)
+  return d ? d.parentElement : null
+}
+const nClassesOf = (el) =>
+  el ? [...el.classList].filter((c) => c.startsWith('n-')) : null
+const nClassesStr = (el) => (nClassesOf(el) || []).join(' ')
+
+const DRAWER_LIGHT_STYLE =
+  '--n-line-height:1.6' +
+  ';--n-color:#fff' +
+  ';--n-border-radius:3px' +
+  ';--n-text-color:rgb(51, 54, 57)' +
+  ';--n-box-shadow:0 6px 16px -9px rgba(0, 0, 0, .08), 0 9px 28px 0 rgba(0, 0, 0, .05), 0 12px 48px 16px rgba(0, 0, 0, .03)' +
+  ';--n-bezier:cubic-bezier(.4, 0, .2, 1)' +
+  ';--n-bezier-out:cubic-bezier(0, 0, .2, 1)' +
+  ';--n-bezier-in:cubic-bezier(.4, 0, 1, 1)' +
+  ';--n-header-padding:16px 24px' +
+  ';--n-body-padding:16px 24px' +
+  ';--n-footer-padding:16px 24px' +
+  ';--n-title-text-color:rgb(31, 34, 37)' +
+  ';--n-title-font-size:18px' +
+  ';--n-title-font-weight:500' +
+  ';--n-header-border-bottom:1px solid rgb(239, 239, 245)' +
+  ';--n-footer-border-top:1px solid rgb(239, 239, 245)' +
+  ';--n-close-icon-color:rgba(102, 102, 102, 1)' +
+  ';--n-close-icon-color-hover:rgba(102, 102, 102, 1)' +
+  ';--n-close-icon-color-pressed:rgba(102, 102, 102, 1)' +
+  ';--n-close-size:22px' +
+  ';--n-close-color-hover:rgba(0, 0, 0, .09)' +
+  ';--n-close-color-pressed:rgba(0, 0, 0, .13)' +
+  ';--n-close-icon-size:18px' +
+  ';--n-close-border-radius:3px' +
+  ';--n-resize-trigger-color-hover:#36ad6a'
+
+const drDefaultContainer = drContainer('live-drawer-default')
+dEq('DOM: Drawer container is a <div>', 'DIV', tagOf(drDefaultContainer))
+dEq(
+  'DOM: Drawer container role=none',
+  'none',
+  drDefaultContainer ? drDefaultContainer.getAttribute('role') : null
+)
+dEq(
+  'DOM: Drawer container style = the exact 25-var string (upstream declaration order)',
+  DRAWER_LIGHT_STYLE,
+  styleAt(drDefaultContainer)
+)
+dEq(
+  'DOM: Drawer container carries exactly 25 --n-* custom properties',
+  25,
+  countVars(drDefaultContainer)
+)
+dEq(
+  'DOM: Drawer dark container swaps exactly the common-ref vars (boxShadow identical)',
+  DRAWER_LIGHT_STYLE.replace('--n-color:#fff', '--n-color:rgb(44, 44, 50)')
+    .replace('--n-text-color:rgb(51, 54, 57)', '--n-text-color:rgba(255, 255, 255, 0.82)')
+    .replace('--n-title-text-color:rgb(31, 34, 37)', '--n-title-text-color:rgba(255, 255, 255, 0.9)')
+    .replace('--n-header-border-bottom:1px solid rgb(239, 239, 245)', '--n-header-border-bottom:1px solid rgba(255, 255, 255, 0.09)')
+    .replace('--n-footer-border-top:1px solid rgb(239, 239, 245)', '--n-footer-border-top:1px solid rgba(255, 255, 255, 0.09)')
+    .replace(/--n-close-icon-color:rgba\(102, 102, 102, 1\)/g, '--n-close-icon-color:rgba(255, 255, 255, 0.52)')
+    .replace(/--n-close-icon-color-hover:rgba\(102, 102, 102, 1\)/g, '--n-close-icon-color-hover:rgba(255, 255, 255, 0.52)')
+    .replace(/--n-close-icon-color-pressed:rgba\(102, 102, 102, 1\)/g, '--n-close-icon-color-pressed:rgba(255, 255, 255, 0.52)')
+    .replace('--n-close-color-hover:rgba(0, 0, 0, .09)', '--n-close-color-hover:rgba(255, 255, 255, .12)')
+    .replace('--n-close-color-pressed:rgba(0, 0, 0, .13)', '--n-close-color-pressed:rgba(255, 255, 255, .08)')
+    .replace('--n-resize-trigger-color-hover:#36ad6a', '--n-resize-trigger-color-hover:#7fe7c4'),
+  styleAt(drContainer('live-drawer-dark'))
+)
+dEq(
+  'DOM: Drawer zIndex=100 appends "z-index:100" AFTER the 25 vars (same style attribute)',
+  DRAWER_LIGHT_STYLE + ';z-index:100',
+  styleAt(drContainer('live-drawer-zindex'))
+)
+dEq(
+  'DOM: Drawer zIndex does not add an --n-* custom property',
+  25,
+  countVars(drContainer('live-drawer-zindex'))
+)
+
+// mask matrix: node iff showMask ≠ Hidden && (show || isLeavePhase maskTransition)
+const drDefaultMask = drMask('live-drawer-default')
+dEq(
+  'DOM: Drawer Visible mask renders as the container first child with aria-hidden=true',
+  'true',
+  drDefaultMask ? drDefaultMask.getAttribute('aria-hidden') : null
+)
+dEq(
+  'DOM: Drawer Visible mask n-* classes are exactly n-drawer-mask',
+  'n-drawer-mask',
+  nClassesStr(drDefaultMask)
+)
+dTrue(
+  'DOM: Drawer Visible mask is the container first child (mask precedes the body host)',
+  !!drDefaultMask &&
+    drDefaultContainer.children[0] === drDefaultMask &&
+    drMask('live-drawer-default') === drDefaultMask,
+  clsOf(drDefaultMask)
+)
+dEq(
+  'DOM: Drawer Transparent mask adds n-drawer-mask--invisible',
+  'n-drawer-mask n-drawer-mask--invisible',
+  nClassesStr(drMask('live-drawer-mask-transparent'))
+)
+dTrue(
+  'DOM: Drawer Hidden removes the mask node entirely (host remains)',
+  drMask('live-drawer-mask-hidden') === null &&
+    drEl('live-drawer-mask-hidden') !== null,
+  clsOf(drEl('live-drawer-mask-hidden'))
+)
+dTrue(
+  'DOM: Drawer show=False + no leave phase = BARE container (no mask, no host, no .n-drawer)',
+  !!drContainer('live-drawer-hidden') &&
+    drContainer('live-drawer-hidden').children.length === 0 &&
+    drMask('live-drawer-hidden') === null &&
+    drHost('live-drawer-hidden') === null &&
+    drEl('live-drawer-hidden') === null,
+  clsOf(drContainer('live-drawer-hidden'))
+)
+const drMaskLeave = drMask('live-drawer-mask-leave')
+dTrue(
+  'DOM: Drawer show=False + mask leave phase keeps ONLY the mask (no host/.n-drawer)',
+  !!drMaskLeave &&
+    drHost('live-drawer-mask-leave') === null &&
+    drContainer('live-drawer-mask-leave').children.length === 1,
+  clsOf(drMaskLeave)
+)
+dTrue(
+  'DOM: Drawer show=False + body leave phase keeps ONLY the body tree (no mask)',
+  !!drEl('live-drawer-body-leave') &&
+    drMask('live-drawer-body-leave') === null &&
+    drHost('live-drawer-body-leave') !== null,
+  clsOf(drEl('live-drawer-body-leave'))
+)
+
+// body host (unclassed div[role=none]) + .n-drawer
+const drDefaultHost = drHost('live-drawer-default')
+dTrue(
+  'DOM: Drawer body host is an UNCLASSED div[role=none] between container and .n-drawer',
+  !!drDefaultHost &&
+    tagOf(drDefaultHost) === 'DIV' &&
+    drDefaultHost.getAttribute('role') === 'none' &&
+    (nClassesOf(drDefaultHost) || []).length === 0 &&
+    drDefaultHost.parentElement === drDefaultContainer,
+  clsOf(drDefaultHost)
+)
+const drDefaultEl = drEl('live-drawer-default')
+dEq(
+  'DOM: Drawer .n-drawer role=dialog',
+  'dialog',
+  drDefaultEl ? drDefaultEl.getAttribute('role') : null
+)
+dEq(
+  'DOM: Drawer .n-drawer aria-modal=true',
+  'true',
+  drDefaultEl ? drDefaultEl.getAttribute('aria-modal') : null
+)
+dEq(
+  'DOM: Drawer .n-drawer n-* class order = n-drawer, placement, native-scrollbar',
+  'n-drawer n-drawer--right-placement n-drawer--native-scrollbar',
+  nClassesStr(drDefaultEl)
+)
+dEq(
+  'DOM: Drawer rtl inserts n-drawer--rtl after n-drawer (before placement)',
+  'n-drawer n-drawer--rtl n-drawer--right-placement n-drawer--native-scrollbar',
+  nClassesStr(drEl('live-drawer-rtl'))
+)
+dEq(
+  'DOM: Drawer unselectable inserts n-drawer--unselectable after placement (before native-scrollbar)',
+  'n-drawer n-drawer--rtl n-drawer--right-placement n-drawer--unselectable n-drawer--native-scrollbar',
+  nClassesStr(drEl('live-drawer-unselectable'))
+)
+dEq(
+  'DOM: Drawer non-native drops n-drawer--native-scrollbar',
+  'n-drawer n-drawer--right-placement',
+  nClassesStr(drEl('live-drawer-nonnative'))
+)
+
+// size geometry: single-axis inline style on .n-drawer (+ the 251px fallback)
+dEq('DOM: Drawer right sizes width only', 'width:200px', styleAt(drDefaultEl))
+dEq(
+  'DOM: Drawer left with width=Nothing falls back to defaultWidth 251px',
+  'width:251px',
+  styleAt(drEl('live-drawer-left'))
+)
+dEq('DOM: Drawer top sizes height only', 'height:120px', styleAt(drEl('live-drawer-top')))
+dEq(
+  'DOM: Drawer bottom with height=Nothing falls back to defaultHeight 251px',
+  'height:251px',
+  styleAt(drEl('live-drawer-bottom'))
+)
+
+dEq(
+  'DOM: Drawer left IGNORES height (axis selection: width only, 251px fallback)',
+  'width:251px',
+  styleAt(drEl('live-drawer-left-height'))
+)
+dEq(
+  'DOM: Drawer top IGNORES width (axis selection: height only, 251px fallback)',
+  'height:251px',
+  styleAt(drEl('live-drawer-top-width'))
+)
+dEq(
+  'DOM: Drawer custom defaultWidth feeds the right-placement fallback',
+  'width:300px',
+  styleAt(drEl('live-drawer-defaultwidth'))
+)
+dEq(
+  'DOM: Drawer zIndex=Just 0 still appends z-index:0 (no truthiness bug)',
+  DRAWER_LIGHT_STYLE + ';z-index:0',
+  styleAt(drContainer('live-drawer-zindex0'))
+)
+
+// resize trigger: iff resizable; --hover iff showResizeTriggerHover; first child
+const drTrigger = doc.querySelector('#live-drawer-resizable .n-drawer__resize-trigger')
+dEq(
+  'DOM: Drawer resizable renders n-drawer__resize-trigger--hover when showResizeTriggerHover',
+  'n-drawer__resize-trigger n-drawer__resize-trigger--hover',
+  nClassesStr(drTrigger)
+)
+dTrue(
+  'DOM: Drawer resize trigger is the FIRST child of .n-drawer (precedes the content wrapper)',
+  !!drTrigger && drTrigger.parentElement.children[0] === drTrigger,
+  clsOf(drTrigger)
+)
+dEq(
+  'DOM: Drawer resizable without hover renders the trigger with no --hover modifier',
+  'n-drawer__resize-trigger',
+  nClassesStr(doc.querySelector('#live-drawer-resizable-plain .n-drawer__resize-trigger'))
+)
+dTrue(
+  'DOM: Drawer resizable=False renders no resize trigger at all',
+  !!drDefaultEl &&
+    doc.querySelector('#live-drawer-default .n-drawer__resize-trigger') === null,
+  ''
+)
+
+// content seam: native (plain wrapper, NO scrollbar) vs non-native (scrollbar)
+const drDefaultWrapper = doc.querySelector('#live-drawer-default .n-drawer-content-wrapper')
+dEq(
+  'DOM: Drawer native content wrapper is a plain div child of .n-drawer (n-* class n-drawer-content-wrapper)',
+  'n-drawer-content-wrapper',
+  nClassesStr(drDefaultWrapper)
+)
+dTrue(
+  'DOM: Drawer native content wrapper is a DIRECT child of .n-drawer',
+  !!drDefaultWrapper && drDefaultWrapper.parentElement === drDefaultEl,
+  clsOf(drDefaultWrapper)
+)
+dTrue(
+  'DOM: Drawer native tree has NO n-scrollbar node anywhere',
+  !!drDefaultWrapper &&
+    drDefaultWrapper.parentElement === drDefaultEl &&
+    doc.querySelectorAll('#live-drawer-default .n-scrollbar').length === 0,
+  String(doc.querySelectorAll('#live-drawer-default .n-scrollbar').length)
+)
+const drNonNativeEl = drEl('live-drawer-nonnative')
+dTrue(
+  'DOM: Drawer non-native swaps the wrapper for a .n-scrollbar child of .n-drawer',
+  !!drNonNativeEl &&
+    drNonNativeEl.querySelector(':scope > .n-scrollbar') !== null &&
+    doc.querySelectorAll('#live-drawer-nonnative .n-scrollbar').length === 1,
+  clsOf(drNonNativeEl)
+)
+const drNonNativeWrapper = doc.querySelector(
+  '#live-drawer-nonnative .n-drawer-content-wrapper'
+)
+dTrue(
+  'DOM: Drawer non-native wrapper carries n-drawer-content-wrapper on the scrollbar content (a descentant)',
+  !!drNonNativeWrapper &&
+    drNonNativeWrapper.closest('.n-scrollbar-content') !== null &&
+    drNonNativeWrapper.parentElement !== drNonNativeEl,
+  clsOf(drNonNativeWrapper)
+)
+dEq(
+  'DOM: Drawer non-native contentClass lands on the scrollbar content wrapper',
+  'n-scrollbar-content n-drawer-content-wrapper cw-x',
+  clsOf(drNonNativeWrapper)
+)
+dEq(
+  'DOM: Drawer native contentClass lands on the plain wrapper',
+  'n-drawer-content-wrapper cw-y',
+  (() => {
+    const w = doc.querySelector('#live-drawer-contentclass .n-drawer-content-wrapper')
+    return w
+      ? [...w.classList].filter((c) => c.startsWith('n-') || c === 'cw-y').join(' ')
+      : null
+  })()
+)
+dEq(
+  'DOM: Drawer native contentStyle lands on the plain wrapper',
+  'color:orange',
+  (() => {
+    const w = doc.querySelector('#live-drawer-contentclass .n-drawer-content-wrapper')
+    return w ? w.getAttribute('style') : null
+  })()
+)
+dEq(
+  'DOM: Drawer non-native contentStyle lands on the scrollbar content wrapper',
+  'color:green',
+  drNonNativeWrapper ? drNonNativeWrapper.getAttribute('style') : null
+)
+
+// transitions: per-phase classes + per-placement family, phase class LAST on the
+// FULL class list (not just the n-* subset)
+const drPhaseMask = drMask('live-drawer-phase')
+dTrue(
+  'DOM: Drawer mask enter phase class is fade-in-transition-enter-active',
+  !!drPhaseMask && hasCls(drPhaseMask, 'fade-in-transition-enter-active'),
+  clsOf(drPhaseMask)
+)
+dEq(
+  'DOM: Drawer left body phase = slide-in-from-left-transition-enter-from, LAST on the full class list',
+  'slide-in-from-left-transition-enter-from',
+  (() => {
+    const d = drEl('live-drawer-phase')
+    return d ? [...d.classList].at(-1) : null
+  })()
+)
+dEq(
+  'DOM: Drawer right body phase = slide-in-from-right-transition family',
+  'slide-in-from-right-transition-leave-from',
+  (() => {
+    const d = drEl('live-drawer-phase-right')
+    return d ? [...d.classList].at(-1) : null
+  })()
+)
+dEq(
+  'DOM: Drawer top body phase = slide-in-from-top-transition family',
+  'slide-in-from-top-transition-enter-active',
+  (() => {
+    const d = drEl('live-drawer-phase-top')
+    return d ? [...d.classList].at(-1) : null
+  })()
+)
+dEq(
+  'DOM: Drawer bottom body phase = slide-in-from-bottom-transition family',
+  'slide-in-from-bottom-transition-enter-active',
+  (() => {
+    const d = drEl('live-drawer-phase-bottom')
+    return d ? [...d.classList].at(-1) : null
+  })()
+)
+dEq(
+  'DOM: Drawer leave-to phase class is also LAST (leave-to keeps the body tree)',
+  'slide-in-from-right-transition-leave-to',
+  (() => {
+    const d = drEl('live-drawer-body-leave')
+    return d ? [...d.classList].at(-1) : null
+  })()
+)
+
+// DrawerContent
+const drDefaultContent = doc.querySelector('#live-drawer-default .n-drawer-content')
+dEq(
+  'DOM: DrawerContent root n-* classes = n-drawer-content + --native-scrollbar',
+  'n-drawer-content n-drawer-content--native-scrollbar',
+  nClassesStr(drDefaultContent)
+)
+dEq(
+  'DOM: DrawerContent root role=none',
+  'none',
+  drDefaultContent ? drDefaultContent.getAttribute('role') : null
+)
+const drMain = doc.querySelector('#live-drawer-default .n-drawer-header__main')
+dEq('DOM: Drawer header main role=heading', 'heading', drMain ? drMain.getAttribute('role') : null)
+dEq('DOM: Drawer header main aria-level=1', '1', drMain ? drMain.getAttribute('aria-level') : null)
+dEq('DOM: Drawer header main renders the title', 'Title', drMain ? drMain.textContent : null)
+dEq(
+  'DOM: Drawer header slot WINS over title inside __main',
+  'SLOT',
+  (() => {
+    const m = doc.querySelector('#live-drawer-content-headerwins .n-drawer-header__main')
+    return m ? m.textContent : null
+  })()
+)
+dEq(
+  'DOM: Drawer header renders for `closable` alone (empty __main + close button)',
+  'heading',
+  (() => {
+    const m = doc.querySelector('#live-drawer-content-close .n-drawer-header__main')
+    return m ? m.getAttribute('role') : null
+  })()
+)
+dTrue(
+  'DOM: DrawerContent without title/header/closable renders NO header',
+  doc.querySelector('#live-drawer-content-nohdr .n-drawer-content') !== null &&
+    doc.querySelector('#live-drawer-content-nohdr .n-drawer-header') === null,
+  ''
+)
+const drClose = doc.querySelector('#live-drawer-default .n-base-close')
+dEq(
+  'DOM: Drawer close button classes = n-base-close n-base-close--absolute n-drawer-header__close',
+  'n-base-close n-base-close--absolute n-drawer-header__close',
+  nClassesStr(drClose)
+)
+dTrue(
+  'DOM: Drawer close button is INSIDE n-drawer-header',
+  !!drClose && drClose.closest('.n-drawer-header') !== null,
+  clsOf(drClose)
+)
+dTrue(
+  'DOM: Drawer footer renders iff the footer slot is present',
+  !!doc.querySelector('#live-drawer-default .n-drawer-footer') &&
+    doc.querySelector('#live-drawer-content-nohdr .n-drawer-footer') === null,
+  ''
+)
+// native body: bodyClass/bodyStyle land on .n-drawer-body; bodyContent* on the wrapper
+const drFull = doc.querySelector('#live-drawer-content-full')
+dEq(
+  'DOM: DrawerContent native body carries n-drawer-body + bodyClass + bodyStyle',
+  'hc s c wc ct cl n-drawer-body body-x|color:red',
+  (() => {
+    const b = drFull ? drFull.querySelector('.n-drawer-body') : null
+    return b ? clsOf(b) + '|' + b.getAttribute('style') : null
+  })()
+)
+dEq(
+  'DOM: DrawerContent native body content wrapper carries the class + style',
+  'n-drawer-body-content-wrapper bodyc-x|color:blue',
+  (() => {
+    const w = drFull ? drFull.querySelector('.n-drawer-body-content-wrapper') : null
+    return w
+      ? [...w.classList].filter((c) => c.startsWith('n-') || c === 'bodyc-x').join(' ') +
+          '|' +
+          w.getAttribute('style')
+      : null
+  })()
+)
+dEq(
+  'DOM: DrawerContent header carries headerClass',
+  'hc s r wc cl ccy n-drawer-header hdr-x',
+  (() => {
+    const h = drFull ? drFull.querySelector('.n-drawer-header') : null
+    return h ? clsOf(h) : null
+  })()
+)
+dEq(
+  'DOM: DrawerContent footer carries footerClass',
+  'hc s r wc cl ccy n-drawer-footer ftr-x',
+  (() => {
+    const f = drFull ? drFull.querySelector('.n-drawer-footer') : null
+    return f ? clsOf(f) : null
+  })()
+)
+// non-native quirk: bodyClass/bodyStyle are NOT applied (upstream passes only the
+// static class there); bodyContentClass/Style still are.
+const drNonNativeContent = doc.querySelector('#live-drawer-content-nonnative')
+dEq(
+  'DOM: DrawerContent non-native body = the scrollbar root with n-drawer-body and NO bodyClass/bodyStyle (upstream quirk)',
+  'n-scrollbar n-drawer-body',
+  (() => {
+    const b = drNonNativeContent
+      ? drNonNativeContent.querySelector('.n-scrollbar.n-drawer-body')
+      : null
+    return b ? nClassesStr(b) : null
+  })()
+)
+dTrue(
+  'DOM: DrawerContent non-native bodyClass "should-not-appear" is absent anywhere',
+  doc.querySelector('#live-drawer-content-nonnative .n-scrollbar.n-drawer-body') !== null &&
+    !doc.querySelector('#live-drawer-content-nonnative .should-not-appear'),
+  ''
+)
+dEq(
+  'DOM: DrawerContent non-native bodyContentClass + style ride the scrollbar content',
+  'n-scrollbar-content n-drawer-body-content-wrapper bodyc-x|color:blue',
+  (() => {
+    const w = drNonNativeContent
+      ? drNonNativeContent.querySelector('.n-drawer-body-content-wrapper')
+      : null
+    return w
+      ? [...w.classList]
+          .filter((c) => c.startsWith('n-') || c === 'bodyc-x')
+          .join(' ') +
+          '|' +
+          w.getAttribute('style')
+      : null
+  })()
+)
+dEq(
+  'DOM: DrawerContent non-native root drops --native-scrollbar',
+  'n-drawer-content',
+  (() => {
+    const c = drNonNativeContent
+      ? drNonNativeContent.querySelector('.n-drawer-content')
+      : null
+    return c ? nClassesStr(c) : null
+  })()
+)
+
+// Scrollbar extraClasses seam (the seam DrawerContent's non-native body rides on)
+const drSeamRoot = doc.querySelector('#live-scrollbar-seam .n-scrollbar')
+dEq(
+  'DOM: Scrollbar extraClasses appended after n-scrollbar',
+  'n-scrollbar seam-x',
+  drSeamRoot
+    ? [...drSeamRoot.classList]
+        .filter((c) => c.startsWith('n-') || c === 'seam-x')
+        .join(' ')
+    : null
+)
+dEq(
+  'DOM: Scrollbar attributes land on the root',
+  'on',
+  drSeamRoot ? drSeamRoot.getAttribute('data-seam') : null
+)
+
+// close button + mask click dispatch their msgs (delta against the shared counter)
+const drCount = () => (doc.getElementById('dropdown-click-count') || {}).textContent
+const drClick = (el) => {
+  if (el) {
+    el.dispatchEvent(
+      new window.MouseEvent('click', { bubbles: true, cancelable: true })
+    )
+  }
+}
+const drBefore = drCount()
+const drCloseBtn = doc.querySelector('#live-drawer-default .n-base-close')
+drClick(drCloseBtn)
+await new Promise((r) => setTimeout(r, 30))
+dEq(
+  'DOM: clicking the DrawerContent close button fires onClose (counter +1)',
+  String(Number(drBefore) + 1),
+  drCount()
+)
+const drBeforeMask = drCount()
+drClick(drMask('live-drawer-maskclick'))
+await new Promise((r) => setTimeout(r, 30))
+dEq(
+  'DOM: clicking the Drawer mask fires onMaskClick (counter +1) — the mask is interactive',
+  String(Number(drBeforeMask) + 1),
+  drCount()
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
