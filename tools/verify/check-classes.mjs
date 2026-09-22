@@ -76,6 +76,12 @@ const ALLOW = new Set([
   // descendant, so rendering is unaffected.
   'n-avatar__img', // upstream CSS targets `.n-avatar img`
   'n-li', // upstream `Li` renders a bare <li>; list CSS targets `.n-ul li`
+  // Selection.tsx emits these state markers, but no cssr rule targets them:
+  // the tag/label paths carry the styles, and RTL styling lives on inner
+  // elements (selection/styles/rtl.ts targets children, not the modifier).
+  'n-base-selection--multiple',
+  'n-base-selection--selected',
+  'n-base-selection--rtl',
 ])
 
 const srcDir = path.join(root, 'src', 'NUI')
