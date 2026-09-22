@@ -55,6 +55,7 @@ import NUI.LayoutSider as LayoutSider
 import NUI.List as NList
 import NUI.LoadingBar as LoadingBar
 import NUI.Marquee as Marquee
+import NUI.Mention as Mention
 import NUI.Modal as Modal
 import NUI.NumberAnimation as NumberAnimation
 import NUI.PageHeader as PageHeader
@@ -252,6 +253,16 @@ acD =
 acMenuD : AutoComplete.MenuOptions msg
 acMenuD =
     AutoComplete.menuDefaults
+
+
+mnD : Mention.Options msg
+mnD =
+    Mention.defaults
+
+
+mnMenuD : Mention.MenuOptions msg
+mnMenuD =
+    Mention.menuDefaults
 
 
 tooltipD : Tooltip.Options msg
@@ -659,6 +670,7 @@ body =
     , popselectSection
     , selectSection
     , autoCompleteSection
+    , mentionSection
     , tooltipSection
     , dropdownSection
     , modalSection
@@ -2595,6 +2607,176 @@ autoCompleteSection =
                     , node = Tag.view theme { tagD | kind = T.Primary } [ Element.text "renderOption row" ]
                     }
                 ]
+            ]
+        ]
+
+
+{-| The user rows the mention demos pick from (the default @-trigger
+story — the module does no scan, the caller gates the list).
+-}
+mentionOptions : List (SelectMenu.Option msg)
+mentionOptions =
+    List.map
+        (\name ->
+            SelectMenu.Option
+                { value = String.toLower name
+                , label = name
+                , disabled = False
+                , attributes = []
+                }
+        )
+        [ "710mechgy", "Zhe", "Alice", "Bob", "Carol" ]
+
+
+{-| The tag rows the custom-prefix (#) cell picks from — the second of
+the two caller-gated option lists.
+-}
+mentionTagOptions : List (SelectMenu.Option msg)
+mentionTagOptions =
+    List.map
+        (\tag ->
+            SelectMenu.Option
+                { value = tag
+                , label = "#" ++ tag
+                , disabled = False
+                , attributes = []
+                }
+        )
+        [ "elm", "naive-ui", "ui" ]
+
+
+mentionSection : Element msg
+mentionSection =
+    section "Mention"
+        "Naive UI's mention — the same family as AutoComplete: a bare `.n-mention` wrapper around a plain `NUI.Input` trigger (NOT the selection — no `NInternalSelection` upstream), plus a separate caller-mounted `NUI.SelectMenu` body (`Mention.menu`). Three divergences from AutoComplete, frozen: `loading` is the MENU's `__loading` row (`MenuOptions.loading`), never the input suffix; upstream filters internally (the default `startsWith` predicate — the port drops the engine, the caller pre-filters and passes the filtered list); and the wrapper's cssr has no `display: inline-flex` (`width: 100%; z-index: auto; position: relative`) with `placeholder` defaulting to `\"\"`. The menu is hardcoded Medium, `tabindex -1`, and `value` stays `Single Nothing` — never `--selected`, no checkmark node. Options are `NUI.SelectMenu.Option` verbatim — no `fromString` (there are no bare-string options upstream); `type_` is `text`/`textarea` only. The caller owns the whole runtime: the show gate (the prefix scan + caret + separator formulas), the select splice, keyboard and positioning (upstream anchors the follower at the caret via mirror-div measurement — un-portable)."
+    <|
+        [ demoRow "Basic (the default @-trigger — caret inside an @-run opens)"
+            [ cell
+                (Element.column [ Element.spacing 6, Element.width Element.fill ]
+                    [ Mention.view theme
+                        { mnD
+                            | value = "@710"
+                            , attributes = [ Element.width (Element.px 220) ]
+                        }
+                    , chip "prefix \"@\" · separator \" \" — the splice is caller-owned"
+                    , Mention.menu theme
+                        { mnMenuD | attributes = [ Element.width (Element.px 220) ] }
+                        mentionOptions
+                    ]
+                )
+            , Mention.view theme
+                { mnD
+                    | placeholder = "Type @ to mention"
+                    , attributes = [ Element.width (Element.px 220) ]
+                }
+            ]
+        , demoRow "Sizes (the menu stays Medium)"
+            [ Mention.view theme
+                { mnD | size = Mention.Small, value = "@710", attributes = [ Element.width (Element.px 200) ] }
+            , Mention.view theme
+                { mnD | value = "@710", attributes = [ Element.width (Element.px 220) ] }
+            , Mention.view theme
+                { mnD | size = Mention.Large, value = "@710", attributes = [ Element.width (Element.px 240) ] }
+            , Mention.menu theme
+                { mnMenuD | attributes = [ Element.width (Element.px 220) ] }
+                (List.take 4 mentionOptions)
+            ]
+        , demoRow "Textarea (type_ = Textarea — the union is text/textarea only)"
+            [ Element.el [ Element.width (Element.px 360) ]
+                (Mention.view theme
+                    { mnD
+                        | type_ = Mention.Textarea
+                        , value = "A textarea.\nPing @710mechgy here."
+                        , placeholder = "Type @ to mention"
+                    }
+                )
+            ]
+        , demoRow "Autosize (n-input--autosize, resizable suppressed — height measurement caller-owned)"
+            [ Element.el [ Element.width (Element.px 360) ]
+                (Mention.view theme
+                    { mnD
+                        | type_ = Mention.Textarea
+                        , autosize = True
+                        , value = "Autosized textarea:\ngrows with content."
+                    }
+                )
+            ]
+        , demoRow "Custom prefix (#@ — the caller gates the option set; the module does no scan)"
+            [ cell
+                (Element.column [ Element.spacing 6, Element.width Element.fill ]
+                    [ Mention.view theme
+                        { mnD
+                            | value = "#e"
+                            , placeholder = "# for tags"
+                            , attributes = [ Element.width (Element.px 200) ]
+                        }
+                    , chip "prefix \"#\" → the tag list"
+                    , Mention.menu theme
+                        { mnMenuD | attributes = [ Element.width (Element.px 200) ] }
+                        mentionTagOptions
+                    ]
+                )
+            , cell
+                (Element.column [ Element.spacing 6, Element.width Element.fill ]
+                    [ Mention.view theme
+                        { mnD
+                            | value = "@z"
+                            , placeholder = "@ for users"
+                            , attributes = [ Element.width (Element.px 200) ]
+                        }
+                    , chip "prefix \"@\" → the user list"
+                    , Mention.menu theme
+                        { mnMenuD | attributes = [ Element.width (Element.px 200) ] }
+                        mentionOptions
+                    ]
+                )
+            ]
+        , demoRow "Loading (THE divergence — the menu's __loading row, never the input suffix)"
+            [ Mention.view theme
+                { mnD
+                    | value = "@7"
+                    , placeholder = "Fetching users…"
+                    , attributes = [ Element.width (Element.px 220) ]
+                }
+            , Mention.menu theme
+                { mnMenuD | loading = True, attributes = [ Element.width (Element.px 220) ] }
+                mentionOptions
+            ]
+        , demoRow "Group + custom rows (renderLabel lane)"
+            [ Mention.view theme
+                { mnD
+                    | value = "@in my"
+                    , attributes = [ Element.width (Element.px 220) ]
+                }
+            , Mention.menu theme
+                { mnMenuD | attributes = [ Element.width (Element.px 220) ] }
+                (selectOptions
+                    ++ [ SelectMenu.Custom
+                            { key = "mention-custom"
+                            , node = Tag.view theme { tagD | kind = T.Primary } [ Element.text "renderOption row" ]
+                            }
+                       ]
+                )
+            ]
+        , demoRow "Status · disabled"
+            [ Mention.view theme
+                { mnD
+                    | status = Just Input.Warning
+                    , value = "@710"
+                    , attributes = [ Element.width (Element.px 220) ]
+                }
+            , Mention.view theme
+                { mnD
+                    | status = Just Input.Error
+                    , value = "@zhe"
+                    , attributes = [ Element.width (Element.px 220) ]
+                }
+            , Mention.view theme
+                { mnD
+                    | disabled = True
+                    , value = "Disabled"
+                    , attributes = [ Element.width (Element.px 220) ]
+                }
             ]
         ]
 

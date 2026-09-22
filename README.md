@@ -108,6 +108,7 @@ bridge, tests).
 | `NUI.LayoutSider` | ✅ |
 | `NUI.List`        | ✅ |
 | `NUI.Marquee`     | ✅ |
+| `NUI.Mention`     | ✅ |
 | `NUI.Modal`       | ✅ |
 | `NUI.PageHeader`  | ✅ |
 | `NUI.Pagination`  | ✅ |

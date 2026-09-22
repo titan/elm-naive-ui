@@ -107,6 +107,11 @@ const targets = {
   // the 24-var set.
   '.n-auto-complete': false,
   '.n-auto-complete-menu': true,
+  // Mention: the same split — the wrapper is a bare `.n-mention` (no vars,
+  // no display: inline-flex either) around a plain `.n-input`, and the menu
+  // root (`.n-base-select-menu.n-mention-menu`) carries the 23 + 1 = 24 vars.
+  '.n-mention': false,
+  '.n-mention-menu': true,
   '.n-tooltip': true,
   '.n-dropdown': true,
   // The modal container carries the 4-var set (bezier/box-shadow/color/text).
