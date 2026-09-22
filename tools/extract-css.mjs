@@ -59,9 +59,10 @@ function scopeCss(css, scope) {
         frame = { kind: isKf(trimmed) ? 'keyframes' : 'at', out: '', parent: frame }
       } else if (frame.kind === 'rule') {
         // Nested rule inside a declaration block: capture, hoist on close.
-        // NOTE (review-confirmed, currently unreachable upstream):
-        //  - a trailing declaration WITHOUT `;` is dropped at `}` — css-render's
-        //    render() always terminates properties with `;`, so this cannot happen;
+        // NOTE (review-confirmed):
+        //  - a trailing declaration WITHOUT `;` is flushed at `}` (see below) —
+        //    css-render usually terminates properties with `;`, but NOT always
+        //    (drawer's `cM('invisible')` is `background-color: rgba(0, 0, 0, 0)`);
         //  - `&` inside an already-nested `&` rule is not recursed (would emit a
         //    raw `&`) — the only native-nesting declaration string in all of
         //    upstream is heatmap's single-level footer rule.
@@ -75,6 +76,10 @@ function scopeCss(css, scope) {
         frame = { kind: 'rule', out: '', scopedSel: scoped, pending: [], parent: frame }
       }
     } else if (ch === '}') {
+      // Flush a trailing declaration css-render emitted WITHOUT a `;` (it
+      // happens — drawer's transparent-mask rule). Dropping it silently lost
+      // the declaration from the generated CSS.
+      if (buf.trim()) frame.out += buf + ';'
       buf = ''
       const f = frame
       if (f.kind === 'nested') {
