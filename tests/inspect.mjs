@@ -5853,6 +5853,54 @@ dEq(
   drCount()
 )
 
+// Stylesheet-rule pins: the extractor bug (fix a8c17b1) --------------------------
+// css-render omits the trailing `;` on the last declaration inside some cM/cB
+// template literals; `scopeCss` used to drop that declaration (the rule shipped
+// empty). The drawer transparent-mask modifier lost its background that way, and
+// ~79 other declarations across input/tag/switch/typography/marquee/page-header/
+// steps/collapse/tabs went with it. Class-presence pins cannot see that, so these
+// read the parsed rule TEXT out of the embedded stylesheet (`Generated.elm` → the
+// `<style>` node jsdom parses) — the same route as the Modal centering-rule pin.
+const cssRuleFor = (selector) => {
+  for (const sheet of doc.styleSheets) {
+    let rules
+    try {
+      rules = sheet.cssRules
+    } catch {
+      continue
+    }
+    for (const r of rules) {
+      if (r.selectorText === selector) return r
+    }
+  }
+  return null
+}
+const ruleText = (selector) => {
+  const r = cssRuleFor(selector)
+  return r ? r.cssText.replace(/\s+/g, ' ') : null
+}
+
+dEq(
+  'CSS: drawer transparent-mask rule declares background-color rgba(0, 0, 0, 0) (extractor a8c17b1)',
+  '.nui-root.nui-root .n-drawer-mask.n-drawer-mask--invisible {background-color: rgba(0, 0, 0, 0);}',
+  ruleText('.nui-root.nui-root .n-drawer-mask.n-drawer-mask--invisible')
+)
+
+// Cross-component restorations: the same extractor fix brought back declarations
+// outside the drawer; lock the two most load-bearing ones.
+dEq(
+  'CSS: steps disabled rule declares cursor: not-allowed (extractor a8c17b1)',
+  '.nui-root.nui-root .n-steps .n-step.n-step--disabled {cursor: not-allowed;}',
+  ruleText('.nui-root.nui-root .n-steps .n-step.n-step--disabled')
+)
+dEq(
+  'CSS: collapse leave-active rule keeps overflow:hidden + the restored 6-track transition block (extractor a8c17b1)',
+  '.nui-root.nui-root .n-collapse .n-collapse-item .n-collapse-item__content-wrapper.fade-in-height-expand-transition-leave-active {overflow: hidden; transition: max-height 0.15s cubic-bezier(.4, 0, .2, 1) 0s, opacity 0.15s cubic-bezier(0, 0, .2, 1) 0s, margin-top 0.15s cubic-bezier(.4, 0, .2, 1) 0s, margin-bottom 0.15s cubic-bezier(.4, 0, .2, 1) 0s, padding-top 0.15s cubic-bezier(.4, 0, .2, 1) 0s, padding-bottom 0.15s cubic-bezier(.4, 0, .2, 1) 0s;}',
+  ruleText(
+    '.nui-root.nui-root .n-collapse .n-collapse-item .n-collapse-item__content-wrapper.fade-in-height-expand-transition-leave-active'
+  )
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
