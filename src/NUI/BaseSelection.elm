@@ -9,8 +9,10 @@ module NUI.BaseSelection exposing
     )
 
 {-| Naive UI's internal selection trigger (upstream `NInternalSelection`,
-`_internal/selection/`) — the support module `NUI.Select` renders (and, later,
-AutoComplete / Cascader / DatePicker / Mention; the `NUI.SelectMenu`
+`_internal/selection/`) — the support module `NUI.Select` renders (and,
+later, Cascader / TreeSelect — the actual `NInternalSelection` consumers
+upstream; AutoComplete / Mention / DatePicker / TimePicker all trigger
+through a plain `NInput` instead; the `NUI.SelectMenu`
 precedent: static DOM/theme fidelity is the bar, runtime is caller-owned).
 
     div.n-base-selection

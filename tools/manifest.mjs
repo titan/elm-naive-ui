@@ -367,5 +367,18 @@ export const components = {
     // theme-only entry like tooltip.
     cssr: [],
     theme: '_internal/selection/styles/light.ts'
+  },
+  'auto-complete': {
+    // Own cssr is 2 blocks (.n-auto-complete wrapper + .n-auto-complete-menu
+    // with its fade-in-scale-up family); the trigger is a plain NInput (NOT
+    // NInternalSelection — the BaseSelection docstring's consumer list was
+    // wrong) and the menu DOM rides the `selectMenu` block. Theme self = 1 var
+    // (menuBoxShadow, the select twin). No rtl.cssr upstream.
+    // NOTE: the kebab key is load-bearing — check-theme.mjs maps module name
+    // `AutoComplete` back to `auto-complete.json` (camel→kebab); a camelCase
+    // key would silently skip the theme gate (as selectMenu/internalSelection
+    // jsons currently do).
+    cssr: ['auto-complete/src/styles/index.cssr.ts'],
+    theme: 'auto-complete/styles/light.ts'
   }
 }

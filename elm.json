@@ -78,6 +78,7 @@
     "NUI.Tag",
     "NUI.Theme",
     "NUI.Theme.Alert",
+    "NUI.Theme.AutoComplete",
     "NUI.Theme.Avatar",
     "NUI.Theme.AvatarGroup",
     "NUI.Theme.BackTop",
