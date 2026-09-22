@@ -10,6 +10,7 @@ import Html
 import Html.Attributes as HA
 import NUI.Affix as Affix
 import NUI.Alert as Alert
+import NUI.AutoComplete as AutoComplete
 import NUI.Avatar as Avatar
 import NUI.AvatarGroup as AvatarGroup
 import NUI.BackTop as BackTop
@@ -241,6 +242,16 @@ selectD =
 selMenuD : Select.MenuOptions msg
 selMenuD =
     Select.menuDefaults
+
+
+acD : AutoComplete.Options msg
+acD =
+    AutoComplete.defaults
+
+
+acMenuD : AutoComplete.MenuOptions msg
+acMenuD =
+    AutoComplete.menuDefaults
 
 
 tooltipD : Tooltip.Options msg
@@ -647,6 +658,7 @@ body =
     , popconfirmSection
     , popselectSection
     , selectSection
+    , autoCompleteSection
     , tooltipSection
     , dropdownSection
     , modalSection
@@ -2463,6 +2475,128 @@ letterOptions =
                 }
         )
         [ "A", "B", "C", "D", "E" ]
+
+
+autoCompleteSection : Element msg
+autoCompleteSection =
+    section "AutoComplete"
+        "Naive UI's autocomplete — a bare `.n-auto-complete` wrapper around a plain `NUI.Input` trigger (NOT the selection: upstream drives `NInput` directly, no `NInternalSelection`); the menu is a separate caller-mounted body (its own follower upstream), `AutoComplete.menu` here — hardcoded Medium, `tabindex -1`, never `--selected` (no checkmark node), and `loading` is the input's suffix spinner, never a menu row. The caller owns the whole show gate (`getShow ? getShow (value || \"\") : value ≠ \"\"`, focused-typed, `showEmpty`), positioning, keyboard and the select commit (`onSelect value` always, then `clearAfterSelect` → null / the label commit, `append` ⇒ `value ++ label`); it does no filtering of its own — options are yours to derive (the email demo's suffix list). `fromString` lifts bare strings; `inputAttributes` is upstream's `inputProps`."
+    <|
+        [ demoRow "Basic (value + open menu + inputProps)"
+            [ AutoComplete.view theme
+                { acD | value = "Dri", attributes = [ Element.width (Element.px 220) ] }
+            , AutoComplete.view theme
+                { acD
+                    | value = "v4f2"
+                    , inputAttributes =
+                        [ HA.attribute "autocomplete" "disabled"
+                        , HA.id "ac-input-props"
+                        ]
+                    , attributes = [ Element.width (Element.px 220) ]
+                }
+            , AutoComplete.menu theme
+                { acMenuD | attributes = [ Element.width (Element.px 220) ] }
+                [ AutoComplete.fromString "Drive My Car"
+                , AutoComplete.fromString "Day Tripper"
+                ]
+            ]
+        , demoRow "Sizes (the menu stays Medium)"
+            [ AutoComplete.view theme
+                { acD | size = AutoComplete.Small, value = "Dri", attributes = [ Element.width (Element.px 200) ] }
+            , AutoComplete.view theme
+                { acD | value = "Dri", attributes = [ Element.width (Element.px 220) ] }
+            , AutoComplete.view theme
+                { acD | size = AutoComplete.Large, value = "Dri", attributes = [ Element.width (Element.px 240) ] }
+            , AutoComplete.menu theme
+                { acMenuD | attributes = [ Element.width (Element.px 220) ] }
+                (List.take 2 selectOptions)
+            ]
+        , demoRow "Group (header + children)"
+            [ AutoComplete.view theme
+                { acD | value = "In My Life", attributes = [ Element.width (Element.px 220) ] }
+            , AutoComplete.menu theme
+                { acMenuD | attributes = [ Element.width (Element.px 220) ] }
+                selectOptions
+            ]
+        , demoRow "Status · disabled"
+            [ AutoComplete.view theme
+                { acD
+                    | status = Just Input.Warning
+                    , value = "warn@example.com"
+                    , attributes = [ Element.width (Element.px 220) ]
+                }
+            , AutoComplete.view theme
+                { acD
+                    | status = Just Input.Error
+                    , value = "error@example.com"
+                    , attributes = [ Element.width (Element.px 220) ]
+                }
+            , AutoComplete.view theme
+                { acD
+                    | disabled = True
+                    , value = "Disabled"
+                    , attributes = [ Element.width (Element.px 220) ]
+                }
+            ]
+        , demoRow "Clearable · loading (suffix order: clear, loading, slot)"
+            [ AutoComplete.view theme
+                { acD | value = "clear me", clearable = True, attributes = [ Element.width (Element.px 200) ] }
+            , AutoComplete.view theme
+                { acD
+                    | value = "Loading…"
+                    , loading = True
+                    , attributes = [ Element.width (Element.px 200) ]
+                }
+            , AutoComplete.view theme
+                { acD
+                    | value = "all three"
+                    , clearable = True
+                    , loading = True
+                    , suffix = Just (Element.text "@")
+                    , attributes = [ Element.width (Element.px 200) ]
+                }
+            ]
+        , demoRow "Show gate (showEmpty + the empty seam)"
+            [ AutoComplete.view theme
+                { acD | placeholder = "Type to open", attributes = [ Element.width (Element.px 220) ] }
+            , AutoComplete.menu theme
+                { acMenuD
+                    | empty = Just (Empty.view theme emptyD [])
+                    , attributes = [ Element.width (Element.px 220) ]
+                }
+                []
+            ]
+        , demoRow "After select (the caller-owned commit)"
+            [ cell
+                (Element.column [ Element.spacing 6, Element.width Element.fill ]
+                    [ AutoComplete.view theme
+                        { acD | placeholder = "clearAfterSelect → \"\"", attributes = [ Element.width (Element.px 200) ] }
+                    , chip "onSelect \"Drive My Car\" → value = \"\""
+                    ]
+                )
+            , cell
+                (Element.column [ Element.spacing 6, Element.width Element.fill ]
+                    [ AutoComplete.view theme
+                        { acD
+                            | value = "Dri"
+                            , placeholder = "append ⇒ value ++ label"
+                            , attributes = [ Element.width (Element.px 200) ]
+                        }
+                    , chip "onSelect \"Drive My Car\" → \"DriDrive My Car\""
+                    ]
+                )
+            ]
+        , demoRow "Custom rows (renderLabel / renderOption)"
+            [ AutoComplete.menu theme
+                { acMenuD | attributes = [ Element.width (Element.px 220) ] }
+                [ AutoComplete.fromString "A plain row"
+                , SelectMenu.Custom
+                    { key = "ac-custom"
+                    , node = Tag.view theme { tagD | kind = T.Primary } [ Element.text "renderOption row" ]
+                    }
+                ]
+            ]
+        ]
 
 
 tooltipSection : Element msg

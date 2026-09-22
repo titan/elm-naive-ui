@@ -75,6 +75,7 @@ bridge, tests).
 | ----------------- | ------ |
 | `NUI.Affix`       | ✅ |
 | `NUI.Alert`       | ✅ |
+| `NUI.AutoComplete`| ✅ |
 | `NUI.Avatar`      | ✅ |
 | `NUI.AvatarGroup` | ✅ |
 | `NUI.BackTop`     | ✅ |

@@ -101,6 +101,12 @@ const targets = {
   '.n-select': false,
   '.n-base-selection': true,
   '.n-select-menu': true,
+  // AutoComplete: the same shape one level down — the wrapper is a bare
+  // `.n-auto-complete` around a plain `.n-input` (no vars on the wrapper),
+  // and the menu root (`.n-base-select-menu.n-auto-complete-menu`) carries
+  // the 24-var set.
+  '.n-auto-complete': false,
+  '.n-auto-complete-menu': true,
   '.n-tooltip': true,
   '.n-dropdown': true,
   // The modal container carries the 4-var set (bezier/box-shadow/color/text).
