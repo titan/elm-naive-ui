@@ -90,6 +90,12 @@ const targets = {
   // Scrollbar root carries the full --n-* var set.
   '.n-scrollbar': true,
   '.n-popover': true,
+  // Popconfirm is the popover root plus the `n-popconfirm` extra class.
+  '.n-popconfirm': true,
+  // The popselect body IS the select-menu root (`n-base-select-menu` +
+  // `n-popselect-menu` + the popover-shared classes on one element), so adding
+  // `.n-base-select-menu` would select the same node twice.
+  '.n-popselect-menu': true,
   '.n-tooltip': true,
   '.n-dropdown': true,
   // The modal container carries the 4-var set (bezier/box-shadow/color/text).

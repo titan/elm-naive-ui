@@ -57,13 +57,16 @@ import NUI.Modal as Modal
 import NUI.NumberAnimation as NumberAnimation
 import NUI.PageHeader as PageHeader
 import NUI.Pagination as Pagination
+import NUI.Popconfirm as Popconfirm
 import NUI.Popover as Popover
+import NUI.Popselect as Popselect
 import NUI.Progress as Progress
 import NUI.QrCode as QrCode
 import NUI.Radio as Radio
 import NUI.Rate as Rate
 import NUI.Result as Result
 import NUI.Scrollbar as Scrollbar
+import NUI.SelectMenu as SelectMenu
 import NUI.Skeleton as Skeleton
 import NUI.Space as Space
 import NUI.Spin as Spin
@@ -211,6 +214,21 @@ scrollbarD =
 popoverD : Popover.Options msg
 popoverD =
     Popover.defaults
+
+
+popconfirmD : Popconfirm.Options msg
+popconfirmD =
+    Popconfirm.defaults
+
+
+popselectD : Popselect.Options msg
+popselectD =
+    Popselect.defaults
+
+
+selectMenuD : SelectMenu.Options msg
+selectMenuD =
+    SelectMenu.defaults
 
 
 tooltipD : Tooltip.Options msg
@@ -614,6 +632,8 @@ body =
     , tabsSection
     , scrollbarSection
     , popoverSection
+    , popconfirmSection
+    , popselectSection
     , tooltipSection
     , dropdownSection
     , modalSection
@@ -2151,6 +2171,125 @@ popoverSection =
                 )
             ]
         ]
+
+
+popconfirmSection : Element msg
+popconfirmSection =
+    section "Popconfirm"
+        "The popover body with the confirm panel in its default slot (upstream renders `NPopover` with the `popconfirm` extra class). The panel's icon/body/action structure and the composed action buttons — negative plain `small` first, positive `small` Primary, `positiveProps`/`negativeProps` spreading over the derived base, the action row always rendered — are DOM; the caller owns the show state, the `'click'` trigger and the close gate (upstream's return-false-keeps-it-open is the caller's update)."
+    <|
+        [ demoRow "Default + no icon / action slot"
+            [ popoverHost Popover.Top
+                []
+                (Popconfirm.view theme
+                    { popconfirmD | popover = { popoverD | width = Just "220px" } }
+                    [ Element.text "Delete it?" ]
+                )
+            , popoverHost Popover.Top
+                []
+                (Popconfirm.view theme
+                    { popconfirmD
+                        | popover = { popoverD | width = Just "220px" }
+                        , showIcon = False
+                        , action = Just [ Element.text "#action — the slot replaces the buttons" ]
+                    }
+                    [ Element.text "No icon; the body renders content-only." ]
+                )
+            ]
+        , demoRow "Custom texts + button-props overrides"
+            [ popoverHost Popover.Top
+                []
+                (Popconfirm.view theme
+                    { popconfirmD
+                        | popover = { popoverD | width = Just "240px" }
+                        , positiveText = Popconfirm.CustomText "Sure"
+                        , negativeText = Popconfirm.CustomText "Not yet"
+                        , positiveProps = Just (\b -> { b | round = True })
+                        , negativeProps = Just (\b -> { b | round = True })
+                    }
+                    [ Element.text "CustomText labels; Hidden drops a button (the row stays)." ]
+                )
+            ]
+        ]
+
+
+popselectSection : Element msg
+popselectSection =
+    section "Popselect"
+        "The popover-family body whose select-menu root is itself the popover-shared body (upstream `internalRenderBody` — the `Dropdown` path: no `n-popover` element, `--n-padding` zeroed, `--show-arrow` present unless `overlap` even with no arrow node). Selection is pure — `value` drives the per-option checkmarks, `toggleValue` computes the next value — while the caller owns the show state (`'hover'` trigger), positioning (default placement bottom) and the auto-close on single select. `NUI.SelectMenu` (the support module this composes) stands bare in the last row."
+    <|
+        [ demoRow "Single (leaves + group)"
+            [ popoverHost Popover.Bottom
+                []
+                (Popselect.view theme
+                    { popselectD
+                        | width = Just "200px"
+                        , value = SelectMenu.Single (Just "drive")
+                    }
+                    popselectOptions
+                )
+            ]
+        , demoRow "Multiple (--multiple marker)"
+            [ popoverHost Popover.Bottom
+                []
+                (Popselect.view theme
+                    { popselectD
+                        | width = Just "200px"
+                        , multiple = True
+                        , value = SelectMenu.Multiple [ "in-my-life", "the-word" ]
+                    }
+                    popselectOptions
+                )
+            ]
+        , demoRow "Bare NUI.SelectMenu (no popover classes)"
+            [ SelectMenu.view theme
+                { selectMenuD
+                    | size = SelectMenu.Small
+                    , header = Just (Element.text "Header")
+                    , action = Just (Element.text "#action")
+                    , attributes = [ Element.width (Element.px 200) ]
+                }
+                popselectOptions
+            ]
+        ]
+
+
+{-| The shared popselect rows — leaves and a group (upstream's flatten renders
+the group header followed by its children as siblings).
+-}
+popselectOptions : List (SelectMenu.Option msg)
+popselectOptions =
+    [ SelectMenu.Option
+        { value = "drive"
+        , label = "Drive My Car"
+        , disabled = False
+        , attributes = []
+        }
+    , SelectMenu.Option
+        { value = "nowhere-man"
+        , label = "Nowhere Man"
+        , disabled = True
+        , attributes = []
+        }
+    , SelectMenu.Group
+        { label = "Rubber Soul"
+        , children =
+            [ SelectMenu.Option
+                { value = "in-my-life"
+                , label = "In My Life"
+                , disabled = False
+                , attributes = []
+                }
+            , SelectMenu.Option
+                { value = "the-word"
+                , label = "The Word"
+                , disabled = False
+                , attributes = []
+                }
+            ]
+        , attributes = []
+        }
+    ]
 
 
 tooltipSection : Element msg

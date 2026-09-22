@@ -110,7 +110,9 @@ bridge, tests).
 | `NUI.Modal`       | ✅ |
 | `NUI.PageHeader`  | ✅ |
 | `NUI.Pagination`  | ✅ |
+| `NUI.Popconfirm`  | ✅ |
 | `NUI.Popover`     | ✅ |
+| `NUI.Popselect`   | ✅ |
 | `NUI.Progress`    | ✅ |
 | `NUI.QrCode`      | ✅ |
 | `NUI.Radio`       | ✅ |
