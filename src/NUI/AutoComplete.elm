@@ -119,6 +119,7 @@ import NUI.Scrollbar
 import NUI.SelectMenu as SelectMenu
 import NUI.Theme exposing (Theme)
 import NUI.Theme.AutoComplete as AutoCompleteTheme
+import NUI.Types
 
 
 
@@ -221,8 +222,62 @@ menuDefaults =
 per the module docstring.
 -}
 view : Theme -> Options msg -> Element msg
-view _ _ =
-    Element.none
+view theme opts =
+    Element.el
+        ([ I.classes [ "n-auto-complete" ] ] ++ opts.attributes)
+        (NUI.Input.view theme (inputOptions opts))
+
+
+{-| The trigger's options — `Options` onto `NUI.Input.Options` per the
+module docstring: everything passes straight through except `placeholder`
+(the input's `Maybe String`; `Nothing` for the empty string) and `size` (the
+input's own union — AutoComplete has no `tiny`). The clear icon firing
+`onInput ""` rides `NUI.Input`'s own clear wiring (upstream `onClear` →
+`doUpdateValue(null)`, null ≡ ""); the wrapper keeps `attributes`.
+-}
+inputOptions : Options msg -> NUI.Input.Options msg
+inputOptions opts =
+    let
+        d =
+            NUI.Input.defaults
+    in
+    { d
+        | value = opts.value
+        , onInput = opts.onInput
+        , placeholder =
+            if String.isEmpty opts.placeholder then
+                Nothing
+
+            else
+                Just opts.placeholder
+        , size = inputSize opts.size
+        , status = opts.status
+        , disabled = opts.disabled
+        , bordered = opts.bordered
+        , clearable = opts.clearable
+        , loading = opts.loading
+        , prefix = opts.prefix
+        , suffix = opts.suffix
+        , rtl = opts.rtl
+        , inputAttributes = opts.inputAttributes
+    }
+
+
+{-| `AutoComplete.Size` onto the input's — the same three constructors, two
+distinct unions (`NUI.Input` keeps the full four-size scale upstream's
+`InputSize` has; AutoComplete has no `tiny`).
+-}
+inputSize : Size -> NUI.Types.Size
+inputSize size =
+    case size of
+        Small ->
+            NUI.Types.Small
+
+        Medium ->
+            NUI.Types.Medium
+
+        Large ->
+            NUI.Types.Large
 
 
 {-| The `n-auto-complete-menu` body — `NUI.SelectMenu.view` carrying
@@ -233,8 +288,52 @@ style. Mount it in the caller's positioned wrapper when the show gate is
 open.
 -}
 menu : Theme -> MenuOptions msg -> List (SelectMenu.Option msg) -> Element msg
-menu _ _ _ =
-    Element.none
+menu theme mopts options =
+    SelectMenu.view theme (menuOptions theme mopts) options
+
+
+{-| The menu assembled through `NUI.SelectMenu`'s composition seams (the
+`NUI.Select.menuOptions` precedent minus the select couplings):
+AutoComplete's own `n-auto-complete-menu` class and the follower's
+`fade-in-scale-up-transition` phase ride `extraClasses` after the menu's own
+classes; the merged root style (`menuVars`, 23 + 1 vars) rides `attributes`,
+applied after the menu's own so its superset wins by last-wins. Everything
+else is hardcoded per the module docstring — Medium (upstream `size="medium"`
+never varies), not focusable (the prop is omitted upstream → tabindex -1,
+unlike Select), `Single Nothing` (never `--selected`, no checkmark node),
+single mode, no loading; the `showCheckmark` default stays on
+(`--show-checkmark` still lands on rows, the padding rule needs it).
+`scrollbarProps` has no `SelectMenu` seam (the plain option-wrapper path is
+the port's render) — the field stays for the caller.
+-}
+menuOptions : Theme -> MenuOptions msg -> SelectMenu.Options msg
+menuOptions theme mopts =
+    let
+        d =
+            SelectMenu.defaults
+    in
+    { d
+        | size = SelectMenu.Medium
+        , multiple = False
+        , value = SelectMenu.Single Nothing
+        , showCheckmark = True
+        , focusable = False
+        , loading = False
+        , empty = mopts.empty
+        , onToggle = mopts.onToggle
+        , rtl = mopts.rtl
+        , extraClasses =
+            "n-auto-complete-menu"
+                :: (case mopts.transition of
+                        Just phase ->
+                            [ I.transitionClass "fade-in-scale-up-transition" phase ]
+
+                        Nothing ->
+                            []
+                   )
+        , attributes =
+            I.cssVars (menuVars theme) :: mopts.attributes
+    }
 
 
 
@@ -263,5 +362,6 @@ AutoComplete's one own var (`--n-menu-box-shadow`). The trigger's 50 vars
 live in `NUI.Input.cssVars`.
 -}
 menuVars : Theme -> List ( String, String )
-menuVars _ =
-    []
+menuVars theme =
+    SelectMenu.cssVars theme SelectMenu.Medium
+        ++ [ ( "--n-menu-box-shadow", (AutoCompleteTheme.vars theme).menuBoxShadow ) ]
