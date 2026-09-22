@@ -64,6 +64,7 @@ import NUI.LayoutSider as LayoutSider
 import NUI.List as NList
 import NUI.LoadingBar as LoadingBar
 import NUI.Marquee as Marquee
+import NUI.Mention as Mention
 import NUI.Modal as Modal
 import NUI.NumberAnimation as NumberAnimation
 import NUI.PageHeader as PageHeader
@@ -101,6 +102,7 @@ import NUI.Theme.IconWrapper as IconWrapperTheme
 import NUI.Theme.InputOtp as InputOtpTheme
 import NUI.Theme.InternalSelection as InternalSelectionTheme
 import NUI.Theme.Layout as LayoutTheme
+import NUI.Theme.Mention as MentionTheme
 import NUI.Theme.Select as SelectTheme
 import NUI.Theme.Tag as TagTheme
 import NUI.Thing as Thing
@@ -3647,6 +3649,33 @@ expectedAutoCompleteMenuVars =
 
 
 
+-- MENTION OPTION SETS ----------------------------------------------------------
+
+
+{-| The plain defaults bindings (`{ Mention.defaults | … }` is a parse error).
+-}
+mnD : Mention.Options Msg
+mnD =
+    Mention.defaults
+
+
+mnMenuD : Mention.MenuOptions Msg
+mnMenuD =
+    Mention.menuDefaults
+
+
+{-| The 24-entry list `NUI.Mention.menuVars` must emit: the 23 `NUI.SelectMenu`
+vars at Medium plus Mention's one own var `--n-menu-box-shadow` (the
+`NUI.Theme.Mention` single self var = common `boxShadow2`, the
+select/auto-complete/popselect twin). The port emits `--n-bezier` once, so the
+count is 24, not 25.
+-}
+expectedMentionMenuVars : List ( String, String )
+expectedMentionMenuVars =
+    expectedSelectMenuVarsMedium ++ [ ( "--n-menu-box-shadow", popselectShadow ) ]
+
+
+
 -- SHAPE HELPERS ----------------------------------------------------------------
 
 
@@ -6894,6 +6923,22 @@ checks =
     , eq "autocomplete menuVars: last key --n-menu-box-shadow" (Just "--n-menu-box-shadow") (List.reverse (AutoComplete.menuVars light) |> List.head |> Maybe.map Tuple.first)
     , eq "autocomplete menuVars: --n-menu-box-shadow = AutoCompleteTheme.menuBoxShadow" (Just (AutoCompleteTheme.vars light).menuBoxShadow) (lookup "--n-menu-box-shadow" (AutoComplete.menuVars light))
     , eq "autocomplete menuVars: non-empty (stub differential: [] vs 24)" True (not (List.isEmpty (AutoComplete.menuVars light)))
+
+    -- mention: menuVars (23 menu vars + Mention's own --n-menu-box-shadow) ----
+    , eq "mention menuVars: 24 keys (light)" 24 (List.length (Mention.menuVars light))
+    , eq "mention menuVars: exact 24-list light (name+value, order)" expectedMentionMenuVars (Mention.menuVars light)
+    , eq "mention menuVars: first 23 == the SelectMenu var block (order)" expectedSelectMenuVarsMedium (List.take 23 (Mention.menuVars light))
+    , eq "mention menuVars: slot 24 --n-menu-box-shadow (LAST)" (Just ( "--n-menu-box-shadow", popselectShadow )) (listAt 23 (Mention.menuVars light))
+    , eq "mention menuVars: last key --n-menu-box-shadow" (Just "--n-menu-box-shadow") (List.reverse (Mention.menuVars light) |> List.head |> Maybe.map Tuple.first)
+    , eq "mention menuVars: --n-menu-box-shadow = MentionTheme.menuBoxShadow" (Just (MentionTheme.vars light).menuBoxShadow) (lookup "--n-menu-box-shadow" (Mention.menuVars light))
+    , eq "mention menuVars: non-empty (stub differential: [] vs 24)" True (not (List.isEmpty (Mention.menuVars light)))
+
+    -- mention: frozen defaults (real in the stub; they guard the contract) ----
+    , eq "mention defaults: placeholder == \"\" (NOT the AC baked 'Please Input')" "" mnD.placeholder
+    , eq "mention defaults: type_ == Text" Mention.Text mnD.type_
+    , eq "mention defaults: autosize == False" False mnD.autosize
+    , eq "mention defaults: bordered == True" True mnD.bordered
+    , eq "mention menuDefaults: loading == False" False mnMenuD.loading
     ]
 
 
@@ -8294,6 +8339,32 @@ liveNodes =
                             }
                         ]
                     )
+
+                -- Mention.view (the bare .n-mention wrapper + NUI.Input trigger)
+                , Element.el [ Element.htmlAttribute (HA.id "live-mention-default") ]
+                    (Mention.view Theme.default mnD)
+                , Element.el [ Element.htmlAttribute (HA.id "live-mention-placeholder") ]
+                    (Mention.view Theme.default { mnD | placeholder = "Type here" })
+                , Element.el [ Element.htmlAttribute (HA.id "live-mention-small") ]
+                    (Mention.view Theme.default { mnD | size = Mention.Small })
+                , Element.el [ Element.htmlAttribute (HA.id "live-mention-large") ]
+                    (Mention.view Theme.default { mnD | size = Mention.Large })
+                , Element.el [ Element.htmlAttribute (HA.id "live-mention-textarea") ]
+                    (Mention.view Theme.default { mnD | type_ = Mention.Textarea })
+                , Element.el [ Element.htmlAttribute (HA.id "live-mention-autosize") ]
+                    (Mention.view Theme.default { mnD | type_ = Mention.Textarea, autosize = True })
+                , Element.el [ Element.htmlAttribute (HA.id "live-mention-resizable") ]
+                    (Mention.view Theme.default { mnD | type_ = Mention.Textarea, autosize = False })
+                , Element.el [ Element.htmlAttribute (HA.id "live-mention-warning") ]
+                    (Mention.view Theme.default { mnD | status = Just Input.Warning })
+                , Element.el [ Element.htmlAttribute (HA.id "live-mention-disabled") ]
+                    (Mention.view Theme.default { mnD | disabled = True })
+
+                -- Mention.menu (the n-mention-menu body — loading = the MENU row)
+                , Element.el [ Element.htmlAttribute (HA.id "live-mention-menu-default") ]
+                    (Mention.menu Theme.default mnMenuD [ smLeaf "x" "X", smLeaf "y" "Y" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-mention-menu-loading") ]
+                    (Mention.menu Theme.default { mnMenuD | loading = True } [ smLeaf "x" "X" ])
                 ]
             )
         ]

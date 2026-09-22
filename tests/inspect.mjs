@@ -7641,6 +7641,144 @@ dEq(
   })()
 )
 
+// --- Mention ----------------------------------------------------------------
+// The trigger is a bare `.n-mention` wrapper around an `NUI.Input` (no
+// `display: inline-flex`, no css vars, no state classes — the wrapper cssr is
+// `width:100%; z-index:auto; position:relative`); the body is the
+// `NUI.SelectMenu` engine carrying `n-mention-menu`. Two load-bearing
+// divergences from AutoComplete are pinned below: `loading` lands on the MENU
+// row (`n-base-select-menu__loading`), never the input suffix; and the default
+// placeholder is `""` (upstream `Mention.tsx` — NOT AutoComplete's baked
+// `"Please Input"`), so the empty default renders no `.n-input__placeholder`.
+const mnWrapper = (id) => doc.querySelector('#' + id + ' .n-mention')
+const mnInput = (id) => doc.querySelector('#' + id + ' .n-input')
+const mnInputHas = (id, cls) => {
+  const el = mnInput(id)
+  return !!el && el.classList.contains(cls)
+}
+const mnMenu = (id) => doc.querySelector('#' + id + ' .n-base-select-menu')
+
+dEq(
+  'DOM: Mention.view wrapper = a bare .n-mention (no extra n-* classes, no css vars) holding an .n-input; never an .n-auto-complete',
+  'n-mention|0|true|false',
+  [
+    nClassesStr(mnWrapper('live-mention-default')),
+    String(countVars(mnWrapper('live-mention-default'))),
+    mnWrapper('live-mention-default') && mnInput('live-mention-default') ? 'true' : 'false',
+    mnWrapper('live-mention-default') &&
+    mnWrapper('live-mention-default').classList.contains('n-auto-complete')
+      ? 'true'
+      : 'false'
+  ].join('|')
+)
+dEq(
+  "DOM: Mention default placeholder is EMPTY -> no .n-input__placeholder node (the opposite of AC's baked 'Please Input'); an explicit placeholder renders its text",
+  'true|absent|Type here',
+  (() => {
+    const dflt = doc.querySelector('#live-mention-default .n-input')
+    const dfltPh = doc.querySelector('#live-mention-default .n-input__placeholder')
+    const explPh = doc.querySelector('#live-mention-placeholder .n-input__placeholder')
+    return [
+      dflt ? 'true' : 'false',
+      dfltPh ? 'present' : 'absent',
+      explPh ? explPh.textContent : null
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: Mention size keys the INPUT only (small -> --small-size, large -> --large-size; no cross; the wrapper holds no menu)',
+  'true|true|false|false|true',
+  [
+    mnInputHas('live-mention-small', 'n-input--small-size'),
+    mnInputHas('live-mention-large', 'n-input--large-size'),
+    mnInputHas('live-mention-small', 'n-input--large-size'),
+    mnInputHas('live-mention-large', 'n-input--small-size'),
+    doc.querySelector('#live-mention-small .n-base-select-menu') ? 'false' : 'true'
+  ]
+    .map(String)
+    .join('|')
+)
+dEq(
+  'DOM: Mention type_ = Textarea -> n-input--textarea (the default text input has none)',
+  'true|false',
+  [
+    mnInputHas('live-mention-textarea', 'n-input--textarea'),
+    mnInputHas('live-mention-default', 'n-input--textarea')
+  ]
+    .map(String)
+    .join('|')
+)
+dEq(
+  'DOM: Mention autosize = True -> n-input--autosize present AND n-input--resizable ABSENT (the Input seam; a plain textarea keeps --resizable)',
+  'true|false|true',
+  [
+    mnInputHas('live-mention-autosize', 'n-input--autosize'),
+    mnInputHas('live-mention-autosize', 'n-input--resizable'),
+    mnInputHas('live-mention-resizable', 'n-input--resizable')
+  ]
+    .map(String)
+    .join('|')
+)
+dEq(
+  'DOM: Mention status warning -> n-input--warning-status; disabled -> n-input--disabled',
+  'true|true',
+  [
+    mnInputHas('live-mention-warning', 'n-input--warning-status'),
+    mnInputHas('live-mention-disabled', 'n-input--disabled')
+  ]
+    .map(String)
+    .join('|')
+)
+dEq(
+  'DOM: Mention.menu root classes = n-base-select-menu + --medium-size + n-mention-menu (menu hardcoded Medium; the trigger size never keys it)',
+  'n-base-select-menu n-base-select-menu--medium-size n-mention-menu',
+  nClassesStr(mnMenu('live-mention-menu-default'))
+)
+dEq(
+  'DOM: Mention.menu is NOT focusable (tabindex -1 — Select.menu is 0)',
+  '-1',
+  mnMenu('live-mention-menu-default')
+    ? mnMenu('live-mention-menu-default').getAttribute('tabindex')
+    : null
+)
+dEq(
+  'DOM: Mention.menu rows are never --selected and render no __check (value Single Nothing), but every row keeps --show-checkmark',
+  '0|0|2=2',
+  (() => {
+    const id = 'live-mention-menu-default'
+    const rows = doc.querySelectorAll(`#${id} .n-base-select-option`).length
+    const show = doc.querySelectorAll(`#${id} .n-base-select-option--show-checkmark`).length
+    return [
+      String(doc.querySelectorAll(`#${id} .n-base-select-option--selected`).length),
+      String(doc.querySelectorAll(`#${id} .n-base-select-option__check`).length),
+      rows + '=' + show
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: Mention.menu style = the 23 menu vars then --n-menu-box-shadow LAST (Select.menu-identical, 24 vars)',
+  SELECTMENU_MEDIUM_STYLE + ';--n-menu-box-shadow:' + SELECT_MENU_BOX_SHADOW + '|24',
+  [
+    styleAt(mnMenu('live-mention-menu-default')),
+    String(countVars(mnMenu('live-mention-menu-default')))
+  ].join('|')
+)
+dEq(
+  'DOM: Mention.menu loading = True -> the MENU __loading row present (THE divergence from AutoComplete, whose loading is the input suffix); loading = False -> absent',
+  'present|20|absent',
+  (() => {
+    const loadId = 'live-mention-menu-loading'
+    const dfltId = 'live-mention-menu-default'
+    const row = doc.querySelector(`#${loadId} .n-base-select-menu__loading`)
+    const circle = doc.querySelector(`#${loadId} .n-base-select-menu__loading svg circle`)
+    return [
+      row ? 'present' : 'absent',
+      circle ? circle.getAttribute('stroke-width') : null,
+      doc.querySelector(`#${dfltId} .n-base-select-menu__loading`) ? 'present' : 'absent'
+    ].join('|')
+  })()
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
