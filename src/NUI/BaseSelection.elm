@@ -108,6 +108,7 @@ import Html
 import Html.Attributes as HA
 import Html.Events as HE
 import NUI.Internal as I
+import NUI.Internal.Loading as Loading
 import NUI.Tag
 import NUI.Theme exposing (Theme)
 import NUI.Theme.InternalSelection as InternalSelectionTheme
@@ -635,7 +636,15 @@ suffixNode opts =
                 [ I.classes [ "n-base-loading__transition-wrapper" ] ]
                 (Element.el
                     [ I.classes [ "n-base-loading__container" ] ]
-                    (Element.html loadingSvg)
+                    (Element.html
+                        (Loading.spinner
+                            { strokeWidth = 24
+                            , radius = 100
+                            , scale = 0.85
+                            , stroke = Nothing
+                            }
+                        )
+                    )
                 )
 
          else
@@ -756,66 +765,6 @@ clearIcon =
 clearPath : String
 clearPath =
     "M8,2 C11.3137085,2 14,4.6862915 14,8 C14,11.3137085 11.3137085,14 8,14 C4.6862915,14 2,11.3137085 2,8 C2,4.6862915 4.6862915,2 8,2 Z M6.5343055,5.83859116 C6.33943736,5.70359511 6.07001296,5.72288026 5.89644661,5.89644661 L5.89644661,5.89644661 L5.83859116,5.9656945 C5.70359511,6.16056264 5.72288026,6.42998704 5.89644661,6.60355339 L5.89644661,6.60355339 L7.293,8 L5.89644661,9.39644661 L5.83859116,9.4656945 C5.70359511,9.66056264 5.72288026,9.92998704 5.89644661,10.1035534 L5.89644661,10.1035534 L5.9656945,10.1614088 C6.16056264,10.2964049 6.42998704,10.2771197 6.60355339,10.1035534 L6.60355339,10.1035534 L8,8.707 L9.39644661,10.1035534 L9.4656945,10.1614088 C9.66056264,10.2964049 9.92998704,10.2771197 10.1035534,10.1035534 L10.1035534,10.1035534 L10.1614088,10.0343055 C10.2964049,9.83943736 10.2771197,9.57001296 10.1035534,9.39644661 L10.1035534,9.39644661 L8.707,8 L10.1035534,6.60355339 L10.1614088,6.5343055 C10.2964049,6.33943736 10.2771197,6.07001296 10.1035534,5.89644661 L10.1035534,5.89644661 L10.0343055,5.83859116 C9.83943736,5.70359511 9.57001296,5.72288026 9.39644661,5.89644661 L9.39644661,5.89644661 L8,7.293 L6.60355339,5.89644661 Z"
-
-
-{-| The suffix spinner — `NBaseLoading` at strokeWidth 24 / scale 0.85
-(radius 100): upstream's `scale` is pure svg geometry (`scaledRadius =
-radius / scale`, the `NUI.Spin` port), so the literals are the exact
-`100 / 0.85` forms (`117.64705882352942` / `235.29411764705884`, circle
-`r` 88, dash 567 / 1848).
--}
-loadingSvg : Html.Html msg
-loadingSvg =
-    Html.node "svg"
-        [ HA.attribute "viewBox" "0 0 235.29411764705884 235.29411764705884"
-        , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
-        ]
-        [ Html.node "g"
-            []
-            [ Html.node "animateTransform"
-                [ HA.attribute "attributeName" "transform"
-                , HA.attribute "type" "rotate"
-                , HA.attribute "values" "0 117.64705882352942 117.64705882352942;270 117.64705882352942 117.64705882352942"
-                , HA.attribute "begin" "0s"
-                , HA.attribute "dur" "1.6s"
-                , HA.attribute "fill" "freeze"
-                , HA.attribute "repeatCount" "indefinite"
-                ]
-                []
-            , Html.node "circle"
-                [ HA.attribute "class" "n-base-loading__icon"
-                , HA.attribute "fill" "none"
-                , HA.attribute "stroke" "currentColor"
-                , HA.attribute "stroke-width" "24"
-                , HA.attribute "stroke-linecap" "round"
-                , HA.attribute "cx" "117.64705882352942"
-                , HA.attribute "cy" "117.64705882352942"
-                , HA.attribute "r" "88"
-                , HA.attribute "stroke-dasharray" "567"
-                , HA.attribute "stroke-dashoffset" "1848"
-                ]
-                [ Html.node "animateTransform"
-                    [ HA.attribute "attributeName" "transform"
-                    , HA.attribute "type" "rotate"
-                    , HA.attribute "values" "0 117.64705882352942 117.64705882352942;135 117.64705882352942 117.64705882352942;450 117.64705882352942 117.64705882352942"
-                    , HA.attribute "begin" "0s"
-                    , HA.attribute "dur" "1.6s"
-                    , HA.attribute "fill" "freeze"
-                    , HA.attribute "repeatCount" "indefinite"
-                    ]
-                    []
-                , Html.node "animate"
-                    [ HA.attribute "attributeName" "stroke-dashoffset"
-                    , HA.attribute "values" "567;142;567"
-                    , HA.attribute "begin" "0s"
-                    , HA.attribute "dur" "1.6s"
-                    , HA.attribute "fill" "freeze"
-                    , HA.attribute "repeatCount" "indefinite"
-                    ]
-                    []
-                ]
-            ]
-        ]
 
 
 

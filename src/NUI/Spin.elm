@@ -48,10 +48,10 @@ ignored there. `content-class` / `content-style` are not ported (use
 import Element exposing (Element)
 import Html.Attributes as HA
 import NUI.Internal as I
+import NUI.Internal.Loading as Loading
 import NUI.Theme exposing (Theme)
 import NUI.Theme.Spin as SpinTheme
 import Svg exposing (Svg)
-import Svg.Attributes as SA
 
 
 {-| Naive UI's `size` prop: `'small' | 'medium' | 'large' | number`. A numeric
@@ -295,102 +295,16 @@ baseLoading opts extra =
         )
 
 
-{-| `NBaseLoading`'s SMIL duration constant.
+{-| The spinner svg itself — a thin wrapper over `NUI.Internal.Loading.spinner`
+(the library's single `NBaseLoading` port; every loading svg renders through
+it). Unlike this module's former local copy, the shared builder also emits
+the upstream `xmlns` attribute on the svg root.
 -}
-loadingDuration : String
-loadingDuration =
-    "1.6s"
-
-
 loadingIcon : Options msg -> Svg msg
 loadingIcon opts =
-    let
-        radius =
-            toFloat opts.radius
-
-        scaledRadius =
-            radius / opts.scale
-
-        strokeWidth =
-            toFloat (mergedStrokeWidth opts)
-
-        animateTransform degrees =
-            Svg.node "animateTransform"
-                [ SA.attributeName "transform"
-                , SA.type_ "rotate"
-                , SA.values (rotateValues degrees scaledRadius)
-                , SA.begin "0s"
-                , SA.dur loadingDuration
-                , SA.fill "freeze"
-                , SA.repeatCount "indefinite"
-                ]
-                []
-
-        circleAnimates =
-            [ animateTransform [ 0, 135, 450 ]
-            , Svg.node "animate"
-                [ SA.attributeName "stroke-dashoffset"
-                , SA.values
-                    (String.join ";"
-                        [ String.fromFloat (5.67 * radius)
-                        , String.fromFloat (1.42 * radius)
-                        , String.fromFloat (5.67 * radius)
-                        ]
-                    )
-                , SA.begin "0s"
-                , SA.dur loadingDuration
-                , SA.fill "freeze"
-                , SA.repeatCount "indefinite"
-                ]
-                []
-            ]
-    in
-    Svg.svg
-        ([ SA.class "n-base-loading__icon"
-         , SA.viewBox
-            ("0 0 "
-                ++ String.fromFloat (2 * scaledRadius)
-                ++ " "
-                ++ String.fromFloat (2 * scaledRadius)
-            )
-         ]
-            ++ (case opts.stroke of
-                    -- Vue's `style={{ color: stroke }}` (absent when unset)
-                    Just s ->
-                        [ SA.style ("color:" ++ s) ]
-
-                    Nothing ->
-                        []
-               )
-        )
-        [ Svg.g []
-            ([ animateTransform [ 0, 270 ] ]
-                ++ [ Svg.circle
-                        [ SA.class "n-base-loading__icon"
-                        , SA.fill "none"
-                        , SA.stroke "currentColor"
-                        , SA.strokeWidth (String.fromFloat strokeWidth)
-                        , SA.strokeLinecap "round"
-                        , SA.cx (String.fromFloat scaledRadius)
-                        , SA.cy (String.fromFloat scaledRadius)
-                        , SA.r (String.fromFloat (radius - strokeWidth / 2))
-                        , SA.strokeDasharray (String.fromFloat (5.67 * radius))
-                        , SA.strokeDashoffset (String.fromFloat (18.48 * radius))
-                        ]
-                        circleAnimates
-                   ]
-            )
-        ]
-
-
-rotateValues : List Float -> Float -> String
-rotateValues degrees scaledRadius =
-    let
-        point deg =
-            String.fromFloat deg
-                ++ " "
-                ++ String.fromFloat scaledRadius
-                ++ " "
-                ++ String.fromFloat scaledRadius
-    in
-    String.join ";" (List.map point degrees)
+    Loading.spinner
+        { strokeWidth = toFloat (mergedStrokeWidth opts)
+        , radius = toFloat opts.radius
+        , scale = opts.scale
+        , stroke = opts.stroke
+        }
