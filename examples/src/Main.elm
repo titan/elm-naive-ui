@@ -24,6 +24,7 @@ import NUI.Collapse as Collapse
 import NUI.Countdown as Countdown
 import NUI.Css as Css
 import NUI.Descriptions as Descriptions
+import NUI.Dialog as Dialog
 import NUI.Divider as Divider
 import NUI.Drawer as Drawer
 import NUI.DrawerContent as DrawerContent
@@ -240,6 +241,11 @@ drawerD =
 drawerContentD : DrawerContent.Options msg
 drawerContentD =
     DrawerContent.defaults
+
+
+dialogD : Dialog.Options msg
+dialogD =
+    Dialog.defaults
 
 
 avD : Avatar.Options msg
@@ -612,6 +618,7 @@ body =
     , dropdownSection
     , modalSection
     , drawerSection
+    , dialogSection
     , rtlSection
     , themeSection
     ]
@@ -2372,10 +2379,23 @@ modalHost attrs content =
         content
 
 
+{-| A plain demo cell for a standalone `.n-dialog` body (no fixed tree to
+confine — just a sized box; the block body fills it).
+-}
+cell : Element msg -> Element msg
+cell content =
+    Element.el
+        [ Element.width (Element.px 320)
+        , Element.htmlAttribute
+            (HA.attribute "style" "border:1px solid #efeff5;background:#fafafc")
+        ]
+        content
+
+
 modalSection : Element msg
 modalSection =
     section "Modal"
-        "The mount-body family — its own fixed tree (container > mask > body-wrapper > scrollbar > content), self-positioned and centred by flex. The caller owns mounting, the show state, the transition clock (one clock drives the mask and body tuples), outside-click closing and Esc; `dialog`/`confirm` presets land with `NUI.Dialog`. The demo cells confine the fixed tree with a `transform: translate(0,0)` containing block."
+        "The mount-body family — its own fixed tree (container > mask > body-wrapper > scrollbar > content), self-positioned and centred by flex. The caller owns mounting, the show state, the transition clock (one clock drives the mask and body tuples), outside-click closing and Esc; the `dialog`/`confirm` presets compose `NUI.Dialog` (its section follows). The demo cells confine the fixed tree with a `transform: translate(0,0)` containing block."
     <|
         [ demoRow "Custom content + card preset"
             [ modalHost []
@@ -2608,6 +2628,128 @@ drawerSection =
                         , bodyTransition = Just I.EnterActive
                     }
                     [ drawerBody ]
+                )
+            ]
+        ]
+
+
+dialogSection : Element msg
+dialogSection =
+    section "Dialog"
+        "A pure body component (upstream `NDialog`) — the `.n-dialog` card, never a mask or container. Standalone here, and as Modal's `dialog`/`confirm` preset bodies (the preset adds `n-modal` + `aria-modal`, phase class last). Composed actions (negative ghost/small first, positive small + kind-derived + loading), the kind→ icon/type system, icon-top placement, and the caller-owned runtime: the `useDialog` queue, close gating, mask/esc are yours (see Modal)."
+    <|
+        [ demoRow "Kinds (bare body — the icon/type system)"
+            [ cell
+                (Dialog.view theme
+                    { dialogD
+                        | kind = T.Default
+                        , title = Just (Element.text "Default")
+                        , content = Just (Element.text "Info glyph on the base icon color.")
+                        , positiveText = Just "OK"
+                    }
+                )
+            , cell
+                (Dialog.view theme
+                    { dialogD
+                        | kind = T.Warning
+                        , title = Just (Element.text "Warning")
+                        , content = Just (Element.text "A warning icon rides the title.")
+                        , positiveText = Just "Proceed"
+                        , negativeText = Just "Cancel"
+                    }
+                )
+            , cell
+                (Dialog.view theme
+                    { dialogD
+                        | kind = T.Error
+                        , title = Just (Element.text "Error")
+                        , content = Just (Element.text "Positive button keys to the kind.")
+                        , positiveText = Just "Retry"
+                        , negativeText = Just "Dismiss"
+                    }
+                )
+            ]
+        , demoRow "Modal dialog/confirm presets"
+            [ modalHost []
+                (Modal.view theme
+                    { modalD | show = True }
+                    (Modal.Dialog
+                        { dialogD
+                            | title = Just (Element.text "Use dialog?")
+                            , content = Just (Element.text "The preset body gains n-modal; .n-modal .n-dialog sizes it to 446px.")
+                            , positiveText = Just "Confirm"
+                            , negativeText = Just "Cancel"
+                        }
+                    )
+                )
+            , modalHost []
+                (Modal.view theme
+                    { modalD | show = True }
+                    (Modal.Confirm
+                        { dialogD
+                            | kind = T.Info
+                            , title = Just (Element.text "A deprecated alias")
+                            , content = Just (Element.text "confirm renders the identical body — only the constructor differs.")
+                            , positiveText = Just "Got it"
+                        }
+                    )
+                )
+            ]
+        , demoRow "icon-top, bordered, custom action"
+            [ cell
+                (Dialog.view theme
+                    { dialogD
+                        | kind = T.Success
+                        , iconPlacement = Dialog.IconTop
+                        , title = Just (Element.text "Centred")
+                        , content = Just (Element.text "Icon-top swaps the margins and centres the icon above.")
+                        , positiveText = Just "OK"
+                    }
+                )
+            , cell
+                (Dialog.view theme
+                    { dialogD
+                        | title = Just (Element.text "Bordered")
+                        , bordered = True
+                        , content = Just (Element.text "Opt back into the border.")
+                        , action =
+                            Just
+                                [ Element.text "#action — the slot replaces the buttons"
+                                ]
+                    }
+                )
+            ]
+        , demoRow "Loading + button-props overrides + dark"
+            [ cell
+                (Dialog.view theme
+                    { dialogD
+                        | kind = T.Error
+                        , title = Just (Element.text "Deleting…")
+                        , content = Just (Element.text "Positive disabled+loading; the negative never loads.")
+                        , positiveText = Just "Delete"
+                        , negativeText = Just "Cancel"
+                        , loading = True
+                    }
+                )
+            , cell
+                (Dialog.view theme
+                    { dialogD
+                        | title = Just (Element.text "Overrides")
+                        , content = Just (Element.text "positiveProps updates the derived base (spread semantics).")
+                        , positiveText = Just "Round primary"
+                        , negativeText = Just "Round negative"
+                        , positiveProps = Just (\b -> { b | round = True })
+                        , negativeProps = Just (\b -> { b | round = True })
+                    }
+                )
+            , cell
+                (Dialog.view darkTheme
+                    { dialogD
+                        | kind = T.Warning
+                        , title = Just (Element.text "Dark")
+                        , content = Just (Element.text "modalColor surface, dark-common close/kind colors.")
+                        , positiveText = Just "OK"
+                    }
                 )
             ]
         ]
