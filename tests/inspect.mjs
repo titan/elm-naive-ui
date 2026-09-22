@@ -5901,6 +5901,524 @@ dEq(
   )
 )
 
+// Dialog ----------------------------------------------------------------------
+// A pure body component (upstream NDialog): the .n-dialog card only, no mask or
+// container. elm-ui merges its own structure classes onto every child wrapper, so
+// n-dialog__* tokens share the class attribute with `hc s e wc …` — match on the
+// FULL class list (or substring), never the first token.
+const dgRoot = (id) => doc.querySelector('#' + id + ' .n-dialog')
+const dgCs = (el) => (el ? window.getComputedStyle(el) : null)
+const dgStyle = (id) => styleAt(dgRoot(id))
+const dgText = (id, sel) => {
+  const e = doc.querySelector('#' + id + ' ' + sel)
+  return e ? e.textContent : null
+}
+
+const DIALOG_LIGHT_STYLE =
+  '--n-font-size:14px' +
+  ';--n-icon-color:#18a058' +
+  ';--n-bezier:cubic-bezier(.4, 0, .2, 1)' +
+  ';--n-close-margin:20px 26px 0 0' +
+  ';--n-icon-margin-top:0' +
+  ';--n-icon-margin-right:4px' +
+  ';--n-icon-margin-bottom:0' +
+  ';--n-icon-margin-left:0' +
+  ';--n-icon-size:28px' +
+  ';--n-close-size:22px' +
+  ';--n-close-icon-size:18px' +
+  ';--n-close-border-radius:3px' +
+  ';--n-close-color-hover:rgba(0, 0, 0, .09)' +
+  ';--n-close-color-pressed:rgba(0, 0, 0, .13)' +
+  ';--n-close-icon-color:rgba(102, 102, 102, 1)' +
+  ';--n-close-icon-color-hover:rgba(102, 102, 102, 1)' +
+  ';--n-close-icon-color-pressed:rgba(102, 102, 102, 1)' +
+  ';--n-color:#fff' +
+  ';--n-text-color:rgb(51, 54, 57)' +
+  ';--n-border-radius:3px' +
+  ';--n-padding:16px 28px 20px 28px' +
+  ';--n-line-height:1.6' +
+  ';--n-border:1px solid rgb(239, 239, 245)' +
+  ';--n-content-margin:8px 0 16px 0' +
+  ';--n-title-font-size:18px' +
+  ';--n-title-font-weight:500' +
+  ';--n-title-text-color:rgb(31, 34, 37)' +
+  ';--n-action-space:12px'
+
+const dgDefault = dgRoot('live-dialog-default')
+dEq('DOM: Dialog root is a <div>', 'DIV', tagOf(dgDefault))
+dEq(
+  'DOM: Dialog style = the exact 28-var string in upstream declaration order (light, IconLeft)',
+  DIALOG_LIGHT_STYLE,
+  dgStyle('live-dialog-default')
+)
+dEq(
+  'DOM: Dialog root carries exactly 28 --n-* custom properties',
+  28,
+  countVars(dgDefault)
+)
+dEq(
+  'DOM: Dialog root has no composite --n-icon-margin (28 vars present, split only)',
+  '28|absent',
+  dgDefault
+    ? countVars(dgDefault) +
+        '|' +
+        ((styleAt(dgDefault) || '').includes('--n-icon-margin:') ? 'present' : 'absent')
+    : null
+)
+dEq(
+  'DOM: Dialog root role=dialog and NO aria-modal (the modal preset adds it)',
+  'dialog',
+  dgDefault ? dgDefault.getAttribute('role') : null
+)
+dEq(
+  'DOM: Dialog root has no aria-modal standalone',
+  null,
+  dgDefault ? dgDefault.getAttribute('aria-modal') : null
+)
+
+// root class order: n-dialog [--closable] [--icon-left|top] [--bordered] [--rtl]
+const dgNClasses = (id) =>
+  (dgRoot(id) ? [...dgRoot(id).classList].filter((c) => c.startsWith('n-')) : [])
+dEq(
+  'DOM: Dialog default n-* class order = n-dialog, --closable, --icon-left',
+  'n-dialog n-dialog--closable n-dialog--icon-left',
+  dgNClasses('live-dialog-default').join(' ')
+)
+dEq(
+  'DOM: Dialog IconTop swaps the placement class',
+  'n-dialog n-dialog--closable n-dialog--icon-top',
+  dgNClasses('live-dialog-icontop').join(' ')
+)
+dEq(
+  'DOM: Dialog bordered appends --bordered after the placement class',
+  'n-dialog n-dialog--closable n-dialog--icon-left n-dialog--bordered',
+  dgNClasses('live-dialog-bordered').join(' ')
+)
+dEq(
+  'DOM: Dialog rtl appends --rtl last',
+  'n-dialog n-dialog--closable n-dialog--icon-left n-dialog--rtl',
+  dgNClasses('live-dialog-rtl').join(' ')
+)
+dEq(
+  'DOM: Dialog closable=False drops --closable',
+  'n-dialog n-dialog--icon-left',
+  dgNClasses('live-dialog-noclose').join(' ')
+)
+
+// kind -> --n-icon-color matrix (DOM substring, style re-serialized by jsdom)
+const dgIconColor = (id) => {
+  const s = dgStyle(id) || ''
+  const m = s.match(/--n-icon-color:\s*([^;]+)/)
+  return m ? m[1] : null
+}
+dEq(
+  'DOM: Dialog --n-icon-color matrix Default/Primary/Info/Success/Warning/Error',
+  '#18a058|#18a058|#2080f0|#18a058|#f0a020|#d03050',
+  [
+    dgIconColor('live-dialog-kind-default'),
+    dgIconColor('live-dialog-kind-primary'),
+    dgIconColor('live-dialog-kind-info'),
+    dgIconColor('live-dialog-kind-success'),
+    dgIconColor('live-dialog-kind-warning'),
+    dgIconColor('live-dialog-kind-error')
+  ].join('|')
+)
+dEq(
+  'DOM: Dialog icon glyph viewBox per kind (Default/Primary Info 0 0 28 28, Success/Error 0 0 48 48, Warning 0 0 24 24)',
+  '0 0 28 28|0 0 28 28|0 0 28 28|0 0 48 48|0 0 24 24|0 0 48 48',
+  [
+    'live-dialog-kind-default',
+    'live-dialog-kind-primary',
+    'live-dialog-kind-info',
+    'live-dialog-kind-success',
+    'live-dialog-kind-warning',
+    'live-dialog-kind-error'
+  ]
+    .map((id) => {
+      const svg = doc.querySelector(
+        '#' + id + ' .n-dialog__icon svg'
+      )
+      return svg ? svg.getAttribute('viewBox') : null
+    })
+    .join('|')
+)
+
+// placement margin switch
+const dgMargins = (id) => {
+  const s = dgStyle(id) || ''
+  const g = (k) => {
+    const m = s.match(new RegExp(k + ':\\s*([^;]+)'))
+    return m ? m[1] : null
+  }
+  return [
+    g('--n-close-margin'),
+    g('--n-icon-margin-top'),
+    g('--n-icon-margin-right'),
+    g('--n-icon-margin-bottom'),
+    g('--n-icon-margin-left')
+  ].join('|')
+}
+dEq(
+  'DOM: Dialog IconLeft margins = close 20px 26px 0 0 + icon 0/4px/0/0',
+  '20px 26px 0 0|0|4px|0|0',
+  dgMargins('live-dialog-default')
+)
+dEq(
+  'DOM: Dialog IconTop margins = close 10px 16px 0 0 + icon 4px/0/8px/0',
+  '10px 16px 0 0|4px|0|8px|0',
+  dgMargins('live-dialog-icontop')
+)
+
+// children order + the icon placement dance
+const dgChildOrder = (id) =>
+  dgRoot(id)
+    ? [...dgRoot(id).children]
+        .map((c) => [...c.classList].find((x) => x.startsWith('n-')) || c.tagName)
+        .join(' | ')
+    : null
+dEq(
+  'DOM: Dialog IconLeft children order = close | title | content | action (no icon container)',
+  'n-base-close | n-dialog__title | n-dialog__content | n-dialog__action',
+  dgChildOrder('live-dialog-default')
+)
+dEq(
+  'DOM: Dialog IconTop children order = close | icon-container | title | content',
+  'n-base-close | n-dialog-icon-container | n-dialog__title | n-dialog__content',
+  dgChildOrder('live-dialog-icontop')
+)
+dTrue(
+  'DOM: Dialog IconLeft puts the icon INSIDE the title, FIRST child',
+  (() => {
+    const title = doc.querySelector('#live-dialog-default .n-dialog__title')
+    return (
+      !!title &&
+      !!title.firstElementChild &&
+      title.firstElementChild.classList.contains('n-dialog__icon') &&
+      !doc.querySelector('#live-dialog-default .n-dialog-icon-container')
+    )
+  })(),
+  clsOf(doc.querySelector('#live-dialog-default .n-dialog__title'))
+)
+dEq(
+  'DOM: Dialog icon node carries n-base-icon + n-dialog__icon',
+  'n-base-icon n-dialog__icon',
+  (() => {
+    const i = doc.querySelector('#live-dialog-default .n-dialog__icon')
+    return i ? [...i.classList].filter((c) => c.startsWith('n-')).join(' ') : null
+  })()
+)
+dEq(
+  'DOM: Dialog icon container is the standalone block n-dialog-icon-container (not a BEM element)',
+  'n-dialog-icon-container',
+  (() => {
+    const c = doc.querySelector('#live-dialog-icontop .n-dialog-icon-container')
+    return c ? [...c.classList].filter((x) => x.startsWith('n-')).join(' ') : null
+  })()
+)
+dTrue(
+  'DOM: Dialog showIcon=False renders NO icon in either placement container or title',
+  doc.querySelector('#live-dialog-noicon .n-dialog__icon') === null &&
+    doc.querySelector('#live-dialog-noicon .n-dialog-icon-container') === null &&
+    !!dgRoot('live-dialog-noicon'),
+  clsOf(dgRoot('live-dialog-noicon'))
+)
+
+// content --last <-> action presence (the pair)
+const dgContentLast = (id) => {
+  const c = doc.querySelector('#' + id + ' .n-dialog__content')
+  return c ? c.classList.contains('n-dialog__content--last') : null
+}
+dEq(
+  'DOM: Dialog content--last + no action node when there is neither action nor button texts (pair)',
+  'true|absent',
+  String(dgContentLast('live-dialog-noaction')) +
+    '|' +
+    (doc.querySelector('#live-dialog-noaction .n-dialog__action') ? 'present' : 'absent')
+)
+dEq(
+  'DOM: Dialog content--last absent + action node present when texts exist (pair)',
+  'false|present',
+  String(dgContentLast('live-dialog-default')) +
+    '|' +
+    (doc.querySelector('#live-dialog-default .n-dialog__action') ? 'present' : 'absent')
+)
+
+// actions: negative first (ghost + small), positive kind-derived (small)
+const dgButtons = (id) =>
+  [...doc.querySelectorAll('#' + id + ' .n-dialog__action .n-button')].map((b) =>
+    [...b.classList].filter((c) => c.startsWith('n-')).join(' ')
+  )
+dEq(
+  'DOM: Dialog actions = negative first (ghost, small, default-type) then positive (primary, small)',
+  'n-button n-button--default-type n-button--small-type n-button--ghost||n-button n-button--primary-type n-button--small-type',
+  dgButtons('live-dialog-default').join('||')
+)
+dEq(
+  'DOM: Dialog action button texts are the positive/negative texts (negative first)',
+  'No|Yes',
+  [...doc.querySelectorAll('#live-dialog-default .n-dialog__action .n-button')]
+    .map((b) => (b.querySelector('.n-button__content') || {}).textContent)
+    .join('|')
+)
+dEq(
+  'DOM: Dialog positive button kind matrix (Default->primary, Info/Success/Warning/Error follow)',
+  'n-button--primary-type|n-button--primary-type|n-button--info-type|n-button--success-type|n-button--warning-type|n-button--error-type',
+  ['Default', 'Primary', 'Info', 'Success', 'Warning', 'Error']
+    .map((k) => {
+      const el = doc.querySelector(
+        '#live-dialog-actions-' + k.toLowerCase() + ' .n-dialog__action .n-button:last-child'
+      )
+      return el
+        ? [...el.classList].find((c) => c.endsWith('-type'))
+        : 'MISSING'
+    })
+    .join('|')
+)
+dEq(
+  'DOM: Dialog loading -> positive disabled+loading, negative untouched',
+  'n-button n-button--default-type n-button--small-type n-button--ghost||n-button n-button--primary-type n-button--small-type n-button--disabled n-button--loading',
+  dgButtons('live-dialog-loading').join('||')
+)
+dTrue(
+  'DOM: Dialog loading positive button carries .n-button__icon > .n-base-loading svg (negative does not)',
+  (() => {
+    const btns = [...doc.querySelectorAll('#live-dialog-loading .n-dialog__action .n-button')]
+    return (
+      btns.length === 2 &&
+      !btns[0].querySelector('.n-base-loading') &&
+      !!btns[1].querySelector('.n-button__icon .n-base-loading svg')
+    )
+  })(),
+  ''
+)
+dEq(
+  'DOM: Dialog positiveProps/negativeProps update-functions both apply (round -> 28px radius, 0 14px padding)',
+  '28px|28px',
+  [...doc.querySelectorAll('#live-dialog-props .n-dialog__action .n-button')]
+    .map((b) => {
+      const m = (b.getAttribute('style') || '').match(/--n-border-radius:\s*([^;]+)/)
+      return m ? m[1] : '?'
+    })
+    .join('|')
+)
+dEq(
+  'DOM: Dialog action=Just replaces the buttons entirely (one action child, no .n-button)',
+  '0',
+  String(doc.querySelectorAll('#live-dialog-action .n-dialog__action .n-button').length)
+)
+dEq(
+  'DOM: Dialog action slot text renders in the action row',
+  '#action',
+  dgText('live-dialog-action', '.n-dialog__action')
+)
+
+// close variants
+const dgClose = (id) => doc.querySelector('#' + id + ' .n-dialog__close')
+const dgCloseFull = (id) => {
+  const c = dgClose(id)
+  return c
+    ? [
+        c.tagName,
+        [...c.classList].join(' '),
+        c.getAttribute('role'),
+        c.getAttribute('aria-label'),
+        c.getAttribute('tabindex')
+      ].join('|')
+    : null
+}
+dEq(
+  'DOM: Dialog default close = div.n-base-close.n-dialog__close role=button aria-label=close tabindex=-1',
+  'DIV|hc s e wc n-base-close n-dialog__close|button|close|-1',
+  dgCloseFull('live-dialog-default')
+)
+dEq(
+  'DOM: Dialog closeFocusable=True -> tabindex 0',
+  'DIV|hc s e wc n-base-close n-dialog__close|button|close|0',
+  dgCloseFull('live-dialog-closefocus')
+)
+dEq(
+  'DOM: Dialog rtl puts n-dialog--rtl ON the close node (after n-dialog__close)',
+  'hc s e wc n-base-close n-dialog__close n-dialog--rtl',
+  clsOf(dgClose('live-dialog-rtl'))
+)
+dEq(
+  'DOM: Dialog caller close element -> div.n-dialog__close wrapper with NO n-base-close, rtl class kept',
+  'DIV|hc s e wc n-dialog__close n-dialog--rtl|absent',
+  (() => {
+    const c = dgClose('live-dialog-closeslot')
+    return c
+      ? c.tagName +
+          '|' +
+          c.getAttribute('class') +
+          '|' +
+          (c.querySelector('.n-base-close') ? 'present' : 'absent')
+      : null
+  })()
+)
+dEq(
+  'DOM: Dialog caller close slot element is carried inside the wrapper',
+  'on',
+  (() => {
+    const e = doc.querySelector('#live-dialog-closeslot [data-caller-close]')
+    return e ? e.getAttribute('data-caller-close') : null
+  })()
+)
+dTrue(
+  'DOM: Dialog closable=False hides the close node but keeps the kind icon (upstream test)',
+  dgClose('live-dialog-noclose') === null &&
+    !!doc.querySelector('#live-dialog-noclose .n-dialog__icon'),
+  clsOf(dgRoot('live-dialog-noclose'))
+)
+
+// dark: common refs swap, self/_common literals identical
+const dgDark = dgStyle('live-dialog-dark') || ''
+dTrue(
+  'DOM: Dialog dark --n-color rgb(44, 44, 50), --n-text-color .82 white, self literals unchanged',
+  dgDark.includes('--n-color:rgb(44, 44, 50)') &&
+    dgDark.includes('--n-text-color:rgba(255, 255, 255, 0.82)') &&
+    dgDark.includes('--n-padding:16px 28px 20px 28px') &&
+    dgDark.includes('--n-icon-size:28px') &&
+    dgDark.includes('--n-action-space:12px') &&
+    dgDark.includes('--n-bezier:cubic-bezier(.4, 0, .2, 1)'),
+  dgDark.slice(0, 120)
+)
+dEq(
+  'DOM: Dialog dark --n-icon-color Warning = dark warning #f2c97d',
+  '#f2c97d',
+  (() => {
+    const m = dgDark.match(/--n-icon-color:\s*([^;]+)/)
+    return m ? m[1] : null
+  })()
+)
+
+// Modal dialog/confirm presets -------------------------------------------------
+dEq(
+  'DOM: Modal.Dialog body gains n-modal LAST after the dialog modifiers',
+  'n-dialog n-dialog--closable n-dialog--icon-left n-modal',
+  dgNClasses('live-modal-dialog').join(' ')
+)
+dEq(
+  'DOM: Modal.Dialog body carries aria-modal=true and role=dialog',
+  'dialog|true',
+  (() => {
+    const d = dgRoot('live-modal-dialog')
+    return (d ? d.getAttribute('role') : null) + '|' + (d ? d.getAttribute('aria-modal') : null)
+  })()
+)
+dEq(
+  'DOM: Modal.Confirm renders the identical body to Modal.Dialog (n-* classes + style + a11y)',
+  'true',
+  String(
+    !!dgRoot('live-modal-dialog') &&
+      !!dgRoot('live-modal-confirm') &&
+      dgNClasses('live-modal-confirm').join(' ') ===
+        dgNClasses('live-modal-dialog').join(' ') &&
+      dgStyle('live-modal-confirm') === dgStyle('live-modal-dialog') &&
+      dgRoot('live-modal-confirm').getAttribute('aria-modal') === 'true' &&
+      dgRoot('live-modal-confirm').getAttribute('role') === 'dialog'
+  )
+)
+dTrue(
+  'DOM: Modal.Dialog phase class is LAST on the FULL class list (after n-modal)',
+  (() => {
+    const d = dgRoot('live-modal-dialog-phase')
+    if (!d) return false
+    const cl = [...d.classList]
+    return (
+      cl[cl.length - 1] === 'fade-in-scale-up-transition-enter-from' &&
+      cl.indexOf('n-modal') === cl.length - 2
+    )
+  })(),
+  clsOf(dgRoot('live-dialog-phase') || dgRoot('live-modal-dialog-phase'))
+)
+dTrue(
+  'DOM: Modal.Custom (bare body) has NO aria-modal — the presets add it, the bare body does not',
+  doc.querySelector('#live-modal-custom .n-modal').getAttribute('aria-modal') === null,
+  ''
+)
+
+// the `.n-modal .n-dialog` sizing rule (dialog cssr; text from the parsed sheet)
+const dgWidthRule = mAllCssRules.find(
+  (r) => r.selectorText && r.selectorText.includes('.n-modal .n-dialog')
+)
+dEq(
+  'CSS: dialog cssr rule ".n-modal .n-dialog" sizes the composed body 446px / max-width calc(100vw - 32px)',
+  '.nui-root.nui-root .n-modal .n-dialog, .nui-root.nui-root .n-drawer .n-dialog {width: 446px; max-width: calc(100vw - 32px);}',
+  dgWidthRule ? dgWidthRule.cssText.replace(/\s+/g, ' ') : null
+)
+
+// Button seams: the loading icon + the n-icon-slot wrapper ----------------------
+const btnLoading = doc.querySelector('#live-button-loading .n-button')
+dTrue(
+  'DOM: Button loading renders .n-button__icon and no outside-icon content',
+  !!btnLoading && !!btnLoading.querySelector('.n-button__icon'),
+  clsOf(btnLoading)
+)
+dEq(
+  'DOM: Button loading .n-base-loading.n-icon-slot carries role=img aria-label=loading',
+  'n-base-loading n-icon-slot|img|loading',
+  (() => {
+    const b = doc.querySelector('#live-button-loading .n-button__icon .n-base-loading')
+    return b
+      ? [...b.classList].filter((c) => c.startsWith('n-')).join(' ') +
+          '|' +
+          b.getAttribute('role') +
+          '|' +
+          b.getAttribute('aria-label')
+      : null
+  })()
+)
+dEq(
+  'DOM: Button loading svg is the faithful NBaseLoading (viewBox 0 0 200 200, circle r90 sw20 dash 567 offset 1848)',
+  '0 0 200 200|90|20|567|1848',
+  (() => {
+    const svg = doc.querySelector('#live-button-loading .n-button__icon .n-base-loading svg')
+    if (!svg) return null
+    const c = svg.querySelector('circle')
+    return [
+      svg.getAttribute('viewBox'),
+      c.getAttribute('r'),
+      c.getAttribute('stroke-width'),
+      c.getAttribute('stroke-dasharray'),
+      c.getAttribute('stroke-dashoffset')
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: Button loading SMIL animate carries dur 1.6s and the dashoffset 567;142;567 values',
+  '1.6s|567;142;567',
+  (() => {
+    const a = doc.querySelector('#live-button-loading .n-button__icon .n-base-loading svg animate')
+    return a ? a.getAttribute('dur') + '|' + a.getAttribute('values') : null
+  })()
+)
+dEq(
+  'DOM: Button icon wraps the caller icon in div.n-icon-slot[role=none] inside .n-button__icon',
+  'DIV|n-button__icon|n-icon-slot|none',
+  (() => {
+    const slot = doc.querySelector('#live-button-icon .n-button__icon .n-icon-slot')
+    return slot
+      ? [
+          slot.tagName,
+          [...slot.parentElement.classList].filter((c) => c.startsWith('n-')).join(' '),
+          [...slot.classList].filter((c) => c.startsWith('n-')).join(' '),
+          slot.getAttribute('role')
+        ].join('|')
+      : null
+  })()
+)
+dTrue(
+  'DOM: Button icon (non-loading) renders no .n-base-loading',
+  btnLoading !== null &&
+    doc.querySelector('#live-button-icon .n-button__icon .n-base-loading') === null,
+  ''
+)
+dTrue(
+  'DOM: DynamicInput create-button icon pin still holds through the new n-icon-slot wrapper (descendant selector)',
+  !!doc.querySelector('.n-dynamic-input > .n-button .n-button__icon .n-icon-slot .n-base-icon'),
+  clsOf(doc.querySelector('.n-dynamic-input > .n-button .n-button__icon .n-icon-slot'))
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

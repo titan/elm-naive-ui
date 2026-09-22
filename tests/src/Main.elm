@@ -33,6 +33,7 @@ import NUI.Collapse as Collapse
 import NUI.Countdown as Countdown
 import NUI.Css as Css
 import NUI.Descriptions as Descriptions
+import NUI.Dialog as Dialog
 import NUI.Drawer as Drawer
 import NUI.DrawerContent as DrawerContent
 import NUI.Dropdown as Dropdown
@@ -115,11 +116,15 @@ type Msg
     | ModalClose
     | DrawerClose
     | DrawerMaskClick
+    | DialogClose
+    | DialogPositive
+    | DialogNegative
 
 
 {-| The model is a counter of dropdown `onSelect` / modal `onClose` / drawer
-`onClose`/`onMaskClick` dispatches — the only observable way to prove the click
-wiring fires (and that disabled / submenu clicks do not).
+`onClose`/`onMaskClick` / dialog `onClose`/`onPositiveClick`/`onNegativeClick`
+dispatches — the only observable way to prove the click wiring fires (and that
+disabled / submenu clicks do not).
 -}
 update : Msg -> Int -> Int
 update msg count =
@@ -137,6 +142,15 @@ update msg count =
             count + 1
 
         DrawerMaskClick ->
+            count + 1
+
+        DialogClose ->
+            count + 1
+
+        DialogPositive ->
+            count + 1
+
+        DialogNegative ->
             count + 1
 
 
@@ -3207,6 +3221,210 @@ mScrollbarSeamOpts =
 
 
 
+-- DIALOG OPTION SETS -----------------------------------------------------------
+
+
+dgD : Dialog.Options Msg
+dgD =
+    Dialog.defaults
+
+
+{-| The 28-entry list `NUI.Dialog.cssVars` emits for `defaults` (IconLeft) —
+upstream `cssVarsRef` declaration order (`Dialog.tsx`).
+-}
+dgVarsLeft : List ( String, String )
+dgVarsLeft =
+    Dialog.cssVars Theme.default dgD
+
+
+{-| `IconTop` — swaps the icon margins to `4px 0 8px 0` and the close margin
+to `10px 16px 0 0`.
+-}
+dgVarsTop : List ( String, String )
+dgVarsTop =
+    Dialog.cssVars Theme.default { dgD | iconPlacement = Dialog.IconTop }
+
+
+dgVarsDark : List ( String, String )
+dgVarsDark =
+    Dialog.cssVars Theme.dark dgD
+
+
+expectedDialogVarsLeft : List ( String, String )
+expectedDialogVarsLeft =
+    [ ( "--n-font-size", "14px" )
+    , ( "--n-icon-color", "#18a058" )
+    , ( "--n-bezier", "cubic-bezier(.4, 0, .2, 1)" )
+    , ( "--n-close-margin", "20px 26px 0 0" )
+    , ( "--n-icon-margin-top", "0" )
+    , ( "--n-icon-margin-right", "4px" )
+    , ( "--n-icon-margin-bottom", "0" )
+    , ( "--n-icon-margin-left", "0" )
+    , ( "--n-icon-size", "28px" )
+    , ( "--n-close-size", "22px" )
+    , ( "--n-close-icon-size", "18px" )
+    , ( "--n-close-border-radius", "3px" )
+    , ( "--n-close-color-hover", "rgba(0, 0, 0, .09)" )
+    , ( "--n-close-color-pressed", "rgba(0, 0, 0, .13)" )
+    , ( "--n-close-icon-color", "rgba(102, 102, 102, 1)" )
+    , ( "--n-close-icon-color-hover", "rgba(102, 102, 102, 1)" )
+    , ( "--n-close-icon-color-pressed", "rgba(102, 102, 102, 1)" )
+    , ( "--n-color", "#fff" )
+    , ( "--n-text-color", "rgb(51, 54, 57)" )
+    , ( "--n-border-radius", "3px" )
+    , ( "--n-padding", "16px 28px 20px 28px" )
+    , ( "--n-line-height", "1.6" )
+    , ( "--n-border", "1px solid rgb(239, 239, 245)" )
+    , ( "--n-content-margin", "8px 0 16px 0" )
+    , ( "--n-title-font-size", "18px" )
+    , ( "--n-title-font-weight", "500" )
+    , ( "--n-title-text-color", "rgb(31, 34, 37)" )
+    , ( "--n-action-space", "12px" )
+    ]
+
+
+{-| The mode-independent (`self`-only / `_common`) keys — identical literals in
+light and dark, so a dark pin proves they do not re-derive from `common`.
+-}
+dialogSelfOnlyKeys : List String
+dialogSelfOnlyKeys =
+    [ "--n-padding"
+    , "--n-icon-size"
+    , "--n-close-size"
+    , "--n-close-icon-size"
+    , "--n-close-margin"
+    , "--n-icon-margin-right"
+    , "--n-content-margin"
+    , "--n-action-space"
+    , "--n-title-font-size"
+    , "--n-title-font-weight"
+    ]
+
+
+{-| The `iconPlacement`-keyed subset of the light var list (a fact of §4).
+-}
+dialogMarginKeys : List String
+dialogMarginKeys =
+    [ "--n-close-margin"
+    , "--n-icon-margin-top"
+    , "--n-icon-margin-right"
+    , "--n-icon-margin-bottom"
+    , "--n-icon-margin-left"
+    ]
+
+
+{-| The kind→`--n-icon-color` matrix at the default (light) theme.
+-}
+dialogIconColors : List ( T.Kind, String )
+dialogIconColors =
+    [ ( T.Default, "#18a058" )
+    , ( T.Primary, "#18a058" )
+    , ( T.Info, "#2080f0" )
+    , ( T.Success, "#18a058" )
+    , ( T.Warning, "#f0a020" )
+    , ( T.Error, "#d03050" )
+    ]
+
+
+{-| A dialog with both button texts, both click handlers and a close handler.
+-}
+dgActionsOpts : Dialog.Options Msg
+dgActionsOpts =
+    let
+        base =
+            Dialog.defaults
+    in
+    { base
+        | title = Just (Element.text "Title")
+        , content = Just (Element.text "Body")
+        , positiveText = Just "Yes"
+        , negativeText = Just "No"
+        , onClose = Just DialogClose
+        , onPositiveClick = Just DialogPositive
+        , onNegativeClick = Just DialogNegative
+    }
+
+
+{-| `loading = True` — the positive button is disabled + loading, the negative
+is untouched.
+-}
+dgLoadingOpts : Dialog.Options Msg
+dgLoadingOpts =
+    let
+        base =
+            Dialog.defaults
+    in
+    { base
+        | content = Just (Element.text "Body")
+        , positiveText = Just "Yes"
+        , negativeText = Just "No"
+        , loading = True
+    }
+
+
+{-| All six kinds, so every icon colour + glyph is reachable from one mount set.
+-}
+dgKindOpts : T.Kind -> Dialog.Options Msg
+dgKindOpts kind =
+    let
+        base =
+            Dialog.defaults
+    in
+    { base | kind = kind, content = Just (Element.text "Body") }
+
+
+{-| The `positiveProps`/`negativeProps` update-function seam (spread semantics).
+-}
+dgPropsOpts : Dialog.Options Msg
+dgPropsOpts =
+    let
+        base =
+            Dialog.defaults
+    in
+    { base
+        | content = Just (Element.text "Body")
+        , positiveText = Just "Yes"
+        , negativeText = Just "No"
+        , positiveProps = Just (\b -> { b | round = True })
+        , negativeProps = Just (\b -> { b | round = True })
+    }
+
+
+{-| A dialog with only `positiveText` (no negative) — pins the kind-derived
+positive button class with the negative absent.
+-}
+dgKindActionOpts : T.Kind -> Dialog.Options Msg
+dgKindActionOpts kind =
+    let
+        base =
+            Dialog.defaults
+    in
+    { base | kind = kind, content = Just (Element.text "Body"), positiveText = Just "Yes" }
+
+
+{-| A plain Button carrying a caller icon (the `n-icon-slot` wrapper pin).
+-}
+btnIconOpts : Button.Options Msg
+btnIconOpts =
+    let
+        base =
+            Button.defaults
+    in
+    { base | icon = Just (Element.text "I") }
+
+
+{-| A Button in the loading state (the `n-button__icon` > NBaseLoading pin).
+-}
+btnLoadingOpts : Button.Options Msg
+btnLoadingOpts =
+    let
+        base =
+            Button.defaults
+    in
+    { base | loading = True }
+
+
+
 -- CHECKS -----------------------------------------------------------------------
 
 
@@ -6039,6 +6257,68 @@ checks =
     , eq "drawer dark: --n-close-size identical to light" (Just "22px") (lookup "--n-close-size" drDarkVars)
     , eq "drawer dark: --n-title-font-weight identical to light" (Just "500") (lookup "--n-title-font-weight" drDarkVars)
     , eq "drawer dark: beziers identical to light (common only)" ( Just "cubic-bezier(.4, 0, .2, 1)", Just "cubic-bezier(0, 0, .2, 1)", Just "cubic-bezier(.4, 0, 1, 1)" ) ( lookup "--n-bezier" drDarkVars, lookup "--n-bezier-out" drDarkVars, lookup "--n-bezier-in" drDarkVars )
+
+    -- dialog: defaults -------------------------------------------------------
+    , eq "dialog defaults: title Nothing" True (isNothing dgD.title)
+    , eq "dialog defaults: content Nothing" True (isNothing dgD.content)
+    , eq "dialog defaults: icon Nothing" True (isNothing dgD.icon)
+    , eq "dialog defaults: kind Default" T.Default dgD.kind
+    , eq "dialog defaults: showIcon True" True dgD.showIcon
+    , eq "dialog defaults: iconPlacement IconLeft" Dialog.IconLeft dgD.iconPlacement
+    , eq "dialog defaults: closable True" True dgD.closable
+    , eq "dialog defaults: close Nothing" True (isNothing dgD.close)
+    , eq "dialog defaults: closeFocusable False" False dgD.closeFocusable
+    , eq "dialog defaults: positiveText Nothing" Nothing dgD.positiveText
+    , eq "dialog defaults: negativeText Nothing" Nothing dgD.negativeText
+    , eq "dialog defaults: positiveProps Nothing" True (isNothing dgD.positiveProps)
+    , eq "dialog defaults: negativeProps Nothing" True (isNothing dgD.negativeProps)
+    , eq "dialog defaults: action Nothing" True (isNothing dgD.action)
+    , eq "dialog defaults: loading False" False dgD.loading
+    , eq "dialog defaults: bordered False" False dgD.bordered
+    , eq "dialog defaults: rtl False" False dgD.rtl
+    , eq "dialog defaults: titleAttributes []" True (List.isEmpty dgD.titleAttributes)
+    , eq "dialog defaults: contentAttributes []" True (List.isEmpty dgD.contentAttributes)
+    , eq "dialog defaults: actionAttributes []" True (List.isEmpty dgD.actionAttributes)
+    , eq "dialog defaults: onPositiveClick Nothing" Nothing dgD.onPositiveClick
+    , eq "dialog defaults: onNegativeClick Nothing" Nothing dgD.onNegativeClick
+    , eq "dialog defaults: onClose Nothing" Nothing dgD.onClose
+    , eq "dialog defaults: extraClasses []" True (List.isEmpty dgD.extraClasses)
+    , eq "dialog defaults: attributes []" True (List.isEmpty dgD.attributes)
+
+    -- dialog: cssVars (exact 28-tuple order + values) ------------------------
+    , eq "dialog vars: 28 keys (light, IconLeft)" 28 (List.length dgVarsLeft)
+    , eq "dialog vars: exact 28-list light IconLeft (name+value, order)" expectedDialogVarsLeft dgVarsLeft
+    , eq "dialog vars: slot 1 --n-font-size" (Just "--n-font-size") (listAt 0 dgVarsLeft |> Maybe.map Tuple.first)
+    , eq "dialog vars: slot 2 --n-icon-color (kind-keyed)" (Just "--n-icon-color") (listAt 1 dgVarsLeft |> Maybe.map Tuple.first)
+    , eq "dialog vars: slot 28 --n-action-space (last)" (Just "--n-action-space") (listAt 27 dgVarsLeft |> Maybe.map Tuple.first)
+    , eq "dialog vars: NO composite --n-icon-margin (28 vars present, split only)" ( 28, Nothing ) ( List.length dgVarsLeft, lookup "--n-icon-margin" dgVarsLeft )
+    , eq "dialog vars: 28 keys (light, IconTop)" 28 (List.length dgVarsTop)
+    , eq "dialog vars: 28 keys (dark)" 28 (List.length dgVarsDark)
+
+    -- dialog: kind -> --n-icon-color matrix --------------------------------
+    , eq "dialog iconColor matrix" (List.map Tuple.second dialogIconColors) (List.map (\( k, _ ) -> lookup "--n-icon-color" (Dialog.cssVars Theme.default (dgKindOpts k)) |> Maybe.withDefault "?") dialogIconColors)
+    , eq "dialog iconColor: Primary degrades to Default" (Just "#18a058") (lookup "--n-icon-color" (Dialog.cssVars Theme.default (dgKindOpts T.Primary)))
+    , eq "dialog iconColor: Info #2080f0" (Just "#2080f0") (lookup "--n-icon-color" (Dialog.cssVars Theme.default (dgKindOpts T.Info)))
+    , eq "dialog iconColor: Success #18a058" (Just "#18a058") (lookup "--n-icon-color" (Dialog.cssVars Theme.default (dgKindOpts T.Success)))
+    , eq "dialog iconColor: Warning #f0a020" (Just "#f0a020") (lookup "--n-icon-color" (Dialog.cssVars Theme.default (dgKindOpts T.Warning)))
+    , eq "dialog iconColor: Error #d03050" (Just "#d03050") (lookup "--n-icon-color" (Dialog.cssVars Theme.default (dgKindOpts T.Error)))
+
+    -- dialog: iconPlacement margin switch ----------------------------------
+    , eq "dialog IconLeft margins (top/right/bottom/left)" [ "0", "4px", "0", "0" ] (List.map (\k -> lookup k dgVarsLeft |> Maybe.withDefault "?") dialogMarginKeys |> List.drop 1)
+    , eq "dialog IconLeft close-margin 20px 26px 0 0" (Just "20px 26px 0 0") (lookup "--n-close-margin" dgVarsLeft)
+    , eq "dialog IconTop margins (top/right/bottom/left)" [ "4px", "0", "8px", "0" ] (List.map (\k -> lookup k dgVarsTop |> Maybe.withDefault "?") dialogMarginKeys |> List.drop 1)
+    , eq "dialog IconTop close-margin 10px 16px 0 0" (Just "10px 16px 0 0") (lookup "--n-close-margin" dgVarsTop)
+    , eq "dialog placement switch touches EXACTLY the 4 differing margin keys" [ "--n-close-margin", "--n-icon-margin-top", "--n-icon-margin-right", "--n-icon-margin-bottom" ] (changedVarKeys dgVarsLeft dgVarsTop)
+
+    -- dialog: dark (common-ref deltas only) --------------------------------
+    , eq "dialog dark: --n-color rgb(44, 44, 50)" (Just "rgb(44, 44, 50)") (lookup "--n-color" dgVarsDark)
+    , eq "dialog dark: --n-text-color rgba(255, 255, 255, 0.82)" (Just "rgba(255, 255, 255, 0.82)") (lookup "--n-text-color" dgVarsDark)
+    , eq "dialog dark: --n-title-text-color rgba(255, 255, 255, 0.9)" (Just "rgba(255, 255, 255, 0.9)") (lookup "--n-title-text-color" dgVarsDark)
+    , eq "dialog dark: --n-border rgba(255, 255, 255, 0.09)" (Just "1px solid rgba(255, 255, 255, 0.09)") (lookup "--n-border" dgVarsDark)
+    , eq "dialog dark: --n-icon-color Error #e88080" (Just "#e88080") (lookup "--n-icon-color" (Dialog.cssVars Theme.dark (dgKindOpts T.Error)))
+    , eq "dialog dark: --n-icon-color Default #63e2b7" (Just "#63e2b7") (lookup "--n-icon-color" (Dialog.cssVars Theme.dark (dgKindOpts T.Default)))
+    , eq "dialog dark: self-only keys identical to light (sizes/padding/margins)" [ "16px 28px 20px 28px", "28px", "22px", "18px", "20px 26px 0 0", "4px", "8px 0 16px 0", "12px", "18px", "500" ] (List.map (\k -> lookup k dgVarsDark |> Maybe.withDefault "?") dialogSelfOnlyKeys)
+    , eq "dialog dark: --n-bezier identical to light" (Just "cubic-bezier(.4, 0, .2, 1)") (lookup "--n-bezier" dgVarsDark)
     ]
 
 
@@ -7000,6 +7280,119 @@ liveNodes =
                     )
                 , Element.el [ Element.htmlAttribute (HA.id "live-scrollbar-seam") ]
                     (Scrollbar.view Theme.default mScrollbarSeamOpts [ Element.text "Seam" ])
+
+                -- Dialog (a pure body component — the .n-dialog card; also the
+                -- body of Modal's dialog/confirm presets)
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-default") ]
+                    (Dialog.view Theme.default
+                        { dgD
+                            | title = Just (Element.text "Title")
+                            , content = Just (Element.text "Body")
+                            , positiveText = Just "Yes"
+                            , negativeText = Just "No"
+                            , onClose = Just DialogClose
+                            , onPositiveClick = Just DialogPositive
+                            , onNegativeClick = Just DialogNegative
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-kind-default") ]
+                    (Dialog.view Theme.default (dgKindOpts T.Default))
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-kind-primary") ]
+                    (Dialog.view Theme.default (dgKindOpts T.Primary))
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-kind-info") ]
+                    (Dialog.view Theme.default (dgKindOpts T.Info))
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-kind-success") ]
+                    (Dialog.view Theme.default (dgKindOpts T.Success))
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-kind-warning") ]
+                    (Dialog.view Theme.default (dgKindOpts T.Warning))
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-kind-error") ]
+                    (Dialog.view Theme.default (dgKindOpts T.Error))
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-actions-default") ]
+                    (Dialog.view Theme.default (dgKindActionOpts T.Default))
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-actions-primary") ]
+                    (Dialog.view Theme.default (dgKindActionOpts T.Primary))
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-actions-info") ]
+                    (Dialog.view Theme.default (dgKindActionOpts T.Info))
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-actions-success") ]
+                    (Dialog.view Theme.default (dgKindActionOpts T.Success))
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-actions-warning") ]
+                    (Dialog.view Theme.default (dgKindActionOpts T.Warning))
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-actions-error") ]
+                    (Dialog.view Theme.default (dgKindActionOpts T.Error))
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-icontop") ]
+                    (Dialog.view Theme.default
+                        { dgD | iconPlacement = Dialog.IconTop, kind = T.Success, content = Just (Element.text "Body") }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-bordered") ]
+                    (Dialog.view Theme.default { dgD | bordered = True, content = Just (Element.text "Body") })
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-rtl") ]
+                    (Dialog.view Theme.default { dgD | rtl = True, content = Just (Element.text "Body") })
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-noicon") ]
+                    (Dialog.view Theme.default { dgD | showIcon = False, content = Just (Element.text "Body") })
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-noclose") ]
+                    (Dialog.view Theme.default { dgD | closable = False, kind = T.Warning, content = Just (Element.text "Body") })
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-closefocus") ]
+                    (Dialog.view Theme.default { dgD | closeFocusable = True, content = Just (Element.text "Body") })
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-closeslot") ]
+                    (Dialog.view Theme.default
+                        { dgD
+                            | close = Just (Element.el [ Element.htmlAttribute (HA.attribute "data-caller-close" "on") ] (Element.text "x"))
+                            , rtl = True
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-loading") ]
+                    (Dialog.view Theme.default dgLoadingOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-props") ]
+                    (Dialog.view Theme.default dgPropsOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-noaction") ]
+                    (Dialog.view Theme.default { dgD | content = Just (Element.text "Body") })
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-action") ]
+                    (Dialog.view Theme.default
+                        { dgD
+                            | content = Just (Element.text "Body")
+                            , positiveText = Just "Yes"
+                            , action = Just [ Element.text "#action" ]
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-dark") ]
+                    (Dialog.view Theme.dark { dgD | kind = T.Warning, content = Just (Element.text "Body") })
+
+                -- Modal dialog/confirm presets (body + n-modal + aria-modal; phase LAST)
+                , Element.el [ Element.htmlAttribute (HA.id "live-modal-dialog") ]
+                    (Modal.view Theme.default
+                        { mD | show = True }
+                        (Modal.Dialog
+                            { dgD
+                                | title = Just (Element.text "Title")
+                                , content = Just (Element.text "Body")
+                                , positiveText = Just "Yes"
+                                , negativeText = Just "No"
+                            }
+                        )
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-modal-confirm") ]
+                    (Modal.view Theme.default
+                        { mD | show = True }
+                        (Modal.Confirm
+                            { dgD
+                                | title = Just (Element.text "Title")
+                                , content = Just (Element.text "Body")
+                                , positiveText = Just "Yes"
+                                , negativeText = Just "No"
+                            }
+                        )
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-modal-dialog-phase") ]
+                    (Modal.view Theme.default
+                        { mD | show = True, bodyTransition = Just Internal.EnterFrom }
+                        (Modal.Dialog { dgD | content = Just (Element.text "Body") })
+                    )
+
+                -- Button seams (the loading icon + the n-icon-slot wrapper)
+                , Element.el [ Element.htmlAttribute (HA.id "live-button-loading") ]
+                    (Button.view Theme.default btnLoadingOpts [ Element.text "Loading" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-button-icon") ]
+                    (Button.view Theme.default btnIconOpts [ Element.text "Icon" ])
                 ]
             )
         ]
