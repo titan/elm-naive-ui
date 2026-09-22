@@ -36,6 +36,7 @@ import Html.Attributes as HA
 import NUI.Internal as I
 import NUI.Theme exposing (Theme)
 import NUI.Theme.Rate as RateTheme
+import Svg
 
 
 {-| The item size — Naive UI's `size` prop (`small | medium | large`, or a number
@@ -193,9 +194,9 @@ starIcon =
 
 starSvg : Html.Html msg
 starSvg =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "viewBox" "0 0 512 512" ]
-        [ Html.node "path" [ HA.attribute "d" starPath ] [] ]
+        [ Svg.node "path" [ HA.attribute "d" starPath ] [] ]
 
 
 starPath : String

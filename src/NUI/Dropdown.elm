@@ -88,6 +88,7 @@ import NUI.Scrollbar
 import NUI.Theme exposing (Theme)
 import NUI.Theme.Dropdown as DropdownTheme
 import NUI.Theme.Popover as PopoverTheme
+import Svg
 
 
 
@@ -492,12 +493,12 @@ chevronRightIcon theme =
     NUI.Icon.view theme
         NUI.Icon.defaults
         [ Element.html
-            (Html.node "svg"
+            (Svg.node "svg"
                 [ HA.attribute "viewBox" "0 0 16 16"
                 , HA.attribute "fill" "none"
                 , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
                 ]
-                [ Html.node "path"
+                [ Svg.node "path"
                     [ HA.attribute "d" chevronRightPath
                     , HA.attribute "fill" "currentColor"
                     ]

@@ -23,6 +23,7 @@ import NUI.Internal as I
 import NUI.Theme exposing (Theme)
 import NUI.Theme.Tag as TagTheme
 import NUI.Types as T exposing (Kind(..), Size(..))
+import Svg
 
 
 type alias Options msg =
@@ -406,12 +407,12 @@ closeIcon round =
     Element.html
         (Html.i
             [ HA.class "n-base-icon" ]
-            [ Html.node "svg"
+            [ Svg.node "svg"
                 [ HA.attribute "viewBox" "0 0 12 12"
                 , HA.attribute "width" "12"
                 , HA.attribute "height" "12"
                 ]
-                [ Html.node "path"
+                [ Svg.node "path"
                     [ HA.attribute "d" closePath
                     , HA.attribute "fill" "currentColor"
                     ]

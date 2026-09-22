@@ -84,6 +84,7 @@ import NUI.Internal as I
 import NUI.Theme exposing (Theme)
 import NUI.Theme.Dialog as DialogTheme
 import NUI.Types as T
+import Svg
 
 
 {-| Upstream `iconPlacement: 'left' | 'top'` — where the kind icon rides
@@ -555,26 +556,26 @@ kindGlyph kind =
 
 svgIcon : String -> String -> Html.Html msg
 svgIcon viewBox d =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "viewBox" viewBox ]
-        [ Html.node "g"
+        [ Svg.node "g"
             [ HA.attribute "fill-rule" "evenodd" ]
-            [ Html.node "g"
+            [ Svg.node "g"
                 [ HA.attribute "fill-rule" "nonzero" ]
-                [ Html.node "path" [ HA.attribute "d" d ] [] ]
+                [ Svg.node "path" [ HA.attribute "d" d ] [] ]
             ]
         ]
 
 
 closeIcon : Html.Html msg
 closeIcon =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "viewBox" "0 0 12 12" ]
-        [ Html.node "g"
+        [ Svg.node "g"
             [ HA.attribute "fill" "currentColor"
             , HA.attribute "fill-rule" "nonzero"
             ]
-            [ Html.node "path" [ HA.attribute "d" closePath ] [] ]
+            [ Svg.node "path" [ HA.attribute "d" closePath ] [] ]
         ]
 
 

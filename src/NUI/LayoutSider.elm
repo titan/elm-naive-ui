@@ -62,6 +62,7 @@ import NUI.Internal as I
 import NUI.Layout exposing (Position(..), positionClass)
 import NUI.Theme exposing (Theme)
 import NUI.Theme.Layout as LayoutTheme
+import Svg
 
 
 {-| Which side of the content the sider sits on (upstream reads the parent
@@ -328,12 +329,12 @@ cssVars theme opts =
 
 chevronRightSvg : Html.Html msg
 chevronRightSvg =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "viewBox" "0 0 16 16"
         , HA.attribute "fill" "none"
         , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
         ]
-        [ Html.node "path"
+        [ Svg.node "path"
             [ HA.attribute "d" chevronRightPath
             , HA.attribute "fill" "currentColor"
             ]

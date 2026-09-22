@@ -76,6 +76,7 @@ import NUI.Internal as I
 import NUI.Theme exposing (Theme)
 import NUI.Theme.Calendar as CalendarTheme
 import NUI.Types as T
+import Svg
 
 
 {-| A calendar day. `month` is 1–12 (upstream's `DateItem` is 0-based). Pure
@@ -598,12 +599,12 @@ calendarIcon extraClass svg =
 
 chevronLeftSvg : Html.Html msg
 chevronLeftSvg =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "viewBox" "0 0 16 16"
         , HA.attribute "fill" "none"
         , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
         ]
-        [ Html.node "path"
+        [ Svg.node "path"
             [ HA.attribute "d" chevronLeftPath
             , HA.attribute "fill" "currentColor"
             ]
@@ -618,12 +619,12 @@ chevronLeftPath =
 
 chevronRightSvg : Html.Html msg
 chevronRightSvg =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "viewBox" "0 0 16 16"
         , HA.attribute "fill" "none"
         , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
         ]
-        [ Html.node "path"
+        [ Svg.node "path"
             [ HA.attribute "d" chevronRightPath
             , HA.attribute "fill" "currentColor"
             ]

@@ -40,6 +40,7 @@ import Html.Attributes as HA
 import NUI.Internal as I
 import NUI.Theme exposing (Theme)
 import NUI.Theme.FloatButton as FloatButtonTheme
+import Svg
 
 
 {-| The button's shape.
@@ -326,23 +327,23 @@ closeIcon =
 
 closeSvg : Html.Html msg
 closeSvg =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "viewBox" "0 0 12 12"
         , HA.attribute "version" "1.1"
         , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
         , HA.attribute "aria-hidden" "true"
         ]
-        [ Html.node "g"
+        [ Svg.node "g"
             [ HA.attribute "stroke" "none"
             , HA.attribute "stroke-width" "1"
             , HA.attribute "fill" "none"
             , HA.attribute "fill-rule" "evenodd"
             ]
-            [ Html.node "g"
+            [ Svg.node "g"
                 [ HA.attribute "fill" "currentColor"
                 , HA.attribute "fill-rule" "nonzero"
                 ]
-                [ Html.node "path" [ HA.attribute "d" closePath ] [] ]
+                [ Svg.node "path" [ HA.attribute "d" closePath ] [] ]
             ]
         ]
 

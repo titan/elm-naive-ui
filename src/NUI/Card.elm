@@ -51,6 +51,7 @@ import Html.Attributes as HA
 import NUI.Internal as I
 import NUI.Theme exposing (Theme)
 import NUI.Theme.Card as CardTheme
+import Svg
 
 
 {-| Naive UI's `CardSize` — `small | medium | large | huge` (no `tiny`).
@@ -458,13 +459,13 @@ closeIcon =
         , Element.htmlAttribute (HA.attribute "style" baseIconStyle)
         ]
         (Element.html <|
-            Html.node "svg"
+            Svg.node "svg"
                 [ HA.attribute "viewBox" "0 0 12 12"
                 , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
                 , HA.attribute "aria-hidden" "true"
                 , HA.attribute "style" "height:1em;width:1em"
                 ]
-                [ Html.node "path"
+                [ Svg.node "path"
                     [ HA.attribute "fill" "currentColor"
                     , HA.attribute "d" closePath
                     ]

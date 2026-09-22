@@ -40,6 +40,7 @@ import Html.Attributes as HA
 import NUI.Internal as I
 import NUI.Theme exposing (Theme)
 import NUI.Theme.Collapse as CollapseTheme
+import Svg
 
 
 {-| Where the collapse arrow sits (Naive UI's `arrowPlacement`).
@@ -321,12 +322,12 @@ defaultArrow rtl =
 
 chevronSvg : Bool -> Html.Html msg
 chevronSvg rtl =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "viewBox" "0 0 16 16"
         , HA.attribute "fill" "none"
         , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
         ]
-        [ Html.node "path"
+        [ Svg.node "path"
             [ HA.attribute "d"
                 (if rtl then
                     chevronLeftPath

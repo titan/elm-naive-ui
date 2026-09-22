@@ -36,6 +36,7 @@ import NUI.Internal as I
 import NUI.Theme exposing (Theme)
 import NUI.Theme.Checkbox as CheckboxTheme
 import NUI.Types exposing (Size(..))
+import Svg
 
 
 type alias Options msg =
@@ -242,9 +243,9 @@ lineMark =
 mark : String -> String -> String -> Element msg
 mark iconClass viewBox path =
     Element.html
-        (Html.node "svg"
+        (Svg.node "svg"
             [ HA.class iconClass
             , HA.attribute "viewBox" viewBox
             ]
-            [ Html.node "path" [ HA.attribute "d" path ] [] ]
+            [ Svg.node "path" [ HA.attribute "d" path ] [] ]
         )

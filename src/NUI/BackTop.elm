@@ -33,6 +33,7 @@ import Html.Attributes as HA
 import NUI.Internal as I
 import NUI.Theme exposing (Theme)
 import NUI.Theme.BackTop as BackTopTheme
+import Svg
 
 
 type alias Options msg =
@@ -134,30 +135,30 @@ defaultIcon =
 
 iconSvg : Html.Html msg
 iconSvg =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "viewBox" "0 0 24 24"
         , HA.attribute "version" "1.1"
         , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
         ]
-        [ Html.node "g"
+        [ Svg.node "g"
             [ HA.attribute "stroke" "none"
             , HA.attribute "stroke-width" "1"
             , HA.attribute "fill-rule" "evenodd"
             ]
-            [ Html.node "g"
+            [ Svg.node "g"
                 [ HA.attribute "transform" "translate(-139.000000, -4423.000000)"
                 , HA.attribute "fill-rule" "nonzero"
                 ]
-                [ Html.node "g"
+                [ Svg.node "g"
                     [ HA.attribute "transform" "translate(120.000000, 4285.000000)" ]
-                    [ Html.node "g"
+                    [ Svg.node "g"
                         [ HA.attribute "transform" "translate(7.000000, 126.000000)" ]
-                        [ Html.node "g"
+                        [ Svg.node "g"
                             [ HA.attribute "transform" "translate(24.000000, 24.000000) scale(1, -1) translate(-24.000000, -24.000000) translate(12.000000, 12.000000)" ]
-                            [ Html.node "g"
+                            [ Svg.node "g"
                                 [ HA.attribute "transform" "translate(4.000000, 2.000000)" ]
-                                [ Html.node "path" [ HA.attribute "d" arrowPath ] []
-                                , Html.node "path" [ HA.attribute "d" barPath ] []
+                                [ Svg.node "path" [ HA.attribute "d" arrowPath ] []
+                                , Svg.node "path" [ HA.attribute "d" barPath ] []
                                 ]
                             ]
                         ]

@@ -81,6 +81,7 @@ import NUI.Tag as Tag
 import NUI.Theme exposing (Theme)
 import NUI.Theme.DynamicTags as DynamicTagsTheme
 import NUI.Types as T exposing (Kind(..), Size(..))
+import Svg
 
 
 type alias Options msg =
@@ -328,11 +329,11 @@ addIcon =
 
 addSvg : Html.Html msg
 addSvg =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "viewBox" "0 0 512 512"
         , HA.attribute "fill" "none"
         ]
-        [ Html.node "path"
+        [ Svg.node "path"
             [ HA.attribute "d" "M256 112V400M400 256H112"
             , HA.attribute "stroke" "currentColor"
             , HA.attribute "stroke-width" "32"
