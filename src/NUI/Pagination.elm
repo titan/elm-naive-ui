@@ -89,6 +89,7 @@ import NUI.Internal as I
 import NUI.Theme exposing (Theme)
 import NUI.Theme.Pagination as PaginationTheme
 import NUI.Types exposing (Size(..))
+import Svg
 
 
 
@@ -859,12 +860,12 @@ baseIcon svg =
 
 backwardSvg : Html.Html msg
 backwardSvg =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "viewBox" "0 0 20 20"
         , HA.attribute "fill" "none"
         , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
         ]
-        [ Html.node "path"
+        [ Svg.node "path"
             [ HA.attribute "d" backwardPath
             , HA.attribute "fill" "currentColor"
             ]
@@ -879,12 +880,12 @@ backwardPath =
 
 forwardSvg : Html.Html msg
 forwardSvg =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "viewBox" "0 0 20 20"
         , HA.attribute "fill" "none"
         , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
         ]
-        [ Html.node "path"
+        [ Svg.node "path"
             [ HA.attribute "d" forwardPath
             , HA.attribute "fill" "currentColor"
             ]
@@ -901,22 +902,22 @@ forwardPath =
 -}
 moreSvg : Html.Html msg
 moreSvg =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "viewBox" "0 0 16 16"
         , HA.attribute "version" "1.1"
         , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
         ]
-        [ Html.node "g"
+        [ Svg.node "g"
             [ HA.attribute "stroke" "none"
             , HA.attribute "stroke-width" "1"
             , HA.attribute "fill" "none"
             , HA.attribute "fill-rule" "evenodd"
             ]
-            [ Html.node "g"
+            [ Svg.node "g"
                 [ HA.attribute "fill" "currentColor"
                 , HA.attribute "fill-rule" "nonzero"
                 ]
-                [ Html.node "path" [ HA.attribute "d" morePath ] [] ]
+                [ Svg.node "path" [ HA.attribute "d" morePath ] [] ]
             ]
         ]
 

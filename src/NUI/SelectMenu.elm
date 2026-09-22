@@ -58,6 +58,7 @@ import NUI.Internal as I
 import NUI.Scrollbar
 import NUI.Theme exposing (Theme)
 import NUI.Theme.SelectMenu as SelectMenuTheme
+import Svg
 
 
 
@@ -294,13 +295,13 @@ loadingNode =
 -}
 loadingSvg : Html.Html msg
 loadingSvg =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "viewBox" "0 0 200 200"
         , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
         ]
-        [ Html.node "g"
+        [ Svg.node "g"
             []
-            [ Html.node "animateTransform"
+            [ Svg.node "animateTransform"
                 [ HA.attribute "attributeName" "transform"
                 , HA.attribute "type" "rotate"
                 , HA.attribute "values" "0 100 100;270 100 100"
@@ -310,7 +311,7 @@ loadingSvg =
                 , HA.attribute "repeatCount" "indefinite"
                 ]
                 []
-            , Html.node "circle"
+            , Svg.node "circle"
                 [ HA.attribute "class" "n-base-loading__icon"
                 , HA.attribute "fill" "none"
                 , HA.attribute "stroke" "currentColor"
@@ -322,7 +323,7 @@ loadingSvg =
                 , HA.attribute "stroke-dasharray" "567"
                 , HA.attribute "stroke-dashoffset" "1848"
                 ]
-                [ Html.node "animateTransform"
+                [ Svg.node "animateTransform"
                     [ HA.attribute "attributeName" "transform"
                     , HA.attribute "type" "rotate"
                     , HA.attribute "values" "0 100 100;135 100 100;450 100 100"
@@ -332,7 +333,7 @@ loadingSvg =
                     , HA.attribute "repeatCount" "indefinite"
                     ]
                     []
-                , Html.node "animate"
+                , Svg.node "animate"
                     [ HA.attribute "attributeName" "stroke-dashoffset"
                     , HA.attribute "values" "567;142;567"
                     , HA.attribute "begin" "0s"
@@ -589,12 +590,12 @@ sizes it to `1em`.
 -}
 checkmarkIcon : Html.Html msg
 checkmarkIcon =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "viewBox" "0 0 16 16"
         , HA.attribute "fill" "none"
         , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
         ]
-        [ Html.node "path"
+        [ Svg.node "path"
             [ HA.attribute "d" checkmarkPath
             , HA.attribute "fill" "currentColor"
             ]

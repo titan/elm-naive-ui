@@ -33,6 +33,7 @@ import Html.Attributes as HA
 import NUI.Internal as I
 import NUI.Theme exposing (Theme)
 import NUI.Theme.PageHeader as PageHeaderTheme
+import Svg
 
 
 type alias Options msg =
@@ -172,16 +173,16 @@ defaultBackIcon =
     Element.html <|
         Html.i
             [ HA.class "n-base-icon" ]
-            [ Html.node "svg"
+            [ Svg.node "svg"
                 [ HA.attribute "xmlns" "http://www.w3.org/2000/svg"
                 , HA.attribute "viewBox" "0 0 24 24"
                 ]
-                [ Html.node "path"
+                [ Svg.node "path"
                     [ HA.attribute "fill" "none"
                     , HA.attribute "d" "M0 0h24v24H0V0z"
                     ]
                     []
-                , Html.node "path"
+                , Svg.node "path"
                     [ HA.attribute "d" arrowBackPath ]
                     []
                 ]

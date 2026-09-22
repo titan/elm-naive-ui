@@ -126,6 +126,7 @@ import NUI.Input as Input
 import NUI.Internal as I
 import NUI.Theme exposing (Theme)
 import NUI.Types as T
+import Svg
 
 
 {-| Upstream's `buttonPlacement` prop: `right` (both buttons after the input)
@@ -352,14 +353,14 @@ baseIcon svg =
 -}
 addIconSvg : Html msg
 addIconSvg =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "width" "512"
         , HA.attribute "height" "512"
         , HA.attribute "viewBox" "0 0 512 512"
         , HA.attribute "fill" "none"
         , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
         ]
-        [ Html.node "path"
+        [ Svg.node "path"
             [ HA.attribute "d" "M256 112V400M400 256H112"
             , HA.attribute "stroke" "currentColor"
             , HA.attribute "stroke-width" "32"
@@ -374,11 +375,11 @@ addIconSvg =
 -}
 removeIconSvg : Html msg
 removeIconSvg =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "xmlns" "http://www.w3.org/2000/svg"
         , HA.attribute "viewBox" "0 0 512 512"
         ]
-        [ Html.node "line"
+        [ Svg.node "line"
             [ HA.attribute "x1" "400"
             , HA.attribute "y1" "256"
             , HA.attribute "x2" "112"

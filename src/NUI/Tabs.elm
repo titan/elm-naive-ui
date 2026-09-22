@@ -63,6 +63,7 @@ import Html.Events as HE
 import NUI.Internal as I
 import NUI.Theme exposing (Theme)
 import NUI.Theme.Tabs as TabsTheme
+import Svg
 
 
 {-| The tab style. Upstream default is `Bar`.
@@ -1160,15 +1161,15 @@ embedChild child =
 
 closeIconSvg : Html msg
 closeIconSvg =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "viewBox" "0 0 12 12"
         , HA.attribute "aria-hidden" "true"
         ]
-        [ Html.node "g"
+        [ Svg.node "g"
             [ HA.attribute "fill" "currentColor"
             , HA.attribute "fill-rule" "nonzero"
             ]
-            [ Html.node "path" [ HA.attribute "d" closePath ] [] ]
+            [ Svg.node "path" [ HA.attribute "d" closePath ] [] ]
         ]
 
 
@@ -1179,11 +1180,11 @@ closePath =
 
 addIconSvg : Html msg
 addIconSvg =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "viewBox" "0 0 512 512"
         , HA.attribute "fill" "none"
         ]
-        [ Html.node "path"
+        [ Svg.node "path"
             [ HA.attribute "d" "M256 112V400M400 256H112"
             , HA.attribute "stroke" "currentColor"
             , HA.attribute "stroke-width" "32"

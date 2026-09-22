@@ -62,6 +62,7 @@ import NUI.Popover as Popover
 import NUI.Theme exposing (Theme)
 import NUI.Theme.Popconfirm as PopconfirmTheme
 import NUI.Types as T
+import Svg
 
 
 {-| Upstream `positiveText`/`negativeText : string | null | undefined`:
@@ -288,13 +289,13 @@ warningIcon =
 
 svgIcon : String -> String -> Html.Html msg
 svgIcon viewBox d =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "viewBox" viewBox ]
-        [ Html.node "g"
+        [ Svg.node "g"
             [ HA.attribute "fill-rule" "evenodd" ]
-            [ Html.node "g"
+            [ Svg.node "g"
                 [ HA.attribute "fill-rule" "nonzero" ]
-                [ Html.node "path" [ HA.attribute "d" d ] [] ]
+                [ Svg.node "path" [ HA.attribute "d" d ] [] ]
             ]
         ]
 

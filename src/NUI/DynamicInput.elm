@@ -139,6 +139,7 @@ import NUI.Input as Input
 import NUI.Internal as I
 import NUI.Theme exposing (Theme)
 import NUI.Theme.DynamicInput as DynamicInputTheme
+import Svg
 
 
 
@@ -682,11 +683,11 @@ addIcon =
 
 addSvg : Html.Html msg
 addSvg =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "viewBox" "0 0 512 512"
         , HA.attribute "fill" "none"
         ]
-        [ Html.node "path"
+        [ Svg.node "path"
             [ HA.attribute "d" "M256 112V400M400 256H112"
             , HA.attribute "stroke" "currentColor"
             , HA.attribute "stroke-width" "32"
@@ -704,10 +705,10 @@ removeIcon =
 
 removeSvg : Html.Html msg
 removeSvg =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "viewBox" "0 0 512 512"
         ]
-        [ Html.node "line"
+        [ Svg.node "line"
             [ HA.attribute "x1" "400"
             , HA.attribute "y1" "256"
             , HA.attribute "x2" "112"
@@ -728,12 +729,12 @@ arrowUpIcon =
 
 arrowUpSvg : Html.Html msg
 arrowUpSvg =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "viewBox" "0 0 20 20"
         ]
-        [ Html.node "g"
+        [ Svg.node "g"
             [ HA.attribute "fill" "none" ]
-            [ Html.node "path"
+            [ Svg.node "path"
                 [ HA.attribute "d" "M3.13 9.163a.5.5 0 1 0 .74.674L9.5 3.67V17.5a.5.5 0 0 0 1 0V3.672l5.63 6.165a.5.5 0 0 0 .738-.674l-6.315-6.916a.746.746 0 0 0-.632-.24a.746.746 0 0 0-.476.24L3.131 9.163z"
                 , HA.attribute "fill" "currentColor"
                 ]
@@ -749,18 +750,18 @@ arrowDownIcon =
 
 arrowDownSvg : Html.Html msg
 arrowDownSvg =
-    Html.node "svg"
+    Svg.node "svg"
         [ HA.attribute "viewBox" "0 0 28 28"
         , HA.attribute "version" "1.1"
         ]
-        [ Html.node "g"
+        [ Svg.node "g"
             [ HA.attribute "stroke" "none"
             , HA.attribute "stroke-width" "1"
             , HA.attribute "fill-rule" "evenodd"
             ]
-            [ Html.node "g"
+            [ Svg.node "g"
                 [ HA.attribute "fill-rule" "nonzero" ]
-                [ Html.node "path"
+                [ Svg.node "path"
                     [ HA.attribute "d" arrowDownPath ]
                     []
                 ]

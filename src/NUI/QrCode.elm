@@ -46,6 +46,7 @@ import NUI.Internal as I
 import NUI.Qrcodegen as Qrcodegen
 import NUI.Theme exposing (Theme)
 import NUI.Theme.QrCode as QrCodeTheme
+import Svg
 
 
 {-| The QR error correction level, mirroring upstream's
@@ -140,19 +141,19 @@ renderSvg opts qr =
             String.fromInt numCells
     in
     Element.html
-        (Html.node "svg"
+        (Svg.node "svg"
             [ HA.attribute "height" (String.fromInt opts.size)
             , HA.attribute "width" (String.fromInt opts.size)
             , HA.attribute "viewBox" ("0 0 " ++ n ++ " " ++ n)
             , HA.attribute "role" "img"
             ]
-            ([ Html.node "path"
+            ([ Svg.node "path"
                 [ HA.attribute "fill" "transparent"
                 , HA.attribute "d" ("M0,0 h" ++ n ++ "v" ++ n ++ "H0z")
                 , HA.attribute "shape-rendering" "crispEdges"
                 ]
                 []
-             , Html.node "path"
+             , Svg.node "path"
                 [ HA.attribute "fill" opts.color
                 , HA.attribute "d" (generatePath (Qrcodegen.getModules qr) 0)
                 , HA.attribute "shape-rendering" "crispEdges"
@@ -201,7 +202,7 @@ iconNodes opts numCells =
                 top =
                     toFloat numCells / 2 - height / 2
             in
-            [ Html.node "image"
+            [ Svg.node "image"
                 [ HA.attribute "href" src
                 , HA.attribute "width" (String.fromFloat width)
                 , HA.attribute "height" (String.fromFloat height)
