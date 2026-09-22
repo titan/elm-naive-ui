@@ -87,6 +87,7 @@ import NUI.Spin as Spin
 import NUI.Split as Split
 import NUI.Statistic as Statistic
 import NUI.Steps as Steps
+import NUI.Switch as Switch
 import NUI.Tabs as Tabs
 import NUI.Tag as Tag
 import NUI.Theme as Theme
@@ -3565,6 +3566,11 @@ smD =
 bsD : BaseSelection.Options Msg
 bsD =
     BaseSelection.defaults
+
+
+swD : Switch.Options Msg
+swD =
+    Switch.defaults
 
 
 selD : Select.Options Msg
@@ -7072,6 +7078,12 @@ liveNodes =
                     (Badge.view Theme.default badgeLeaveOpts [])
                 , Element.el [ Element.htmlAttribute (HA.id "live-spin-transition") ]
                     (Spin.view Theme.default spinTransitionOpts [ Element.text "Content" ])
+
+                -- Switch loading (the knob's NBaseLoading seam; RED until the
+                -- loading-svg batch replaces the data-URI background with the
+                -- true inline svg chain)
+                , Element.el [ Element.htmlAttribute (HA.id "live-switch-loading") ]
+                    (Switch.view Theme.default { swD | loading = True } [])
                 , Element.el [ Element.htmlAttribute (HA.id "live-rtl-alert") ]
                     (Alert.view Theme.default rtlAlertOpts [ Element.text "RTL" ])
                 , Element.el [ Element.htmlAttribute (HA.id "live-rtl-button") ]

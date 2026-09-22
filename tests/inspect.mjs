@@ -61,6 +61,18 @@ const dEq = (name, expected, actual) =>
 
 const dTrue = (name, ok, detail = '') => domChecks.push({ name, ok: !!ok, detail })
 
+// SVG-namespace lock: `Html.node "svg"` creates an HTML-namespace element
+// that real browsers do NOT render as SVG (namespace-blind querySelector
+// never caught it); elm/svg (`createElementNS`) creates the real thing. The
+// pins below lock representative icon svgs to the true SVG namespace — the
+// harness runs the live Elm runtime, so `namespaceURI` is observable.
+const SVG_NS = 'http://www.w3.org/2000/svg'
+const svgNsPin = (name, selector) =>
+  dEq(name, SVG_NS, (() => {
+    const el = doc.querySelector(selector)
+    return el ? el.namespaceURI : null
+  })())
+
 // --- Elm-computed results ---------------------------------------------------
 const resultsEl = doc.getElementById('results')
 if (!resultsEl) {
@@ -172,6 +184,13 @@ dTrue(
     tagPrimaryStyle.includes('--n-close-icon-size:') &&
     !!tagPrimary.querySelector('.n-tag__close.n-base-close'),
   tagPrimary ? 'style + close ok' : 'missing'
+)
+
+// RED until the loading-svg/namespace batch: Tag's close icon svg is a
+// `Html.node "svg"` (HTML namespace) — must become svg-namespace.
+svgNsPin(
+  'DOM: Tag close icon svg is SVG-namespace (http://www.w3.org/2000/svg — renders in real browsers)',
+  '#live-tag-primary .n-tag__close svg'
 )
 
 dTrue(
@@ -819,6 +838,54 @@ dTrue(
   'DOM: Spin renders .n-base-loading__container svg.n-base-loading__icon',
   !!doc.querySelector('#live-spin .n-base-loading__container svg.n-base-loading__icon'),
   'ok'
+)
+
+// Switch loading (RED pins — the loading-svg batch) -------------------------
+// Currently the knob paints a data-URI background (NO svg element at all,
+// color baked in); the batch swaps in the true upstream inline NBaseLoading
+// chain — the same structure Button/BaseSelection/Input render — and drops
+// the background styles. The absence pin is presence-guarded by the svg
+// chain pin (house rule: every absence-style pin needs a presence component).
+dEq(
+  'DOM: Switch loading knob = the true NBaseLoading chain: .n-switch__button > .n-base-loading[role=img,aria-label=loading] > __transition-wrapper > __container > svg.n-base-loading__icon (circle sw20 r90 cx/cy100 dash 567/1848 + animate 567;142;567; SVG ns)',
+  'img|loading|20|90|100|100|567|1848|567;142;567|http://www.w3.org/2000/svg',
+  (() => {
+    const loading = doc.querySelector('#live-switch-loading .n-switch__button > .n-base-loading')
+    const svg = loading
+      ? loading.querySelector(
+          '.n-base-loading__transition-wrapper > .n-base-loading__container > svg.n-base-loading__icon'
+        )
+      : null
+    if (!loading || !svg) return null
+    const c = svg.querySelector('circle')
+    const a = c ? c.querySelector('animate') : null
+    return [
+      loading.getAttribute('role'),
+      loading.getAttribute('aria-label'),
+      c ? c.getAttribute('stroke-width') : null,
+      c ? c.getAttribute('r') : null,
+      c ? c.getAttribute('cx') : null,
+      c ? c.getAttribute('cy') : null,
+      c ? c.getAttribute('stroke-dasharray') : null,
+      c ? c.getAttribute('stroke-dashoffset') : null,
+      a ? a.getAttribute('values') : null,
+      svg.namespaceURI
+    ].join('|')
+  })()
+)
+dTrue(
+  'DOM: Switch loading .n-base-loading carries NO inline background-image (the data-URI spinner is gone; the svg chain pin above is the presence guard)',
+  (() => {
+    const loading = doc.querySelector('#live-switch-loading .n-switch__button > .n-base-loading')
+    const svg = loading
+      ? loading.querySelector('.n-base-loading__container svg.n-base-loading__icon')
+      : null
+    return !!loading && !!svg && !(loading.getAttribute('style') || '').includes('background-image')
+  })(),
+  (() => {
+    const loading = doc.querySelector('#live-switch-loading .n-switch__button > .n-base-loading')
+    return loading ? loading.getAttribute('style') : 'missing'
+  })()
 )
 
 // Badge digit scroll ---------------------------------------------------------
@@ -1694,6 +1761,13 @@ dEq(
   'DOM: Pagination renders prev/next chevrons (.n-pagination-item--button svg viewBox 0 0 20 20)',
   2,
   doc.querySelectorAll('#live-pagination .n-pagination-item--button .n-base-icon svg[viewBox="0 0 20 20"]').length
+)
+
+// RED until the loading-svg/namespace batch: Pagination's icons are
+// `Html.node "svg"` (HTML namespace) — must become svg-namespace.
+svgNsPin(
+  'DOM: Pagination ellipsis fast-item svg is SVG-namespace (http://www.w3.org/2000/svg — renders in real browsers)',
+  '#live-pagination .n-pagination-item .n-base-icon svg[viewBox="0 0 16 16"]'
 )
 const pgActive = doc.querySelector('#live-pagination .n-pagination-item--active')
 dTrue(
@@ -6260,6 +6334,13 @@ dEq(
   'hc s e wc n-base-close n-dialog__close n-dialog--rtl',
   clsOf(dgClose('live-dialog-rtl'))
 )
+
+// RED until the loading-svg/namespace batch: Dialog's close icon svg is a
+// `Html.node "svg"` (HTML namespace) — must become svg-namespace.
+svgNsPin(
+  'DOM: Dialog close icon svg is SVG-namespace (http://www.w3.org/2000/svg — renders in real browsers)',
+  '#live-dialog-default .n-base-close.n-dialog__close svg'
+)
 dEq(
   'DOM: Dialog caller close element -> div.n-dialog__close wrapper with NO n-base-close, rtl class kept',
   'DIV|hc s e wc n-dialog__close n-dialog--rtl|absent',
@@ -6428,6 +6509,18 @@ dEq(
   (() => {
     const a = doc.querySelector('#live-button-loading .n-button__icon .n-base-loading svg animate')
     return a ? a.getAttribute('dur') + '|' + a.getAttribute('values') : null
+  })()
+)
+
+// RED until the loading-svg batch: the svg element itself gains the
+// n-base-loading__icon class (currently only the circle carries it — the
+// cssr 1em sizing rule targets the svg) and the svg-namespace render.
+dEq(
+  'DOM: Button loading svg carries class n-base-loading__icon AND namespaceURI http://www.w3.org/2000/svg',
+  'true|http://www.w3.org/2000/svg',
+  (() => {
+    const svg = doc.querySelector('#live-button-loading .n-button__icon .n-base-loading svg')
+    return svg ? [svg.classList.contains('n-base-loading__icon'), svg.namespaceURI].join('|') : null
   })()
 )
 dEq(
@@ -7231,6 +7324,25 @@ dTrue(
     doc.querySelector('#live-basesel-loading .n-base-suffix__arrow') === null,
   clsOf(doc.querySelector('#live-basesel-loading .n-base-suffix'))
 )
+
+// RED until the loading-svg batch: the svg element itself gains the
+// n-base-loading__icon class (currently only the circle carries it) and the
+// svg-namespace render.
+dEq(
+  'DOM: BaseSelection loading svg carries class n-base-loading__icon AND namespaceURI http://www.w3.org/2000/svg',
+  'true|http://www.w3.org/2000/svg',
+  (() => {
+    const svg = doc.querySelector('#live-basesel-loading .n-base-loading svg')
+    return svg ? [svg.classList.contains('n-base-loading__icon'), svg.namespaceURI].join('|') : null
+  })()
+)
+
+// RED until the namespace sweep: BaseSelection's chevron is a
+// `Html.node "svg"` (HTML namespace) — must become svg-namespace.
+svgNsPin(
+  'DOM: BaseSelection chevron icon svg is SVG-namespace (http://www.w3.org/2000/svg — renders in real browsers)',
+  '#live-basesel-default .n-base-icon.n-base-suffix__arrow svg'
+)
 dEq(
   'DOM: BaseSelection showClear -> n-base-clear > __clear[data-clear]',
   'present|present|true|',
@@ -7524,6 +7636,18 @@ dEq(
     const loading = suffix ? suffix.querySelector('.n-base-loading.n-base-suffix') : null
     const container = loading ? loading.querySelector('.n-base-loading__container') : null
     return [suffix, loading, container].map((e) => (e ? 'true' : 'false')).join('|')
+  })()
+)
+
+// RED until the loading-svg batch: the Input suffix spinner svg itself gains
+// the n-base-loading__icon class (currently only the circle carries it) and
+// the svg-namespace render.
+dEq(
+  'DOM: Input loading svg (AutoComplete suffix) carries class n-base-loading__icon AND namespaceURI http://www.w3.org/2000/svg',
+  'true|http://www.w3.org/2000/svg',
+  (() => {
+    const svg = doc.querySelector('#live-ac-loading .n-input__suffix .n-base-loading svg')
+    return svg ? [svg.classList.contains('n-base-loading__icon'), svg.namespaceURI].join('|') : null
   })()
 )
 dEq(
