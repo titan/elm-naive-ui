@@ -380,5 +380,15 @@ export const components = {
     // jsons currently do).
     cssr: ['auto-complete/src/styles/index.cssr.ts'],
     theme: 'auto-complete/styles/light.ts'
+  },
+  mention: {
+    // Own cssr is 2 blocks (.n-mention wrapper + .n-mention-menu with its
+    // fade-in-scale-up family); the trigger is a plain NInput and the menu DOM
+    // rides the `selectMenu` block. Theme self = 1 var (menuBoxShadow, the
+    // select/auto-complete twin). loading lands on the MENU's __loading row,
+    // NOT the input suffix (the opposite of auto-complete). No rtl.cssr
+    // upstream.
+    cssr: ['mention/src/styles/index.cssr.ts'],
+    theme: 'mention/styles/light.ts'
   }
 }
