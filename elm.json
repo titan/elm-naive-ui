@@ -21,6 +21,7 @@
     "NUI.Countdown",
     "NUI.Css",
     "NUI.Descriptions",
+    "NUI.Dialog",
     "NUI.Divider",
     "NUI.Drawer",
     "NUI.DrawerContent",

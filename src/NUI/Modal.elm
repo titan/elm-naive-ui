@@ -78,30 +78,44 @@ root (via Card's `extraClasses`/`attributes` seams) — start from
 card is unbordered by default inside a modal. Either way the body phase class
 (`fade-in-scale-up-transition-*`) is forced **last** in the root class list
 (the house invariant, cf. `NUI.Dropdown`), after any caller-supplied
-`extraClasses`. `dialog`/`confirm` presets are **deferred** until
-`NUI.Dialog` exists (their own ~30-var theme, icon/type system and action
-buttons); the `Preset` type grows constructors then.
+`extraClasses`. `dialog`/`confirm` presets compose `NUI.Dialog` (see the
+**The dialog presets** paragraph below).
 
 `showMask = False` adds `n-modal-body-wrapper--mask-hidden` (pointer-events
 pass-through except the content) exactly as upstream's `maskHidden = !showMask`.
+
+**The dialog presets** compose `NUI.Dialog.view`: the body root keeps its own
+`.n-dialog` classes and vars, gains `n-modal` (prepended to the dialog's
+`extraClasses`, before the phase classes — phase LAST stays) and
+`aria-modal="true"` (upstream `BodyWrapper` adds exactly that; `role=dialog`
+is the dialog's own). Upstream's `.n-modal .n-dialog` rule (width `446px`,
+`max-width: calc(100vw - 32px)`) ships with dialog's cssr, so the composed
+body is sized for free. The env-level runtime (`useDialog` queue, the
+return-`false`-blocks-close gate, mask/esc/drag) is caller-owned — see
+`NUI.Dialog`'s contract.
 
 -}
 
 import Element exposing (Element)
 import Html.Attributes as HA
 import NUI.Card
+import NUI.Dialog
 import NUI.Internal as I
 import NUI.Scrollbar as Scrollbar
 import NUI.Theme exposing (Theme)
 import NUI.Theme.Modal as ModalTheme
 
 
-{-| The modal's content preset: `Custom` (no upstream preset) or `Card`
-(upstream `preset: 'card'`).
+{-| The modal's content preset: `Custom` (no upstream preset), `Card`
+(upstream `preset: 'card'`), or the dialog pair `Dialog`/`Confirm` (upstream
+`preset: 'dialog' | 'confirm'` — `confirm` is a deprecated alias of `dialog`;
+both render the identical `NUI.Dialog` body, only the constructor differs).
 -}
 type Preset msg
     = Custom (List (Element.Attribute msg)) (List (Element msg))
     | Card (NUI.Card.Options msg) (List (Element msg))
+    | Dialog (NUI.Dialog.Options msg)
+    | Confirm (NUI.Dialog.Options msg)
 
 
 type alias Options msg =
@@ -216,6 +230,23 @@ contentNode theme opts preset =
                     , role = Just "dialog"
                 }
                 children
+
+        Dialog dialogOpts ->
+            dialogBody theme phases dialogOpts
+
+        Confirm dialogOpts ->
+            -- preset 'confirm' is upstream's deprecated alias of 'dialog':
+            -- BodyWrapper renders the identical NDialog for both.
+            dialogBody theme phases dialogOpts
+
+
+dialogBody : Theme -> List String -> NUI.Dialog.Options msg -> Element msg
+dialogBody theme phases dialogOpts =
+    NUI.Dialog.view theme
+        { dialogOpts
+            | extraClasses = "n-modal" :: (dialogOpts.extraClasses ++ phases)
+            , attributes = ariaModal :: dialogOpts.attributes
+        }
 
 
 phaseClasses : String -> Maybe I.TransitionPhase -> List String
