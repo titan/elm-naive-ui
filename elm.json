@@ -22,6 +22,8 @@
     "NUI.Css",
     "NUI.Descriptions",
     "NUI.Divider",
+    "NUI.Drawer",
+    "NUI.DrawerContent",
     "NUI.Dropdown",
     "NUI.DynamicInput",
     "NUI.DynamicTags",
