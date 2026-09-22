@@ -69,10 +69,12 @@ Two seams beyond the basic props:
     slot]` (`internalLoadingBeforeSuffix` defaults true).
   - `inputAttributes` — upstream's `inputProps`: raw attributes onto the
     inner `<input>` / `<textarea>` element (upstream demos pass
-    `autocomplete='disabled'`, `id`, `max`). `type` / `value` /
-    `placeholder` / `maxlength` / `minlength` / `disabled` / `readonly` /
-    `rows` are owned by the fields above and always render first; the raw
-    list appends last (last-wins).
+    `autocomplete='disabled'`, `id`, `max`). The field-owned attributes
+    (`type` / `value` / `placeholder` / `maxlength` / `minlength` /
+    `disabled` / `readonly` / `rows` / the input event) always render
+    FIRST and win duplicate names (HTML keeps the first occurrence; the
+    raw list appends after) — pass only attributes the fields above don't
+    own.
 
 -}
 

@@ -24,7 +24,7 @@ the `NUI.Select` composition minus the BaseSelection couplings).
         { AutoComplete.defaults | onInput = Just Typed }
     AutoComplete.menu theme AutoComplete.menuDefaults
         [ AutoComplete.fromString "Drive My Car"
-        , NUI.SelectMenu.Option
+        , SelectMenu.Option
             { value = "nomc"
             , label = "Norwegian Wood"
             , disabled = False
