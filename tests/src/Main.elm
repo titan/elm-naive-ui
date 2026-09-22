@@ -19,6 +19,7 @@ import Html exposing (Html)
 import Html.Attributes as HA
 import NUI.Affix as Affix
 import NUI.Alert as Alert
+import NUI.AutoComplete as AutoComplete
 import NUI.Avatar as Avatar
 import NUI.AvatarGroup as AvatarGroup
 import NUI.BackTop as BackTop
@@ -88,6 +89,7 @@ import NUI.Steps as Steps
 import NUI.Tabs as Tabs
 import NUI.Tag as Tag
 import NUI.Theme as Theme
+import NUI.Theme.AutoComplete as AutoCompleteTheme
 import NUI.Theme.Button as ButtonTheme
 import NUI.Theme.Calendar as CalendarTheme
 import NUI.Theme.Color as Color
@@ -3616,6 +3618,38 @@ selFilterOpts =
     [ smLeaf "drive" "Drive My Car", smLeaf "walk" "Walk" ]
 
 
+
+-- AUTOCOMPLETE OPTION SETS -----------------------------------------------------
+
+
+{-| The plain defaults bindings (`{ AutoComplete.defaults | … }` is a parse error).
+-}
+acD : AutoComplete.Options Msg
+acD =
+    AutoComplete.defaults
+
+
+acMenuD : AutoComplete.MenuOptions Msg
+acMenuD =
+    AutoComplete.menuDefaults
+
+
+{-| The 24-entry list `NUI.AutoComplete.menuVars` must emit: the 23
+`NUI.SelectMenu` vars at Medium plus AutoComplete's one own var
+`--n-menu-box-shadow` (the `NUI.Theme.AutoComplete` single self var = common
+`boxShadow2`, byte-identical to `NUI.Theme.Select.menuBoxShadow`). Upstream
+re-emits `--n-bezier` here too (same value) — the port emits it once, so the
+count is 24, not 25.
+-}
+expectedAutoCompleteMenuVars : List ( String, String )
+expectedAutoCompleteMenuVars =
+    expectedSelectMenuVarsMedium ++ [ ( "--n-menu-box-shadow", popselectShadow ) ]
+
+
+
+-- SHAPE HELPERS ----------------------------------------------------------------
+
+
 {-| A comparable shape for a `NUI.SelectMenu.Option` list (the records carry
 `Element`s, so `==` is unavailable).
 -}
@@ -6851,6 +6885,15 @@ checks =
     , eq "select menuVars: --n-menu-box-shadow = SelectTheme.menuBoxShadow" (Just (SelectTheme.vars light).menuBoxShadow) (lookup "--n-menu-box-shadow" (Select.menuVars light Select.Medium))
     , eq "select menuVars: non-empty (stub differential: [] vs 24)" True (not (List.isEmpty (Select.menuVars light Select.Medium)))
     , eq "select menuVars: size switch small -> --n-option-height 28px" (Just "28px") (lookup "--n-option-height" (Select.menuVars light Select.Small))
+
+    -- autocomplete: menuVars (23 menu vars + AutoComplete's own --n-menu-box-shadow) ----
+    , eq "autocomplete menuVars: 24 keys (light)" 24 (List.length (AutoComplete.menuVars light))
+    , eq "autocomplete menuVars: exact 24-list light (name+value, order)" expectedAutoCompleteMenuVars (AutoComplete.menuVars light)
+    , eq "autocomplete menuVars: first 23 == the SelectMenu var block (order)" expectedSelectMenuVarsMedium (List.take 23 (AutoComplete.menuVars light))
+    , eq "autocomplete menuVars: slot 24 --n-menu-box-shadow (LAST)" (Just ( "--n-menu-box-shadow", popselectShadow )) (listAt 23 (AutoComplete.menuVars light))
+    , eq "autocomplete menuVars: last key --n-menu-box-shadow" (Just "--n-menu-box-shadow") (List.reverse (AutoComplete.menuVars light) |> List.head |> Maybe.map Tuple.first)
+    , eq "autocomplete menuVars: --n-menu-box-shadow = AutoCompleteTheme.menuBoxShadow" (Just (AutoCompleteTheme.vars light).menuBoxShadow) (lookup "--n-menu-box-shadow" (AutoComplete.menuVars light))
+    , eq "autocomplete menuVars: non-empty (stub differential: [] vs 24)" True (not (List.isEmpty (AutoComplete.menuVars light)))
     ]
 
 
@@ -8203,6 +8246,54 @@ liveNodes =
                     (Select.menu Theme.default selMenuD [ smLeaf "a" "A" ])
                 , Element.el [ Element.htmlAttribute (HA.id "live-select-menu-transition") ]
                     (Select.menu Theme.default { selMenuD | transition = Just Internal.EnterActive } [ smLeaf "a" "A" ])
+
+                -- AutoComplete.view (the bare .n-auto-complete wrapper + NUI.Input trigger)
+                , Element.el [ Element.htmlAttribute (HA.id "live-ac-default") ]
+                    (AutoComplete.view Theme.default acD)
+                , Element.el [ Element.htmlAttribute (HA.id "live-ac-small") ]
+                    (AutoComplete.view Theme.default { acD | size = AutoComplete.Small })
+                , Element.el [ Element.htmlAttribute (HA.id "live-ac-large") ]
+                    (AutoComplete.view Theme.default { acD | size = AutoComplete.Large })
+                , Element.el [ Element.htmlAttribute (HA.id "live-ac-warning") ]
+                    (AutoComplete.view Theme.default { acD | status = Just Input.Warning })
+                , Element.el [ Element.htmlAttribute (HA.id "live-ac-error") ]
+                    (AutoComplete.view Theme.default { acD | status = Just Input.Error })
+                , Element.el [ Element.htmlAttribute (HA.id "live-ac-success") ]
+                    (AutoComplete.view Theme.default { acD | status = Just Input.Success })
+                , Element.el [ Element.htmlAttribute (HA.id "live-ac-disabled") ]
+                    (AutoComplete.view Theme.default { acD | disabled = True })
+                , Element.el [ Element.htmlAttribute (HA.id "live-ac-clearable") ]
+                    (AutoComplete.view Theme.default { acD | clearable = True })
+                , Element.el [ Element.htmlAttribute (HA.id "live-ac-loading") ]
+                    (AutoComplete.view Theme.default { acD | loading = True })
+                , Element.el [ Element.htmlAttribute (HA.id "live-ac-loading-slot") ]
+                    (AutoComplete.view Theme.default
+                        { acD | loading = True, clearable = True, suffix = Just (Element.text "sfx") }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-ac-inputattrs") ]
+                    (AutoComplete.view Theme.default
+                        { acD | inputAttributes = [ HA.attribute "data-ac-test" "yes" ] }
+                    )
+
+                -- AutoComplete.menu (the n-auto-complete-menu body)
+                , Element.el [ Element.htmlAttribute (HA.id "live-ac-menu-default") ]
+                    (AutoComplete.menu Theme.default acMenuD [ AutoComplete.fromString "x", AutoComplete.fromString "y" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-ac-menu-transition") ]
+                    (AutoComplete.menu Theme.default { acMenuD | transition = Just Internal.EnterActive } [ AutoComplete.fromString "x" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-ac-menu-rtl") ]
+                    (AutoComplete.menu Theme.default { acMenuD | rtl = True } [ AutoComplete.fromString "x" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-ac-menu-empty") ]
+                    (AutoComplete.menu Theme.default { acMenuD | empty = Just (Element.text "Nothing here") } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-ac-menu-group") ]
+                    (AutoComplete.menu Theme.default
+                        acMenuD
+                        [ SelectMenu.Group
+                            { label = "G"
+                            , children = [ smLeaf "g1" "G1", smLeaf "g2" "G2" ]
+                            , attributes = []
+                            }
+                        ]
+                    )
                 ]
             )
         ]

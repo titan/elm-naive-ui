@@ -7452,6 +7452,195 @@ dEq(
   ].join('|')
 )
 
+// --- AutoComplete -----------------------------------------------------------
+// The trigger is a bare `.n-auto-complete` wrapper around an `NUI.Input`; the
+// body is the `NUI.SelectMenu` engine carrying `n-auto-complete-menu` — the
+// `NUI.Select.menu` composition with the selection couplings removed (tabindex
+// -1, never `--selected`, hardcoded Medium, 24 vars), plus the Input trigger's
+// `loading` suffix spinner.
+const acWrapper = (id) => doc.querySelector('#' + id + ' .n-auto-complete')
+const acInput = (id) => doc.querySelector('#' + id + ' .n-input')
+const acInputHas = (id, cls) => {
+  const el = acInput(id)
+  return !!el && el.classList.contains(cls)
+}
+const acMenu = (id) => doc.querySelector('#' + id + ' .n-base-select-menu')
+
+dEq(
+  'DOM: AutoComplete.view wrapper = a bare .n-auto-complete (no extra n-* classes, no css vars) holding an .n-input',
+  'n-auto-complete|0|true',
+  [
+    nClassesStr(acWrapper('live-ac-default')),
+    String(countVars(acWrapper('live-ac-default'))),
+    acWrapper('live-ac-default') && acInput('live-ac-default') ? 'true' : 'false'
+  ].join('|')
+)
+dEq(
+  "DOM: AutoComplete default placeholder renders 'Please Input' (baked en-US locale default)",
+  'Please Input',
+  (() => {
+    const el = doc.querySelector('#live-ac-default .n-input__placeholder')
+    return el ? el.textContent : null
+  })()
+)
+dEq(
+  'DOM: AutoComplete size keys the INPUT only (small -> --small-size, large -> --large-size; no cross)',
+  'true|true|false|false',
+  [
+    acInputHas('live-ac-small', 'n-input--small-size'),
+    acInputHas('live-ac-large', 'n-input--large-size'),
+    acInputHas('live-ac-small', 'n-input--large-size'),
+    acInputHas('live-ac-large', 'n-input--small-size')
+  ]
+    .map(String)
+    .join('|')
+)
+dEq(
+  'DOM: AutoComplete status -> n-input--{warning,error,success}-status (success is class-only, no vars)',
+  'true|true|true',
+  [
+    acInputHas('live-ac-warning', 'n-input--warning-status'),
+    acInputHas('live-ac-error', 'n-input--error-status'),
+    acInputHas('live-ac-success', 'n-input--success-status')
+  ]
+    .map(String)
+    .join('|')
+)
+dEq(
+  'DOM: AutoComplete disabled -> n-input--disabled; clearable -> .n-base-clear present',
+  'true|true',
+  [
+    acInputHas('live-ac-disabled', 'n-input--disabled'),
+    !!doc.querySelector('#live-ac-clearable .n-input .n-base-clear')
+  ]
+    .map(String)
+    .join('|')
+)
+dEq(
+  'DOM: AutoComplete loading -> .n-input__suffix holds div.n-base-loading.n-base-suffix > .n-base-loading__container (inside the INPUT, never a menu row)',
+  'true|true|true',
+  (() => {
+    const suffix = doc.querySelector('#live-ac-loading .n-input__suffix')
+    const loading = suffix ? suffix.querySelector('.n-base-loading.n-base-suffix') : null
+    const container = loading ? loading.querySelector('.n-base-loading__container') : null
+    return [suffix, loading, container].map((e) => (e ? 'true' : 'false')).join('|')
+  })()
+)
+dEq(
+  'DOM: AutoComplete loading + clearable + suffix slot -> .n-input__suffix child order [clear, loading, slot]',
+  'true|true|true|true',
+  (() => {
+    const suffix = doc.querySelector('#live-ac-loading-slot .n-input__suffix')
+    if (!suffix) return 'false|false|false|false'
+    const kids = [...suffix.children]
+    const clearIdx = kids.findIndex((k) => k.classList.contains('n-base-clear'))
+    const loadIdx = kids.findIndex((k) => k.classList.contains('n-base-loading'))
+    const slotIdx = kids.findIndex((k) => k.textContent === 'sfx')
+    return [
+      clearIdx > -1,
+      loadIdx > -1,
+      clearIdx > -1 && loadIdx > clearIdx,
+      slotIdx > -1 && slotIdx > loadIdx
+    ]
+      .map(String)
+      .join('|')
+  })()
+)
+dEq(
+  'DOM: AutoComplete inputAttributes land on the inner .n-input__input-el',
+  'yes',
+  (() => {
+    const el = doc.querySelector('#live-ac-inputattrs .n-input__input-el')
+    return el ? el.getAttribute('data-ac-test') : null
+  })()
+)
+
+// --- AutoComplete.menu (Select.menu minus the selection couplings) -----------
+dEq(
+  'DOM: AutoComplete.menu root classes = n-base-select-menu + --medium-size + n-auto-complete-menu (menu hardcoded Medium; the trigger size never keys it)',
+  'n-base-select-menu n-base-select-menu--medium-size n-auto-complete-menu',
+  nClassesStr(acMenu('live-ac-menu-default'))
+)
+dEq(
+  'DOM: AutoComplete.menu is NOT focusable (tabindex -1 — Select.menu is 0)',
+  '-1',
+  acMenu('live-ac-menu-default') ? acMenu('live-ac-menu-default').getAttribute('tabindex') : null
+)
+dEq(
+  'DOM: AutoComplete.menu style = the 23 menu vars then --n-menu-box-shadow LAST (Select.menu-identical)',
+  SELECTMENU_MEDIUM_STYLE + ';--n-menu-box-shadow:' + SELECT_MENU_BOX_SHADOW,
+  styleAt(acMenu('live-ac-menu-default'))
+)
+dEq(
+  'DOM: AutoComplete.menu carries exactly 24 --n-* custom properties (23 menu + box-shadow)',
+  24,
+  countVars(acMenu('live-ac-menu-default'))
+)
+dEq(
+  'DOM: AutoComplete.menu transition EnterActive -> fade-in-scale-up-transition-enter-active appended after n-auto-complete-menu',
+  'true|true|true',
+  (() => {
+    const el = acMenu('live-ac-menu-transition')
+    const cls = el ? el.className : ''
+    return [
+      cls.includes('n-auto-complete-menu'),
+      cls.includes('fade-in-scale-up-transition-enter-active'),
+      cls.indexOf('n-auto-complete-menu') <
+        cls.indexOf('fade-in-scale-up-transition-enter-active')
+    ]
+      .map(String)
+      .join('|')
+  })()
+)
+dEq(
+  'DOM: AutoComplete.menu rtl -> n-base-select-menu--rtl',
+  'true',
+  String(!!doc.querySelector('#live-ac-menu-rtl .n-base-select-menu.n-base-select-menu--rtl'))
+)
+dEq(
+  'DOM: AutoComplete.menu rows are never --selected and render no __check (value Single Nothing), but every row keeps --show-checkmark',
+  '0|0|2=2',
+  (() => {
+    const id = 'live-ac-menu-default'
+    const rows = doc.querySelectorAll(`#${id} .n-base-select-option`).length
+    const show = doc.querySelectorAll(`#${id} .n-base-select-option--show-checkmark`).length
+    return [
+      String(doc.querySelectorAll(`#${id} .n-base-select-option--selected`).length),
+      String(doc.querySelectorAll(`#${id} .n-base-select-option__check`).length),
+      rows + '=' + show
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: AutoComplete.menu fromString "x" renders a row labeled "x" (value = label)',
+  'x',
+  (() => {
+    const row = doc.querySelector('#live-ac-menu-default .n-base-select-option')
+    const content = row ? row.querySelector('.n-base-select-option__content') : null
+    return content ? content.textContent : null
+  })()
+)
+dEq(
+  'DOM: AutoComplete.menu zero options + empty seam renders the caller node in .n-base-select-menu__empty',
+  'Nothing here',
+  (() => {
+    const el = doc.querySelector('#live-ac-menu-empty .n-base-select-menu__empty')
+    return el ? el.textContent : null
+  })()
+)
+dEq(
+  'DOM: AutoComplete.menu groups render a group header + child rows (the SelectMenu rows keep working)',
+  'G|G1,G2',
+  (() => {
+    const id = 'live-ac-menu-group'
+    const header = doc.querySelector(`#${id} .n-base-select-group-header`)
+    const labels = [
+      ...doc.querySelectorAll(`#${id} .n-base-select-option .n-base-select-option__content`)
+    ].map((e) => e.textContent)
+    return [header ? header.textContent : null, labels.join(',')].join('|')
+  })()
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
