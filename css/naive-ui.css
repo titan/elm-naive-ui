@@ -5896,6 +5896,28 @@ margin-right: 8px;}
 
   box-shadow: var(--n-menu-box-shadow);}
 
+/* ===== naive-ui: select ===== */
+.nui-root.nui-root .n-select {
+
+    z-index: auto;
+    outline: none;
+    width: 100%;
+    position: relative;
+    font-weight: var(--n-font-weight);}.nui-root.nui-root .n-select-menu {
+
+    margin: 4px 0;
+    box-shadow: var(--n-menu-box-shadow);}.nui-root.nui-root .n-select-menu.fade-in-scale-up-transition-leave-active {
+  transform-origin: inherit;
+  transition: opacity .2s cubic-bezier(.4, 0, 1, 1), transform .2s cubic-bezier(.4, 0, 1, 1) ,background-color .3s var(--n-bezier), box-shadow .3s var(--n-bezier);}.nui-root.nui-root .n-select-menu.fade-in-scale-up-transition-enter-active {
+  transform-origin: inherit;
+  transition: opacity .2s cubic-bezier(0, 0, .2, 1), transform .2s cubic-bezier(0, 0, .2, 1) ,background-color .3s var(--n-bezier), box-shadow .3s var(--n-bezier);}.nui-root.nui-root .n-select-menu.fade-in-scale-up-transition-enter-from,
+.nui-root.nui-root .n-select-menu.fade-in-scale-up-transition-leave-to {
+  opacity: 0;
+  transform:  scale(.9);}.nui-root.nui-root .n-select-menu.fade-in-scale-up-transition-leave-from,
+.nui-root.nui-root .n-select-menu.fade-in-scale-up-transition-enter-to {
+  opacity: 1;
+  transform:  scale(1);}
+
 /* ===== elm-ui bridge =====
  *
  * Components are built from elm-ui elements, and elm-ui styles its own helper classes

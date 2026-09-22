@@ -353,5 +353,19 @@ export const components = {
     // like dropdown): one rule here, the block lives in the selectMenu entry.
     cssr: ['popselect/src/styles/index.cssr.ts'],
     theme: 'popselect/styles/light.ts'
+  },
+  select: {
+    // Own cssr is tiny (.n-select wrapper + .n-select-menu margin/shadow +
+    // fade-in-scale-up transition on the menu); the trigger and menu DOM ride
+    // the `internal`/`selectMenu` blocks. Theme self = 1 var (menuBoxShadow).
+    cssr: ['select/src/styles/index.cssr.ts'],
+    theme: 'select/styles/light.ts'
+  },
+  internalSelection: {
+    // NBaseSelection trigger theme (~55 vars, size-keyed heights/fontSizes,
+    // warning/error families). cssr already shipped in the `internal` chunk;
+    // theme-only entry like tooltip.
+    cssr: [],
+    theme: '_internal/selection/styles/light.ts'
   }
 }
