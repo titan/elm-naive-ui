@@ -66,7 +66,9 @@ import NUI.Modal as Modal
 import NUI.NumberAnimation as NumberAnimation
 import NUI.PageHeader as PageHeader
 import NUI.Pagination as Pagination
+import NUI.Popconfirm as Popconfirm
 import NUI.Popover as Popover
+import NUI.Popselect as Popselect
 import NUI.Progress as Progress
 import NUI.QrCode as QrCode
 import NUI.Qrcodegen as Qrcodegen
@@ -74,6 +76,7 @@ import NUI.Radio as Radio
 import NUI.Rate as Rate
 import NUI.Result as Result
 import NUI.Scrollbar as Scrollbar
+import NUI.SelectMenu as SelectMenu
 import NUI.Skeleton as Skeleton
 import NUI.Space as Space
 import NUI.Spin as Spin
@@ -3425,6 +3428,127 @@ btnLoadingOpts =
 
 
 
+-- POPCONFIRM / POPSELECT / SELECTMENU OPTION SETS ------------------------------
+
+
+{-| The plain defaults binding (`{ Popconfirm.defaults | … }` is a parse error).
+-}
+pcD : Popconfirm.Options Msg
+pcD =
+    Popconfirm.defaults
+
+
+{-| The 4-entry panel var list `NUI.Popconfirm.cssVars` must emit (light):
+upstream `PopconfirmPanel.tsx` `cssVarsRef` declaration order.
+-}
+expectedPopconfirmVars : List ( String, String )
+expectedPopconfirmVars =
+    [ ( "--n-bezier", "cubic-bezier(.4, 0, .2, 1)" )
+    , ( "--n-font-size", "14px" )
+    , ( "--n-icon-size", "22px" )
+    , ( "--n-icon-color", "#f0a020" )
+    ]
+
+
+{-| The same 4 keys against `Theme.dark`: only `--n-icon-color` re-derives from
+common (`warningColor` = `#f2c97d`); the sizes are `_common` literals.
+-}
+expectedPopconfirmDarkVars : List ( String, String )
+expectedPopconfirmDarkVars =
+    [ ( "--n-bezier", "cubic-bezier(.4, 0, .2, 1)" )
+    , ( "--n-font-size", "14px" )
+    , ( "--n-icon-size", "22px" )
+    , ( "--n-icon-color", "#f2c97d" )
+    ]
+
+
+{-| The plain defaults binding (`{ Popselect.defaults | … }` is a parse error).
+-}
+psD : Popselect.Options Msg
+psD =
+    Popselect.defaults
+
+
+{-| The light select-menu box-shadow (popselect's single self var = common
+`boxShadow2`) — identical to the popover `--n-box-shadow`.
+-}
+popselectShadow : String
+popselectShadow =
+    "0 3px 6px -4px rgba(0, 0, 0, .12), 0 6px 16px 0 rgba(0, 0, 0, .08), 0 9px 28px 8px rgba(0, 0, 0, .05)"
+
+
+{-| The 23-entry list `NUI.SelectMenu.cssVars` must emit for `Medium` (light):
+upstream `SelectMenu.tsx` `cssVarsRef` declaration order.
+-}
+expectedSelectMenuVarsMedium : List ( String, String )
+expectedSelectMenuVarsMedium =
+    [ ( "--n-height", "calc(var(--n-option-height) * 7.6)" )
+    , ( "--n-action-divider-color", "rgb(239, 239, 245)" )
+    , ( "--n-action-text-color", "rgb(51, 54, 57)" )
+    , ( "--n-bezier", "cubic-bezier(.4, 0, .2, 1)" )
+    , ( "--n-border-radius", "3px" )
+    , ( "--n-color", "#fff" )
+    , ( "--n-option-font-size", "14px" )
+    , ( "--n-group-header-text-color", "rgb(118, 124, 130)" )
+    , ( "--n-option-check-color", "#18a058" )
+    , ( "--n-option-color-pending", "rgb(243, 243, 245)" )
+    , ( "--n-option-color-active", "rgba(0, 0, 0, 0)" )
+    , ( "--n-option-color-active-pending", "rgb(243, 243, 245)" )
+    , ( "--n-option-height", "34px" )
+    , ( "--n-option-opacity-disabled", "0.5" )
+    , ( "--n-option-text-color", "rgb(51, 54, 57)" )
+    , ( "--n-option-text-color-active", "#18a058" )
+    , ( "--n-option-text-color-disabled", "rgba(194, 194, 194, 1)" )
+    , ( "--n-option-text-color-pressed", "#0c7a43" )
+    , ( "--n-option-padding", "0 12px" )
+    , ( "--n-option-padding-left", "12px" )
+    , ( "--n-option-padding-right", "12px" )
+    , ( "--n-loading-color", "#18a058" )
+    , ( "--n-loading-size", "18px" )
+    ]
+
+
+{-| The merged 39-entry list `NUI.Popselect.cssVars` must emit: the 23 select-menu
+vars, `--n-menu-box-shadow`, then the 15 popover vars with `--n-padding`
+overridden to `0` (upstream `builtinThemeOverrides`).
+-}
+expectedPopselectVars : List ( String, String )
+expectedPopselectVars =
+    expectedSelectMenuVarsMedium
+        ++ [ ( "--n-menu-box-shadow", popselectShadow ) ]
+        ++ List.map
+            (\( k, v ) ->
+                if k == "--n-padding" then
+                    ( k, "0" )
+
+                else
+                    ( k, v )
+            )
+            expectedPopoverVars
+
+
+{-| One leaf select-menu option.
+-}
+smLeaf : String -> String -> SelectMenu.Option Msg
+smLeaf value label =
+    SelectMenu.Option { value = value, label = label, disabled = False, attributes = [] }
+
+
+{-| A leaf carried by a caller attribute (the `--pending`/`attributes` seam).
+-}
+smLeafAttr : String -> String -> Element.Attribute Msg -> SelectMenu.Option Msg
+smLeafAttr value label attribute =
+    SelectMenu.Option { value = value, label = label, disabled = False, attributes = [ attribute ] }
+
+
+{-| The plain defaults binding (`{ SelectMenu.defaults | … }` is a parse error).
+-}
+smD : SelectMenu.Options Msg
+smD =
+    SelectMenu.defaults
+
+
+
 -- CHECKS -----------------------------------------------------------------------
 
 
@@ -6319,6 +6443,137 @@ checks =
     , eq "dialog dark: --n-icon-color Default #63e2b7" (Just "#63e2b7") (lookup "--n-icon-color" (Dialog.cssVars Theme.dark (dgKindOpts T.Default)))
     , eq "dialog dark: self-only keys identical to light (sizes/padding/margins)" [ "16px 28px 20px 28px", "28px", "22px", "18px", "20px 26px 0 0", "4px", "8px 0 16px 0", "12px", "18px", "500" ] (List.map (\k -> lookup k dgVarsDark |> Maybe.withDefault "?") dialogSelfOnlyKeys)
     , eq "dialog dark: --n-bezier identical to light" (Just "cubic-bezier(.4, 0, .2, 1)") (lookup "--n-bezier" dgVarsDark)
+
+    -- popconfirm: defaults ---------------------------------------------------
+    , eq "popconfirm defaults: showIcon True" True pcD.showIcon
+    , eq "popconfirm defaults: icon Nothing" True (isNothing pcD.icon)
+    , eq "popconfirm defaults: positiveText DefaultText" Popconfirm.DefaultText pcD.positiveText
+    , eq "popconfirm defaults: negativeText DefaultText" Popconfirm.DefaultText pcD.negativeText
+    , eq "popconfirm defaults: positiveProps Nothing" True (isNothing pcD.positiveProps)
+    , eq "popconfirm defaults: negativeProps Nothing" True (isNothing pcD.negativeProps)
+    , eq "popconfirm defaults: onPositiveClick Nothing" Nothing pcD.onPositiveClick
+    , eq "popconfirm defaults: onNegativeClick Nothing" Nothing pcD.onNegativeClick
+    , eq "popconfirm defaults: action Nothing" True (isNothing pcD.action)
+    , eq "popconfirm defaults: popover = Popover.defaults" Popover.defaults pcD.popover
+
+    -- popconfirm: cssVars (the 4 panel vars, exact order/values) -----------
+    , eq "popconfirm cssVars: 4 keys (light)" 4 (List.length (Popconfirm.cssVars light))
+    , eq "popconfirm cssVars: exact 4-list light (name+value, order)" expectedPopconfirmVars (Popconfirm.cssVars light)
+    , eq "popconfirm cssVars: slot 1 --n-bezier" (Just "--n-bezier") (listAt 0 (Popconfirm.cssVars light) |> Maybe.map Tuple.first)
+    , eq "popconfirm cssVars: slot 4 --n-icon-color (last)" (Just "--n-icon-color") (listAt 3 (Popconfirm.cssVars light) |> Maybe.map Tuple.first)
+    , eq "popconfirm cssVars: --n-font-size 14px" (Just "14px") (lookup "--n-font-size" (Popconfirm.cssVars light))
+    , eq "popconfirm cssVars: --n-icon-size 22px" (Just "22px") (lookup "--n-icon-size" (Popconfirm.cssVars light))
+    , eq "popconfirm cssVars: --n-icon-color warningColor #f0a020" (Just "#f0a020") (lookup "--n-icon-color" (Popconfirm.cssVars light))
+    , eq "popconfirm cssVars: 4 keys (dark)" 4 (List.length (Popconfirm.cssVars dark))
+    , eq "popconfirm cssVars: exact 4-list dark (name+value, order)" expectedPopconfirmDarkVars (Popconfirm.cssVars dark)
+    , eq "popconfirm cssVars dark: --n-icon-color warningColor #f2c97d" (Just "#f2c97d") (lookup "--n-icon-color" (Popconfirm.cssVars dark))
+    , eq "popconfirm cssVars dark: --n-font-size identical to light (14px)" (Just "14px") (lookup "--n-font-size" (Popconfirm.cssVars dark))
+    , eq "popconfirm light/dark differ in exactly icon-color" [ "--n-icon-color" ] (changedVarKeys (Popconfirm.cssVars light) (Popconfirm.cssVars dark))
+    , eq "popconfirm cssVars non-empty (stub differential: [] vs 4)" True (not (List.isEmpty (Popconfirm.cssVars light)))
+
+    -- popselect: defaults ---------------------------------------------------
+    , eq "popselect defaults: placement Bottom" Popover.Bottom psD.placement
+    , eq "popselect defaults: size Medium" Popselect.Medium psD.size
+    , eq "popselect defaults: multiple False" False psD.multiple
+    , eq "popselect defaults: value Single Nothing" (SelectMenu.Single Nothing) psD.value
+    , eq "popselect defaults: cancelable False" False psD.cancelable
+    , eq "popselect defaults: showCheckmark True" True psD.showCheckmark
+    , eq "popselect defaults: width Nothing" Nothing psD.width
+    , eq "popselect defaults: overlap False" False psD.overlap
+    , eq "popselect defaults: arrowPointToCenter False" False psD.arrowPointToCenter
+    , eq "popselect defaults: rtl False" False psD.rtl
+    , eq "popselect defaults: transition Nothing" Nothing psD.transition
+    , eq "popselect defaults: header Nothing" True (isNothing psD.header)
+    , eq "popselect defaults: action Nothing" True (isNothing psD.action)
+    , eq "popselect defaults: empty Nothing" True (isNothing psD.empty)
+    , eq "popselect defaults: onUpdateValue Nothing" Nothing psD.onUpdateValue
+    , eq "popselect defaults: scrollbarProps Nothing" True (isNothing psD.scrollbarProps)
+    , eq "popselect defaults: attributes []" True (List.isEmpty psD.attributes)
+
+    -- popselect: placement alias -------------------------------------------
+    , eq "popselect placementName: Bottom" "bottom" (Popselect.placementName Popover.Bottom)
+    , eq "popselect placementName: TopStart" "top-start" (Popselect.placementName Popover.TopStart)
+    , eq "popselect placementName: LeftEnd" "left-end" (Popselect.placementName Popover.LeftEnd)
+
+    -- popselect: toggleValue (green now — the pure panel toggle) -----------
+    , eq "popselect toggleValue multiple removes a member (order kept)" (SelectMenu.Multiple [ "a" ]) (Popselect.toggleValue True False (SelectMenu.Multiple [ "a", "b" ]) "b")
+    , eq "popselect toggleValue multiple removes middle (order kept)" (SelectMenu.Multiple [ "a", "c" ]) (Popselect.toggleValue True False (SelectMenu.Multiple [ "a", "b", "c" ]) "b")
+    , eq "popselect toggleValue multiple appends a new value" (SelectMenu.Multiple [ "a", "b" ]) (Popselect.toggleValue True False (SelectMenu.Multiple [ "a" ]) "b")
+    , eq "popselect toggleValue multiple on empty list appends" (SelectMenu.Multiple [ "k" ]) (Popselect.toggleValue True False (SelectMenu.Multiple []) "k")
+    , eq "popselect toggleValue multiple: non-list current starts [key]" (SelectMenu.Multiple [ "k" ]) (Popselect.toggleValue True False (SelectMenu.Single Nothing) "k")
+    , eq "popselect toggleValue multiple: Single (Just x) starts [key]" (SelectMenu.Multiple [ "k" ]) (Popselect.toggleValue True False (SelectMenu.Single (Just "x")) "k")
+    , eq "popselect toggleValue multiple ignores cancelable" (SelectMenu.Multiple [ "a" ]) (Popselect.toggleValue True True (SelectMenu.Multiple [ "a", "b" ]) "b")
+    , eq "popselect toggleValue single selects the key" (SelectMenu.Single (Just "b")) (Popselect.toggleValue False False (SelectMenu.Single (Just "a")) "b")
+    , eq "popselect toggleValue single from null selects" (SelectMenu.Single (Just "a")) (Popselect.toggleValue False False (SelectMenu.Single Nothing) "a")
+    , eq "popselect toggleValue single cancelable + current -> Nothing" (SelectMenu.Single Nothing) (Popselect.toggleValue False True (SelectMenu.Single (Just "a")) "a")
+    , eq "popselect toggleValue single cancelable + other -> selects" (SelectMenu.Single (Just "b")) (Popselect.toggleValue False True (SelectMenu.Single (Just "a")) "b")
+    , eq "popselect toggleValue single non-cancelable re-select stays" (SelectMenu.Single (Just "a")) (Popselect.toggleValue False False (SelectMenu.Single (Just "a")) "a")
+    , eq "popselect toggleValue single ignores a Multiple current" (SelectMenu.Single (Just "k")) (Popselect.toggleValue False False (SelectMenu.Multiple [ "a" ]) "k")
+
+    -- popselect: cssVars merged 39 (23 menu -> box-shadow -> 15 popover) ----
+    , eq "popselect cssVars: 39 keys (light medium)" 39 (List.length (Popselect.cssVars light Popselect.Medium))
+    , eq "popselect cssVars: exact 39-list light medium (name+value, order)" expectedPopselectVars (Popselect.cssVars light Popselect.Medium)
+    , eq "popselect cssVars: slot 1 is --n-height (menu block first)" (Just "--n-height") (listAt 0 (Popselect.cssVars light Popselect.Medium) |> Maybe.map Tuple.first)
+    , eq "popselect cssVars: slot 24 is --n-menu-box-shadow (after the 23 menu vars)" (Just "--n-menu-box-shadow") (listAt 23 (Popselect.cssVars light Popselect.Medium) |> Maybe.map Tuple.first)
+    , eq "popselect cssVars: slot 25 is --n-box-shadow (popover block starts)" (Just "--n-box-shadow") (listAt 24 (Popselect.cssVars light Popselect.Medium) |> Maybe.map Tuple.first)
+    , eq "popselect cssVars: --n-menu-box-shadow = common boxShadow2" (Just popselectShadow) (lookup "--n-menu-box-shadow" (Popselect.cssVars light Popselect.Medium))
+    , eq "popselect cssVars: --n-padding overridden to 0" (Just "0") (lookup "--n-padding" (Popselect.cssVars light Popselect.Medium))
+    , eq "popselect cssVars: --n-padding sits at slot 37 (13th popover var)" (Just ( "--n-padding", "0" )) (listAt 36 (Popselect.cssVars light Popselect.Medium))
+    , eq "popselect cssVars: --n-color (menu) #fff" (Just "#fff") (lookup "--n-color" (Popselect.cssVars light Popselect.Medium))
+    , eq "popselect cssVars: --n-option-height 34px (medium menu var)" (Just "34px") (lookup "--n-option-height" (Popselect.cssVars light Popselect.Medium))
+    , eq "popselect cssVars: popover tail differs from raw 15 in exactly --n-padding" [ "--n-padding" ] (changedVarKeys expectedPopoverVars (List.drop 24 (Popselect.cssVars light Popselect.Medium)))
+    , eq "popselect cssVars: size switch small -> --n-option-height 28px" (Just "28px") (lookup "--n-option-height" (Popselect.cssVars light Popselect.Small))
+    , eq "popselect cssVars: size switch huge -> --n-option-height 46px" (Just "46px") (lookup "--n-option-height" (Popselect.cssVars light Popselect.Huge))
+    , eq "popselect cssVars: still 39 keys (dark)" 39 (List.length (Popselect.cssVars dark Popselect.Medium))
+    , eq "popselect cssVars dark: --n-padding still 0" (Just "0") (lookup "--n-padding" (Popselect.cssVars dark Popselect.Medium))
+    , eq "popselect cssVars non-empty (stub differential: [] vs 39)" True (not (List.isEmpty (Popselect.cssVars light Popselect.Medium)))
+
+    -- selectmenu: defaults -------------------------------------------------
+    , eq "selectmenu defaults: size Medium" SelectMenu.Medium smD.size
+    , eq "selectmenu defaults: multiple False" False smD.multiple
+    , eq "selectmenu defaults: value Single Nothing" (SelectMenu.Single Nothing) smD.value
+    , eq "selectmenu defaults: showCheckmark True" True smD.showCheckmark
+    , eq "selectmenu defaults: focusable False" False smD.focusable
+    , eq "selectmenu defaults: header Nothing" True (isNothing smD.header)
+    , eq "selectmenu defaults: action Nothing" True (isNothing smD.action)
+    , eq "selectmenu defaults: empty Nothing" True (isNothing smD.empty)
+    , eq "selectmenu defaults: onToggle Nothing" Nothing smD.onToggle
+    , eq "selectmenu defaults: checkmarkTransition Nothing" Nothing smD.checkmarkTransition
+    , eq "selectmenu defaults: rtl False" False smD.rtl
+    , eq "selectmenu defaults: extraClasses []" True (List.isEmpty smD.extraClasses)
+    , eq "selectmenu defaults: attributes []" True (List.isEmpty smD.attributes)
+
+    -- selectmenu: cssVars exact 23 (medium) --------------------------------
+    , eq "selectmenu cssVars: 23 keys (light medium)" 23 (List.length (SelectMenu.cssVars light SelectMenu.Medium))
+    , eq "selectmenu cssVars: exact 23-list light medium (name+value, order)" expectedSelectMenuVarsMedium (SelectMenu.cssVars light SelectMenu.Medium)
+    , eq "selectmenu cssVars: slot 1 --n-height" (Just "--n-height") (listAt 0 (SelectMenu.cssVars light SelectMenu.Medium) |> Maybe.map Tuple.first)
+    , eq "selectmenu cssVars: slot 23 --n-loading-size (last)" (Just "--n-loading-size") (listAt 22 (SelectMenu.cssVars light SelectMenu.Medium) |> Maybe.map Tuple.first)
+    , eq "selectmenu cssVars: --n-height is the calc literal" (Just "calc(var(--n-option-height) * 7.6)") (lookup "--n-height" (SelectMenu.cssVars light SelectMenu.Medium))
+    , eq "selectmenu cssVars: --n-option-padding-left 12px (split shorthand)" (Just "12px") (lookup "--n-option-padding-left" (SelectMenu.cssVars light SelectMenu.Medium))
+    , eq "selectmenu cssVars: --n-option-padding-right 12px" (Just "12px") (lookup "--n-option-padding-right" (SelectMenu.cssVars light SelectMenu.Medium))
+    , eq "selectmenu cssVars: --n-option-color-active is the transparent literal" (Just "rgba(0, 0, 0, 0)") (lookup "--n-option-color-active" (SelectMenu.cssVars light SelectMenu.Medium))
+    , eq "selectmenu cssVars: --n-option-check-color = primary #18a058" (Just "#18a058") (lookup "--n-option-check-color" (SelectMenu.cssVars light SelectMenu.Medium))
+    , eq "selectmenu cssVars: --n-option-text-color-disabled rgba(194, 194, 194, 1)" (Just "rgba(194, 194, 194, 1)") (lookup "--n-option-text-color-disabled" (SelectMenu.cssVars light SelectMenu.Medium))
+
+    -- selectmenu: size switching -------------------------------------------
+    , eq "selectmenu cssVars small --n-option-height 28px" (Just "28px") (lookup "--n-option-height" (SelectMenu.cssVars light SelectMenu.Small))
+    , eq "selectmenu cssVars small --n-option-font-size 14px" (Just "14px") (lookup "--n-option-font-size" (SelectMenu.cssVars light SelectMenu.Small))
+    , eq "selectmenu cssVars large --n-option-height 40px" (Just "40px") (lookup "--n-option-height" (SelectMenu.cssVars light SelectMenu.Large))
+    , eq "selectmenu cssVars large --n-option-font-size 15px" (Just "15px") (lookup "--n-option-font-size" (SelectMenu.cssVars light SelectMenu.Large))
+    , eq "selectmenu cssVars huge --n-option-height 46px" (Just "46px") (lookup "--n-option-height" (SelectMenu.cssVars light SelectMenu.Huge))
+    , eq "selectmenu cssVars huge --n-option-font-size 16px" (Just "16px") (lookup "--n-option-font-size" (SelectMenu.cssVars light SelectMenu.Huge))
+    , eq "selectmenu cssVars tiny --n-option-height 22px" (Just "22px") (lookup "--n-option-height" (SelectMenu.cssVars light SelectMenu.Tiny))
+    , eq "selectmenu cssVars tiny --n-option-font-size 12px" (Just "12px") (lookup "--n-option-font-size" (SelectMenu.cssVars light SelectMenu.Tiny))
+    , eq "selectmenu cssVars: small switches exactly height+font-size" [ "--n-option-font-size", "--n-option-height" ] (changedVarKeys (SelectMenu.cssVars light SelectMenu.Medium) (SelectMenu.cssVars light SelectMenu.Small))
+    , eq "selectmenu cssVars: --n-option-padding does NOT switch (constant 0 12px)" ( Just "0 12px", Just "0 12px" ) ( lookup "--n-option-padding" (SelectMenu.cssVars light SelectMenu.Tiny), lookup "--n-option-padding" (SelectMenu.cssVars light SelectMenu.Huge) )
+
+    -- selectmenu: dark ----------------------------------------------------
+    , eq "selectmenu cssVars: 23 keys (dark medium)" 23 (List.length (SelectMenu.cssVars dark SelectMenu.Medium))
+    , eq "selectmenu cssVars dark: --n-color = popoverColor rgb(72, 72, 78)" (Just "rgb(72, 72, 78)") (lookup "--n-color" (SelectMenu.cssVars dark SelectMenu.Medium))
+    , eq "selectmenu cssVars dark: --n-option-text-color-active #63e2b7" (Just "#63e2b7") (lookup "--n-option-text-color-active" (SelectMenu.cssVars dark SelectMenu.Medium))
+    , eq "selectmenu cssVars dark: --n-option-color-active stays transparent" (Just "rgba(0, 0, 0, 0)") (lookup "--n-option-color-active" (SelectMenu.cssVars dark SelectMenu.Medium))
+    , eq "selectmenu cssVars dark: --n-height identical to light" (Just "calc(var(--n-option-height) * 7.6)") (lookup "--n-height" (SelectMenu.cssVars dark SelectMenu.Medium))
+    , eq "selectmenu cssVars non-empty (stub differential: [] vs 23)" True (not (List.isEmpty (SelectMenu.cssVars light SelectMenu.Medium)))
     ]
 
 
@@ -7400,6 +7655,136 @@ liveNodes =
                     (Button.view Theme.default btnLoadingOpts [ Element.text "Loading" ])
                 , Element.el [ Element.htmlAttribute (HA.id "live-button-icon") ]
                     (Button.view Theme.default btnIconOpts [ Element.text "Icon" ])
+
+                -- Popconfirm (Popover default body + the n-popconfirm panel)
+                , Element.el [ Element.htmlAttribute (HA.id "live-popconfirm-default") ]
+                    (Popconfirm.view Theme.default pcD [ Element.text "Delete it?" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popconfirm-extra") ]
+                    (Popconfirm.view Theme.default
+                        { pcD | popover = { pD | extraClasses = [ "caller-class" ] } }
+                        [ Element.text "Delete it?" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-popconfirm-hidden-both") ]
+                    (Popconfirm.view Theme.default
+                        { pcD | positiveText = Popconfirm.Hidden, negativeText = Popconfirm.Hidden }
+                        []
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-popconfirm-noicon-nobody") ]
+                    (Popconfirm.view Theme.default { pcD | showIcon = False } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popconfirm-body-noicon") ]
+                    (Popconfirm.view Theme.default { pcD | showIcon = False } [ Element.text "Content only" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popconfirm-customicon") ]
+                    (Popconfirm.view Theme.default { pcD | icon = Just (Element.text "!") } [ Element.text "Delete it?" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popconfirm-customtext") ]
+                    (Popconfirm.view Theme.default
+                        { pcD | positiveText = Popconfirm.CustomText "OK", negativeText = Popconfirm.CustomText "Nope" }
+                        [ Element.text "Delete it?" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-popconfirm-positive-hidden") ]
+                    (Popconfirm.view Theme.default { pcD | positiveText = Popconfirm.Hidden } [ Element.text "Delete it?" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popconfirm-actionslot") ]
+                    (Popconfirm.view Theme.default { pcD | action = Just [ Element.text "#action" ] } [ Element.text "Delete it?" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popconfirm-action-empty") ]
+                    (Popconfirm.view Theme.default { pcD | action = Just [] } [ Element.text "Delete it?" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popconfirm-props") ]
+                    (Popconfirm.view Theme.default
+                        { pcD
+                            | positiveProps = Just (\b -> { b | kind = T.Error, round = True })
+                            , negativeProps = Just (\b -> { b | round = True })
+                        }
+                        [ Element.text "Delete it?" ]
+                    )
+
+                -- Popselect (the Dropdown-lane select-menu root = popover body)
+                , Element.el [ Element.htmlAttribute (HA.id "live-popselect-default") ]
+                    (Popselect.view Theme.default psD [ smLeaf "drive" "Drive My Car", smLeaf "walk" "Walk" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popselect-small") ]
+                    (Popselect.view Theme.default { psD | size = Popselect.Small } [ smLeaf "drive" "Drive My Car" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popselect-huge") ]
+                    (Popselect.view Theme.default { psD | size = Popselect.Huge } [ smLeaf "drive" "Drive My Car" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popselect-multiple") ]
+                    (Popselect.view Theme.default { psD | multiple = True, value = SelectMenu.Multiple [ "drive" ] } [ smLeaf "drive" "Drive My Car", smLeaf "walk" "Walk" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popselect-rtl") ]
+                    (Popselect.view Theme.default { psD | rtl = True } [ smLeaf "drive" "Drive My Car" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popselect-overlap") ]
+                    (Popselect.view Theme.default { psD | overlap = True } [ smLeaf "drive" "Drive My Car" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popselect-centerarrow") ]
+                    (Popselect.view Theme.default { psD | arrowPointToCenter = True } [ smLeaf "drive" "Drive My Car" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popselect-transition") ]
+                    (Popselect.view Theme.default { psD | transition = Just Internal.EnterActive } [ smLeaf "drive" "Drive My Car" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-popselect-width") ]
+                    (Popselect.view Theme.default { psD | width = Just "220px" } [ smLeaf "drive" "Drive My Car" ])
+
+                -- SelectMenu (the .n-base-select-menu body engine)
+                , Element.el [ Element.htmlAttribute (HA.id "live-selectmenu-default") ]
+                    (SelectMenu.view Theme.default smD [ smLeaf "a" "A", smLeaf "b" "B" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-selectmenu-focusable") ]
+                    (SelectMenu.view Theme.default { smD | focusable = True } [ smLeaf "a" "A" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-selectmenu-header-action") ]
+                    (SelectMenu.view Theme.default
+                        { smD
+                            | header = Just (Element.text "Header")
+                            , action = Just (Element.text "Action")
+                        }
+                        [ smLeaf "a" "A" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-selectmenu-optmods") ]
+                    (SelectMenu.view Theme.default
+                        { smD | value = SelectMenu.Single (Just "a") }
+                        [ smLeaf "a" "A"
+                        , SelectMenu.Option { value = "b", label = "B", disabled = True, attributes = [] }
+                        , SelectMenu.Group { label = "G", children = [ smLeaf "g1" "G1" ], attributes = [] }
+                        , smLeaf "c" "C"
+                        ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-selectmenu-multiple") ]
+                    (SelectMenu.view Theme.default
+                        { smD | multiple = True, value = SelectMenu.Multiple [ "a" ] }
+                        [ smLeaf "a" "A", smLeaf "b" "B" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-selectmenu-nocheckmark") ]
+                    (SelectMenu.view Theme.default
+                        { smD | value = SelectMenu.Single (Just "a"), showCheckmark = False }
+                        [ smLeaf "a" "A" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-selectmenu-checktransition") ]
+                    (SelectMenu.view Theme.default
+                        { smD | value = SelectMenu.Single (Just "a"), checkmarkTransition = Just Internal.EnterActive }
+                        [ smLeaf "a" "A" ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-selectmenu-empty") ]
+                    (SelectMenu.view Theme.default smD [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-selectmenu-emptyslot") ]
+                    (SelectMenu.view Theme.default { smD | empty = Just (Element.text "Nothing here") } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-selectmenu-custom") ]
+                    (SelectMenu.view Theme.default
+                        smD
+                        [ SelectMenu.Custom { key = "custom", node = Element.text "custom-verbatim" } ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-selectmenu-nested") ]
+                    (SelectMenu.view Theme.default
+                        smD
+                        [ SelectMenu.Group
+                            { label = "Outer"
+                            , children =
+                                [ smLeaf "inner1" "Inner1"
+                                , SelectMenu.Group { label = "InnerGroup", children = [ smLeaf "deep" "Deep" ], attributes = [] }
+                                ]
+                            , attributes = []
+                            }
+                        ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-selectmenu-pending") ]
+                    (SelectMenu.view Theme.default
+                        smD
+                        [ smLeafAttr "a" "A" (Element.htmlAttribute (HA.attribute "data-pending" "on"))
+                        , smLeafAttr "b" "B" (Element.htmlAttribute (HA.class "n-base-select-option--pending"))
+                        ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-selectmenu-rtl") ]
+                    (SelectMenu.view Theme.default { smD | rtl = True } [ smLeaf "a" "A" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-selectmenu-extra") ]
+                    (SelectMenu.view Theme.default { smD | extraClasses = [ "caller-extra" ] } [ smLeaf "a" "A" ])
                 ]
             )
         ]

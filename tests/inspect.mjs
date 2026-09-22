@@ -6457,6 +6457,449 @@ dTrue(
   clsOf(doc.querySelector('.n-dynamic-input > .n-button .n-button__icon .n-icon-slot'))
 )
 
+// Popconfirm / Popselect / SelectMenu (RED pins) ------------------------------
+// The DOM the Popconfirm / Popselect / SelectMenu fixer lanes must land. Against
+// the committed stubs (view = Element.none) the mounts render nothing, so every
+// probe below fails until the views are implemented.
+
+// --- Popconfirm -------------------------------------------------------------
+const pcRoot = (id) => doc.querySelector('#' + id + ' .n-popover')
+const pcPanel = (id) => doc.querySelector('#' + id + ' .n-popconfirm__panel')
+const pcBody = (id) => doc.querySelector('#' + id + ' .n-popconfirm__body')
+const pcIcon = (id) => doc.querySelector('#' + id + ' .n-popconfirm__icon')
+const pcAction = (id) => doc.querySelector('#' + id + ' .n-popconfirm__action')
+const pcButtons = (id) => [...doc.querySelectorAll('#' + id + ' .n-popconfirm__action .n-button')]
+const pcText = (id, sel) => {
+  const e = doc.querySelector('#' + id + ' ' + sel)
+  return e ? e.textContent : null
+}
+const pcLabel = (id) =>
+  pcButtons(id)
+    .map((b) => (b.querySelector('.n-button__content') || {}).textContent)
+    .join('|')
+
+const POPCONFIRM_PANEL_STYLE =
+  '--n-bezier:cubic-bezier(.4, 0, .2, 1)' +
+  ';--n-font-size:14px' +
+  ';--n-icon-size:22px' +
+  ';--n-icon-color:#f0a020'
+
+dEq(
+  'DOM: Popconfirm root n-* class order = n-popover, n-popover-shared, n-popconfirm',
+  'n-popover n-popover-shared n-popconfirm',
+  nClassesStr(pcRoot('live-popconfirm-default'))
+)
+dEq(
+  'DOM: Popconfirm panel style = the exact 4-var string in upstream order (light)',
+  POPCONFIRM_PANEL_STYLE,
+  styleAt(pcPanel('live-popconfirm-default'))
+)
+dEq(
+  'DOM: Popconfirm panel carries exactly 4 --n-* custom properties',
+  4,
+  countVars(pcPanel('live-popconfirm-default'))
+)
+dTrue(
+  'DOM: Popconfirm view is the popover body with a default arrow node',
+  !!pcRoot('live-popconfirm-default') &&
+    !!doc.querySelector('#live-popconfirm-default .n-popover-arrow-wrapper') &&
+    !!doc.querySelector('#live-popconfirm-default .n-popover-arrow'),
+  clsOf(pcRoot('live-popconfirm-default'))
+)
+dTrue(
+  'DOM: Popconfirm body wraps the icon first, then the content',
+  !!pcBody('live-popconfirm-default') &&
+    !!pcBody('live-popconfirm-default').firstElementChild &&
+    pcBody('live-popconfirm-default').firstElementChild.classList.contains('n-popconfirm__icon') &&
+    !!pcIcon('live-popconfirm-default'),
+  pcText('live-popconfirm-default', '.n-popconfirm__body')
+)
+dEq(
+  'DOM: Popconfirm default icon = .n-popconfirm__icon > i.n-base-icon > svg',
+  '1|1',
+  pcIcon('live-popconfirm-default')
+    ? String(pcIcon('live-popconfirm-default').querySelectorAll('.n-base-icon svg').length) +
+        '|' +
+        String(pcIcon('live-popconfirm-default').querySelectorAll('svg').length)
+    : null
+)
+dEq(
+  'DOM: Popconfirm actions = negative (default-type, small) first, then positive (primary-type, small) — NOT ghost',
+  'n-button n-button--default-type n-button--small-type||n-button n-button--primary-type n-button--small-type',
+  pcButtons('live-popconfirm-default').map((b) => nClassesStr(b)).join('||')
+)
+dEq(
+  'DOM: Popconfirm default button labels (negative first) = Cancel|Confirm',
+  'Cancel|Confirm',
+  pcLabel('live-popconfirm-default')
+)
+dTrue(
+  'DOM: Popconfirm __action ALWAYS renders (default)',
+  !!pcAction('live-popconfirm-default'),
+  clsOf(pcAction('live-popconfirm-default'))
+)
+dEq(
+  'DOM: Popconfirm both texts Hidden -> __action row still renders (empty, 0 buttons) and __body stays (showIcon default)',
+  'present|0|present',
+  [
+    pcAction('live-popconfirm-hidden-both') ? 'present' : 'absent',
+    String(pcButtons('live-popconfirm-hidden-both').length),
+    pcBody('live-popconfirm-hidden-both') ? 'present' : 'absent'
+  ].join('|')
+)
+dTrue(
+  'DOM: Popconfirm showIcon=False + no content -> NO __body (the __action row is still there)',
+  pcBody('live-popconfirm-noicon-nobody') === null && !!pcAction('live-popconfirm-noicon-nobody'),
+  clsOf(pcAction('live-popconfirm-noicon-nobody'))
+)
+dTrue(
+  'DOM: Popconfirm showIcon=False + content -> __body present, NO __icon',
+  !!pcBody('live-popconfirm-body-noicon') && pcIcon('live-popconfirm-body-noicon') === null,
+  clsOf(pcBody('live-popconfirm-body-noicon'))
+)
+dEq(
+  'DOM: Popconfirm custom icon replaces the default n-base-icon svg wrapper (only the caller node)',
+  '0|!',
+  pcIcon('live-popconfirm-customicon')
+    ? String(pcIcon('live-popconfirm-customicon').querySelectorAll('.n-base-icon').length) +
+        '|' +
+        pcIcon('live-popconfirm-customicon').textContent
+    : null
+)
+dEq(
+  'DOM: Popconfirm CustomText overrides the labels (negative first) = Nope|OK',
+  'Nope|OK',
+  pcLabel('live-popconfirm-customtext')
+)
+dEq(
+  'DOM: Popconfirm positiveText Hidden suppresses only the positive button (1 button, negative Cancel)',
+  '1|Cancel',
+  String(pcButtons('live-popconfirm-positive-hidden').length) +
+    '|' +
+    pcLabel('live-popconfirm-positive-hidden')
+)
+dEq(
+  'DOM: Popconfirm action slot replaces the buttons entirely (0 buttons, slot text in the action row)',
+  '0|#action',
+  String(pcButtons('live-popconfirm-actionslot').length) +
+    '|' +
+    pcText('live-popconfirm-actionslot', '.n-popconfirm__action')
+)
+dEq(
+  'DOM: Popconfirm action = Just [] still renders the (empty) action row, replacing the buttons (upstream hole, the Dialog precedent)',
+  'present|0',
+  [
+    pcAction('live-popconfirm-action-empty') ? 'present' : 'absent',
+    String(pcButtons('live-popconfirm-action-empty').length)
+  ].join('|')
+)
+dEq(
+  'DOM: Popconfirm positiveProps wins AFTER the derived base (Error kind + round 28px); negativeProps round too',
+  'n-button--error-type/28px|n-button--default-type/28px',
+  pcButtons('live-popconfirm-props')
+    .map((b) => {
+      const kind = [...b.classList].find((c) => c.endsWith('-type'))
+      const m = (b.getAttribute('style') || '').match(/--n-border-radius:\s*([^;]+)/)
+      return [kind, m ? m[1] : '?'].join('/')
+    })
+    .join('|')
+)
+dEq(
+  'DOM: Popconfirm prepends n-popconfirm to caller extraClasses (before caller-class)',
+  'n-popover n-popover-shared n-popconfirm caller-class',
+  nClassesStr(pcRoot('live-popconfirm-extra'))
+)
+
+// --- Popselect --------------------------------------------------------------
+const psRoot = (id) => doc.querySelector('#' + id + ' .n-base-select-menu')
+const psStyle = (id) => styleAt(psRoot(id))
+
+dEq(
+  'DOM: Popselect root n-* class order = n-base-select-menu, --medium-size, n-popselect-menu, n-popover-shared, --show-arrow',
+  'n-base-select-menu n-base-select-menu--medium-size n-popselect-menu n-popover-shared n-popover-shared--show-arrow',
+  nClassesStr(psRoot('live-popselect-default'))
+)
+dEq(
+  'DOM: Popselect root carries exactly 39 --n-* custom properties (23 menu + box-shadow + 15 popover)',
+  39,
+  countVars(psRoot('live-popselect-default'))
+)
+dTrue(
+  'DOM: Popselect root style starts with --n-height and overrides --n-padding to 0 (menu block then menu-box-shadow then popover block)',
+  (psStyle('live-popselect-default') || '').startsWith('--n-height:') &&
+    (psStyle('live-popselect-default') || '').includes('--n-menu-box-shadow:') &&
+    (psStyle('live-popselect-default') || '').includes('--n-padding:0'),
+  (psStyle('live-popselect-default') || '').slice(0, 90)
+)
+dTrue(
+  'DOM: Popselect root has NO n-popover class, NO n-popover__content wrapper, NO arrow node',
+  !!psRoot('live-popselect-default') &&
+    !psRoot('live-popselect-default').classList.contains('n-popover') &&
+    doc.querySelector('#live-popselect-default .n-popover__content') === null &&
+    doc.querySelector('#live-popselect-default .n-popover-arrow') === null &&
+    doc.querySelector('#live-popselect-default .n-popover-arrow-wrapper') === null,
+  clsOf(psRoot('live-popselect-default'))
+)
+dEq(
+  'DOM: Popselect root tabindex 0 (focusable)',
+  '0',
+  psRoot('live-popselect-default') ? psRoot('live-popselect-default').getAttribute('tabindex') : null
+)
+dTrue(
+  'DOM: Popselect size=Small -> n-base-select-menu--small-size',
+  hasCls(psRoot('live-popselect-small'), 'n-base-select-menu--small-size'),
+  clsOf(psRoot('live-popselect-small'))
+)
+dTrue(
+  'DOM: Popselect size=Huge -> n-base-select-menu--huge-size',
+  hasCls(psRoot('live-popselect-huge'), 'n-base-select-menu--huge-size'),
+  clsOf(psRoot('live-popselect-huge'))
+)
+dTrue(
+  'DOM: Popselect multiple -> n-base-select-menu--multiple',
+  hasCls(psRoot('live-popselect-multiple'), 'n-base-select-menu--multiple'),
+  clsOf(psRoot('live-popselect-multiple'))
+)
+dTrue(
+  'DOM: Popselect rtl -> n-base-select-menu--rtl + n-popover--rtl',
+  hasCls(psRoot('live-popselect-rtl'), 'n-base-select-menu--rtl') &&
+    hasCls(psRoot('live-popselect-rtl'), 'n-popover--rtl'),
+  clsOf(psRoot('live-popselect-rtl'))
+)
+dTrue(
+  'DOM: Popselect overlap -> n-popover-shared--overlap (the --show-arrow quirk stays — pinned)',
+  hasCls(psRoot('live-popselect-overlap'), 'n-popover-shared--overlap') &&
+    hasCls(psRoot('live-popselect-overlap'), 'n-popover-shared--show-arrow'),
+  clsOf(psRoot('live-popselect-overlap'))
+)
+dTrue(
+  'DOM: Popselect arrowPointToCenter -> n-popover-shared--center-arrow',
+  hasCls(psRoot('live-popselect-centerarrow'), 'n-popover-shared--center-arrow'),
+  clsOf(psRoot('live-popselect-centerarrow'))
+)
+dTrue(
+  'DOM: Popselect transition EnterActive -> popover-transition-enter-active',
+  hasCls(psRoot('live-popselect-transition'), 'popover-transition-enter-active'),
+  clsOf(psRoot('live-popselect-transition'))
+)
+dTrue(
+  'DOM: Popselect width=220px lands on the root style',
+  (psStyle('live-popselect-width') || '').replace(/\s/g, '').includes('width:220px'),
+  (psStyle('live-popselect-width') || '').slice(0, 40)
+)
+
+// --- SelectMenu -------------------------------------------------------------
+const smRoot = (id) => doc.querySelector('#' + id + ' .n-base-select-menu')
+const smStyle = (id) => styleAt(smRoot(id))
+const smOptions = (id) => [...doc.querySelectorAll('#' + id + ' .n-base-select-option')]
+const smHeaders = (id) => [...doc.querySelectorAll('#' + id + ' .n-base-select-group-header')]
+const smWrapper = (id) => doc.querySelector('#' + id + ' .n-base-select-menu-option-wrapper')
+const smFocusDetector = (id) =>
+  smRoot(id)
+    ? [...smRoot(id).querySelectorAll('div[tabindex="0"]')].filter((d) =>
+        (d.getAttribute('style') || '').replace(/\s/g, '').includes('width:0')
+      )
+    : []
+
+const SM_MEDIUM_VARS = [
+  ['--n-height', 'calc(var(--n-option-height) * 7.6)'],
+  ['--n-action-divider-color', 'rgb(239, 239, 245)'],
+  ['--n-action-text-color', 'rgb(51, 54, 57)'],
+  ['--n-bezier', 'cubic-bezier(.4, 0, .2, 1)'],
+  ['--n-border-radius', '3px'],
+  ['--n-color', '#fff'],
+  ['--n-option-font-size', '14px'],
+  ['--n-group-header-text-color', 'rgb(118, 124, 130)'],
+  ['--n-option-check-color', '#18a058'],
+  ['--n-option-color-pending', 'rgb(243, 243, 245)'],
+  ['--n-option-color-active', 'rgba(0, 0, 0, 0)'],
+  ['--n-option-color-active-pending', 'rgb(243, 243, 245)'],
+  ['--n-option-height', '34px'],
+  ['--n-option-opacity-disabled', '0.5'],
+  ['--n-option-text-color', 'rgb(51, 54, 57)'],
+  ['--n-option-text-color-active', '#18a058'],
+  ['--n-option-text-color-disabled', 'rgba(194, 194, 194, 1)'],
+  ['--n-option-text-color-pressed', '#0c7a43'],
+  ['--n-option-padding', '0 12px'],
+  ['--n-option-padding-left', '12px'],
+  ['--n-option-padding-right', '12px'],
+  ['--n-loading-color', '#18a058'],
+  ['--n-loading-size', '18px']
+]
+const SELECTMENU_MEDIUM_STYLE = SM_MEDIUM_VARS.map(([k, v]) => k + ':' + v).join(';')
+
+dEq(
+  'DOM: SelectMenu root style = the exact 23-var string in upstream declaration order (light, medium)',
+  SELECTMENU_MEDIUM_STYLE,
+  smStyle('live-selectmenu-default')
+)
+dEq(
+  'DOM: SelectMenu root carries exactly 23 --n-* custom properties',
+  23,
+  countVars(smRoot('live-selectmenu-default'))
+)
+dEq(
+  'DOM: SelectMenu default n-* class order = n-base-select-menu, --medium-size',
+  'n-base-select-menu n-base-select-menu--medium-size',
+  nClassesStr(smRoot('live-selectmenu-default'))
+)
+dEq(
+  'DOM: SelectMenu default tabindex -1 (focusable False)',
+  '-1',
+  smRoot('live-selectmenu-default') ? smRoot('live-selectmenu-default').getAttribute('tabindex') : null
+)
+dEq(
+  'DOM: SelectMenu focusable True -> tabindex 0',
+  '0',
+  smRoot('live-selectmenu-focusable') ? smRoot('live-selectmenu-focusable').getAttribute('tabindex') : null
+)
+dEq(
+  'DOM: SelectMenu rtl -> n-base-select-menu--rtl',
+  true,
+  hasCls(smRoot('live-selectmenu-rtl'), 'n-base-select-menu--rtl')
+)
+dEq(
+  'DOM: SelectMenu extraClasses appended after the size class',
+  'n-base-select-menu n-base-select-menu--medium-size caller-extra',
+  nClassesStr(smRoot('live-selectmenu-extra'))
+)
+dTrue(
+  'DOM: SelectMenu header slot -> __header[data-header]; action slot -> __action[data-action] + the inert focus detector',
+  !!doc.querySelector('#live-selectmenu-header-action .n-base-select-menu__header[data-header]') &&
+    !!doc.querySelector('#live-selectmenu-header-action .n-base-select-menu__action[data-action]') &&
+    smFocusDetector('live-selectmenu-header-action').length === 1,
+  clsOf(doc.querySelector('#live-selectmenu-header-action .n-base-select-menu__action'))
+)
+dTrue(
+  'DOM: SelectMenu no slots -> NO [data-header], NO [data-action], NO focus detector',
+  !!smRoot('live-selectmenu-default') &&
+    smOptions('live-selectmenu-default').length === 2 &&
+    doc.querySelector('#live-selectmenu-default [data-header]') === null &&
+    doc.querySelector('#live-selectmenu-default [data-action]') === null &&
+    smFocusDetector('live-selectmenu-default').length === 0,
+  clsOf(smRoot('live-selectmenu-default'))
+)
+dTrue(
+  'DOM: SelectMenu option-wrapper carries the size padding (top+bottom 4px)',
+  (() => {
+    const s = (styleAt(smWrapper('live-selectmenu-default')) || '').replace(/\s/g, '')
+    return s.includes('padding-top:4px') && s.includes('padding-bottom:4px')
+  })(),
+  styleAt(smWrapper('live-selectmenu-default'))
+)
+dEq(
+  'DOM: SelectMenu option modifiers: exactly one --selected, one --disabled, one --grouped',
+  '1|1|1',
+  (() => {
+    const id = 'live-selectmenu-optmods'
+    const n = (c) => doc.querySelectorAll(`#${id} .n-base-select-option.${c}`).length
+    return [
+      n('n-base-select-option--selected'),
+      n('n-base-select-option--disabled'),
+      n('n-base-select-option--grouped')
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: SelectMenu showCheckmark ON lands --show-checkmark on EVERY option (4 leaves)',
+  '4',
+  String(doc.querySelectorAll('#live-selectmenu-optmods .n-base-select-option--show-checkmark').length)
+)
+dTrue(
+  'DOM: SelectMenu group header renders once, before its grouped child',
+  (() => {
+    const id = 'live-selectmenu-optmods'
+    const hs = smHeaders(id)
+    if (hs.length !== 1) return false
+    const g = doc.querySelector(`#${id} .n-base-select-option--grouped`)
+    return !!g && (hs[0].compareDocumentPosition(g) & 4) !== 0
+  })(),
+  (() => {
+    const hs = smHeaders('live-selectmenu-optmods')
+    return hs.length + '|' + (hs[0] ? hs[0].textContent : '?')
+  })()
+)
+dTrue(
+  'DOM: SelectMenu nested Group dropped (one header total; nested header text absent)',
+  smHeaders('live-selectmenu-nested').length === 1 &&
+    !(doc.querySelector('#live-selectmenu-nested').textContent || '').includes('InnerGroup'),
+  (doc.querySelector('#live-selectmenu-nested') || {}).textContent
+)
+dEq(
+  'DOM: SelectMenu multiple mode marks membership --selected + shows the checkmark',
+  '1|1',
+  [
+    doc.querySelectorAll('#live-selectmenu-multiple .n-base-select-option--selected').length,
+    doc.querySelectorAll('#live-selectmenu-multiple .n-base-select-option__check').length
+  ].join('|')
+)
+dTrue(
+  'DOM: SelectMenu single-mode selected option shows the checkmark (upstream surprise #9), carrying fade-in-scale-up-transition-* when checkmarkTransition set',
+  !!doc.querySelector('#live-selectmenu-checktransition .n-base-select-option__check') &&
+    [...doc.querySelectorAll('#live-selectmenu-checktransition *')].some((e) =>
+      [...e.classList].some((c) => c.startsWith('fade-in-scale-up-transition'))
+    ),
+  clsOf(doc.querySelector('#live-selectmenu-checktransition .n-base-select-option__check'))
+)
+dEq(
+  'DOM: SelectMenu showCheckmark False -> no --show-checkmark class, no checkmark on the selected option',
+  '1|0|0',
+  [
+    String(smOptions('live-selectmenu-nocheckmark').length),
+    String(doc.querySelectorAll('#live-selectmenu-nocheckmark .n-base-select-option--show-checkmark').length),
+    String(doc.querySelectorAll('#live-selectmenu-nocheckmark .n-base-select-option__check').length)
+  ].join('|')
+)
+dEq(
+  'DOM: SelectMenu no rows -> __empty[data-empty] with the n-empty fallback and NO option-wrapper',
+  'present|true|present|absent',
+  (() => {
+    const id = 'live-selectmenu-empty'
+    const empty = doc.querySelector(`#${id} .n-base-select-menu__empty`)
+    return [
+      empty ? 'present' : 'absent',
+      String(!!empty && empty.hasAttribute('data-empty')),
+      doc.querySelector(`#${id} .n-empty`) ? 'present' : 'absent',
+      doc.querySelector(`#${id} .n-base-select-menu-option-wrapper`) ? 'present' : 'absent'
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: SelectMenu empty slot replaces the n-empty fallback',
+  'present|absent|Nothing here',
+  (() => {
+    const id = 'live-selectmenu-emptyslot'
+    const empty = doc.querySelector(`#${id} .n-base-select-menu__empty`)
+    return [
+      empty ? 'present' : 'absent',
+      doc.querySelector(`#${id} .n-empty`) ? 'present' : 'absent',
+      empty ? empty.textContent.trim() : null
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: SelectMenu Custom renders verbatim and counts as a row (not empty)',
+  'true|absent',
+  (() => {
+    const id = 'live-selectmenu-custom'
+    const root = doc.querySelector('#' + id)
+    return [
+      !!root && (root.textContent || '').includes('custom-verbatim'),
+      doc.querySelector(`#${id} .n-base-select-menu__empty`) ? 'present' : 'absent'
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: SelectMenu --pending never auto-applied; caller attributes land on the option',
+  '0|on|present',
+  (() => {
+    const none = doc.querySelectorAll('#live-selectmenu-default .n-base-select-option--pending').length
+    const a = doc.querySelector('#live-selectmenu-pending .n-base-select-option[data-pending="on"]')
+    const b = doc.querySelectorAll('#live-selectmenu-pending .n-base-select-option--pending').length
+    return [none, a ? a.getAttribute('data-pending') : null, b ? 'present' : 'absent'].join('|')
+  })()
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
