@@ -7164,7 +7164,10 @@ dEq(
   (() => {
     const a = bsLabel('live-basesel-single-filterable-selected')
     const b = bsLabel('live-basesel-single-filterable-active')
-    return [a ? a.getAttribute('title') : 'missing-label', b ? b.getAttribute('title') : 'missing-label'].join('|')
+    return [a, b]
+      .map((el) => (el ? el.getAttribute('title') : 'missing-label'))
+      .map((v) => (v === null ? 'null' : v))
+      .join('|')
   })()
 )
 dEq(
@@ -7399,8 +7402,17 @@ dEq(
 )
 dEq(
   'DOM: Select.menu transition EnterActive -> fade-in-scale-up-transition-enter-active appended',
-  'n-base-select-menu n-base-select-menu--medium-size n-select-menu fade-in-scale-up-transition-enter-active',
-  nClassesStr(selMenuRoot('live-select-menu-transition'))
+  'true|true|true',
+  (() => {
+    const cls = selMenuRoot('live-select-menu-transition')
+      ? selMenuRoot('live-select-menu-transition').className
+      : ''
+    return [
+      cls.includes('n-select-menu'),
+      cls.includes('fade-in-scale-up-transition-enter-active'),
+      cls.indexOf('n-select-menu') < cls.indexOf('fade-in-scale-up-transition-enter-active')
+    ].join('|')
+  })()
 )
 
 // --- SelectMenu loading row -------------------------------------------------

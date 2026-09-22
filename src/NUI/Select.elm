@@ -6,6 +6,7 @@ module NUI.Select exposing
     , defaults
     , filterOptions
     , menu
+    , menuDefaults
     , menuVars
     , toggleValue
     , view

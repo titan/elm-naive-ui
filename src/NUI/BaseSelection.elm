@@ -508,37 +508,20 @@ multipleShowPlaceholder opts =
         && (not opts.active || opts.pattern == "")
 
 
-{-| The tag wrappers — every visible tag (`ellipsisTag` slices upstream's
-numeric `maxTagCount`), then the `+N` counter when tags remain hidden.
+{-| The tag wrappers — every tag verbatim (`Select` does the upstream numeric
+`maxTagCount` slicing), then the `+N` counter rendered verbatim when
+`ellipsisTag` is set.
 -}
 tagWrapperNodes : Theme -> Options msg -> List (Element msg)
 tagWrapperNodes theme opts =
-    List.map (tagWrapperNode theme opts) (visibleTags opts)
+    List.map (tagWrapperNode theme opts) opts.tags
         ++ (case opts.ellipsisTag of
-                Just maxTagCount ->
-                    let
-                        rest =
-                            List.length opts.tags - maxTagCount
-                    in
-                    if rest > 0 then
-                        [ counterWrapperNode theme opts rest ]
-
-                    else
-                        []
+                Just rest ->
+                    [ counterWrapperNode theme opts rest ]
 
                 Nothing ->
                     []
            )
-
-
-visibleTags : Options msg -> List (Tag msg)
-visibleTags opts =
-    case opts.ellipsisTag of
-        Just maxTagCount ->
-            List.take maxTagCount opts.tags
-
-        Nothing ->
-            opts.tags
 
 
 {-| One `n-base-selection-tag-wrapper` — the `NTag` it wraps is `closable`
