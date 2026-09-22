@@ -6211,6 +6211,25 @@ dEq(
   '#action',
   dgText('live-dialog-action', '.n-dialog__action')
 )
+// `action = Just []` (slot present, empty) still renders the action node and so
+// suppresses `--last` on the content (upstream: slot presence alone renders the
+// node) — zero buttons, since the slot replaces them.
+dEq(
+  'DOM: Dialog action=Just [] renders the action node (empty, no .n-button) and the content carries NO --last',
+  'present|0|false',
+  (() => {
+    const id = 'live-dialog-action-empty'
+    const action = doc.querySelector('#' + id + ' .n-dialog__action')
+    const content = doc.querySelector('#' + id + ' .n-dialog__content')
+    return (
+      (action ? 'present' : 'absent') +
+      '|' +
+      String(doc.querySelectorAll('#' + id + ' .n-dialog__action .n-button').length) +
+      '|' +
+      String(content ? content.classList.contains('n-dialog__content--last') : 'no-content')
+    )
+  })()
+)
 
 // close variants
 const dgClose = (id) => doc.querySelector('#' + id + ' .n-dialog__close')
@@ -6261,6 +6280,25 @@ dEq(
   (() => {
     const e = doc.querySelector('#live-dialog-closeslot [data-caller-close]')
     return e ? e.getAttribute('data-caller-close') : null
+  })()
+)
+// the slot suppresses the ENTIRE default close wiring: no n-base-close node and
+// no a11y trio on the wrapper (upstream: slot present -> no NBaseClose, no
+// handleCloseClick) — only the caller's element, ported inside the wrapper.
+dEq(
+  'DOM: Dialog caller close slot suppresses the default close wiring (wrapper has no n-base-close, no role/aria-label/tabindex; only the caller element)',
+  'DIV|n-dialog__close n-dialog--rtl|no-base-close|1|on',
+  (() => {
+    const c = dgClose('live-dialog-closeslot')
+    if (!c) return null
+    const kids = [...c.children]
+    return [
+      c.tagName,
+      [...c.classList].filter((x) => x.startsWith('n-')).join(' '),
+      c.querySelector('.n-base-close') ? 'has-base-close' : 'no-base-close',
+      String(kids.length),
+      kids[0] ? kids[0].getAttribute('data-caller-close') : 'no-first-child'
+    ].join('|')
   })()
 )
 dTrue(

@@ -7354,6 +7354,13 @@ liveNodes =
                             , action = Just [ Element.text "#action" ]
                         }
                     )
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-action-empty") ]
+                    (Dialog.view Theme.default
+                        { dgD
+                            | content = Just (Element.text "Body")
+                            , action = Just []
+                        }
+                    )
                 , Element.el [ Element.htmlAttribute (HA.id "live-dialog-dark") ]
                     (Dialog.view Theme.dark { dgD | kind = T.Warning, content = Just (Element.text "Body") })
 
