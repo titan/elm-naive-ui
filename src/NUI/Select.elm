@@ -218,8 +218,196 @@ menuDefaults =
 display state derived from `value` + `options` per the module docstring.
 -}
 view : Theme -> Options msg -> List (SelectMenu.Option msg) -> Element msg
-view _ _ _ =
-    Element.none
+view theme opts options =
+    Element.el
+        ([ I.classes [ "n-select" ] ] ++ opts.attributes)
+        (BaseSelection.view theme (baseSelectionOptions opts options))
+
+
+{-| The trigger's options derived per the module docstring: the single label
+/ the multiple tags (upstream `selectedOptionRef` / `selectedOptionsRef` via
+`getMergedOptions` — option lookup first, then the fallback), the numeric
+`maxTagCount` slice and the clear gate — everything else passes straight
+through (the wrapper keeps `attributes`; `BaseSelection` gets none of its
+own).
+-}
+baseSelectionOptions : Options msg -> List (SelectMenu.Option msg) -> BaseSelection.Options msg
+baseSelectionOptions opts options =
+    let
+        selectedLabel =
+            case opts.value of
+                SelectMenu.Single (Just value) ->
+                    case findLeaf value options of
+                        Just leaf ->
+                            Just leaf.label
+
+                        Nothing ->
+                            fallbackLabel opts.fallbackOption value
+
+                _ ->
+                    Nothing
+
+        tags =
+            case opts.value of
+                SelectMenu.Multiple values ->
+                    List.filterMap (tagFor opts.fallbackOption options) values
+
+                _ ->
+                    []
+
+        ( shownTags, ellipsisTag ) =
+            sliceTags opts.maxTagCount tags
+
+        selected =
+            if opts.multiple then
+                not (List.isEmpty tags)
+
+            else
+                selectedLabel /= Nothing
+
+        d =
+            BaseSelection.defaults
+    in
+    { d
+        | size = baseSize opts.size
+        , multiple = opts.multiple
+        , filterable = opts.filterable
+        , active = opts.active
+        , focused = opts.focused
+        , disabled = opts.disabled
+        , bordered = opts.bordered
+        , status = opts.status
+        , loading = opts.loading
+        , showClear =
+            opts.clearable
+                && not opts.disabled
+                && (opts.hover || opts.active)
+                && selected
+        , showArrow = opts.showArrow
+        , placeholder = opts.placeholder
+        , pattern = opts.pattern
+        , selectedLabel = selectedLabel
+        , tags = shownTags
+        , ellipsisTag = ellipsisTag
+        , arrow = opts.arrow
+        , onClear = opts.onClear
+        , onPatternInput = opts.onPatternInput
+        , onDeleteTag = opts.onDeleteTag
+        , rtl = opts.rtl
+    }
+
+
+{-| The value's leaf option — upstream's `valOptMap` walk: groups recurse
+into their children, `Custom` rows carry no value to match, first match
+wins.
+-}
+findLeaf : String -> List (SelectMenu.Option msg) -> Maybe (SelectMenu.LeafOption msg)
+findLeaf value options =
+    case options of
+        [] ->
+            Nothing
+
+        (SelectMenu.Option leaf) :: rest ->
+            if leaf.value == value then
+                Just leaf
+
+            else
+                findLeaf value rest
+
+        (SelectMenu.Group group) :: rest ->
+            case findLeaf value group.children of
+                Just found ->
+                    Just found
+
+                Nothing ->
+                    findLeaf value rest
+
+        (SelectMenu.Custom _) :: rest ->
+            findLeaf value rest
+
+
+{-| Upstream's default `fallbackOption` — an unknown value shows itself as
+its own label; `fallbackOption = False` shows no selection.
+-}
+fallbackLabel : Bool -> String -> Maybe String
+fallbackLabel fallbackOption value =
+    if fallbackOption then
+        Just value
+
+    else
+        Nothing
+
+
+{-| One multiple-mode tag — the value's option (its `disabled` rides along,
+upstream `closable = !option.disabled`), else the fallback (a bare
+value-as-label tag, enabled); unknown values drop when
+`fallbackOption = False`.
+-}
+tagFor : Bool -> List (SelectMenu.Option msg) -> String -> Maybe (BaseSelection.Tag msg)
+tagFor fallbackOption options value =
+    case findLeaf value options of
+        Just leaf ->
+            Just
+                (BaseSelection.Tag
+                    { value = leaf.value
+                    , label = leaf.label
+                    , disabled = leaf.disabled
+                    }
+                )
+
+        Nothing ->
+            if fallbackOption then
+                Just
+                    (BaseSelection.Tag
+                        { value = value
+                        , label = value
+                        , disabled = False
+                        }
+                    )
+
+            else
+                Nothing
+
+
+{-| Upstream's numeric `maxTagCount` — keep the first `n` tags and report the
+rest as the `+N` ellipsis tag; `'responsive'` overflow is caller-owned (the
+module docstring).
+-}
+sliceTags : Maybe Int -> List (BaseSelection.Tag msg) -> ( List (BaseSelection.Tag msg), Maybe Int )
+sliceTags maxTagCount tags =
+    case maxTagCount of
+        Just n ->
+            let
+                count =
+                    List.length tags
+            in
+            if count > n then
+                ( List.take n tags, Just (count - n) )
+
+            else
+                ( tags, Nothing )
+
+        Nothing ->
+            ( tags, Nothing )
+
+
+{-| `Select.Size` onto the trigger's — the same four constructors, two
+distinct unions (the selection trigger has no `Huge`).
+-}
+baseSize : Size -> BaseSelection.Size
+baseSize size =
+    case size of
+        Tiny ->
+            BaseSelection.Tiny
+
+        Small ->
+            BaseSelection.Small
+
+        Medium ->
+            BaseSelection.Medium
+
+        Large ->
+            BaseSelection.Large
 
 
 {-| The `n-select-menu` body — `NUI.SelectMenu.view` carrying
@@ -228,8 +416,73 @@ view _ _ _ =
 positioned wrapper when open.
 -}
 menu : Theme -> MenuOptions msg -> List (SelectMenu.Option msg) -> Element msg
-menu _ _ _ =
-    Element.none
+menu theme mopts options =
+    SelectMenu.view theme (menuOptions theme mopts) options
+
+
+{-| The menu assembled through `NUI.SelectMenu`'s composition seams (the
+`NUI.Popselect` precedent minus the popover classes): Select's own
+`n-select-menu` class and the follower's `fade-in-scale-up-transition`
+phase ride `extraClasses` after the menu's own classes; the merged root
+style (`menuVars`, 23 + 1 vars) rides `attributes`, applied last so its
+superset wins by last-wins. Upstream hardcodes `focusable`; `scrollbarProps`
+has no `SelectMenu` seam (the plain option-wrapper path is the port's
+render) — the field stays for the caller. An absent `size` is the menu's
+own `medium` default.
+-}
+menuOptions : Theme -> MenuOptions msg -> SelectMenu.Options msg
+menuOptions theme mopts =
+    let
+        size =
+            Maybe.withDefault Medium mopts.size
+
+        d =
+            SelectMenu.defaults
+    in
+    { d
+        | size = menuSize size
+        , multiple = mopts.multiple
+        , value = mopts.value
+        , showCheckmark = mopts.showCheckmark
+        , focusable = True
+        , loading = mopts.loading
+        , header = mopts.header
+        , action = mopts.action
+        , empty = mopts.empty
+        , onToggle = mopts.onToggle
+        , rtl = mopts.rtl
+        , extraClasses =
+            "n-select-menu"
+                :: (case mopts.transition of
+                        Just phase ->
+                            [ I.transitionClass "fade-in-scale-up-transition" phase ]
+
+                        Nothing ->
+                            []
+                   )
+        , attributes =
+            I.cssVars (menuVars theme size) :: mopts.attributes
+    }
+
+
+{-| `Select.Size` onto the menu's five-size scale — the four constructors 1:1
+(`SelectSize` has no `huge`; the menu keeps its own `Huge` for
+`NUI.Popselect`).
+-}
+menuSize : Size -> SelectMenu.Size
+menuSize size =
+    case size of
+        Tiny ->
+            SelectMenu.Tiny
+
+        Small ->
+            SelectMenu.Small
+
+        Medium ->
+            SelectMenu.Medium
+
+        Large ->
+            SelectMenu.Large
 
 
 
@@ -242,8 +495,21 @@ current value starts fresh from the key); single mode always selects —
 Select has no `cancelable` (that is `NUI.Popselect`).
 -}
 toggleValue : Bool -> SelectMenu.Value -> String -> SelectMenu.Value
-toggleValue _ _ _ =
-    SelectMenu.Single Nothing
+toggleValue multiple current key =
+    if multiple then
+        case current of
+            SelectMenu.Multiple values ->
+                if List.member key values then
+                    SelectMenu.Multiple (List.filter (\v -> v /= key) values)
+
+                else
+                    SelectMenu.Multiple (values ++ [ key ])
+
+            _ ->
+                SelectMenu.Multiple [ key ]
+
+    else
+        SelectMenu.Single (Just key)
 
 
 {-| Upstream's default filter (`resolvedFilter` + `filterOptions`): a
@@ -253,8 +519,52 @@ value; groups filter their children recursively and drop when empty;
 everything (upstream short-circuits the same way).
 -}
 filterOptions : String -> List (SelectMenu.Option msg) -> List (SelectMenu.Option msg)
-filterOptions _ options =
-    options
+filterOptions pattern options =
+    if String.isEmpty (String.trim pattern) then
+        options
+
+    else
+        List.filterMap (filterOption (String.toLower (String.trim pattern))) options
+
+
+{-| One node under the trimmed, lowercased needle — a leaf matches on its
+label first, then its value (upstream `resolvedFilter`'s two
+`patternMatched` probes); a group filters its children recursively and
+drops when nothing survived; a `Custom` row passes through (nothing to
+match).
+-}
+filterOption : String -> SelectMenu.Option msg -> Maybe (SelectMenu.Option msg)
+filterOption needle option =
+    case option of
+        SelectMenu.Option leaf ->
+            if patternMatched needle leaf.label || patternMatched needle leaf.value then
+                Just option
+
+            else
+                Nothing
+
+        SelectMenu.Group group ->
+            let
+                children =
+                    List.filterMap (filterOption needle) group.children
+            in
+            if List.isEmpty children then
+                Nothing
+
+            else
+                Just (SelectMenu.Group { group | children = children })
+
+        SelectMenu.Custom _ ->
+            Just option
+
+
+{-| Upstream `patternMatched` — `String.contains` is the
+`indexOf >= 0` truthiness (`1 + indexOf` of the try/catch original); the
+needle arrives already trimmed and lowercased.
+-}
+patternMatched : String -> String -> Bool
+patternMatched needle value =
+    String.contains needle (String.toLower value)
 
 
 
@@ -266,5 +576,6 @@ own var (`--n-menu-box-shadow`, the follower menu's shadow). The trigger's
 52 vars live in `NUI.BaseSelection.cssVars`.
 -}
 menuVars : Theme -> Size -> List ( String, String )
-menuVars _ _ =
-    []
+menuVars theme size =
+    SelectMenu.cssVars theme (menuSize size)
+        ++ [ ( "--n-menu-box-shadow", (SelectTheme.vars theme).menuBoxShadow ) ]
