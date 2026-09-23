@@ -8371,6 +8371,241 @@ dEq(
   nClassesStr(wmCont('live-wm-unselectable'))
 )
 
+// --- Menu --------------------------------------------------------------------
+// The n-menu walk (Menu.tsx itemRenderer + use-menu-child.ts geometry +
+// Submenu.tsx collapsed semantics). Vertical probe: exact root/content class
+// lists in upstream order, the 43-var set, indent px (root 32, group child
+// 16+32, submenu child 32+32), the icon inline quartet (maxIconSize 24 w/h,
+// iconSize 20 font, 8 margin), group title + extra leading space, divider,
+// aria-expanded both ways, arrows only on submenu contents.
+const menuRoot = (id) => doc.querySelector('#' + id + ' .n-menu')
+const menuContentByLabel = (id, label) => {
+  const root = menuRoot(id)
+  if (!root) return null
+  const header = [...root.querySelectorAll('.n-menu-item-content-header')].find(
+    (h) => h.textContent.split(' ')[0] === label
+  )
+  return header ? header.closest('.n-menu-item-content') : null
+}
+dEq(
+  'DOM: Menu vertical root class exactly "n-menu n-menu--vertical" (no --inverted class upstream)',
+  'n-menu n-menu--vertical',
+  nClassesStr(menuRoot('live-menu-v'))
+)
+dEq(
+  'DOM: Menu root role=menu + the full 43-var set',
+  'menu|43',
+  (menuRoot('live-menu-v') ? menuRoot('live-menu-v').getAttribute('role') : null) +
+    '|' + countVars(menuRoot('live-menu-v'))
+)
+dTrue(
+  'DOM: Menu root style starts with --n-divider-color (first var, Menu.tsx cssVarsRef order)',
+  (styleAt(menuRoot('live-menu-v')) || '').startsWith('--n-divider-color:'),
+  styleAt(menuRoot('live-menu-v'))
+)
+dEq(
+  'DOM: Menu selected leaf content class exactly "n-menu-item-content n-menu-item-content--selected" (modifier order)',
+  'n-menu-item-content n-menu-item-content--selected',
+  nClassesStr(menuContentByLabel('live-menu-v', 'grp-leaf'))
+)
+dEq(
+  'DOM: Menu expanded submenu trigger content exactly "n-menu-item-content n-menu-item-content--child-active"',
+  'n-menu-item-content n-menu-item-content--child-active',
+  nClassesStr(menuContentByLabel('live-menu-v', 'Sub1'))
+)
+dEq(
+  'DOM: Menu closed submenu trigger content carries --collapsed (vertical closed)',
+  'n-menu-item-content n-menu-item-content--collapsed',
+  nClassesStr(menuContentByLabel('live-menu-v', 'GrpSub'))
+)
+dTrue(
+  'DOM: Menu root submenu padding-left = rootIndent 32 (use-menu-child.ts root branch)',
+  (styleAt(menuContentByLabel('live-menu-v', 'Sub1')) || '').includes('padding-left: 32px'),
+  styleAt(menuContentByLabel('live-menu-v', 'Sub1'))
+)
+dTrue(
+  'DOM: Menu group-child leaf padding-left = indent/2 + the group\'s own padding = 16+48 = 64px (InGroup branch)',
+  (styleAt(menuContentByLabel('live-menu-v', 'grp-leaf')) || '').includes('padding-left: 64px'),
+  styleAt(menuContentByLabel('live-menu-v', 'grp-leaf'))
+)
+dTrue(
+  'DOM: Menu submenu-child leaf padding-left = indent + 32 = 64px (InSubmenu branch)',
+  (styleAt(menuContentByLabel('live-menu-v', 'sub-leaf')) || '').includes('padding-left: 64px'),
+  styleAt(menuContentByLabel('live-menu-v', 'sub-leaf'))
+)
+dTrue(
+  'DOM: Menu icon inline quartet = width/height maxIconSize(24), font-size iconSize(20), margin-right 8 (use-menu-child.ts)',
+  (() => {
+    const s = styleAt(doc.querySelector('#live-menu-v .n-menu-item-content__icon')) || ''
+    return s.includes('width: 24px') && s.includes('height: 24px') && s.includes('font-size: 20px') && s.includes('margin-right: 8px')
+  })(),
+  styleAt(doc.querySelector('#live-menu-v .n-menu-item-content__icon'))
+)
+const menuGroupTitle = doc.querySelector('#live-menu-v .n-menu-item-group-title')
+dEq(
+  'DOM: Menu group title text = label + " extra" (upstream leading-space text node kept)',
+  'G1 2',
+  menuGroupTitle ? menuGroupTitle.textContent : null
+)
+dTrue(
+  'DOM: Menu group title padding-left = 48px (InSubmenu isGroup → indent/2 + 32)',
+  (styleAt(menuGroupTitle) || '').includes('padding-left: 48px'),
+  styleAt(menuGroupTitle)
+)
+dEq(
+  'DOM: Menu group = title + children div carrying no n-* classes (MenuOptionGroup.tsx)',
+  'title|DIV|none',
+  (() => {
+    const g = doc.querySelector('#live-menu-v .n-menu-item-group')
+    if (!g) return 'missing'
+    const kids = [...g.children]
+    const kidClasses = kids[1] ? [...kids[1].classList] : []
+    return [
+      kids[0] && kids[0].classList.contains('n-menu-item-group-title') ? 'title' : 'other',
+      kids[1] ? kids[1].tagName : 'none',
+      kids[1] ? (kidClasses.some((c) => c.startsWith('n-')) ? kidClasses.join(',') : 'none') : 'none'
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: Menu submenu aria-expanded true when open, false when closed (Submenu.tsx:229)',
+  'true|false',
+  (() => {
+    const subs = [...doc.querySelectorAll('#live-menu-v .n-submenu')]
+    const byLabel = (label) =>
+      subs.find((s) => {
+        const h = s.querySelector(':scope > .n-menu-item > .n-menu-item-content > .n-menu-item-content-header')
+        return h && h.textContent.split(' ')[0] === label
+      })
+    const open = byLabel('Sub1')
+    const closed = byLabel('GrpSub')
+    return [open ? open.getAttribute('aria-expanded') : null, closed ? closed.getAttribute('aria-expanded') : null].join('|')
+  })()
+)
+svgNsPin(
+  'DOM: Menu arrow svg is SVG-namespace (http://www.w3.org/2000/svg — renders in real browsers)',
+  '#live-menu-v .n-menu-item-content__arrow svg'
+)
+dEq(
+  'DOM: Menu arrows render on all three submenu triggers, never on leaves',
+  '3',
+  String(doc.querySelectorAll('#live-menu-v .n-menu-item-content__arrow').length)
+)
+dEq('DOM: Menu divider renders in vertical', '1', String(doc.querySelectorAll('#live-menu-v .n-menu-divider').length))
+
+// collapsed: root class, centering arithmetic, icon compensation, no children
+dEq(
+  'DOM: Menu collapsed root class exactly "n-menu n-menu--vertical n-menu--collapsed"',
+  'n-menu n-menu--vertical n-menu--collapsed',
+  nClassesStr(menuRoot('live-menu-collapsed'))
+)
+dTrue(
+  'DOM: Menu collapsed root content padding-left = collapsedWidth/2 − maxIconSize/2 = 12px (use-menu-child.ts centering)',
+  (styleAt(menuContentByLabel('live-menu-collapsed', 'Sub1')) || '').includes('padding-left: 12px'),
+  styleAt(menuContentByLabel('live-menu-collapsed', 'Sub1'))
+)
+dTrue(
+  'DOM: Menu collapsed icon compensation: font-size 24 (collapsedIconSize) + margin-right 32+24+8−(48+24)/2 = 28px',
+  (() => {
+    const s = styleAt(doc.querySelector('#live-menu-collapsed .n-menu-item-content__icon')) || ''
+    return s.includes('font-size: 24px') && s.includes('margin-right: 28px')
+  })(),
+  styleAt(doc.querySelector('#live-menu-collapsed .n-menu-item-content__icon'))
+)
+dEq(
+  'DOM: Menu collapsed renders no inline submenu children',
+  '0',
+  String(doc.querySelectorAll('#live-menu-collapsed .n-submenu-children').length)
+)
+
+// horizontal (S1): menubar role, NO --collapsed on triggers, aria-expanded
+// stays true, children/arrows/dividers/indent all dropped
+dEq(
+  'DOM: Menu horizontal root class + role=menubar',
+  'n-menu n-menu--horizontal|menubar',
+  nClassesStr(menuRoot('live-menu-h')) + '|' + (menuRoot('live-menu-h') ? menuRoot('live-menu-h').getAttribute('role') : null)
+)
+dEq(
+  'DOM: Menu horizontal submenu trigger emits NO --collapsed class (Submenu.tsx:100-105 forces collapsed=false)',
+  'n-menu-item-content n-menu-item-content--child-active',
+  nClassesStr(menuContentByLabel('live-menu-h', 'Sub1'))
+)
+dEq(
+  'DOM: Menu horizontal submenu aria-expanded="true" (the popover owns the body — trigger reads expanded)',
+  'true',
+  (() => {
+    const s = doc.querySelector('#live-menu-h .n-submenu')
+    return s ? s.getAttribute('aria-expanded') : null
+  })()
+)
+dEq(
+  'DOM: Menu horizontal drops submenu children, arrows, dividers and indent',
+  '0|0|0|absent',
+  [
+    doc.querySelectorAll('#live-menu-h .n-submenu-children').length,
+    doc.querySelectorAll('#live-menu-h .n-menu-item-content__arrow').length,
+    doc.querySelectorAll('#live-menu-h .n-menu-divider').length
+  ]
+    .map(String)
+    .join('|') +
+    '|' +
+    ((styleAt(menuContentByLabel('live-menu-h', 'Sub1')) || '').includes('padding-left') ? 'present' : 'absent')
+)
+
+// inverted: vars-only swap, class list unchanged
+dTrue(
+  'DOM: Menu inverted swaps item-color-active to primary (#18a058), never the changeColor literal',
+  (() => {
+    const s = styleAt(menuRoot('live-menu-inv')) || ''
+    return s.includes('--n-item-color-active:#18a058') && !s.includes('rgba(24, 160, 88, 0.1)')
+  })(),
+  styleAt(menuRoot('live-menu-inv'))
+)
+dEq(
+  'DOM: Menu inverted is vars-only — no --inverted class upstream',
+  'n-menu n-menu--vertical',
+  nClassesStr(menuRoot('live-menu-inv'))
+)
+
+// disabled inheritance: menu-level hits submenus only (NSubmenu checks it);
+// group disabled is a leaf-only injection (S2 split, MenuOption.tsx:31-37)
+dTrue(
+  'DOM: Menu menu-level disabled hits submenus but NOT root leaves',
+  (() => {
+    const sub = menuContentByLabel('live-menu-dis', 'Sub1')
+    const leaf = menuContentByLabel('live-menu-dis', 'root-leaf')
+    return (
+      !!sub &&
+      sub.classList.contains('n-menu-item-content--disabled') &&
+      !!leaf &&
+      !leaf.classList.contains('n-menu-item-content--disabled')
+    )
+  })(),
+  'submenu dead / root leaf alive'
+)
+dTrue(
+  'DOM: Menu disabled group kills its LEAF (group injection) but not its submenu child (S2 split)',
+  (() => {
+    const leaf = menuContentByLabel('live-menu-gdis', 'gdis-leaf')
+    const sub = menuContentByLabel('live-menu-gdis', 'gdis-sub')
+    return (
+      !!leaf &&
+      leaf.classList.contains('n-menu-item-content--disabled') &&
+      !!sub &&
+      !sub.classList.contains('n-menu-item-content--disabled')
+    )
+  })(),
+  'leaf dead / submenu alive'
+)
+dTrue(
+  'DOM: Menu leaf under submenu > disabled-group ignores the group (the submenu injection wins)',
+  (() => {
+    const leaf = menuContentByLabel('live-menu-gdis', 'gdis-deep')
+    return !!leaf && !leaf.classList.contains('n-menu-item-content--disabled')
+  })(),
+  'alive'
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

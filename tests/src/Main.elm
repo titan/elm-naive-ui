@@ -66,6 +66,7 @@ import NUI.List as NList
 import NUI.LoadingBar as LoadingBar
 import NUI.Marquee as Marquee
 import NUI.Mention as Mention
+import NUI.Menu as Menu
 import NUI.Modal as Modal
 import NUI.NumberAnimation as NumberAnimation
 import NUI.PageHeader as PageHeader
@@ -138,6 +139,7 @@ type Msg
     | DialogClose
     | DialogPositive
     | DialogNegative
+    | MenuExpandedKeys (List String)
 
 
 {-| The model is a counter of dropdown `onSelect` / modal `onClose` / drawer
@@ -170,6 +172,9 @@ update msg count =
             count + 1
 
         DialogNegative ->
+            count + 1
+
+        MenuExpandedKeys _ ->
             count + 1
 
 
@@ -4336,6 +4341,174 @@ expectedBaseSelectionVarsMedium =
 -- CHECKS -----------------------------------------------------------------------
 
 
+{-| The menu fixtures — one tree shared by the eq checks and the DOM
+probes (submenu > group > leaf nesting, an extra'd submenu with an icon, a
+lone divider, a root group) plus the disabled-injection tree (S2).
+-}
+menuD : Menu.Options Msg
+menuD =
+    Menu.defaults
+
+
+menuWith : (Menu.Options Msg -> Menu.Options Msg) -> Menu.Options Msg
+menuWith f =
+    let
+        d =
+            menuD
+    in
+    f d
+
+
+menuIcon : Element Msg
+menuIcon =
+    Element.text "i"
+
+
+menuLeaf : String -> Menu.Option Msg
+menuLeaf key =
+    Menu.Option
+        { key = key
+        , label = key
+        , extra = Nothing
+        , icon = Nothing
+        , disabled = False
+        , children = Nothing
+        , attributes = []
+        }
+
+
+menuTree : List (Menu.Option Msg)
+menuTree =
+    [ menuLeaf "root-leaf"
+    , Menu.Divider { attributes = [] }
+    , Menu.Option
+        { key = "sub-1"
+        , label = "Sub1"
+        , extra = Just "3"
+        , icon = Just menuIcon
+        , disabled = False
+        , children =
+            Just
+                [ menuLeaf "sub-leaf"
+                , Menu.Group
+                    { key = "sub-1-g"
+                    , label = "G1"
+                    , extra = Just "2"
+                    , disabled = False
+                    , children =
+                        [ menuLeaf "grp-leaf"
+                        , Menu.Option
+                            { key = "grp-sub"
+                            , label = "GrpSub"
+                            , extra = Nothing
+                            , icon = Nothing
+                            , disabled = False
+                            , children = Just [ menuLeaf "grp-sub-leaf" ]
+                            , attributes = []
+                            }
+                        ]
+                    , attributes = []
+                    }
+                ]
+        , attributes = []
+        }
+    , Menu.Option
+        { key = "sub-2"
+        , label = "Sub2"
+        , extra = Nothing
+        , icon = Nothing
+        , disabled = False
+        , children = Just [ menuLeaf "sub-2-leaf" ]
+        , attributes = []
+        }
+    , Menu.Group
+        { key = "top-g"
+        , label = "TopG"
+        , extra = Nothing
+        , disabled = False
+        , children = [ menuLeaf "top-g-leaf" ]
+        , attributes = []
+        }
+    ]
+
+
+{-| The disabled-injection fixture (upstream MenuOption.tsx:31-37 ternary +
+MenuOptionGroup.tsx:31-35): a disabled group kills its leaf children but
+not its submenus; a group under a submenu never reaches that submenu's
+leaves (the submenu injection wins).
+-}
+menuGDisTree : List (Menu.Option Msg)
+menuGDisTree =
+    [ Menu.Group
+        { key = "gdis-g"
+        , label = "gdis-g"
+        , extra = Nothing
+        , disabled = True
+        , children =
+            [ menuLeaf "gdis-leaf"
+            , Menu.Option
+                { key = "gdis-sub"
+                , label = "gdis-sub"
+                , extra = Nothing
+                , icon = Nothing
+                , disabled = False
+                , children = Just [ menuLeaf "gdis-sub-leaf" ]
+                , attributes = []
+                }
+            ]
+        , attributes = []
+        }
+    , Menu.Option
+        { key = "gdis-out"
+        , label = "gdis-out"
+        , extra = Nothing
+        , icon = Nothing
+        , disabled = False
+        , children =
+            Just
+                [ Menu.Group
+                    { key = "gdis-deep-g"
+                    , label = "gdis-deep-g"
+                    , extra = Nothing
+                    , disabled = True
+                    , children = [ menuLeaf "gdis-deep" ]
+                    , attributes = []
+                    }
+                ]
+        , attributes = []
+        }
+    ]
+
+
+menuVarValue : String -> List ( String, String ) -> String
+menuVarValue name vars =
+    vars
+        |> List.filter (\( k, _ ) -> k == name)
+        |> List.map Tuple.second
+        |> String.concat
+
+
+dropdownKind : Dropdown.Option msg -> String
+dropdownKind option =
+    case option of
+        Dropdown.Option leaf ->
+            case leaf.children of
+                Just _ ->
+                    "submenu:" ++ leaf.key
+
+                Nothing ->
+                    "leaf:" ++ leaf.key
+
+        Dropdown.Group group ->
+            "group:" ++ group.key
+
+        Dropdown.Divider _ ->
+            "divider"
+
+        Dropdown.Custom _ ->
+            "custom"
+
+
 checks : List Check
 checks =
     let
@@ -7834,6 +8007,78 @@ checks =
                     { width = 32, height = 32, xGap = 0, yGap = 0, xOffset = 0, yOffset = 0, rotate = -20, fontSize = 18, fontColor = "green", fontFamily = "F", fontStyle = "italic", fontVariant = "small-caps", fontStretch = "condensed", fontWeight = 400, lineHeight = 14, textAlign = Watermark.Left, content = Just "Seemly", debug = False }
                 )
         )
+
+    -- menu: treemate keyPath semantics through groups (getPath().keyPath
+    -- includes group keys — groups are tree nodes) --
+    , eq "menu keyPathTo descends submenu > group > submenu to the leaf"
+        (Just [ "sub-1", "sub-1-g", "grp-sub", "grp-sub-leaf" ])
+        (Menu.keyPathTo "grp-sub-leaf" menuTree)
+    , eq "menu keyPathTo miss -> Nothing"
+        Nothing
+        (Menu.keyPathTo "nope" menuTree)
+
+    -- toggleExpand (Menu.tsx): close filters; open appends; accordion closes
+    -- the FIRST open level-1 sibling only --
+    , eq "menu toggleExpanded close removes the key"
+        [ "sub-2" ]
+        (Menu.toggleExpanded False menuTree [ "sub-1", "sub-2" ] "sub-1")
+    , eq "menu toggleExpanded open appends (non-accordion)"
+        [ "sub-1", "sub-2" ]
+        (Menu.toggleExpanded False menuTree [ "sub-1" ] "sub-2")
+    , eq "menu toggleExpanded accordion closes the first open level-1 sibling, deeper keys stay"
+        [ "sub-1-g", "sub-2" ]
+        (Menu.toggleExpanded True menuTree [ "sub-1", "sub-1-g" ] "sub-2")
+    , eq "menu toggleExpanded accordion leaves level-2 opens alone"
+        [ "sub-1", "grp-sub" ]
+        (Menu.toggleExpanded True menuTree [ "sub-1" ] "grp-sub")
+
+    -- showOption (expandTo): includeSelf:false path + accordion level-1
+    -- pruning --
+    , eq "menu expandTo expands the ancestor path (self excluded)"
+        [ "sub-1", "sub-1-g", "grp-sub" ]
+        (Menu.expandTo False menuTree "grp-sub-leaf" [])
+    , eq "menu expandTo accordion closes level-1 keys off the path"
+        [ "sub-1", "sub-1-g", "grp-sub" ]
+        (Menu.expandTo True menuTree "grp-sub-leaf" [ "sub-2" ])
+    , eq "menu expandTo unknown key leaves the state alone"
+        [ "sub-1" ]
+        (Menu.expandTo True menuTree "nope" [ "sub-1" ])
+
+    -- uncontrolled init: defaultExpandAll = non-leaf keys (groups count,
+    -- dividers never; empty children lists are leaves) --
+    , eq "menu initialExpandedKeys expandAll = every non-leaf key in walk order"
+        [ "sub-1", "sub-1-g", "grp-sub", "sub-2", "top-g" ]
+        (Menu.initialExpandedKeys True Nothing menuTree)
+    , eq "menu initialExpandedKeys value path"
+        [ "sub-1", "sub-1-g" ]
+        (Menu.initialExpandedKeys False (Just "grp-leaf") menuTree)
+
+    -- rawNodes → NDropdown options (the popover seam mapping; extra has no
+    -- dropdown counterpart and is dropped) --
+    , eq "menu submenuDropdownOptions maps leaf/submenu/group/divider"
+        [ "leaf:root-leaf", "divider", "submenu:sub-1", "submenu:sub-2", "group:top-g" ]
+        (List.map dropdownKind (Menu.submenuDropdownOptions menuTree))
+
+    -- the 43-var cssVars block (Menu.tsx cssVarsRef declaration order) --
+    , eq "menu cssVars names in upstream declaration order (43)"
+        "--n-divider-color|--n-bezier|--n-font-size|--n-border-color-horizontal|--n-border-radius|--n-item-height|--n-group-text-color|--n-color|--n-item-text-color|--n-item-text-color-hover|--n-item-text-color-active|--n-item-text-color-child-active|--n-item-text-color-child-active-hover|--n-item-text-color-active-hover|--n-item-icon-color|--n-item-icon-color-hover|--n-item-icon-color-active|--n-item-icon-color-active-hover|--n-item-icon-color-child-active|--n-item-icon-color-child-active-hover|--n-item-icon-color-collapsed|--n-item-text-color-horizontal|--n-item-text-color-hover-horizontal|--n-item-text-color-active-horizontal|--n-item-text-color-child-active-horizontal|--n-item-text-color-child-active-hover-horizontal|--n-item-text-color-active-hover-horizontal|--n-item-icon-color-horizontal|--n-item-icon-color-hover-horizontal|--n-item-icon-color-active-horizontal|--n-item-icon-color-active-hover-horizontal|--n-item-icon-color-child-active-horizontal|--n-item-icon-color-child-active-hover-horizontal|--n-arrow-color|--n-arrow-color-hover|--n-arrow-color-active|--n-arrow-color-active-hover|--n-arrow-color-child-active|--n-arrow-color-child-active-hover|--n-item-color-hover|--n-item-color-active|--n-item-color-active-hover|--n-item-color-active-collapsed"
+        (List.map Tuple.first (Menu.cssVars Theme.default False)
+            |> String.join "|"
+        )
+    , eq "menu cssVars inverted keeps the exact same names in order"
+        (List.map Tuple.first (Menu.cssVars Theme.default False))
+        (List.map Tuple.first (Menu.cssVars Theme.default True))
+    , eq "menu cssVars item-height 42px / font-size 14px (light self + fontBodyMedium)"
+        [ "42px", "14px" ]
+        [ menuVarValue "--n-item-height" (Menu.cssVars Theme.default False)
+        , menuVarValue "--n-font-size" (Menu.cssVars Theme.default False)
+        ]
+    , eq "menu cssVars item-color-active normal = changeColor(primary, .1) literal"
+        "rgba(24, 160, 88, 0.1)"
+        (menuVarValue "--n-item-color-active" (Menu.cssVars Theme.default False))
+    , eq "menu cssVars item-color-active inverted = primary"
+        "#18a058"
+        (menuVarValue "--n-item-color-active" (Menu.cssVars Theme.default True))
     ]
 
 
@@ -9388,6 +9633,36 @@ liveNodes =
                     (Watermark.view Theme.default imageOpts [ Element.text "content" ])
                 , Element.el [ Element.htmlAttribute (HA.id "live-wm-unselectable") ]
                     (Watermark.view Theme.default (wmWith (\d -> { d | selectable = False, content = Just "x" })) [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-menu-v") ]
+                    (Menu.view Theme.default
+                        { menuD | value = Just "grp-leaf", expandedKeys = [ "sub-1" ], onSelect = Just Selected, onExpandedKeysChange = Just MenuExpandedKeys }
+                        menuTree
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-menu-collapsed") ]
+                    (Menu.view Theme.default
+                        { menuD | collapsed = True, expandedKeys = [ "sub-1" ] }
+                        menuTree
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-menu-h") ]
+                    (Menu.view Theme.default
+                        { menuD | mode = Menu.Horizontal, value = Just "grp-leaf", expandedKeys = [ "sub-1" ] }
+                        menuTree
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-menu-inv") ]
+                    (Menu.view Theme.default
+                        { menuD | inverted = True, value = Just "grp-leaf", expandedKeys = [ "sub-1" ] }
+                        menuTree
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-menu-dis") ]
+                    (Menu.view Theme.default
+                        { menuD | disabled = True, expandedKeys = [ "sub-1" ] }
+                        menuTree
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-menu-gdis") ]
+                    (Menu.view Theme.default
+                        { menuD | expandedKeys = [ "gdis-sub", "gdis-out" ] }
+                        menuGDisTree
+                    )
                 ]
             )
         ]
