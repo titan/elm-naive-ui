@@ -59,7 +59,6 @@ import NUI.Internal.Loading as Loading
 import NUI.Theme as Theme
 import NUI.Theme.Tree as TreeTheme
 import Svg
-import Svg.Attributes as SA
 
 
 {-| Upstream `CheckStrategy` — `'all' | 'parent' | 'child'`.
