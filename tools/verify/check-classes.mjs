@@ -38,6 +38,9 @@ const ALLOW = new Set([
   // Upstream emits it next to --disabled; no rule targets it (the --disabled
   // rules carry the styles).
   'n-calendar-cell--not-allowed',
+  // Tree.tsx emits --checkable on the root; no rule targets it (checkable
+  // gates whether the checkbox column renders at all).
+  'n-tree--checkable',
   // Pagination emits it on page items whose click would be a no-op; the item's
   // look comes from --active/--hover/--disabled, never from this class.
   'n-pagination-item--clickable',

@@ -103,6 +103,9 @@ const targets = {
   // filterable flat) share the .n-cascader-menu class and the 17-var set.
   '.n-cascader': false,
   '.n-cascader-menu': true,
+  // The tree root carries the full 17-var set (three of them derived from
+  // the wrapper-padding/height strings); the rows live inside it.
+  '.n-tree': true,
   '.n-base-selection': true,
   '.n-select-menu': true,
   // AutoComplete: the same shape one level down — the wrapper is a bare

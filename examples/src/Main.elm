@@ -85,6 +85,7 @@ import NUI.Theme as Theme exposing (Theme)
 import NUI.Thing as Thing
 import NUI.Timeline as Timeline
 import NUI.Tooltip as Tooltip
+import NUI.Tree as Tree
 import NUI.Types as T
 import NUI.Typography as Typo
 import Time
@@ -686,6 +687,7 @@ body =
     , popselectSection
     , selectSection
     , cascaderSection
+    , treeSection
     , autoCompleteSection
     , mentionSection
     , tooltipSection
@@ -2602,6 +2604,131 @@ cascaderOptions =
                 ]
         }
     ]
+
+
+{-| The tree section — one root per demo shape. All interaction state is
+caller-owned: the expanded / checked / selected / loading keys are plain
+lists the caller derives with `Tree.toggleExpand` / `Tree.check` / … and
+feeds back in.
+-}
+treeSection : Element msg
+treeSection =
+    section "Tree"
+        "Naive UI's tree — the `div.n-tree` root (17 `--n-*` vars; three derived from the wrapper-padding/height strings) rendering the flattened visible nodes as `n-tree-node-wrapper` rows: a `showLine` indent chain, the switcher (arrow svg, the loading spinner for `loadingKeys` keys — sw20/r85 baseline under the `spin*` overrides), the `data-checkbox`-wrapped `NUI.Checkbox` (cascade-checked via the shipped treemate helpers), and the prefix/label/suffix content. Everything interactive is data: `expandedKeys` / `checkedKeys` / `selectedKeys` / `pendingKey` / `loadingKeys` / `dropMark`; the pure helpers (`flatten`, `getCheckedKeys`, `check` / `uncheck`, `toggleExpand`, `toggleSelect`, `getNonLeafKeys`, `filterTree`) do the treemate math. Not ported: virtual list, expand motion, drag/keyboard events."
+    <|
+        [ demoRow "Basic · checkable (cascade, Child strategy)"
+            [ Tree.view theme
+                { treeD | data = treeOptions, expandedKeys = [ "beatles", "stones" ] }
+            , Tree.view theme
+                { treeD
+                    | data = treeOptions
+                    , expandedKeys = [ "beatles" ]
+                    , checkable = True
+                    , cascade = True
+                    , checkStrategy = Tree.Child
+                    , checkedKeys = [ "drive", "nowhere" ]
+                }
+            ]
+        , demoRow "Multiple selection · showLine"
+            [ Tree.view theme
+                { treeD
+                    | data = treeOptions
+                    , expandedKeys = [ "beatles" ]
+                    , multiple = True
+                    , selectedKeys = [ "drive", "exile" ]
+                }
+            , Tree.view theme
+                { treeD | data = treeOptions, expandedKeys = [ "beatles", "stones" ], showLine = True }
+            ]
+        , demoRow "block-line + ellipsis · pending + highlight"
+            [ Tree.view theme
+                { treeD
+                    | data = treeOptions
+                    , expandedKeys = [ "beatles" ]
+                    , blockLine = True
+                    , ellipsis = True
+                    , pendingKey = Just "nowhere"
+                    , highlightKeys = Just [ "revolver" ]
+                }
+            ]
+        , demoRow "Loading switcher · empty"
+            [ Tree.view theme
+                { treeD | data = treeOptions, expandedKeys = [ "beatles", "stones" ], loadingKeys = [ "stones" ] }
+            , Tree.view theme { treeD | attributes = [ Element.width (Element.px 240) ] }
+            ]
+        ]
+
+
+treeD : Tree.Options msg
+treeD =
+    Tree.defaults
+
+
+{-| Two albums, a nested disc one deep, a disabled leaf — enough shape for
+the indent chain, the `--last-child` / `--is-leaf` guide lines, the
+`--checkable` cascade, and the disabled state.
+-}
+treeOptions : List (Tree.TreeOption msg)
+treeOptions =
+    [ Tree.TreeOption
+        { key = "beatles"
+        , label = "The Beatles"
+        , disabled = False
+        , checkboxDisabled = False
+        , isLeaf = False
+        , children =
+            Just
+                [ leafOption "drive" "Drive My Car"
+                , leafOption "nowhere" "Nowhere Man"
+                , Tree.TreeOption
+                    { key = "anthology"
+                    , label = "Anthology"
+                    , disabled = False
+                    , checkboxDisabled = False
+                    , isLeaf = False
+                    , children = Just [ leafOption "anth1" "Anthology 1" ]
+                    , prefix = []
+                    , suffix = []
+                    }
+                ]
+        , prefix = []
+        , suffix = []
+        }
+    , Tree.TreeOption
+        { key = "stones"
+        , label = "The Rolling Stones"
+        , disabled = False
+        , checkboxDisabled = False
+        , isLeaf = False
+        , children = Just [ leafOption "exile" "Exile on Main St." ]
+        , prefix = []
+        , suffix = []
+        }
+    , Tree.TreeOption
+        { key = "wildlife"
+        , label = "Wild Life (disabled)"
+        , disabled = True
+        , checkboxDisabled = False
+        , isLeaf = True
+        , children = Nothing
+        , prefix = []
+        , suffix = []
+        }
+    ]
+
+
+leafOption : String -> String -> Tree.TreeOption msg
+leafOption key label =
+    Tree.TreeOption
+        { key = key
+        , label = label
+        , disabled = False
+        , checkboxDisabled = False
+        , isLeaf = True
+        , children = Nothing
+        , prefix = []
+        , suffix = []
+        }
 
 
 autoCompleteSection : Element msg
