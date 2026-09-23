@@ -41,6 +41,9 @@ const ALLOW = new Set([
   // Tree.tsx emits --checkable on the root; no rule targets it (checkable
   // gates whether the checkbox column renders at all).
   'n-tree--checkable',
+  // TreeNode.tsx:441 emits --checkable per node; no rule targets it (the
+  // checkbox column's layout hangs off .n-tree-node-checkbox).
+  'n-tree-node--checkable',
   // Pagination emits it on page items whose click would be a no-op; the item's
   // look comes from --active/--hover/--disabled, never from this class.
   'n-pagination-item--clickable',
