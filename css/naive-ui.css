@@ -6440,6 +6440,37 @@ background-color: var(--n-td-color-striped)
 
           border-left: 0px solid var(--n-merged-border-color);}
 
+/* ===== naive-ui: watermark ===== */
+.nui-root.nui-root .n-watermark-container {
+
+    position: relative;}.nui-root.nui-root .n-watermark-container:not(.n-watermark-container--selectable) {
+
+      user-select: none;
+      -webkit-user-select: none;}.nui-root.nui-root .n-watermark-container.n-watermark-container--global-rotate {
+
+      overflow: hidden;}.nui-root.nui-root .n-watermark-container.n-watermark-container--fullscreen {
+
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      position: fixed;}.nui-root.nui-root .n-watermark {
+
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    background-repeat: repeat;}.nui-root.nui-root .n-watermark.n-watermark--fullscreen {
+
+      position: fixed;}.nui-root.nui-root .n-watermark.n-watermark--global-rotate {
+
+      position: absolute;
+      height: max(284vh, 284vw);
+      width: max(284vh, 284vw);}
+
 /* ===== elm-ui bridge =====
  *
  * Components are built from elm-ui elements, and elm-ui styles its own helper classes

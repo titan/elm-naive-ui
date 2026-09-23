@@ -1,0 +1,24 @@
+{
+  "light": {
+    "fontFamily": "v-sans, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\""
+  },
+  "dark": {
+    "fontFamily": "v-sans, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\""
+  },
+  "refs": {
+    "light": {
+      "refs": {},
+      "seen": [
+        "fontFamily"
+      ]
+    },
+    "dark": {
+      "refs": {
+        "fontFamily": "fontFamily"
+      },
+      "seen": [
+        "fontFamily"
+      ]
+    }
+  }
+}

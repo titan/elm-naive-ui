@@ -417,5 +417,14 @@ export const components = {
     // bare tag wrappers upstream — the port builds the tag tree itself.
     cssr: ['table/src/styles/index.cssr.ts', 'table/src/styles/rtl.cssr.ts'],
     theme: 'table/styles/light.ts'
+  },
+  watermark: {
+    // Own cssr is the two-block overlay family (.n-watermark-container with
+    // --selectable/--global-rotate/--fullscreen modifiers, .n-watermark with
+    // --fullscreen/--global-rotate) — the tiled background image itself is
+    // canvas-generated at runtime upstream, so no vars beyond the theme's
+    // single fontFamily. No rtl.cssr upstream.
+    cssr: ['watermark/src/styles/index.cssr.ts'],
+    theme: 'watermark/styles/light.ts'
   }
 }
