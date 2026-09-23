@@ -7991,6 +7991,144 @@ dEq(
   })()
 )
 
+// --- Tree --------------------------------------------------------------------
+// The stub renders ONLY the `div.n-tree` root (no rows, no switcher, no
+// checkbox, no content), so every row-level pin below is RED by construction.
+// Class names are pinned from the repo's own extracted stylesheet
+// (/tmp/tree-extracted-css.css) and the upstream render sources
+// (/tmp/naive-ui-tree-src/src/TreeNode*.tsx).
+const treeRoot = (id) => doc.querySelector('#' + id + ' .n-tree')
+const treeRows = (id) => doc.querySelectorAll(`#${id} .n-tree-node-wrapper`)
+
+dEq(
+  'DOM: Tree root classes = n-tree (+ rtl/checkable/block-node/block-line/ellipsis modifiers, in order)',
+  'n-tree n-tree--rtl n-tree--checkable n-tree--block-node n-tree--block-line n-tree--ellipsis',
+  nClassesStr(treeRoot('live-tree-rtl-block'))
+)
+dEq(
+  'DOM: Tree root tabindex = 0',
+  '0',
+  treeRoot('live-tree-rtl-block') ? treeRoot('live-tree-rtl-block').getAttribute('tabindex') : null
+)
+dEq(
+  'DOM: Tree root carries the full 17-var set (three derived from the wrapper-padding/height strings)',
+  17,
+  countVars(treeRoot('live-tree-rtl-block'))
+)
+dEq(
+  'DOM: Tree basic renders one n-tree-node-wrapper row per flattened node (a, a1, a2, a3, b, c)',
+  'a,a1,a2,a3,b,c',
+  [...treeRows('live-tree-basic')]
+    .map((r) => {
+      const node = r.querySelector('.n-tree-node')
+      const text = node ? node.querySelector('.n-tree-node-content__text') : null
+      return text ? text.textContent : '?'
+    })
+    .join(',')
+)
+dEq(
+  'DOM: Tree row = wrapper > node > [indent chain, switcher, content]; content = __prefix? + __text + __suffix?',
+  'true|true|true',
+  (() => {
+    const row = treeRows('live-tree-basic')[1] // a1 (level 1)
+    if (!row) return 'false|false|false'
+    const node = row.querySelector('.n-tree-node')
+    const switcher = node ? node.querySelector('.n-tree-node-switcher') : null
+    const content = node ? node.querySelector('.n-tree-node-content') : null
+    const text = content ? content.querySelector('.n-tree-node-content__text') : null
+    return [!!switcher, !!content, !!text].map(String).join('|')
+  })()
+)
+dEq(
+  'DOM: Tree switcher carries data-switcher, width = indent (24px), and the __icon cell',
+  'true|width:24px|true',
+  (() => {
+    const sw = doc.querySelector('#live-tree-basic .n-tree-node-switcher')
+    return [
+      sw ? sw.hasAttribute('data-switcher') : false,
+      sw ? sw.getAttribute('style') : null,
+      sw ? !!sw.querySelector('.n-tree-node-switcher__icon') : false
+    ].join('|')
+  })()
+)
+svgNsPin(
+  'DOM: Tree switcher arrow svg is SVG-namespace (http://www.w3.org/2000/svg — renders in real browsers)',
+  '#live-tree-basic .n-tree-node-switcher__icon svg'
+)
+dEq(
+  'DOM: Tree switcher expanded -> n-tree-node-switcher--expanded; a leaf switcher -> --hide',
+  'true|true',
+  (() => {
+    const expanded = doc.querySelector('#live-tree-basic .n-tree-node-switcher--expanded')
+    // a1 is a leaf: its switcher (if rendered) must be --hide
+    const rows = [...treeRows('live-tree-basic')]
+    const a1Row = rows.find((r) => {
+      const t = r.querySelector('.n-tree-node-content__text')
+      return t && t.textContent === 'A1'
+    })
+    const a1Sw = a1Row ? a1Row.querySelector('.n-tree-node-switcher--hide') : null
+    return [!!expanded, !!a1Sw].map(String).join('|')
+  })()
+)
+dEq(
+  'DOM: Tree checkable -> each row carries a data-checkbox span wrapping .n-checkbox; placement right -> --right',
+  '6|0|6',
+  (() => {
+    const boxes = doc.querySelectorAll('#live-tree-states .n-tree-node-checkbox')
+    const right = doc.querySelectorAll('#live-tree-states .n-tree-node-checkbox--right')
+    const plain = doc.querySelectorAll('#live-tree-basic .n-tree-node-checkbox')
+    return [boxes.length, right.length, plain.length].join('|')
+  })()
+)
+dEq(
+  'DOM: Tree state classes on rows: selected / pending / highlight / disabled / selectable / clickable',
+  'n-tree-node n-tree-node--checkable n-tree-node--selected n-tree-node--pending n-tree-node--highlight n-tree-node--selectable n-tree-node--clickable',
+  (() => {
+    // a1 is selected; a2 is pending; a2y is highlight; wildlife-equivalent disabled root b
+    const rows = [...treeRows('live-tree-states')]
+    const find = (label) =>
+      rows.find((r) => {
+        const t = r.querySelector('.n-tree-node-content__text')
+        return t && t.textContent === label
+      })
+    const picked = ['A1', 'A2', 'A2Y', 'B']
+      .map(find)
+      .filter(Boolean)
+      .map((r) => r.querySelector('.n-tree-node'))
+      .filter(Boolean)
+    const classes = new Set()
+    picked.forEach((n) => [...n.classList].filter((c) => c.startsWith('n-tree-node')).forEach((c) => classes.add(c)))
+    return [...classes].sort().join(' ')
+  })()
+)
+dEq(
+  'DOM: Tree showLine -> the indent chain carries --show-line, --is-leaf and --last-child modifiers',
+  'true|true|true',
+  (() => {
+    const showLine = doc.querySelectorAll('#live-tree-showline .n-tree-node-indent--show-line')
+    const isLeaf = doc.querySelectorAll('#live-tree-showline .n-tree-node-indent--is-leaf')
+    const lastChild = doc.querySelectorAll('#live-tree-showline .n-tree-node-indent--last-child')
+    return [showLine.length > 0, isLeaf.length > 0, lastChild.length > 0].map(String).join('|')
+  })()
+)
+dEq(
+  'DOM: Tree loadingKeys -> the switcher renders .n-base-loading (spinner) instead of the arrow svg',
+  'present|absent',
+  [
+    doc.querySelector('#live-tree-loading .n-tree-node-switcher .n-base-loading') ? 'present' : 'absent',
+    doc.querySelector('#live-tree-loading .n-tree-node-switcher .n-base-icon') ? 'present' : 'absent'
+  ].join('|')
+)
+dEq(
+  'DOM: Tree empty (no visible nodes) -> .n-tree__empty renders NEmpty with the localized description',
+  'true|No Data',
+  (() => {
+    const empty = doc.querySelector('#live-tree-empty .n-tree__empty')
+    const desc = empty ? empty.querySelector('.n-empty__description') : null
+    return [!!empty, desc ? desc.textContent : null].join('|')
+  })()
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
