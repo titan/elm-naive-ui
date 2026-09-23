@@ -3700,6 +3700,44 @@ treeLeaf key label =
         }
 
 
+{-| The treemate mixed-order scan fixture (`lib/check.js` break rule): an
+unchecked leaf BEFORE a checked one — the parent must land in the
+indeterminate set (the pre-fix port stopped the scan early).
+-}
+mixedTree : List (Tree.TreeOption msg)
+mixedTree =
+    [ Tree.TreeOption
+        { key = "p"
+        , label = "P"
+        , disabled = False
+        , checkboxDisabled = False
+        , isLeaf = False
+        , children = Just [ treeLeaf "u" "U", treeLeaf "c" "C", treeLeaf "u2" "U2" ]
+        , prefix = []
+        , suffix = []
+        }
+    ]
+
+
+{-| The unloaded branch — `isLeaf = False` with `children = Nothing`
+(treemate `isExpilicitlyNotLoaded`): a visible non-leaf the switcher
+renders (the spinner shows while its key is in `loadingKeys`).
+-}
+unloadedTree : List (Tree.TreeOption msg)
+unloadedTree =
+    [ Tree.TreeOption
+        { key = "x"
+        , label = "X"
+        , disabled = False
+        , checkboxDisabled = False
+        , isLeaf = False
+        , children = Nothing
+        , prefix = []
+        , suffix = []
+        }
+    ]
+
+
 {-| The flattened rows, as their keys (the `flatten` pin reads shape, not
 raw records).
 -}
@@ -7220,6 +7258,20 @@ checks =
         }
         (Tree.filterTree "a2" treeFixture)
     , eq "tree filterTree empty pattern: the whole tree passes untouched" treeFixture (Tree.filterTree "" treeFixture).tree
+
+    -- treemate mixed-order scan: unchecked child BEFORE a checked one still
+    -- lands the parent in the indeterminate set (lib/check.js break rule)
+    , eq "tree cascade scan: check 'c' after unchecked 'u' keeps the key" [ "c" ] (Tree.check True Tree.All False "c" [] mixedTree)
+    , eq "tree cascade scan: the parent is indeterminate (checked child after an unchecked one)" [ "p" ] (Tree.getCheckedKeys True Tree.All False [ "c" ] mixedTree).indeterminateKeys
+
+    -- non-cascade check runs through treemate's merge (Set semantics: dedupe)
+    , eq "tree non-cascade check dedupes caller keys (treemate merge)" [ "k1", "k2" ] (Tree.check False Tree.All False "k2" [ "k1", "k1" ] mixedTree)
+
+    -- the unloaded branch (isLeaf = False, children = Nothing): visible,
+    -- non-leaf, spinner-able; cascade keeps its key under allowNotLoaded
+    , eq "tree unloaded branch: flatten renders it" [ "x" ] (treeFlatKeys (Tree.flatten [] unloadedTree))
+    , eq "tree unloaded branch: flatten marks isLeaf False" [ False ] (List.map .isLeaf (Tree.flatten [] unloadedTree))
+    , eq "tree unloaded branch: getNonLeafKeys counts it (treemate !isLeaf)" [ "x" ] (Tree.getNonLeafKeys unloadedTree)
     , eq "tree filterTree no match: an empty pruned tree" [] (Tree.filterTree "zzz" treeFixture).tree
     , eq "tree cssVars: 17 keys (light)" 17 (List.length (Tree.cssVars light))
     , eq "tree cssVars: exact key order (upstream cssVarsRef)"
@@ -8727,6 +8779,28 @@ liveNodes =
                     )
                 , Element.el [ Element.htmlAttribute (HA.id "live-tree-empty") ]
                     (Tree.view Theme.default treeD)
+
+                -- Tree.view pattern highlight (default showIrrelevantNodes:
+                -- full tree displays, matches still paint --highlight)
+                , Element.el [ Element.htmlAttribute (HA.id "live-tree-filter") ]
+                    (Tree.view Theme.default
+                        { treeD | data = treeFixture, expandedKeys = [ "a", "a2" ], pattern = "a2" }
+                    )
+
+                -- Tree.view drop mark (the classless absolute div on the a1 row)
+                , Element.el [ Element.htmlAttribute (HA.id "live-tree-dropmark") ]
+                    (Tree.view Theme.default
+                        { treeD
+                            | data = treeFixture
+                            , expandedKeys = [ "a" ]
+                            , dropMark =
+                                Just
+                                    { key = "a1"
+                                    , position = Tree.Before
+                                    , offsetLevel = 0
+                                    }
+                        }
+                    )
                 ]
             )
         ]

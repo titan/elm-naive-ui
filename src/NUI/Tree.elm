@@ -96,10 +96,14 @@ type alias DropMark =
 
 
 {-| One tree node — upstream's raw `TreeOption`, wrapped because a recursive
-record cannot be a type alias. `children = Nothing` is upstream's absent
-`children` field; `Just []` is a loaded-but-empty branch, which treemate
-counts as non-leaf (the switcher renders, expanded or not). `isLeaf`
-overrides the inference when `True` (upstream `isLeaf` prop).
+record cannot be a type alias. `isLeaf` is upstream's explicit `isLeaf`
+prop (treemate `utils.isLeaf`: it wins outright — treemate `True` is a leaf,
+`False` an expandable branch whatever `children` holds):
+`children = Just kids` is a loaded branch ( `Just []` = loaded-empty, still
+expandable — a truthy array), `children = Nothing` with `isLeaf = False` is
+the unloaded branch (the async-load shape: switcher renders, the spinner
+shows while the key is in `loadingKeys`, treemate
+`isExpilicitlyNotLoaded`), and `isLeaf = True` is a leaf outright.
 -}
 type TreeOption msg
     = TreeOption
@@ -260,20 +264,20 @@ modifiers, `tabindex 0` unless `disabled`, inline `--n-*` vars) and one
 `Tree.tsx:1896-1903`) when nothing is visible.
 
 The display derivation (`Tree.tsx:395-474, 565-576`): a non-empty `pattern`
-with `showIrrelevantNodes = False` swaps the display tree for
-`filterTree`'s pruned tree; the highlight set is `highlightKeys` when given,
-else the filter's match set (derived whenever `pattern` is non-empty — the
-display switch is the only part `showIrrelevantNodes` gates). Checked /
-indeterminate normalize against the FULL data tree always (upstream
-`dataTreeMate` vs `displayTreeMate`); `indeterminateKeys` overrides the
-computed set wholesale.
+runs `filterTree` unconditionally — its highlight set feeds `--highlight`
+whatever `showIrrelevantNodes` does (that switch only picks the DISPLAY
+tree); the highlight set is `highlightKeys` when given, else the filter's
+match set. Checked / indeterminate normalize against the FULL data tree
+with the default `All` strategy (upstream passes no `checkStrategy` to
+`getCheckedKeys` — the configured one applies only to `check` / `uncheck`);
+`indeterminateKeys` overrides the computed set wholesale.
 
 -}
 view : Theme.Theme -> Options msg -> Element.Element msg
 view theme opts =
     let
         filterInfo =
-            if opts.pattern == "" || opts.showIrrelevantNodes then
+            if opts.pattern == "" then
                 { displayTree = opts.data
                 , highlightKeys = []
                 }
@@ -286,13 +290,18 @@ view theme opts =
                             opts.pattern
                             opts.data
                 in
-                { displayTree = info.tree
+                { displayTree =
+                    if opts.showIrrelevantNodes then
+                        opts.data
+
+                    else
+                        info.tree
                 , highlightKeys = info.highlightKeys
                 }
 
         status =
             getCheckedKeys opts.cascade
-                opts.checkStrategy
+                All
                 opts.allowCheckingNotLoaded
                 opts.checkedKeys
                 opts.data
@@ -808,7 +817,7 @@ dropMarkNode opts flat =
                             ++ cssPosition
                             ++ ":0;left:"
                             ++ String.fromInt left
-                            ++ "px;height:2px;background:var(--n-drop-mark-color);transform-origin:"
+                            ++ "px;height:2px;background-color:var(--n-drop-mark-color);transform-origin:"
                             ++ position_
                             ++ ";border-radius:1px;transform:translateY("
                             ++ transform
@@ -862,20 +871,21 @@ emptyNode theme opts =
 aggregate bottom-up (`indeterminateKeys` collects the partial ones);
 `checkStrategy` then collapses the result (`All` keeps every level,
 `Parent` the topmost checked ancestor, `Child` leaf levels only). An
-unloaded node (`children = Nothing`, `isLeaf = False`) keeps its own key
-under `allowCheckingNotLoaded` and is dropped without it (upstream
-`check` / `uncheck` throw `SubtreeNotLoadedError` there — the pure port
-drops the key instead; `getCheckedKeys` normalization never throws and
-behaves identically either way).
+unloaded node (`isLeaf = False`, `children = Nothing`) keeps its own key
+and skips only the subtree extension under `allowCheckingNotLoaded` —
+without it, upstream throws `SubtreeNotLoadedError` (from this
+normalization too, `lib/check.js` `getExtendedCheckedKeySet`); the pure
+port stays total by keeping the same set the `allowNotLoaded` path would
+produce.
 -}
 getCheckedKeys : Bool -> CheckStrategy -> Bool -> List String -> List (TreeOption msg) -> CheckResult
 getCheckedKeys cascade strategy allowNotLoaded keys options =
     normalize cascade strategy allowNotLoaded NoToggle keys (index options)
 
 
-{-| Upstream `doCheck`'s multiple branch (`Tree.tsx:1034-1062`) — treemate's
-`check`: the key's subtree joins the checked set, then the cascade
-re-normalizes. See `getCheckedKeys` for the unloaded-node rule.
+{-| Upstream `handleCheck`'s multiple branch (`Tree.tsx:1034-1062`) —
+treemate's `check`: the key's subtree joins the checked set, then the
+cascade re-normalizes. See `getCheckedKeys` for the unloaded-node rule.
 -}
 check : Bool -> CheckStrategy -> Bool -> String -> List String -> List (TreeOption msg) -> List String
 check cascade strategy allowNotLoaded key current options =
@@ -893,10 +903,11 @@ uncheck cascade strategy allowNotLoaded key current options =
         (normalize cascade strategy allowNotLoaded (ToUncheck key) current (index options))
 
 
-{-| Upstream `toggleExpand` (`Tree.tsx:1104-1131`): a present key collapses
-(order preserved); an absent one expands unless it is unknown or a leaf.
-Under `accordion` every expanded SIBLING of the key (the parent's whole
-children list, self included) collapses first, then the key appends.
+{-| Upstream `toggleExpand` (`Tree.tsx:1060-1102`): a present key collapses
+(order preserved); an absent one expands unless it is unknown or a leaf
+(`Tree.tsx:1097-1100` `getNode` / `isLeaf` guard). Under `accordion` every
+expanded SIBLING of the key (the parent's whole children list, self
+included) collapses first, then the key appends.
 -}
 toggleExpand : Bool -> List (TreeOption msg) -> String -> List String -> List String
 toggleExpand accordion data key expandedKeys =
@@ -1276,17 +1287,13 @@ childrenOf option =
     .children (fields option)
 
 
-{-| treemate's `isLeaf` — the explicit `isLeaf` prop wins; without it the
-`children` field decides: absent is a leaf, an empty-but-present list is a
-loaded empty branch (a truthy array).
+{-| treemate's `isLeaf` (`utils.isLeaf`) — the explicit prop wins outright
+(`isLeaf !== undefined → return isLeaf`; the Elm record always sets it, so
+`False` + `children = Nothing` is the unloaded branch, never a leaf).
 -}
 isLeaf : TreeOption msg -> Bool
 isLeaf option =
-    let
-        raw =
-            fields option
-    in
-    raw.isLeaf || raw.children == Nothing
+    (fields option).isLeaf
 
 
 {-| An expandable node whose children have not arrived — `isLeaf = False`
@@ -1323,10 +1330,10 @@ normalize cascade strategy allowNotLoaded toggle keys nodes =
         { checkedKeys =
             case toggle of
                 ToCheck key ->
-                    addIfAbsent key keys
+                    dedupe (keys ++ [ key ])
 
                 ToUncheck key ->
-                    List.filter ((/=) key) keys
+                    dedupe (List.filter ((/=) key) keys)
 
                 NoToggle ->
                     keys
@@ -1548,7 +1555,9 @@ cascadeNode level node ( checked, indeterminate ) strategy =
                                 (List.any
                                     (\c ->
                                         not (disabledOf c)
-                                            && not (isLeaf c)
+                                            && not (fields c).isLeaf
+                                            && childrenOf c
+                                            /= Nothing
                                             && keyOf c
                                             == k
                                     )
@@ -1606,10 +1615,12 @@ cascadeNode level node ( checked, indeterminate ) strategy =
             )
 
 
-{-| treemate's per-parent scan over its children (disabled ones skipped): a
-checked child marks partial, an indeterminate or unchecked one clears
-full — and either break ends the scan (the checked branch never clears
-full, upstream's quirk).
+{-| treemate's per-parent scan (`lib/check.js`, inside the cascade loop): a
+checked child marks partial and never clears full (upstream's quirk); an
+indeterminate one marks partial and breaks; an unchecked one clears full
+and breaks ONLY when partial is already set — an unchecked child followed
+by a checked one still lands the parent in the indeterminate set. Disabled
+children are skipped without touching any flag.
 -}
 scanChildren :
     List (TreeOption msg)
@@ -1641,7 +1652,7 @@ scanChildren children checked indeterminate ( fullyChecked, partialChecked, allD
                     ( False, True, False )
 
                 else
-                    scanChildren rest checked indeterminate ( False, False, False )
+                    scanChildren rest checked indeterminate ( False, partialChecked, False )
 
 
 addIfAbsent : String -> List String -> List String

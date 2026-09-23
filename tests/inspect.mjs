@@ -8112,6 +8112,26 @@ dEq(
   })()
 )
 dEq(
+  'DOM: Tree pattern -> matching rows paint --highlight even under the default showIrrelevantNodes (Tree.tsx:568-571)',
+  'true|true',
+  (() => {
+    const root = doc.querySelector('#live-tree-filter .n-tree')
+    const highlighted = doc.querySelectorAll('#live-tree-filter .n-tree-node--highlight')
+    const visibleRows = doc.querySelectorAll('#live-tree-filter .n-tree-node-wrapper')
+    // full tree still displays (8 rows) AND the a2/a2x/a2y rows highlight
+    return [highlighted.length === 3, visibleRows.length === 8].map(String).join('|')
+  })()
+)
+dEq(
+  'DOM: Tree dropMark -> the classless absolute line on the marked row (dnd.tsx before-branch bytes)',
+  'true|position:absolute;box-sizing:border-box;right:0;top:0;left:54px;height:2px;background-color:var(--n-drop-mark-color);transform-origin:top;border-radius:1px;transform:translateY(-4px)',
+  (() => {
+    const row = doc.querySelectorAll('#live-tree-dropmark .n-tree-node')[1] // a1 (level 1)
+    const mark = row ? row.querySelector(':scope > div:not([class])') : null
+    return [!!mark, mark ? mark.getAttribute('style') : null].map(String).join('|')
+  })()
+)
+dEq(
   'DOM: Tree loadingKeys -> the LOADING row switcher renders .n-base-loading (spinner), not .n-base-icon',
   'present|absent',
   (() => {
