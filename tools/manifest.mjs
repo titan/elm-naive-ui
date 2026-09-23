@@ -426,5 +426,15 @@ export const components = {
     // single fontFamily. No rtl.cssr upstream.
     cssr: ['watermark/src/styles/index.cssr.ts'],
     theme: 'watermark/styles/light.ts'
+  },
+  menu: {
+    // Own cssr is the whole menu family (.n-menu with --vertical/--horizontal
+    // /--collapsed/--inverted modifiers, .n-menu-item-content state modifiers,
+    // .n-submenu with __arrow/__children, .n-menu-item-group,
+    // .n-menu-divider, and the popover-shared tooltip/dropdown bodies the
+    // horizontal/collapsed modes mount — those ride the tooltip/dropdown
+    // blocks with caller-owned runtime, house pattern). No rtl.cssr upstream.
+    cssr: ['menu/src/styles/index.cssr.ts'],
+    theme: 'menu/styles/light.ts'
   }
 }
