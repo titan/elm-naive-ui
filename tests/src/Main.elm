@@ -108,8 +108,10 @@ import NUI.Theme.Mention as MentionTheme
 import NUI.Theme.Select as SelectTheme
 import NUI.Theme.Tag as TagTheme
 import NUI.Thing as Thing
+import NUI.Theme.Tree as TreeTheme
 import NUI.Timeline as Timeline
 import NUI.Tooltip as Tooltip
+import NUI.Tree as Tree
 import NUI.Types as T
 import Time
 
@@ -3616,6 +3618,103 @@ cascSelectMenuD =
     Cascader.selectMenuDefaults
 
 
+{-| The tree fixture — mirrors the cascader one (a branch with a leaf, a
+nested branch, a loaded-but-empty branch, a disabled root with a child, a
+root leaf) so the treemate pins run on a tree with the same shape upstream's
+tests use: enough for the indent chain, the `--last-child` / `--is-leaf`
+guide lines, the checkable cascade and the disabled state.
+-}
+treeFixture : List (Tree.TreeOption msg)
+treeFixture =
+    [ Tree.TreeOption
+        { key = "a"
+        , label = "A"
+        , disabled = False
+        , checkboxDisabled = False
+        , isLeaf = False
+        , children =
+            Just
+                [ treeLeaf "a1" "A1"
+                , Tree.TreeOption
+                    { key = "a2"
+                    , label = "A2"
+                    , disabled = False
+                    , checkboxDisabled = False
+                    , isLeaf = False
+                    , children =
+                        Just
+                            [ { key = "a2x"
+                              , label = "A2X"
+                              , disabled = True
+                              , checkboxDisabled = False
+                              , isLeaf = True
+                              , children = Nothing
+                              , prefix = []
+                              , suffix = []
+                              }
+                                |> Tree.TreeOption
+                            , treeLeaf "a2y" "A2Y"
+                            ]
+                    , prefix = []
+                    , suffix = []
+                    }
+                , { key = "a3"
+                  , label = "A3"
+                  , disabled = False
+                  , checkboxDisabled = False
+                  , isLeaf = False
+                  , children = Just []
+                  , prefix = []
+                  , suffix = []
+                  }
+                    |> Tree.TreeOption
+                ]
+        , prefix = []
+        , suffix = []
+        }
+    , Tree.TreeOption
+        { key = "b"
+        , label = "B"
+        , disabled = True
+        , checkboxDisabled = False
+        , isLeaf = False
+        , children = Just [ treeLeaf "b1" "B1" ]
+        , prefix = []
+        , suffix = []
+        }
+    , treeLeaf "c" "C"
+    ]
+
+
+treeLeaf : String -> String -> Tree.TreeOption msg
+treeLeaf key label =
+    Tree.TreeOption
+        { key = key
+        , label = label
+        , disabled = False
+        , checkboxDisabled = False
+        , isLeaf = True
+        , children = Nothing
+        , prefix = []
+        , suffix = []
+        }
+
+
+{-| The flattened rows, as their keys (the `flatten` pin reads shape, not
+raw records).
+-}
+treeFlatKeys : List (Tree.FlatNode msg) -> List String
+treeFlatKeys rows =
+    List.map .key rows
+
+
+{-| The plain defaults binding for the live renders.
+-}
+treeD : Tree.Options msg
+treeD =
+    Tree.defaults
+
+
 {-| The flat rows of a `filterOptions` run, as their values.
 -}
 cascRowValues : List (SelectMenu.Option msg) -> List String
@@ -7071,6 +7170,63 @@ checks =
     , eq "mention defaults: autosize == False" False mnD.autosize
     , eq "mention defaults: bordered == True" True mnD.bordered
     , eq "mention menuDefaults: loading == False" False mnMenuD.loading
+
+    -- tree: treemate ground truth (the same real-treemate pins as the
+    -- cascader batch — the stub returns the inputs unchanged, so every
+    -- normalization / walk pin below is RED by construction) ------------
+    , eq "tree defaults: checkStrategy == All" Tree.All Tree.defaults.checkStrategy
+    , eq "tree defaults: checkboxPlacement == Left" Tree.Left Tree.defaults.checkboxPlacement
+    , eq "tree defaults: indent == 24" 24 Tree.defaults.indent
+    , eq "tree defaults: checkable == False" False Tree.defaults.checkable
+    , eq "tree defaults: cascade == False" False Tree.defaults.cascade
+    , eq "tree defaults: selectable == True" True Tree.defaults.selectable
+    , eq "tree defaults: showLine == False" False Tree.defaults.showLine
+    , eq "tree defaults: rtl == False" False Tree.defaults.rtl
+    , eq "tree gck all [a1]: the leaf + its indeterminate parent" { checkedKeys = [ "a1" ], indeterminateKeys = [ "a" ] } (Tree.getCheckedKeys True Tree.All False [ "a1" ] treeFixture)
+    , eq "tree gck all [a2y]: a disabled sibling counts full, a2 checked" { checkedKeys = [ "a2y", "a2" ], indeterminateKeys = [ "a" ] } (Tree.getCheckedKeys True Tree.All False [ "a2y" ] treeFixture)
+    , eq "tree gck parent [a1,a2y,a3]: collapses to the topmost" { checkedKeys = [ "a" ], indeterminateKeys = [] } (Tree.getCheckedKeys True Tree.Parent False [ "a1", "a2y", "a3" ] treeFixture)
+    , eq "tree gck child [a]: leaves only, the empty branch a3 drops" { checkedKeys = [ "a1", "a2y" ], indeterminateKeys = [ "a" ] } (Tree.getCheckedKeys True Tree.Child False [ "a" ] treeFixture)
+    , eq "tree gck all [b1]: a disabled parent is never indeterminate" { checkedKeys = [ "b1" ], indeterminateKeys = [] } (Tree.getCheckedKeys True Tree.All False [ "b1" ] treeFixture)
+    , eq "tree gck no-cascade [a1,a2y]: passthrough, nothing indeterminate" { checkedKeys = [ "a1", "a2y" ], indeterminateKeys = [] } (Tree.getCheckedKeys False Tree.All False [ "a1", "a2y" ] treeFixture)
+    , eq "tree gck all [zz]: an unknown key stays" { checkedKeys = [ "zz" ], indeterminateKeys = [] } (Tree.getCheckedKeys True Tree.All False [ "zz" ] treeFixture)
+    , eq "tree check a <- [c]: the subtree joins, DFS order, disabled leaf blocked" [ "c", "a", "a1", "a2", "a2y", "a3" ] (Tree.check True Tree.All False "a" [ "c" ] treeFixture)
+    , eq "tree check a2x <- [c]: a disabled key itself stays" [ "c", "a2x" ] (Tree.check True Tree.All False "a2x" [ "c" ] treeFixture)
+    , eq "tree uncheck a1: the key's subtree leaves, parent indeterminate" [ "a2y", "a3", "a2" ] (Tree.uncheck True Tree.All False "a1" [ "a1", "a2y", "a3", "a" ] treeFixture)
+    , eq "tree uncheck a (child): the whole value empties" [] (Tree.uncheck True Tree.Child False "a" [ "a", "a1", "a2", "a2y", "a3" ] treeFixture)
+    , eq "tree flatten [] collapsed: roots only, document order, level 0" [ "a", "b", "c" ] (treeFlatKeys (Tree.flatten [] treeFixture))
+    , eq "tree flatten [a]: the branch's children join at level 1" [ "a", "a1", "a2", "a3", "b", "c" ] (treeFlatKeys (Tree.flatten [ "a" ] treeFixture))
+    , eq "tree flatten [a,a2]: nested leaves, a2x disabled travels" [ "a", "a1", "a2", "a2x", "a2y", "a3", "b", "c" ] (treeFlatKeys (Tree.flatten [ "a", "a2" ] treeFixture))
+    , eq "tree flatten unknown key: ignored (children of nothing)" [ "a", "b", "c" ] (treeFlatKeys (Tree.flatten [ "zz" ] treeFixture))
+    , eq "tree flatten depth: a1 is level 1, a2y is level 2" [ 1, 2 ] (List.map .level (List.filter (\n -> n.key == "a1" || n.key == "a2y") (Tree.flatten [ "a", "a2" ] treeFixture)))
+    , eq "tree flatten last-child chain: a1 is last, a2y is not (a2x precedes)" [ True, False ] (List.map .isLastChild (List.filter (\n -> n.key == "a1" || n.key == "a2y") (Tree.flatten [ "a", "a2" ] treeFixture)))
+    , eq "tree getNonLeafKeys: every branch key, document order (a3 is loaded-empty -> non-leaf)" [ "a", "a2", "b" ] (Tree.getNonLeafKeys treeFixture)
+    , eq "tree toggleExpand: the key appends when absent" [ "a", "c" ] (Tree.toggleExpand False treeFixture "c" [ "a" ])
+    , eq "tree toggleExpand: the key drops when present" [ "a" ] (Tree.toggleExpand False treeFixture "a" [ "a", "c" ] |> List.filter (\k -> k /= "c"))
+    , eq "tree toggleExpand accordion: expanding b collapses the sibling a" [ "b" ] (Tree.toggleExpand True treeFixture "b" [ "a" ])
+    , eq "tree toggleExpand unknown key: appended (upstream appends)" [ "a", "zz" ] (Tree.toggleExpand False treeFixture "zz" [ "a" ])
+    , eq "tree toggleSelect single: replaces the set" [ "a2" ] (Tree.toggleSelect False False "a2" [ "a1" ])
+    , eq "tree toggleSelect single cancelable: re-select clears" [] (Tree.toggleSelect False True "a1" [ "a1" ])
+    , eq "tree toggleSelect single non-cancelable: re-select stays" [ "a1" ] (Tree.toggleSelect False False "a1" [ "a1" ])
+    , eq "tree toggleSelect multiple: toggles membership" [ "a1", "a2" ] (Tree.toggleSelect True True "a2" [ "a1" ])
+    , eq "tree toggleSelect multiple non-cancelable: append-only" [ "a1", "a2" ] (Tree.toggleSelect True False "a1" [ "a1", "a2" ] |> List.reverse |> List.reverse)
+    , eq "tree filterTree 'a2': the branch above the match survives, the match highlights, the path expands"
+        { tree = [ Tree.TreeOption { key = "a", label = "A", disabled = False, checkboxDisabled = False, isLeaf = False, children = Just [ Tree.TreeOption { key = "a2", label = "A2", disabled = False, checkboxDisabled = False, isLeaf = False, children = Just [ Tree.TreeOption { key = "a2y", label = "A2Y", disabled = False, checkboxDisabled = False, isLeaf = True, children = Nothing, prefix = [], suffix = [] } ], prefix = [], suffix = [] } ], prefix = [], suffix = [] } ]
+        , highlightKeys = [ "a2", "a2y" ]
+        , expandedKeys = [ "a" ]
+        }
+        (Tree.filterTree "a2" treeFixture)
+    , eq "tree filterTree empty pattern: the whole tree passes untouched" treeFixture (Tree.filterTree "" treeFixture).tree
+    , eq "tree filterTree no match: an empty pruned tree" [] (Tree.filterTree "zzz" treeFixture).tree
+    , eq "tree cssVars: 17 keys (light)" 17 (List.length (Tree.cssVars light))
+    , eq "tree cssVars: exact key order (upstream cssVarsRef)"
+        [ "--n-arrow-color", "--n-loading-color", "--n-bezier", "--n-font-size", "--n-node-border-radius", "--n-node-color-active", "--n-node-color-hover", "--n-node-color-pressed", "--n-node-text-color", "--n-node-text-color-disabled", "--n-drop-mark-color", "--n-node-wrapper-padding", "--n-line-offset-top", "--n-line-offset-bottom", "--n-node-content-height", "--n-line-height", "--n-line-color" ]
+        (varKeys (Tree.cssVars light))
+    , eq "tree cssVars: --n-line-offset-top = the negated wrapper-padding top" (Just "-3px") (lookup "--n-line-offset-top" (Tree.cssVars light))
+    , eq "tree cssVars: --n-line-offset-bottom = the negated wrapper-padding bottom" (Just "-0px") (lookup "--n-line-offset-bottom" (Tree.cssVars light))
+    , eq "tree cssVars: --n-node-content-height = nodeHeight - padding (30 - 3 - 0)" (Just "27px") (lookup "--n-node-content-height" (Tree.cssVars light))
+    , eq "tree cssVars: --n-arrow-color = common.textColor3" (Just light.common.textColor3) (lookup "--n-arrow-color" (Tree.cssVars light))
+    , eq "tree cssVars: --n-loading-color = common.primaryColor" (Just light.common.primaryColor) (lookup "--n-loading-color" (Tree.cssVars light))
+    , eq "tree cssVars: --n-node-color-active = the theme self value" (Just (TreeTheme.vars light).nodeColorActive) (lookup "--n-node-color-active" (Tree.cssVars light))
     ]
 
 
@@ -8520,9 +8676,49 @@ liveNodes =
                 -- Cascader.menu (the columns body — loading branch spinner + idle arrow)
                 , Element.el [ Element.htmlAttribute (HA.id "live-casc-menu-loading") ]
                     (Cascader.menu Theme.default
-                        { cascMenuD | hoverKey = Just "a", loadingKeys = [ "a2" ] }
+                        { cascMenuD | hoverKey = Just "a", loadingKeys = [ "a2"] }
                         cascTree
                     )
+
+                -- Tree.view (the flattened rows — switcher / checkbox / content)
+                , Element.el [ Element.htmlAttribute (HA.id "live-tree-basic") ]
+                    (Tree.view Theme.default
+                        { treeD | data = treeFixture, expandedKeys = [ "a", "a2" ] }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-tree-states") ]
+                    (Tree.view Theme.default
+                        { treeD
+                            | data = treeFixture
+                            , expandedKeys = [ "a" ]
+                            , checkable = True
+                            , checkboxPlacement = Tree.Right
+                            , selectedKeys = [ "a1" ]
+                            , pendingKey = Just "a2"
+                            , highlightKeys = Just [ "a2y" ]
+                            , disabled = False
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-tree-rtl-block") ]
+                    (Tree.view Theme.default
+                        { treeD
+                            | data = treeFixture
+                            , expandedKeys = [ "a" ]
+                            , rtl = True
+                            , blockNode = True
+                            , blockLine = True
+                            , ellipsis = True
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-tree-showline") ]
+                    (Tree.view Theme.default
+                        { treeD | data = treeFixture, expandedKeys = [ "a", "a2" ], showLine = True }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-tree-loading") ]
+                    (Tree.view Theme.default
+                        { treeD | data = treeFixture, expandedKeys = [ "a" ], loadingKeys = [ "a2" ] }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-tree-empty") ]
+                    (Tree.view Theme.default treeD)
                 ]
             )
         ]
