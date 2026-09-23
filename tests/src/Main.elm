@@ -107,8 +107,8 @@ import NUI.Theme.Layout as LayoutTheme
 import NUI.Theme.Mention as MentionTheme
 import NUI.Theme.Select as SelectTheme
 import NUI.Theme.Tag as TagTheme
-import NUI.Thing as Thing
 import NUI.Theme.Tree as TreeTheme
+import NUI.Thing as Thing
 import NUI.Timeline as Timeline
 import NUI.Tooltip as Tooltip
 import NUI.Tree as Tree
@@ -7222,8 +7222,12 @@ checks =
         [ "--n-arrow-color", "--n-loading-color", "--n-bezier", "--n-font-size", "--n-node-border-radius", "--n-node-color-active", "--n-node-color-hover", "--n-node-color-pressed", "--n-node-text-color", "--n-node-text-color-disabled", "--n-drop-mark-color", "--n-node-wrapper-padding", "--n-line-offset-top", "--n-line-offset-bottom", "--n-node-content-height", "--n-line-height", "--n-line-color" ]
         (varKeys (Tree.cssVars light))
     , eq "tree cssVars: --n-line-offset-top = the negated wrapper-padding top" (Just "-3px") (lookup "--n-line-offset-top" (Tree.cssVars light))
-    , eq "tree cssVars: --n-line-offset-bottom = the negated wrapper-padding bottom" (Just "-0px") (lookup "--n-line-offset-bottom" (Tree.cssVars light))
-    , eq "tree cssVars: --n-node-content-height = nodeHeight - padding (30 - 3 - 0)" (Just "27px") (lookup "--n-node-content-height" (Tree.cssVars light))
+
+    -- seemly getPadding (= getMargin) case-2: "3px 0" → bottom = parts[0] = "3px"
+    -- (standard CSS vertical/horizontal shorthand), NOT parts[1]
+    -- (tools/node_modules/seemly/es/css/index.js getMargin).
+    , eq "tree cssVars: --n-line-offset-bottom = the negated wrapper-padding bottom" (Just "-3px") (lookup "--n-line-offset-bottom" (Tree.cssVars light))
+    , eq "tree cssVars: --n-node-content-height = nodeHeight - padding (30 - 3 - 3)" (Just "24px") (lookup "--n-node-content-height" (Tree.cssVars light))
     , eq "tree cssVars: --n-arrow-color = common.textColor3" (Just light.common.textColor3) (lookup "--n-arrow-color" (Tree.cssVars light))
     , eq "tree cssVars: --n-loading-color = common.primaryColor" (Just light.common.primaryColor) (lookup "--n-loading-color" (Tree.cssVars light))
     , eq "tree cssVars: --n-node-color-active = the theme self value" (Just (TreeTheme.vars light).nodeColorActive) (lookup "--n-node-color-active" (Tree.cssVars light))
@@ -8676,7 +8680,7 @@ liveNodes =
                 -- Cascader.menu (the columns body — loading branch spinner + idle arrow)
                 , Element.el [ Element.htmlAttribute (HA.id "live-casc-menu-loading") ]
                     (Cascader.menu Theme.default
-                        { cascMenuD | hoverKey = Just "a", loadingKeys = [ "a2"] }
+                        { cascMenuD | hoverKey = Just "a", loadingKeys = [ "a2" ] }
                         cascTree
                     )
 
