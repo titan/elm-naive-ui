@@ -3606,6 +3606,16 @@ cascTree =
     ]
 
 
+cascMenuD : Cascader.MenuOptions msg
+cascMenuD =
+    Cascader.menuDefaults
+
+
+cascSelectMenuD : Cascader.SelectMenuOptions msg
+cascSelectMenuD =
+    Cascader.selectMenuDefaults
+
+
 {-| The flat rows of a `filterOptions` run, as their values.
 -}
 cascRowValues : List (SelectMenu.Option msg) -> List String
@@ -8497,6 +8507,22 @@ liveNodes =
                     (Mention.menu Theme.default mnMenuD [ smLeaf "x" "X", smLeaf "y" "Y" ])
                 , Element.el [ Element.htmlAttribute (HA.id "live-mention-menu-loading") ]
                     (Mention.menu Theme.default { mnMenuD | loading = True } [ smLeaf "x" "X" ])
+
+                -- Cascader.selectMenu (the filterable flat body — the bare empty fallback)
+                , Element.el [ Element.htmlAttribute (HA.id "live-casc-selectmenu-empty") ]
+                    (Cascader.selectMenu Theme.default cascSelectMenuD [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-casc-selectmenu-empty-slot") ]
+                    (Cascader.selectMenu Theme.default
+                        { cascSelectMenuD | empty = Just (Element.text "not-found-slot") }
+                        []
+                    )
+
+                -- Cascader.menu (the columns body — loading branch spinner + idle arrow)
+                , Element.el [ Element.htmlAttribute (HA.id "live-casc-menu-loading") ]
+                    (Cascader.menu Theme.default
+                        { cascMenuD | hoverKey = Just "a", loadingKeys = [ "a2" ] }
+                        cascTree
+                    )
                 ]
             )
         ]

@@ -7953,6 +7953,44 @@ dEq(
   })()
 )
 
+// --- Cascader ----------------------------------------------------------------
+// Upstream CascaderSelectMenu ALWAYS provides the empty slot (the not-found
+// slot's content, else []) — CascaderSelectMenu.tsx:200-203 — so the flat
+// menu's __empty wrapper renders BARE: NEmpty never mounts (the opposite of
+// Select.menu, whose absent slot falls back to NUI.Empty).
+dEq(
+  'DOM: Cascader.selectMenu zero rows -> bare __empty wrapper [data-empty], no .n-empty, no option-wrapper',
+  'present||0|0',
+  (() => {
+    const menu = doc.querySelector('#live-casc-selectmenu-empty .n-base-select-menu')
+    const emptyEl = menu ? menu.querySelector('.n-base-select-menu__empty') : null
+    return [
+      emptyEl ? 'present' : 'absent',
+      emptyEl ? emptyEl.getAttribute('data-empty') : null,
+      String(menu ? menu.querySelectorAll('.n-empty').length : -1),
+      String(menu ? menu.querySelectorAll('.n-base-select-menu-option-wrapper').length : -1)
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: Cascader.selectMenu empty = Just e -> the not-found slot content inside __empty',
+  'not-found-slot',
+  (() => {
+    const el = doc.querySelector('#live-casc-selectmenu-empty-slot .n-base-select-menu__empty')
+    return el ? el.textContent : null
+  })()
+)
+dEq(
+  'DOM: Cascader columns menu: loading branch -> spinner stroke-width 24 (CascaderOption.tsx:228; SelectMenu row is 20), idle branch keeps the arrow svg',
+  '24|present',
+  (() => {
+    const id = 'live-casc-menu-loading'
+    const circle = doc.querySelector(`#${id} .n-cascader-option__suffix svg circle`)
+    const arrow = doc.querySelector(`#${id} .n-cascader-option__suffix .n-cascader-option-icon--arrow svg`)
+    return [circle ? circle.getAttribute('stroke-width') : null, arrow ? 'present' : 'absent'].join('|')
+  })()
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

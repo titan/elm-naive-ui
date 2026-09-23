@@ -233,8 +233,9 @@ type alias Options msg =
 {-| Naive UI's defaults (`size: 'medium'` via the form/config merge,
 `showPath` / `cascade` on, `checkStrategy: 'all'`, `separator: ' / '`,
 placeholder = the en-US locale `'Please Select'`, `value = Single Nothing`
-= null, `bordered` on via the config default; everything else false /
-empty).
+= null, `bordered` on via the config default; everything else `False` /
+empty — upstream declares those booleans `undefined` (inert, only
+truthy-checked) rather than `false`, which `False` matches).
 -}
 defaults : Options msg
 defaults =
@@ -1378,7 +1379,11 @@ loadingIconNode mopts option =
 
 {-| The checked leaf's checkmark — `i.n-base-icon` with the checkmark
 modifier and the `fade-in-scale-up-transition` phase class when the caller
-drives one (`Nothing` mounts it settled).
+drives one (`Nothing` mounts it settled). Drive ENTER phases only:
+upstream's `Transition` wraps the checked branch
+(`CascaderOption.tsx:245-256`), so leave phases animate a logically
+unchecked row — a `leave-*` class on a checked row pins the icon at
+opacity 0 (`NUI.SelectMenu.checkmarkTransition` shares the wart).
 -}
 checkmarkNode : Maybe I.TransitionPhase -> Element msg
 checkmarkNode maybePhase =
@@ -1535,12 +1540,23 @@ too), the transition phase, and the merged `selectMenuVars` superset.
 Mount it instead of `menu` while `filterable && pattern /= ""` (upstream
 `showSelectMenu`). Keyboard `--pending` rides the flat rows'
 `attributes` (the `NUI.SelectMenu` seam); `autoPending` is runtime.
+The empty fallback is the BARE `__empty` wrapper: upstream always
+provides the empty slot (`not-found`'s content or `[]`,
+`CascaderSelectMenu.tsx:200-203`), so `NEmpty` never mounts — the
+opposite of `Select.menu`, whose absent slot falls back to `NUI.Empty`.
+`smopts.empty = Nothing` is the upstream default (wrapper only);
+`Just e` is the `not-found` slot.
 -}
 selectMenu : Theme -> SelectMenuOptions msg -> List (SelectMenu.Option msg) -> Element msg
 selectMenu theme smopts rows =
     SelectMenu.view theme (selectMenuOptions theme smopts) rows
 
 
+{-| The flat body's `NUI.SelectMenu` composition: the always-provided
+empty slot (upstream `resolveSlot(not-found, () => [])`) maps to `Just` —
+a bare `__empty` wrapper by default (`Element.none`), the slot content
+otherwise — so `SelectMenu`'s own `NUI.Empty` fallback never fires.
+-}
 selectMenuOptions : Theme -> SelectMenuOptions msg -> SelectMenu.Options msg
 selectMenuOptions theme smopts =
     let
@@ -1550,7 +1566,7 @@ selectMenuOptions theme smopts =
     { d
         | multiple = smopts.multiple
         , value = smopts.value
-        , empty = smopts.empty
+        , empty = Just (Maybe.withDefault Element.none smopts.empty)
         , onToggle = smopts.onToggle
         , extraClasses =
             "n-cascader-menu"
