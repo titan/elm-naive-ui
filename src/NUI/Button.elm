@@ -119,7 +119,7 @@ view theme opts children =
 
         iconEl =
             if opts.loading then
-                Just (Element.el [ I.classes [ "n-button__icon" ] ] loadingEl)
+                Just (Element.el [ I.classes [ "n-button__icon" ] ] (loadingEl opts))
 
             else
                 case opts.icon of
@@ -849,9 +849,13 @@ radius/scale defaults) carrying the `n-icon-slot` class, exactly as
 `Button.tsx` renders it under `span.n-button__icon` while loading. The svg is
 `NUI.Internal.Loading.spinner`, the library's single source (SMIL children
 kept — browsers animate the dash arc; jsdom just carries the nodes).
+The four `spin*` options port upstream's `spinProps` spread over that
+`<NBaseLoading strokeWidth={20}/>` (Button.tsx:648): a caller-set field wins
+per-field over the sw-20/r-100/scale-1 baseline; `Nothing` keeps the baseline
+value.
 -}
-loadingEl : Element msg
-loadingEl =
+loadingEl : Options msg -> Element msg
+loadingEl opts =
     Element.el
         [ I.classes [ "n-base-loading", "n-icon-slot" ]
         , Element.htmlAttribute (HA.attribute "role" "img")
@@ -863,10 +867,12 @@ loadingEl =
                 [ I.classes [ "n-base-loading__container" ] ]
                 (Element.html
                     (Loading.spinner
-                        { strokeWidth = 20
-                        , radius = 100
-                        , scale = 1
-                        , stroke = Nothing
+                        { strokeWidth =
+                            Maybe.withDefault 20 (Maybe.map toFloat opts.spinStrokeWidth)
+                        , radius =
+                            Maybe.withDefault 100 (Maybe.map toFloat opts.spinRadius)
+                        , scale = Maybe.withDefault 1 opts.spinScale
+                        , stroke = opts.spinStroke
                         }
                     )
                 )
