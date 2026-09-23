@@ -18,6 +18,17 @@ module NUI.Button exposing
         { defaults | kind = NUI.Button.Primary }
         [ Element.text "Primary" ]
 
+    -- while loading, the icon slot renders Naive UI's NBaseLoading; the four
+    -- `spin*` fields port upstream's `spinProps` spread over its
+    -- strokeWidth-20 baseline (each `Just` wins per-field, `Nothing` keeps it)
+    NUI.Button.view theme
+        { defaults
+            | loading = True
+            , spinStrokeWidth = Just 6
+            , spinStroke = Just "#ff0000"
+        }
+        [ Element.text "Loading" ]
+
 The visual result is Naive UI's own: the element carries the `.n-button` BEM classes
 and Naive UI's `--n-*` custom properties, and `NUI.Css` ships Naive UI's exact CSS.
 

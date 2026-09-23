@@ -43,6 +43,18 @@ directly with no `Transition` (matching upstream's `Spin.tsx`, where the
 ignored there. `content-class` / `content-style` are not ported (use
 `attributes`).
 
+**Why `scale`/`radius` are plain while `Button`/`Switch` spin\* are `Maybe`.**
+Upstream `Spin` re-exports `NBaseLoading`'s `scale`/`radius` as its own props
+(`exposedLoadingProps`, defaults `1`/`100`), and Vue materializes prop
+defaults before render — `Spin.tsx` always passes a concrete
+`radius={this.radius}` / `scale={this.scale}`. The value is therefore always
+present, and this record bakes the defaults in (`strokeWidth` stays a `Maybe`
+because Spin drops the prop default and computes one from `size`).
+`Button`/`Switch`, by contrast, port upstream's `spinProps` — a spread over an
+explicit `<NBaseLoading strokeWidth={20}/>` call site — where an absent key
+falls through to that baseline, hence their `Maybe` fields. The asymmetry is
+upstream-faithful, not an oversight.
+
 -}
 
 import Element exposing (Element)
