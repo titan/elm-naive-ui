@@ -21,6 +21,7 @@ import NUI.Button as Button
 import NUI.ButtonGroup as ButtonGroup
 import NUI.Calendar as Calendar
 import NUI.Card as Card
+import NUI.Cascader as Cascader
 import NUI.Checkbox as Checkbox
 import NUI.Collapse as Collapse
 import NUI.Countdown as Countdown
@@ -243,6 +244,21 @@ selectD =
 selMenuD : Select.MenuOptions msg
 selMenuD =
     Select.menuDefaults
+
+
+cascaderD : Cascader.Options msg
+cascaderD =
+    Cascader.defaults
+
+
+cascMenuD : Cascader.MenuOptions msg
+cascMenuD =
+    Cascader.menuDefaults
+
+
+cascSelectMenuD : Cascader.SelectMenuOptions msg
+cascSelectMenuD =
+    Cascader.selectMenuDefaults
 
 
 acD : AutoComplete.Options msg
@@ -669,6 +685,7 @@ body =
     , popconfirmSection
     , popselectSection
     , selectSection
+    , cascaderSection
     , autoCompleteSection
     , mentionSection
     , tooltipSection
@@ -2487,6 +2504,104 @@ letterOptions =
                 }
         )
         [ "A", "B", "C", "D", "E" ]
+
+
+{-| The cascader section — the trigger plus both caller-mounted bodies.
+-}
+cascaderSection : Element msg
+cascaderSection =
+    section "Cascader"
+        "Naive UI's cascader — the `NUI.BaseSelection` trigger (the `NUI.Select` lane) plus the multi-column menu, both caller-mounted bodies (upstream opens each in its own follower): `Cascader.menu` for the columns (the hover key's path decides them, `menuModel`; option states come from the value's `All`-strategy normalization) and `Cascader.selectMenu` for the filterable flat body (`filterOptions`' path-label rows). `view` derives the display from `value` + the tree: the single path label (unknown keys show themselves), the multiple cascade-normalized tags with the numeric `maxTagCount` slice. The treemate cascade logic ships pure — `getCheckedKeys` / `check` / `uncheck` / `toggleValue`; the caller owns the show state, positioning, keyboard and remote loading (`loadingKeys`)."
+    <|
+        [ demoRow "Single (path label) · multiple (maxTagCount)"
+            [ Cascader.view theme
+                { cascaderD
+                    | value = SelectMenu.Single (Just "eleanor")
+                    , clearable = True
+                    , hover = True
+                    , attributes = [ Element.width (Element.px 280) ]
+                }
+                cascaderOptions
+            , Cascader.view theme
+                { cascaderD
+                    | multiple = True
+                    , maxTagCount = Just 2
+                    , value = SelectMenu.Multiple [ "abbey", "revolver" ]
+                    , attributes = [ Element.width (Element.px 320) ]
+                }
+                cascaderOptions
+            ]
+        , demoRow "Columns menu (hover key opens the second column)"
+            [ Cascader.menu theme
+                { cascMenuD
+                    | hoverKey = Just "revolver"
+                    , multiple = True
+                    , value = SelectMenu.Multiple [ "abbey", "come" ]
+                    , attributes = [ Element.width (Element.px 420) ]
+                }
+                cascaderOptions
+            ]
+        , demoRow "Columns menu: child strategy (leaf checkmarks) · empty · action"
+            [ Cascader.menu theme
+                { cascMenuD
+                    | checkStrategy = Cascader.Child
+                    , value = SelectMenu.Single (Just "drive")
+                    , action = Just (Element.text "#action")
+                    , attributes = [ Element.width (Element.px 200) ]
+                }
+                cascaderOptions
+            , Cascader.menu theme
+                { cascMenuD | attributes = [ Element.width (Element.px 200) ] }
+                []
+            ]
+        , demoRow "Filterable flat menu (pattern 'sub')"
+            [ Cascader.selectMenu theme
+                { cascSelectMenuD
+                    | multiple = True
+                    , value = SelectMenu.Multiple [ "abbey" ]
+                    , attributes = [ Element.width (Element.px 280) ]
+                }
+                (Cascader.filterOptions "sub" Cascader.All " / " cascaderOptions)
+            ]
+        ]
+
+
+{-| The cascader fixture — three two-level albums (branches) with song
+leaves; `revolver`'s column is what the hover key opens.
+-}
+cascaderOptions : List Cascader.Option
+cascaderOptions =
+    [ Cascader.Option
+        { value = "rubber"
+        , label = "Rubber Soul"
+        , disabled = False
+        , children =
+            Just
+                [ Cascader.Option { value = "drive", label = "Drive My Car", disabled = False, children = Nothing }
+                , Cascader.Option { value = "nowhere", label = "Nowhere Man", disabled = False, children = Nothing }
+                ]
+        }
+    , Cascader.Option
+        { value = "revolver"
+        , label = "Revolver"
+        , disabled = False
+        , children =
+            Just
+                [ Cascader.Option { value = "eleanor", label = "Eleanor Rigby", disabled = False, children = Nothing }
+                , Cascader.Option { value = "yellow", label = "Yellow Submarine", disabled = False, children = Nothing }
+                ]
+        }
+    , Cascader.Option
+        { value = "abbey"
+        , label = "Abbey Road"
+        , disabled = False
+        , children =
+            Just
+                [ Cascader.Option { value = "come", label = "Come Together", disabled = False, children = Nothing }
+                , Cascader.Option { value = "here", label = "Here Comes the Sun", disabled = False, children = Nothing }
+                ]
+        }
+    ]
 
 
 autoCompleteSection : Element msg
