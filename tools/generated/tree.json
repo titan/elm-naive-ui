@@ -1,0 +1,96 @@
+{
+  "light": {
+    "fontSize": "14px",
+    "lineHeight": "1.5",
+    "nodeHeight": "30px",
+    "nodeWrapperPadding": "3px 0",
+    "nodeBorderRadius": "2px",
+    "nodeColorHover": "rgb(243, 243, 245)",
+    "nodeColorPressed": "rgb(237, 237, 239)",
+    "nodeColorActive": "rgba(24, 160, 88, 0.1)",
+    "arrowColor": "rgb(118, 124, 130)",
+    "nodeTextColor": "rgb(51, 54, 57)",
+    "nodeTextColorDisabled": "rgba(194, 194, 194, 1)",
+    "loadingColor": "#18a058",
+    "dropMarkColor": "#18a058",
+    "lineColor": "rgb(239, 239, 245)"
+  },
+  "dark": {
+    "fontSize": "14px",
+    "lineHeight": "1.5",
+    "nodeHeight": "30px",
+    "nodeWrapperPadding": "3px 0",
+    "nodeBorderRadius": "2px",
+    "nodeColorHover": "rgba(255, 255, 255, 0.09)",
+    "nodeColorPressed": "rgba(255, 255, 255, 0.05)",
+    "nodeColorActive": "rgba(99, 226, 183, 0.15)",
+    "arrowColor": "rgba(255, 255, 255, 0.52)",
+    "nodeTextColor": "rgba(255, 255, 255, 0.82)",
+    "nodeTextColorDisabled": "rgba(255, 255, 255, 0.38)",
+    "loadingColor": "#63e2b7",
+    "dropMarkColor": "#63e2b7",
+    "lineColor": "rgba(255, 255, 255, 0.09)"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "nodeBorderRadius": "borderRadiusSmall",
+        "nodeColorHover": "hoverColor",
+        "nodeColorPressed": "pressedColor",
+        "arrowColor": "textColor3",
+        "nodeTextColor": "textColor2",
+        "nodeTextColorDisabled": "textColorDisabled",
+        "loadingColor": "primaryColor",
+        "dropMarkColor": "primaryColor",
+        "lineColor": "dividerColor",
+        "fontSize": "fontSize"
+      },
+      "seen": [
+        "lineHeight",
+        "nodeHeight",
+        "nodeWrapperPadding",
+        "nodeBorderRadius",
+        "nodeColorHover",
+        "nodeColorPressed",
+        "nodeColorActive",
+        "arrowColor",
+        "nodeTextColor",
+        "nodeTextColorDisabled",
+        "loadingColor",
+        "dropMarkColor",
+        "lineColor",
+        "fontSize"
+      ]
+    },
+    "dark": {
+      "refs": {
+        "fontSize": "fontSize",
+        "nodeBorderRadius": "borderRadiusSmall",
+        "nodeColorHover": "hoverColor",
+        "nodeColorPressed": "pressedColor",
+        "arrowColor": "textColor3",
+        "nodeTextColor": "textColor2",
+        "nodeTextColorDisabled": "textColorDisabled",
+        "loadingColor": "primaryColor",
+        "dropMarkColor": "primaryColor",
+        "lineColor": "dividerColor"
+      },
+      "seen": [
+        "fontSize",
+        "lineHeight",
+        "nodeHeight",
+        "nodeWrapperPadding",
+        "nodeBorderRadius",
+        "nodeColorHover",
+        "nodeColorPressed",
+        "nodeColorActive",
+        "arrowColor",
+        "nodeTextColor",
+        "nodeTextColorDisabled",
+        "loadingColor",
+        "dropMarkColor",
+        "lineColor"
+      ]
+    }
+  }
+}

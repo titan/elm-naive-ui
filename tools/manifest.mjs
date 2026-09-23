@@ -399,5 +399,14 @@ export const components = {
     // `selectMenu` block. No rtl.cssr upstream.
     cssr: ['cascader/src/styles/index.cssr.ts'],
     theme: 'cascader/styles/light.ts'
+  },
+  tree: {
+    // Own cssr is the node-row family (.n-tree, .n-tree-node, __switcher /
+    // __checkbox / __content / __prefix / __suffix / __wrapper, blank-node and
+    // motion wrappers, state modifiers) + rtl.cssr (--rtl). Node rows mount
+    // NCheckbox + NBaseLoading internals (their cssr already shipped); the
+    // virtual list is DOM-only.
+    cssr: ['tree/src/styles/index.cssr.ts', 'tree/src/styles/rtl.cssr.ts'],
+    theme: 'tree/styles/light.ts'
   }
 }
