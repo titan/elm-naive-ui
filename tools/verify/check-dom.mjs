@@ -125,7 +125,12 @@ const targets = {
   '.n-tooltip': true,
   '.n-dropdown': true,
   // The modal container carries the 4-var set (bezier/box-shadow/color/text).
-  '.n-modal-container': true
+  '.n-modal-container': true,
+  // The watermark pair carries no --n-* vars (the theme's single fontFamily
+  // feeds the tile's font fallback, not a custom property) — only the bridge
+  // is asserted, on both the container and the tiled overlay.
+  '.n-watermark-container': false,
+  '.n-watermark': false
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {

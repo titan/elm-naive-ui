@@ -89,6 +89,7 @@ import NUI.Tooltip as Tooltip
 import NUI.Tree as Tree
 import NUI.Types as T
 import NUI.Typography as Typo
+import NUI.Watermark as Watermark
 import Time
 
 
@@ -690,6 +691,7 @@ body =
     , cascaderSection
     , treeSection
     , tableSection
+    , watermarkSection
     , autoCompleteSection
     , mentionSection
     , tooltipSection
@@ -2689,6 +2691,67 @@ cellD =
 tableCell : String -> Table.Cell msg
 tableCell label =
     { cellD | content = [ Element.text label ] }
+
+
+watermarkSection : Element msg
+watermarkSection =
+    section "Watermark"
+        "Naive UI's watermark — the `div.n-watermark-container` (the `--selectable` / `--global-rotate` / `--fullscreen` modifiers; bare overlay when fullscreen without global rotation) wrapping the content plus the tiled `div.n-watermark` overlay (`background-size` tiling, the `cross` offset pair, the `max(142vh, 142vw)` rotated positioning, `z-index` handoff between the two nodes). The tile itself is upstream's canvas `toDataURL` seam, rebuilt purely: an SVG of the canvas dimensions — one `<text>` per line with the full font stack — base64-encoded in-library; `image` is referenced directly instead of re-rasterised. No `--n-*` vars — the theme's single `fontFamily` feeds the tile's font fallback."
+    <|
+        [ demoRow "Basic · default 32×32 tile"
+            [ Watermark.view theme
+                { watermarkD | content = Just "Naive UI" }
+                [ watermarkedText ]
+            ]
+        , demoRow "Two lines · centered · gaps · cross"
+            [ Watermark.view theme
+                { watermarkD
+                    | content = Just "elm-naive-ui\nwatermark"
+                    , width = 120
+                    , height = 44
+                    , xGap = 32
+                    , yGap = 32
+                    , lineHeight = 20
+                    , textAlign = Watermark.Center
+                    , cross = True
+                }
+                [ watermarkedText ]
+            ]
+        , demoRow "Font stack · debug · not selectable"
+            [ Watermark.view theme
+                { watermarkD
+                    | content = Just "Seemly"
+                    , width = 100
+                    , height = 32
+                    , fontSize = 18
+                    , fontWeight = 700
+                    , fontStyle = "italic"
+                    , fontColor = "rgba(0, 128, 0, .45)"
+                    , rotate = -20
+                    , debug = True
+                    , selectable = False
+                }
+                [ watermarkedText ]
+            ]
+        , demoRow "Global rotate (overflow-hidden container)"
+            [ Watermark.view theme
+                { watermarkD
+                    | content = Just "45°"
+                    , globalRotate = 45
+                }
+                [ watermarkedText ]
+            ]
+        ]
+
+
+watermarkD : Watermark.Options msg
+watermarkD =
+    Watermark.defaults
+
+
+watermarkedText : Element msg
+watermarkedText =
+    Element.el [ Element.padding 24 ] (Element.text "The watermarked content sits in the container; the tile overlays it (pointer-events: none).")
 
 
 treeSection : Element msg
