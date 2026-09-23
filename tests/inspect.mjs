@@ -8246,6 +8246,131 @@ dEq(
   (styleAt(tblRoot('live-table-large')) || '').includes('--n-font-size:15px')
 )
 
+// --- Watermark ---------------------------------------------------------------
+// The container/overlay pair (Watermark.tsx render): container class list in
+// upstream declaration order (global-rotate, fullscreen, selectable), overlay
+// class list (global-rotate, fullscreen), the style-attribute bytes on both
+// nodes, the bare branch (fullscreen && globalRotate==0 -> NO container,
+// children dropped), the z-index handoff (fullscreen AND globalRotate ->
+// container carries z-index, overlay drops it), globalRotate -> container
+// --global-rotate + overlay transform + max(142vh,142vw) positioning, image
+// path -> background-image url(src) with cross doubling, and children embedded
+// through the display:contents wrapper.
+const wmCont = (id) => doc.querySelector('#' + id + ' .n-watermark-container')
+const wmOverlay = (id) => doc.querySelector('#' + id + ' .n-watermark')
+dEq(
+  'DOM: Watermark container class exactly "n-watermark-container n-watermark-container--selectable" (upstream order, --selectable default-True)',
+  'n-watermark-container n-watermark-container--selectable',
+  nClassesStr(wmCont('live-wm-default'))
+)
+dEq(
+  'DOM: Watermark overlay class exactly "n-watermark" (no modifiers at default)',
+  'n-watermark',
+  nClassesStr(wmOverlay('live-wm-default'))
+)
+dEq(
+  'DOM: Watermark default overlay style = z-index:10;background-size:32px;background-image:url(data:image/svg+xml;base64,...) (background-position empty -> dropped)',
+  true,
+  (styleAt(wmOverlay('live-wm-default')) || '').startsWith(
+    'z-index:10;background-size:32px;background-image:url(data:image/svg+xml;base64,'
+  )
+)
+dEq(
+  'DOM: Watermark default container carries NO inline style (z-index handoff off)',
+  null,
+  styleAt(wmCont('live-wm-default'))
+)
+dEq(
+  'DOM: Watermark cross unrotated -> background-position "2.5px 2.5px, 0 0" (odd width/2 half-pixel) + background-size 8px (xGap 3 + width 5)',
+  true,
+  (styleAt(wmOverlay('live-wm-cross')) || '').startsWith(
+    'z-index:10;background-size:8px;background-position:2.5px 2.5px, 0 0;background-image:'
+  )
+)
+dEq(
+  'DOM: Watermark cross -> background-image is the doubled url pair (url(..), url(..))',
+  true,
+  (() => {
+    const s = styleAt(wmOverlay('live-wm-cross')) || ''
+    const m = s.match(/background-image:url\(([^)]*)\), url\(([^)]*)\)/)
+    return !!m && m[1] === m[2] && m[1].startsWith('data:image/svg+xml;base64,')
+  })()
+)
+dEq(
+  'DOM: Watermark globalRotate alone -> container --global-rotate + overlay --global-rotate (upstream order)',
+  'n-watermark-container n-watermark-container--global-rotate n-watermark-container--selectable|n-watermark n-watermark--global-rotate',
+  nClassesStr(wmCont('live-wm-global')) + '|' + nClassesStr(wmOverlay('live-wm-global'))
+)
+dEq(
+  'DOM: Watermark globalRotate overlay style starts with transform:translateX(-50%) translateY(-50%) rotate(45deg);z-index:10',
+  true,
+  (styleAt(wmOverlay('live-wm-global')) || '').startsWith(
+    'transform:translateX(-50%) translateY(-50%) rotate(45deg);z-index:10;background-size:32px;background-position:calc(max(142vh, 142vw) + 16px) calc(max(142vh, 142vw) + 16px), max(142vh, 142vw) max(142vh, 142vw);background-image:'
+  )
+)
+dEq(
+  'DOM: Watermark globalRotate alone -> container keeps NO z-index (overlay carries it)',
+  null,
+  styleAt(wmCont('live-wm-global'))
+)
+dEq(
+  'DOM: Watermark fullscreen+globalRotate -> z-index handoff: container style z-index:7, overlay drops z-index',
+  true,
+  styleAt(wmCont('live-wm-handoff')) === 'z-index:7' &&
+    (styleAt(wmOverlay('live-wm-handoff')) || '').startsWith(
+      'transform:translateX(-50%) translateY(-50%) rotate(30deg);background-size:32px;background-position:max(142vh, 142vw);background-image:'
+    )
+)
+dEq(
+  'DOM: Watermark fullscreen+globalRotate -> container class carries --global-rotate --fullscreen --selectable (upstream order)',
+  'n-watermark-container n-watermark-container--global-rotate n-watermark-container--fullscreen n-watermark-container--selectable',
+  nClassesStr(wmCont('live-wm-handoff'))
+)
+dEq(
+  'DOM: Watermark fullscreen+globalRotate -> overlay class carries --global-rotate --fullscreen (upstream order)',
+  'n-watermark n-watermark--global-rotate n-watermark--fullscreen',
+  nClassesStr(wmOverlay('live-wm-handoff'))
+)
+dEq(
+  'DOM: Watermark bare branch (fullscreen && globalRotate==0) -> NO container node, children dropped, overlay --fullscreen',
+  'absent|n-watermark n-watermark--fullscreen',
+  (wmCont('live-wm-bare') ? 'present' : 'absent') + '|' + nClassesStr(wmOverlay('live-wm-bare'))
+)
+dEq(
+  'DOM: Watermark bare branch -> overlay style keeps z-index:10 (no handoff), no transform',
+  true,
+  (styleAt(wmOverlay('live-wm-bare')) || '').startsWith('z-index:10;background-size:32px;background-image:')
+)
+dEq(
+  'DOM: Watermark image path -> background-image url(pic.png), url(pic.png) with cross doubling + background-position 16px 16px, 0 0',
+  'z-index:10;background-size:32px;background-position:16px 16px, 0 0;background-image:url(pic.png), url(pic.png)',
+  styleAt(wmOverlay('live-wm-image'))
+)
+dEq(
+  'DOM: Watermark children embedded through the display:contents wrapper (font:inherit;color:inherit)',
+  'display:contents;font:inherit;color:inherit',
+  (() => {
+    const c = wmCont('live-wm-default')
+    const w = c ? c.querySelector('[style*="display:contents"]') : null
+    return w ? w.getAttribute('style') : null
+  })()
+)
+dEq(
+  'DOM: Watermark container children order = [display:contents embed, overlay] (children first, overlay last)',
+  'embed|overlay',
+  (() => {
+    const c = wmCont('live-wm-default')
+    if (!c) return 'no-container'
+    const kids = [...c.children]
+    return (kids[0] && kids[0].getAttribute('style') === 'display:contents;font:inherit;color:inherit' ? 'embed' : 'other') + '|' + (kids[kids.length - 1] && kids[kids.length - 1].classList.contains('n-watermark') ? 'overlay' : 'other')
+  })()
+)
+dEq(
+  'DOM: Watermark selectable=False -> --selectable class ABSENT from container',
+  'n-watermark-container',
+  nClassesStr(wmCont('live-wm-unselectable'))
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

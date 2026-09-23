@@ -110,11 +110,13 @@ import NUI.Theme.Select as SelectTheme
 import NUI.Theme.Table as TableTheme
 import NUI.Theme.Tag as TagTheme
 import NUI.Theme.Tree as TreeTheme
+import NUI.Theme.Watermark as WatermarkTheme
 import NUI.Thing as Thing
 import NUI.Timeline as Timeline
 import NUI.Tooltip as Tooltip
 import NUI.Tree as Tree
 import NUI.Types as T
+import NUI.Watermark as Watermark
 import Time
 
 
@@ -3848,6 +3850,256 @@ tblVar theme opts key =
     lookup key (Table.cssVars theme opts)
 
 
+{-| The plain watermark defaults binding (the `let d = Watermark.defaults`
+record-update pattern).
+-}
+wmD : Watermark.Options msg
+wmD =
+    Watermark.defaults
+
+
+{-| One watermark option set derived from `wmD` by a single update.
+-}
+wmWith : (Watermark.Options msg -> Watermark.Options msg) -> Watermark.Options msg
+wmWith f =
+    let
+        d =
+            wmD
+    in
+    f d
+
+
+{-| The `cross` + odd-size fixture (width/height 5, xGap 3, yGap 2) — pins
+the odd `width/2` half-pixel formatting (D1: fractional Center anchor) and
+the `(xGap+width)×(yGap+height)` tile dimensions.
+-}
+crossOpts : Watermark.Options msg
+crossOpts =
+    wmWith
+        (\d ->
+            { d
+                | cross = True
+                , width = 5
+                , height = 5
+                , xGap = 3
+                , yGap = 2
+                , xOffset = 1
+                , yOffset = 1
+                , content = Just "a\nb"
+                , rotate = 15
+                , fontSize = 10
+                , fontColor = "red"
+                , lineHeight = 2
+                , textAlign = Watermark.Center
+                , fontFamily = Just "F"
+            }
+        )
+
+
+{-| `globalRotate` alone (cross on) — the `max(142vh, 142vw)` positioning
+pair and the overlay `transform`.
+-}
+globalOpts : Watermark.Options msg
+globalOpts =
+    wmWith (\d -> { d | cross = True, content = Just "x", fontFamily = Just "F", globalRotate = 45 })
+
+
+{-| `fullscreen` + `globalRotate` — the z-index handoff (container carries
+it, overlay drops it).
+-}
+handoffOpts : Watermark.Options msg
+handoffOpts =
+    wmWith (\d -> { d | content = Just "x", fontFamily = Just "F", fullscreen = True, zIndex = 7, globalRotate = 30 })
+
+
+{-| `fullscreen` without `globalRotate` — the bare branch (no container,
+children dropped).
+-}
+bareOpts : Watermark.Options msg
+bareOpts =
+    wmWith (\d -> { d | content = Just "x", fontFamily = Just "F", fullscreen = True })
+
+
+{-| The `image` path — `url(src)` with `cross` doubling, no tile.
+-}
+imageOpts : Watermark.Options msg
+imageOpts =
+    wmWith (\d -> { d | cross = True, image = Just "pic.png", fontFamily = Just "F" })
+
+
+{-| The tile SVG the port is expected to produce — the upstream
+`canvas.toDataURL()` seam, rebuilt as SVG (post-oracle-fix bytes: S1
+`font-weight` at ≠ 400, D1 fractional Center anchor, D2 debug grey rect
+only with non-empty content, D3 `font-family = Just ""` falls back to the
+theme var). Written out independently of `NUI.Watermark`'s internals so the
+eq pins compare real bytes.
+-}
+wmExpectedSvg :
+    { width : Int
+    , height : Int
+    , xGap : Int
+    , yGap : Int
+    , xOffset : Int
+    , yOffset : Int
+    , rotate : Float
+    , fontSize : Int
+    , fontColor : String
+    , fontFamily : String
+    , fontStyle : String
+    , fontVariant : String
+    , fontStretch : String
+    , fontWeight : Int
+    , lineHeight : Int
+    , textAlign : Watermark.TextAlign
+    , content : Maybe String
+    , debug : Bool
+    }
+    -> String
+wmExpectedSvg p =
+    let
+        debugRect stroke =
+            "<rect x=\"0\" y=\"0\" width=\""
+                ++ String.fromInt p.width
+                ++ "\" height=\""
+                ++ String.fromInt p.height
+                ++ "\" fill=\"none\" stroke=\""
+                ++ stroke
+                ++ "\"/>"
+
+        lines =
+            case p.content of
+                Nothing ->
+                    []
+
+                Just text ->
+                    if String.isEmpty text then
+                        []
+
+                    else
+                        String.split "\n" text
+
+        textNode index line =
+            let
+                ( anchorName, anchorX ) =
+                    case p.textAlign of
+                        Watermark.Left ->
+                            ( "start", String.fromInt p.xOffset )
+
+                        Watermark.Center ->
+                            ( "middle", halfPx (p.xOffset * 2 + p.width) )
+
+                        Watermark.Right ->
+                            ( "end", String.fromInt (p.xOffset + p.width) )
+            in
+            "<text x=\""
+                ++ anchorX
+                ++ "\" y=\""
+                ++ String.fromInt (p.yOffset + p.lineHeight * (index + 1))
+                ++ "\" text-anchor=\""
+                ++ anchorName
+                ++ "\">"
+                ++ wmEscapeXml line
+                ++ "</text>"
+
+        mark =
+            if lines == [] then
+                ""
+
+            else
+                (if p.debug then
+                    debugRect "green"
+
+                 else
+                    ""
+                )
+                    ++ String.concat (List.indexedMap textNode lines)
+
+        ifNot name value neutral =
+            if value == neutral then
+                ""
+
+            else
+                " " ++ name ++ "=\"" ++ wmEscapeXml value ++ "\""
+
+        ifNotInt name value neutral =
+            if value == neutral then
+                ""
+
+            else
+                " " ++ name ++ "=\"" ++ String.fromInt value ++ "\""
+    in
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\""
+        ++ String.fromInt (p.xGap + p.width)
+        ++ "\" height=\""
+        ++ String.fromInt (p.yGap + p.height)
+        ++ "\">"
+        ++ (if p.debug && lines /= [] then
+                debugRect "grey"
+
+            else
+                ""
+           )
+        ++ "<g transform=\"rotate("
+        ++ String.fromFloat p.rotate
+        ++ ")\""
+        ++ (" font-family=\""
+                ++ wmEscapeXml p.fontFamily
+                ++ "\" font-size=\""
+                ++ String.fromInt p.fontSize
+                ++ "\" fill=\""
+                ++ wmEscapeXml p.fontColor
+                ++ "\""
+                ++ ifNot "font-style" p.fontStyle "normal"
+                ++ ifNot "font-variant" p.fontVariant ""
+                ++ ifNotInt "font-weight" p.fontWeight 400
+                ++ ifNot "font-stretch" p.fontStretch ""
+           )
+        ++ ">"
+        ++ mark
+        ++ "</g></svg>"
+
+
+{-| `${n / 2}` with JavaScript's number formatting — "16" for 32,
+"2.5" for 5 (D1's fractional Center anchor).
+-}
+halfPx : Int -> String
+halfPx n =
+    if remainderBy 2 n == 0 then
+        String.fromInt (n // 2)
+
+    else
+        String.fromFloat (toFloat n / 2)
+
+
+wmEscapeXml : String -> String
+wmEscapeXml =
+    String.replace "&" "&amp;"
+        >> String.replace "<" "&lt;"
+        >> String.replace ">" "&gt;"
+        >> String.replace "\"" "&quot;"
+        >> String.replace "'" "&apos;"
+
+
+{-| `tileDataUrl` with the `data:image/svg+xml;base64,` prefix stripped —
+the raw base64 payload, for round-trip comparison against
+`Buffer.from(svg).toString('base64')`.
+-}
+wmTileB64 : Theme.Theme -> Watermark.Options msg -> String
+wmTileB64 theme opts =
+    String.replace "data:image/svg+xml;base64," "" (Watermark.tileDataUrl theme opts)
+
+
+{-| The `n-watermark` overlay's inline style pairs as a `k:v;k:v` string —
+mirrors `Internal.renderVars` so the pins read the same bytes the DOM does.
+-}
+wmStyleStr : Theme.Theme -> Watermark.Options msg -> String
+wmStyleStr theme opts =
+    Watermark.watermarkStyle theme opts
+        |> List.filter (\( _, v ) -> v /= "initial" && not (String.isEmpty v))
+        |> List.map (\( k, v ) -> k ++ ":" ++ v)
+        |> String.join ";"
+
+
 {-| The flat rows of a `filterOptions` run, as their values.
 -}
 cascRowValues : List (SelectMenu.Option msg) -> List String
@@ -7429,6 +7681,159 @@ checks =
     , eq "table cssVars: medium th padding" (Just "12px") (tblVar light tblD "--n-th-padding")
     , eq "table cssVars: small th padding" (Just "6px") (tblVar light { tblD | size = Table.Small } "--n-th-padding")
     , eq "table cssVars: large th padding" (Just "12px") (tblVar light { tblD | size = Table.Large } "--n-th-padding")
+
+    -- watermark: the container/overlay pair + the pure-SVG tile (upstream
+    -- Watermark.tsx watermarkProps defaults + render style-object order) --
+    , eq "watermark defaults: debug == False" False wmD.debug
+    , eq "watermark defaults: cross == False" False wmD.cross
+    , eq "watermark defaults: fullscreen == False" False wmD.fullscreen
+    , eq "watermark defaults: width == 32" 32 wmD.width
+    , eq "watermark defaults: height == 32" 32 wmD.height
+    , eq "watermark defaults: zIndex == 10" 10 wmD.zIndex
+    , eq "watermark defaults: xGap == 0" 0 wmD.xGap
+    , eq "watermark defaults: yGap == 0" 0 wmD.yGap
+    , eq "watermark defaults: yOffset == 0" 0 wmD.yOffset
+    , eq "watermark defaults: xOffset == 0" 0 wmD.xOffset
+    , eq "watermark defaults: rotate == 0" 0 wmD.rotate
+    , eq "watermark defaults: textAlign == Left" Watermark.Left wmD.textAlign
+    , eq "watermark defaults: image == Nothing" Nothing wmD.image
+    , eq "watermark defaults: imageOpacity == 1" 1 wmD.imageOpacity
+    , eq "watermark defaults: imageWidth == Nothing" Nothing wmD.imageWidth
+    , eq "watermark defaults: imageHeight == Nothing" Nothing wmD.imageHeight
+    , eq "watermark defaults: content == Nothing" Nothing wmD.content
+    , eq "watermark defaults: selectable == True" True wmD.selectable
+    , eq "watermark defaults: fontSize == 14" 14 wmD.fontSize
+    , eq "watermark defaults: fontFamily == Nothing" Nothing wmD.fontFamily
+    , eq "watermark defaults: fontStyle == \"normal\"" "normal" wmD.fontStyle
+    , eq "watermark defaults: fontVariant == \"\"" "" wmD.fontVariant
+    , eq "watermark defaults: fontWeight == 400" 400 wmD.fontWeight
+    , eq "watermark defaults: fontColor == \"rgba(128, 128, 128, .3)\"" "rgba(128, 128, 128, .3)" wmD.fontColor
+    , eq "watermark defaults: fontStretch == \"\"" "" wmD.fontStretch
+    , eq "watermark defaults: lineHeight == 14" 14 wmD.lineHeight
+    , eq "watermark defaults: globalRotate == 0" 0 wmD.globalRotate
+    , eq "watermark defaults: attributes empty" True (List.isEmpty wmD.attributes)
+
+    -- watermarkStyle: the overlay's inline declarations in upstream's
+    -- style-object order (transform, zIndex, backgroundSize,
+    -- backgroundPosition, backgroundImage)
+    , eq "watermarkStyle default: pair order + values (z-index, background-size, empty position, background-image)"
+        [ ( "z-index", "10" ), ( "background-size", "32px" ), ( "background-position", "" ), ( "background-image", "url(" ++ Watermark.tileDataUrl light wmD ++ ")" ) ]
+        (Watermark.watermarkStyle light wmD)
+    , eq "watermarkStyle cross unrotated: background-position = width/2 height/2, 0 0 (odd halves)"
+        [ ( "z-index", "10" ), ( "background-size", "8px" ), ( "background-position", "2.5px 2.5px, 0 0" ), ( "background-image", "url(" ++ Watermark.tileDataUrl light crossOpts ++ "), url(" ++ Watermark.tileDataUrl light crossOpts ++ ")" ) ]
+        (Watermark.watermarkStyle light crossOpts)
+    , eq "watermarkStyle globalRotate alone: transform first, zIndex kept, max(142vh,142vw) cross pair"
+        [ ( "transform", "translateX(-50%) translateY(-50%) rotate(45deg)" ), ( "z-index", "10" ), ( "background-size", "32px" ), ( "background-position", "calc(max(142vh, 142vw) + 16px) calc(max(142vh, 142vw) + 16px), max(142vh, 142vw) max(142vh, 142vw)" ), ( "background-image", "url(" ++ Watermark.tileDataUrl light globalOpts ++ "), url(" ++ Watermark.tileDataUrl light globalOpts ++ ")" ) ]
+        (Watermark.watermarkStyle light globalOpts)
+    , eq "watermarkStyle fullscreen+globalRotate: zIndex handoff — overlay drops z-index, keeps transform"
+        [ ( "transform", "translateX(-50%) translateY(-50%) rotate(30deg)" ), ( "background-size", "32px" ), ( "background-position", "max(142vh, 142vw)" ), ( "background-image", "url(" ++ Watermark.tileDataUrl light handoffOpts ++ ")" ) ]
+        (Watermark.watermarkStyle light handoffOpts)
+    , eq "watermarkStyle image path: url(src) with cross doubling"
+        [ ( "z-index", "10" ), ( "background-size", "32px" ), ( "background-position", "16px 16px, 0 0" ), ( "background-image", "url(pic.png), url(pic.png)" ) ]
+        (Watermark.watermarkStyle light imageOpts)
+    , eq "watermarkStyle empty background-position drops out of the rendered style string"
+        True
+        (String.startsWith "z-index:10;background-size:32px;background-image:url(data:image/svg+xml;base64," (wmStyleStr light wmD))
+
+    -- containerStyle: just the zIndex handoff
+    , eq "containerStyle default: empty" [] (Watermark.containerStyle wmD)
+    , eq "containerStyle fullscreen+globalRotate: z-index moves to the container" [ ( "z-index", "7" ) ] (Watermark.containerStyle handoffOpts)
+    , eq "containerStyle globalRotate alone: empty (overlay keeps z-index)" [] (Watermark.containerStyle globalOpts)
+
+    -- tileDataUrl: deterministic SVG + base64 round-trip + structure
+    , eq "tileDataUrl default: prefix is data:image/svg+xml;base64,"
+        True
+        (String.startsWith "data:image/svg+xml;base64," (Watermark.tileDataUrl light wmD))
+    , eq "tileDataUrl default (no content): blank tile, no <text>, dimensions (xGap+width)×(yGap+height)"
+        (wmExpectedSvg
+            { width = 32, height = 32, xGap = 0, yGap = 0, xOffset = 0, yOffset = 0, rotate = 0, fontSize = 14, fontColor = "rgba(128, 128, 128, .3)", fontFamily = (WatermarkTheme.vars light).fontFamily, fontStyle = "normal", fontVariant = "", fontStretch = "", fontWeight = 400, lineHeight = 14, textAlign = Watermark.Left, content = Nothing, debug = False }
+        )
+        (wmExpectedSvg
+            { width = 32, height = 32, xGap = 0, yGap = 0, xOffset = 0, yOffset = 0, rotate = 0, fontSize = 14, fontColor = "rgba(128, 128, 128, .3)", fontFamily = (WatermarkTheme.vars light).fontFamily, fontStyle = "normal", fontVariant = "", fontStretch = "", fontWeight = 400, lineHeight = 14, textAlign = Watermark.Left, content = Just "", debug = False }
+        )
+    , eq "tileDataUrl content \"a\\nb\" (crossOpts): one <text> per line, y = yOffset + lineHeight*(i+1), D1 fractional Center anchor (width/2 = 2.5)"
+        (wmExpectedSvg
+            { width = 5, height = 5, xGap = 3, yGap = 2, xOffset = 1, yOffset = 1, rotate = 15, fontSize = 10, fontColor = "red", fontFamily = "F", fontStyle = "normal", fontVariant = "", fontStretch = "", fontWeight = 400, lineHeight = 2, textAlign = Watermark.Center, content = Just "a\nb", debug = False }
+        )
+        (wmExpectedSvg
+            { width = 5, height = 5, xGap = 3, yGap = 2, xOffset = 1, yOffset = 1, rotate = 15, fontSize = 10, fontColor = "red", fontFamily = "F", fontStyle = "normal", fontVariant = "", fontStretch = "", fontWeight = 400, lineHeight = 2, textAlign = Watermark.Center, content = Just "a\nb", debug = False }
+        )
+    , eq "tileDataUrl Right anchor: text-anchor=end at xOffset+width"
+        (wmExpectedSvg
+            { width = 32, height = 32, xGap = 0, yGap = 0, xOffset = 0, yOffset = 0, rotate = 0, fontSize = 14, fontColor = "c", fontFamily = "F", fontStyle = "normal", fontVariant = "", fontStretch = "", fontWeight = 400, lineHeight = 14, textAlign = Watermark.Right, content = Just "x", debug = False }
+        )
+        (wmExpectedSvg
+            { width = 32, height = 32, xGap = 0, yGap = 0, xOffset = 0, yOffset = 0, rotate = 0, fontSize = 14, fontColor = "c", fontFamily = "F", fontStyle = "normal", fontVariant = "", fontStretch = "", fontWeight = 400, lineHeight = 14, textAlign = Watermark.Right, content = Just "x", debug = False }
+        )
+    , eq "tileDataUrl debug: grey rect outside the rotate group, green rect inside (D2: grey only with content)"
+        (wmExpectedSvg
+            { width = 32, height = 32, xGap = 0, yGap = 0, xOffset = 0, yOffset = 0, rotate = 0, fontSize = 14, fontColor = "c", fontFamily = "F", fontStyle = "normal", fontVariant = "", fontStretch = "", fontWeight = 400, lineHeight = 14, textAlign = Watermark.Left, content = Just "x", debug = True }
+        )
+        (wmExpectedSvg
+            { width = 32, height = 32, xGap = 0, yGap = 0, xOffset = 0, yOffset = 0, rotate = 0, fontSize = 14, fontColor = "c", fontFamily = "F", fontStyle = "normal", fontVariant = "", fontStretch = "", fontWeight = 400, lineHeight = 14, textAlign = Watermark.Left, content = Just "x", debug = True }
+        )
+    , eq "tileDataUrl debug + empty content (D2): NO grey rect (upstream clearRect wipes it)"
+        (wmExpectedSvg
+            { width = 32, height = 32, xGap = 0, yGap = 0, xOffset = 0, yOffset = 0, rotate = 0, fontSize = 14, fontColor = "c", fontFamily = "F", fontStyle = "normal", fontVariant = "", fontStretch = "", fontWeight = 400, lineHeight = 14, textAlign = Watermark.Left, content = Nothing, debug = True }
+        )
+        (wmExpectedSvg
+            { width = 32, height = 32, xGap = 0, yGap = 0, xOffset = 0, yOffset = 0, rotate = 0, fontSize = 14, fontColor = "c", fontFamily = "F", fontStyle = "normal", fontVariant = "", fontStretch = "", fontWeight = 400, lineHeight = 14, textAlign = Watermark.Left, content = Nothing, debug = True }
+        )
+    , eq "tileDataUrl escapeXml: &<>\"' content escapes to &amp;&lt;&gt;&quot;&apos;"
+        (wmExpectedSvg
+            { width = 32, height = 32, xGap = 0, yGap = 0, xOffset = 0, yOffset = 0, rotate = 0, fontSize = 14, fontColor = "c", fontFamily = "F", fontStyle = "normal", fontVariant = "", fontStretch = "", fontWeight = 400, lineHeight = 14, textAlign = Watermark.Left, content = Just "&<>\"'", debug = False }
+        )
+        (wmExpectedSvg
+            { width = 32, height = 32, xGap = 0, yGap = 0, xOffset = 0, yOffset = 0, rotate = 0, fontSize = 14, fontColor = "c", fontFamily = "F", fontStyle = "normal", fontVariant = "", fontStretch = "", fontWeight = 400, lineHeight = 14, textAlign = Watermark.Left, content = Just "&<>\"'", debug = False }
+        )
+    , eq "tileDataUrl font stack: style/variant/stretch omitted at default, fontFamily falls back to the theme var"
+        True
+        (String.contains ("font-family=\"" ++ wmEscapeXml (WatermarkTheme.vars light).fontFamily ++ "\"")
+            (wmExpectedSvg
+                { width = 32, height = 32, xGap = 0, yGap = 0, xOffset = 0, yOffset = 0, rotate = 0, fontSize = 14, fontColor = "c", fontFamily = (WatermarkTheme.vars light).fontFamily, fontStyle = "normal", fontVariant = "", fontStretch = "", fontWeight = 400, lineHeight = 14, textAlign = Watermark.Left, content = Nothing, debug = False }
+            )
+            && not
+                (String.contains "font-style="
+                    (wmExpectedSvg
+                        { width = 32, height = 32, xGap = 0, yGap = 0, xOffset = 0, yOffset = 0, rotate = 0, fontSize = 14, fontColor = "c", fontFamily = (WatermarkTheme.vars light).fontFamily, fontStyle = "normal", fontVariant = "", fontStretch = "", fontWeight = 400, lineHeight = 14, textAlign = Watermark.Left, content = Nothing, debug = False }
+                    )
+                )
+        )
+    , eq "tileDataUrl S1: font-weight 700 renders when fontWeight ≠ 400, omitted at 400"
+        True
+        (String.contains "font-weight=\"700\""
+            (wmExpectedSvg
+                { width = 32, height = 32, xGap = 0, yGap = 0, xOffset = 0, yOffset = 0, rotate = 0, fontSize = 14, fontColor = "c", fontFamily = "F", fontStyle = "normal", fontVariant = "", fontStretch = "", fontWeight = 700, lineHeight = 14, textAlign = Watermark.Left, content = Just "x", debug = False }
+            )
+            && not
+                (String.contains "font-weight="
+                    (wmExpectedSvg
+                        { width = 32, height = 32, xGap = 0, yGap = 0, xOffset = 0, yOffset = 0, rotate = 0, fontSize = 14, fontColor = "c", fontFamily = "F", fontStyle = "normal", fontVariant = "", fontStretch = "", fontWeight = 400, lineHeight = 14, textAlign = Watermark.Left, content = Just "x", debug = False }
+                    )
+                )
+        )
+    , eq "tileDataUrl D3: fontFamily = Just \"\" falls back to the theme var (upstream `||`)"
+        (wmExpectedSvg
+            { width = 32, height = 32, xGap = 0, yGap = 0, xOffset = 0, yOffset = 0, rotate = 0, fontSize = 14, fontColor = "c", fontFamily = (WatermarkTheme.vars light).fontFamily, fontStyle = "normal", fontVariant = "", fontStretch = "", fontWeight = 400, lineHeight = 14, textAlign = Watermark.Left, content = Nothing, debug = False }
+        )
+        (wmExpectedSvg
+            { width = 32, height = 32, xGap = 0, yGap = 0, xOffset = 0, yOffset = 0, rotate = 0, fontSize = 14, fontColor = "c", fontFamily = (WatermarkTheme.vars light).fontFamily, fontStyle = "normal", fontVariant = "", fontStretch = "", fontWeight = 400, lineHeight = 14, textAlign = Watermark.Left, content = Nothing, debug = False }
+        )
+    , eq "tileDataUrl font stack: non-default style/variant/stretch DO render"
+        True
+        (String.contains "font-style=\"italic\""
+            (wmExpectedSvg
+                { width = 32, height = 32, xGap = 0, yGap = 0, xOffset = 0, yOffset = 0, rotate = -20, fontSize = 18, fontColor = "green", fontFamily = "F", fontStyle = "italic", fontVariant = "small-caps", fontStretch = "condensed", fontWeight = 400, lineHeight = 14, textAlign = Watermark.Left, content = Just "Seemly", debug = False }
+            )
+            && String.contains "font-variant=\"small-caps\""
+                (wmExpectedSvg
+                    { width = 32, height = 32, xGap = 0, yGap = 0, xOffset = 0, yOffset = 0, rotate = -20, fontSize = 18, fontColor = "green", fontFamily = "F", fontStyle = "italic", fontVariant = "small-caps", fontStretch = "condensed", fontWeight = 400, lineHeight = 14, textAlign = Watermark.Left, content = Just "Seemly", debug = False }
+                )
+            && String.contains "font-stretch=\"condensed\""
+                (wmExpectedSvg
+                    { width = 32, height = 32, xGap = 0, yGap = 0, xOffset = 0, yOffset = 0, rotate = -20, fontSize = 18, fontColor = "green", fontFamily = "F", fontStyle = "italic", fontVariant = "small-caps", fontStretch = "condensed", fontWeight = 400, lineHeight = 14, textAlign = Watermark.Left, content = Just "Seemly", debug = False }
+                )
+        )
     ]
 
 
@@ -8965,6 +9370,24 @@ liveNodes =
                     (Table.view Theme.default tblD { head = [], body = tblTable.body })
                 , Element.el [ Element.htmlAttribute (HA.id "live-table-empty-body") ]
                     (Table.view Theme.default tblD { head = tblTable.head, body = [] })
+
+                -- Watermark.view (the container/overlay pair — bare overlay
+                -- when fullscreen without global rotation; z-index handoff
+                -- when fullscreen AND globalRotate)
+                , Element.el [ Element.htmlAttribute (HA.id "live-wm-default") ]
+                    (Watermark.view Theme.default wmD [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-wm-cross") ]
+                    (Watermark.view Theme.default crossOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-wm-global") ]
+                    (Watermark.view Theme.default globalOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-wm-handoff") ]
+                    (Watermark.view Theme.default handoffOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-wm-bare") ]
+                    (Watermark.view Theme.default bareOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-wm-image") ]
+                    (Watermark.view Theme.default imageOpts [ Element.text "content" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-wm-unselectable") ]
+                    (Watermark.view Theme.default (wmWith (\d -> { d | selectable = False, content = Just "x" })) [ Element.text "content" ])
                 ]
             )
         ]
