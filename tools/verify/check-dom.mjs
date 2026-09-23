@@ -99,6 +99,10 @@ const targets = {
   // The select wrapper carries no --n-* vars of its own — they live on the
   // .n-base-selection trigger inside it (the menu body is a separate root).
   '.n-select': false,
+  // The cascader wrapper is the same bare split; both menu roots (columns +
+  // filterable flat) share the .n-cascader-menu class and the 17-var set.
+  '.n-cascader': false,
+  '.n-cascader-menu': true,
   '.n-base-selection': true,
   '.n-select-menu': true,
   // AutoComplete: the same shape one level down — the wrapper is a bare

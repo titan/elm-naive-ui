@@ -30,6 +30,7 @@ import NUI.Button as Button
 import NUI.ButtonGroup as ButtonGroup
 import NUI.Calendar as Calendar
 import NUI.Card as Card
+import NUI.Cascader as Cascader
 import NUI.Checkbox as Checkbox
 import NUI.Collapse as Collapse
 import NUI.Countdown as Countdown
@@ -3568,6 +3569,59 @@ smLeafAttr value label attribute =
     SelectMenu.Option { value = value, label = label, disabled = False, attributes = [ attribute ] }
 
 
+{-| The cascader fixture — a with a leaf, a disabled-leaf branch, and a
+loaded-but-empty branch; a disabled root `b` with a child; a root leaf `c`
+(the same tree the real treemate package produced the pinned outputs on).
+-}
+cascTree : List Cascader.Option
+cascTree =
+    [ Cascader.Option
+        { value = "a"
+        , label = "A"
+        , disabled = False
+        , children =
+            Just
+                [ Cascader.Option { value = "a1", label = "A1", disabled = False, children = Nothing }
+                , Cascader.Option
+                    { value = "a2"
+                    , label = "A2"
+                    , disabled = False
+                    , children =
+                        Just
+                            [ Cascader.Option { value = "a2x", label = "A2X", disabled = True, children = Nothing }
+                            , Cascader.Option { value = "a2y", label = "A2Y", disabled = False, children = Nothing }
+                            ]
+                    }
+                , Cascader.Option { value = "a3", label = "A3", disabled = False, children = Just [] }
+                ]
+        }
+    , Cascader.Option
+        { value = "b"
+        , label = "B"
+        , disabled = True
+        , children =
+            Just [ Cascader.Option { value = "b1", label = "B1", disabled = False, children = Nothing } ]
+        }
+    , Cascader.Option { value = "c", label = "C", disabled = False, children = Nothing }
+    ]
+
+
+{-| The flat rows of a `filterOptions` run, as their values.
+-}
+cascRowValues : List (SelectMenu.Option msg) -> List String
+cascRowValues rows =
+    List.filterMap
+        (\row ->
+            case row of
+                SelectMenu.Option leaf ->
+                    Just leaf.value
+
+                _ ->
+                    Nothing
+        )
+        rows
+
+
 {-| The plain defaults binding (`{ SelectMenu.defaults | … }` is a parse error).
 -}
 smD : SelectMenu.Options Msg
@@ -6745,6 +6799,50 @@ checks =
     , eq "popselect toggleValue single cancelable + other -> selects" (SelectMenu.Single (Just "b")) (Popselect.toggleValue False True (SelectMenu.Single (Just "a")) "b")
     , eq "popselect toggleValue single non-cancelable re-select stays" (SelectMenu.Single (Just "a")) (Popselect.toggleValue False False (SelectMenu.Single (Just "a")) "a")
     , eq "popselect toggleValue single ignores a Multiple current" (SelectMenu.Single (Just "k")) (Popselect.toggleValue False False (SelectMenu.Multiple [ "a" ]) "k")
+
+    -- cascader: treemate ground truth (outputs of the real treemate -----
+    -- package on the same tree, node-pinned — see Cascader's docs)
+    , eq "cascader gck all [a1]: the leaf + its indeterminate parent" { checkedKeys = [ "a1" ], indeterminateKeys = [ "a" ] } (Cascader.getCheckedKeys True Cascader.All [ "a1" ] cascTree)
+    , eq "cascader gck all [a2y]: a disabled sibling counts full, a2 checked" { checkedKeys = [ "a2y", "a2" ], indeterminateKeys = [ "a" ] } (Cascader.getCheckedKeys True Cascader.All [ "a2y" ] cascTree)
+    , eq "cascader gck all [a1,a2y,a3]: full aggregate, walk-append order" { checkedKeys = [ "a1", "a2y", "a3", "a2", "a" ], indeterminateKeys = [] } (Cascader.getCheckedKeys True Cascader.All [ "a1", "a2y", "a3" ] cascTree)
+    , eq "cascader gck parent [a1,a2y,a3]: collapses to the topmost" { checkedKeys = [ "a" ], indeterminateKeys = [] } (Cascader.getCheckedKeys True Cascader.Parent [ "a1", "a2y", "a3" ] cascTree)
+    , eq "cascader gck child [a]: leaves only, the empty branch a3 drops" { checkedKeys = [ "a1", "a2y" ], indeterminateKeys = [ "a" ] } (Cascader.getCheckedKeys True Cascader.Child [ "a" ] cascTree)
+    , eq "cascader gck child [a,a2y]: raw keys seed the set order" { checkedKeys = [ "a2y", "a1" ], indeterminateKeys = [ "a" ] } (Cascader.getCheckedKeys True Cascader.Child [ "a", "a2y" ] cascTree)
+    , eq "cascader gck all [b1]: a disabled parent is never indeterminate" { checkedKeys = [ "b1" ], indeterminateKeys = [] } (Cascader.getCheckedKeys True Cascader.All [ "b1" ] cascTree)
+    , eq "cascader gck all [b,b1]: disabled keys stay put" { checkedKeys = [ "b", "b1" ], indeterminateKeys = [] } (Cascader.getCheckedKeys True Cascader.All [ "b", "b1" ] cascTree)
+    , eq "cascader gck no-cascade [a1,a2y]: passthrough, nothing indeterminate" { checkedKeys = [ "a1", "a2y" ], indeterminateKeys = [] } (Cascader.getCheckedKeys False Cascader.All [ "a1", "a2y" ] cascTree)
+    , eq "cascader gck all [zz]: an unknown key stays" { checkedKeys = [ "zz" ], indeterminateKeys = [] } (Cascader.getCheckedKeys True Cascader.All [ "zz" ] cascTree)
+    , eq "cascader check a <- [c]: the subtree joins, DFS order, disabled leaf blocked" [ "c", "a", "a1", "a2", "a2y", "a3" ] (Cascader.check True Cascader.All "a" [ "c" ] cascTree)
+    , eq "cascader check a2x <- [c]: a disabled key itself stays" [ "c", "a2x" ] (Cascader.check True Cascader.All "a2x" [ "c" ] cascTree)
+    , eq "cascader uncheck a1: the key's subtree leaves, parent indeterminate" [ "a2y", "a3", "a2" ] (Cascader.uncheck True Cascader.All "a1" [ "a1", "a2y", "a3", "a" ] cascTree)
+    , eq "cascader uncheck a (child): the whole value empties" [] (Cascader.uncheck True Cascader.Child "a" [ "a", "a1", "a2", "a2y", "a3" ] cascTree)
+    , eq "cascader toggle single child on a branch: unchanged" (SelectMenu.Single (Just "x")) (Cascader.toggleValue True Cascader.Child (SelectMenu.Single (Just "x")) "a" cascTree)
+    , eq "cascader toggle single child on a leaf: selects" (SelectMenu.Single (Just "a1")) (Cascader.toggleValue True Cascader.Child (SelectMenu.Single Nothing) "a1" cascTree)
+    , eq "cascader toggle single child on an unknown key: unchanged" (SelectMenu.Single Nothing) (Cascader.toggleValue True Cascader.Child (SelectMenu.Single Nothing) "zz" cascTree)
+    , eq "cascader toggle single all on a branch: selects" (SelectMenu.Single (Just "a")) (Cascader.toggleValue True Cascader.All (SelectMenu.Single Nothing) "a" cascTree)
+    , eq "cascader toggle multiple member: unchecks the aggregate" (SelectMenu.Multiple [ "a2y", "a3", "a2" ]) (Cascader.toggleValue True Cascader.All (SelectMenu.Multiple [ "a1", "a2y", "a3", "a" ]) "a1" cascTree)
+    , eq "cascader toggle multiple new: checks the subtree" (SelectMenu.Multiple [ "c", "a", "a1", "a2", "a2y", "a3" ]) (Cascader.toggleValue True Cascader.All (SelectMenu.Multiple [ "c" ]) "a" cascTree)
+    , eq "cascader valueKeys: a Single value contributes none" [] (Cascader.valueKeys (SelectMenu.Single (Just "a")))
+    , eq "cascader valueKeys: a Multiple value passes through" [ "a1", "a2y" ] (Cascader.valueKeys (SelectMenu.Multiple [ "a1", "a2y" ]))
+
+    -- cascader: filterOptions (createSelectOptions + the default filter) --
+    , eq "cascader filter all, no pattern: every enabled node, document order" [ "a", "a1", "a2", "a2y", "a3", "c" ] (cascRowValues (Cascader.filterOptions "" Cascader.All " / " cascTree))
+    , eq "cascader filter child, no pattern: leaves only (an empty branch is no leaf)" [ "a1", "a2y", "c" ] (cascRowValues (Cascader.filterOptions "" Cascader.Child " / " cascTree))
+    , eq "cascader filter 'a2': an ancestor label matches its whole path" [ "a2", "a2y" ] (cascRowValues (Cascader.filterOptions "a2" Cascader.All " / " cascTree))
+    , eq "cascader filter rows carry path labels"
+        [ SelectMenu.Option { value = "a1", label = "A / A1", disabled = False, attributes = [] }
+        , SelectMenu.Option { value = "a2y", label = "A / A2 / A2Y", disabled = False, attributes = [] }
+        , SelectMenu.Option { value = "c", label = "C", disabled = False, attributes = [] }
+        ]
+        (Cascader.filterOptions "" Cascader.Child " / " cascTree)
+
+    -- cascader: menuVars (17, exact order; mask = popoverColor @ .75) -----
+    , eq "cascader menuVars: 17 keys" 17 (List.length (Cascader.menuVars light))
+    , eq "cascader menuVars: exact key order"
+        [ "--n-bezier", "--n-menu-border-radius", "--n-menu-box-shadow", "--n-menu-height", "--n-column-width", "--n-menu-color", "--n-menu-divider-color", "--n-option-height", "--n-option-font-size", "--n-option-text-color", "--n-option-text-color-disabled", "--n-option-text-color-active", "--n-option-color-hover", "--n-option-check-mark-color", "--n-option-arrow-color", "--n-menu-mask-color", "--n-loading-color" ]
+        (List.map Tuple.first (Cascader.menuVars light))
+    , eq "cascader menuVars: mask color = popoverColor at alpha .75" (Just "rgba(255, 255, 255, 0.75)") (lookup "--n-menu-mask-color" (Cascader.menuVars light))
+    , eq "cascader selectMenuVars: the 23 menu vars then the 17 cascader ones" 40 (List.length (Cascader.selectMenuVars light))
 
     -- popselect: cssVars merged 39 (23 menu -> box-shadow -> 15 popover) ----
     , eq "popselect cssVars: 39 keys (light medium)" 39 (List.length (Popselect.cssVars light Popselect.Medium))
