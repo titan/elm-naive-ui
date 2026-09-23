@@ -79,6 +79,7 @@ import NUI.Split as Split
 import NUI.Statistic as Statistic
 import NUI.Steps as Steps
 import NUI.Switch as Switch
+import NUI.Table as Table
 import NUI.Tabs as Tabs
 import NUI.Tag as Tag
 import NUI.Theme as Theme exposing (Theme)
@@ -688,6 +689,7 @@ body =
     , selectSection
     , cascaderSection
     , treeSection
+    , tableSection
     , autoCompleteSection
     , mentionSection
     , tooltipSection
@@ -2611,6 +2613,84 @@ caller-owned: the expanded / checked / selected / loading keys are plain
 lists the caller derives with `Tree.toggleExpand` / `Tree.check` / … and
 feeds back in.
 -}
+tableSection : Element msg
+tableSection =
+    section "Table"
+        "Naive UI's static table — the real `<table class=\"n-table\">` root (six modifier classes, the 21 `--n-*` vars with the three size-keyed ones resolved) over a typed `thead` / `tbody` tree of `th` / `td` cells (`colspan` / `rowspan` first-class, `Element` content embedded through `display: contents`). Fully static — nothing runtime."
+    <|
+        [ demoRow "Basic (defaults: bordered, bottom-bordered, single-line)"
+            [ Table.view theme tableD tableContent
+            ]
+        , demoRow "Sizes · un-bordered · multi-line"
+            [ Table.view theme { tableD | size = Table.Small } tableContent
+            , Table.view theme { tableD | size = Table.Large, bordered = False, bottomBordered = False } tableContent
+            ]
+        , demoRow "Striped · single-column · multi-line cells"
+            [ Table.view theme { tableD | striped = True, singleLine = False } tableContent
+            , Table.view theme { tableD | singleColumn = True } tableContent
+            ]
+        , demoRow "Colspan / rowspan"
+            [ Table.view theme tableD spanContent
+            ]
+        , demoRow "RTL"
+            [ Table.view theme { tableD | rtl = True } tableContent
+            ]
+        ]
+
+
+tableD : Table.Options msg
+tableD =
+    Table.defaults
+
+
+{-| A two-column demo table (head + three body rows).
+-}
+tableContent : Table.Table msg
+tableContent =
+    { head =
+        [ { rowD | cells = [ tableCell "Name", tableCell "Origin" ] } ]
+    , body =
+        [ { rowD | cells = [ tableCell "Naive", tableCell "Vue" ] }
+        , { rowD | cells = [ tableCell "elm-naive-ui", tableCell "Elm" ] }
+        , { rowD | cells = [ tableCell "Seemly", tableCell "Utils" ] }
+        ]
+    }
+
+
+{-| The colspan / rowspan demo (naive-ui docs' merge-cell shape).
+-}
+spanContent : Table.Table msg
+spanContent =
+    { head =
+        [ { rowD | cells = [ tableCell "", cellD, cellD ] } ]
+    , body =
+        [ { rowD
+            | cells =
+                [ { cellD | content = [ Element.text "Guitar" ], rowspan = Just 2 }
+                , tableCell "1998"
+                , tableCell "Songs"
+                ]
+          }
+        , { rowD | cells = [ tableCell "2001", { cellD | colspan = Just 2, content = [ Element.text "Albums + Tours" ] } ] }
+        ]
+    }
+
+
+rowD : Table.Row msg
+rowD =
+    Table.rowDefaults
+
+
+cellD : Table.Cell msg
+cellD =
+    Table.cellDefaults
+
+
+tableCell : String -> Table.Cell msg
+tableCell label =
+    { cellD | content = [ Element.text label ] }
+
+
 treeSection : Element msg
 treeSection =
     section "Tree"

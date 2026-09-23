@@ -408,5 +408,14 @@ export const components = {
     // virtual list is DOM-only.
     cssr: ['tree/src/styles/index.cssr.ts', 'tree/src/styles/rtl.cssr.ts'],
     theme: 'tree/styles/light.ts'
+  },
+  table: {
+    // Own cssr is the whole static-table family on REAL table tags (.n-table
+    // th/td/tr rules, --bordered / --single-line / --single-column / --
+    // striped / --bottom-bordered modifiers, merged-border-color var) +
+    // rtl.cssr (--rtl). The five sub-components (Th/Td/Tr/Thead/Tbody) are
+    // bare tag wrappers upstream — the port builds the tag tree itself.
+    cssr: ['table/src/styles/index.cssr.ts', 'table/src/styles/rtl.cssr.ts'],
+    theme: 'table/styles/light.ts'
   }
 }

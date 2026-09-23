@@ -6343,6 +6343,103 @@ margin: auto;}.nui-root.nui-root .n-tree.n-tree--rtl {
 
         margin-right: 4px;}
 
+/* ===== naive-ui: table ===== */
+.nui-root.nui-root .n-table {
+
+    font-size: var(--n-font-size);
+    font-variant-numeric: tabular-nums;
+    line-height: var(--n-line-height);
+    width: 100%;
+    border-radius: var(--n-border-radius) var(--n-border-radius) 0 0;
+    text-align: left;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+    background-color: var(--n-td-color);
+    border-color: var(--n-merged-border-color);
+    transition:
+      background-color .3s var(--n-bezier),
+      border-color .3s var(--n-bezier),
+      color .3s var(--n-bezier);
+    --n-merged-border-color: var(--n-border-color);}.nui-root.nui-root .n-table th {
+
+      white-space: nowrap;
+      transition:
+        background-color .3s var(--n-bezier),
+        border-color .3s var(--n-bezier),
+        color .3s var(--n-bezier);
+      text-align: inherit;
+      padding: var(--n-th-padding);
+      vertical-align: inherit;
+      text-transform: none;
+      border: 0px solid var(--n-merged-border-color);
+      font-weight: var(--n-th-font-weight);
+      color: var(--n-th-text-color);
+      background-color: var(--n-th-color);
+      border-bottom: 1px solid var(--n-merged-border-color);
+      border-right: 1px solid var(--n-merged-border-color);}.nui-root.nui-root .n-table th:last-child {
+
+        border-right: 0px solid var(--n-merged-border-color);}.nui-root.nui-root .n-table td {
+
+      transition:
+        background-color .3s var(--n-bezier),
+        border-color .3s var(--n-bezier),
+        color .3s var(--n-bezier);
+      padding: var(--n-td-padding);
+      color: var(--n-td-text-color);
+      background-color: var(--n-td-color);
+      border: 0px solid var(--n-merged-border-color);
+      border-right: 1px solid var(--n-merged-border-color);
+      border-bottom: 1px solid var(--n-merged-border-color);}.nui-root.nui-root .n-table td:last-child {
+
+        border-right: 0px solid var(--n-merged-border-color);}.nui-root.nui-root .n-table.n-table--bordered {
+
+      border: 1px solid var(--n-merged-border-color);
+      border-radius: var(--n-border-radius);}.nui-root.nui-root .n-table.n-table--bordered tr:last-child td {
+
+            border-bottom: 0 solid var(--n-merged-border-color);}.nui-root.nui-root .n-table.n-table--single-line th {
+
+        border-right: 0px solid var(--n-merged-border-color);}.nui-root.nui-root .n-table.n-table--single-line td {
+
+        border-right: 0px solid var(--n-merged-border-color);}.nui-root.nui-root .n-table.n-table--single-column tr:not(:last-child) td {
+
+            border-bottom: 0px solid var(--n-merged-border-color);}.nui-root.nui-root .n-table.n-table--striped tr:nth-of-type(even) td {
+background-color: var(--n-td-color-striped)
+;}.nui-root.nui-root .n-table:not(.n-table--bottom-bordered) tr:last-child td {
+
+            border-bottom: 0px solid var(--n-merged-border-color);}.nui-root.nui-root .n-modal .n-table,
+.nui-root.nui-root .n-drawer .n-table {
+
+      background-color: var(--n-td-color-modal);
+      --n-merged-border-color: var(--n-border-color-modal);}.nui-root.nui-root .n-modal .n-table th,
+.nui-root.nui-root .n-drawer .n-table th {
+
+        background-color: var(--n-th-color-modal);}.nui-root.nui-root .n-modal .n-table td,
+.nui-root.nui-root .n-drawer .n-table td {
+
+        background-color: var(--n-td-color-modal);}.nui-root.nui-root .n-popover .n-table {
+
+      background-color: var(--n-td-color-popover);
+      --n-merged-border-color: var(--n-border-color-popover);}.nui-root.nui-root .n-popover .n-table th {
+
+        background-color: var(--n-th-color-popover);}.nui-root.nui-root .n-popover .n-table td {
+
+        background-color: var(--n-td-color-popover);}.nui-root.nui-root .n-table.n-table--rtl {
+
+      direction: rtl;
+      text-align: right;}.nui-root.nui-root .n-table.n-table--rtl th,
+.nui-root.nui-root .n-table.n-table--rtl td {
+
+        border-right: 0px solid var(--n-merged-border-color);
+        border-left: 1px solid var(--n-merged-border-color);}.nui-root.nui-root .n-table.n-table--rtl th:last-child,
+.nui-root.nui-root .n-table.n-table--rtl td:last-child {
+
+          border-left: none;
+          border-right: inherit;}.nui-root.nui-root .n-table.n-table--rtl.n-table--single-line th,
+.nui-root.nui-root .n-table.n-table--rtl.n-table--single-line td {
+
+          border-left: 0px solid var(--n-merged-border-color);}
+
 /* ===== elm-ui bridge =====
  *
  * Components are built from elm-ui elements, and elm-ui styles its own helper classes

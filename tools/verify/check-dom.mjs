@@ -106,6 +106,9 @@ const targets = {
   // The tree root carries the full 17-var set (three of them derived from
   // the wrapper-padding/height strings); the rows live inside it.
   '.n-tree': true,
+  // The static table: the REAL <table> tag carries the classes + the 21-var
+  // set (three size-keyed); th/td/tr rules hang off it.
+  '.n-table': true,
   '.n-base-selection': true,
   '.n-select-menu': true,
   // AutoComplete: the same shape one level down — the wrapper is a bare
