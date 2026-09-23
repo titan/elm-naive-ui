@@ -7198,21 +7198,25 @@ checks =
     , eq "tree flatten [a,a2]: nested leaves, a2x disabled travels" [ "a", "a1", "a2", "a2x", "a2y", "a3", "b", "c" ] (treeFlatKeys (Tree.flatten [ "a", "a2" ] treeFixture))
     , eq "tree flatten unknown key: ignored (children of nothing)" [ "a", "b", "c" ] (treeFlatKeys (Tree.flatten [ "zz" ] treeFixture))
     , eq "tree flatten depth: a1 is level 1, a2y is level 2" [ 1, 2 ] (List.map .level (List.filter (\n -> n.key == "a1" || n.key == "a2y") (Tree.flatten [ "a", "a2" ] treeFixture)))
-    , eq "tree flatten last-child chain: a1 is last, a2y is not (a2x precedes)" [ True, False ] (List.map .isLastChild (List.filter (\n -> n.key == "a1" || n.key == "a2y") (Tree.flatten [ "a", "a2" ] treeFixture)))
-    , eq "tree getNonLeafKeys: every branch key, document order (a3 is loaded-empty -> non-leaf)" [ "a", "a2", "b" ] (Tree.getNonLeafKeys treeFixture)
-    , eq "tree toggleExpand: the key appends when absent" [ "a", "c" ] (Tree.toggleExpand False treeFixture "c" [ "a" ])
-    , eq "tree toggleExpand: the key drops when present" [ "a" ] (Tree.toggleExpand False treeFixture "a" [ "a", "c" ] |> List.filter (\k -> k /= "c"))
+    , eq "tree flatten last-child chain: a1 is not last (a2 follows), a2y is last (a2x precedes)" [ False, True ] (List.map .isLastChild (List.filter (\n -> n.key == "a1" || n.key == "a2y") (Tree.flatten [ "a", "a2" ] treeFixture)))
+    , eq "tree getNonLeafKeys: every branch key, document order (loaded-empty a3 counts: real treemate output)" [ "a", "a2", "a3", "b" ] (Tree.getNonLeafKeys treeFixture)
+    , eq "tree toggleExpand: a leaf key never joins the expanded set (Tree.tsx:1098 isLeaf guard)" [ "a" ] (Tree.toggleExpand False treeFixture "c" [ "a" ])
+    , eq "tree toggleExpand: the key drops when present" [ "c" ] (Tree.toggleExpand False treeFixture "a" [ "a", "c" ])
     , eq "tree toggleExpand accordion: expanding b collapses the sibling a" [ "b" ] (Tree.toggleExpand True treeFixture "b" [ "a" ])
-    , eq "tree toggleExpand unknown key: appended (upstream appends)" [ "a", "zz" ] (Tree.toggleExpand False treeFixture "zz" [ "a" ])
+    , eq "tree toggleExpand unknown key: ignored (Tree.tsx:1098 getNode guard -> unchanged)" [ "a" ] (Tree.toggleExpand False treeFixture "zz" [ "a" ])
     , eq "tree toggleSelect single: replaces the set" [ "a2" ] (Tree.toggleSelect False False "a2" [ "a1" ])
     , eq "tree toggleSelect single cancelable: re-select clears" [] (Tree.toggleSelect False True "a1" [ "a1" ])
     , eq "tree toggleSelect single non-cancelable: re-select stays" [ "a1" ] (Tree.toggleSelect False False "a1" [ "a1" ])
     , eq "tree toggleSelect multiple: toggles membership" [ "a1", "a2" ] (Tree.toggleSelect True True "a2" [ "a1" ])
     , eq "tree toggleSelect multiple non-cancelable: append-only" [ "a1", "a2" ] (Tree.toggleSelect True False "a1" [ "a1", "a2" ] |> List.reverse |> List.reverse)
+
+    -- Upstream filterTree ("A2" / "A2X" / "A2Y" all contain "a2"): matched
+    -- leaves keep their origin node (a2x included), the branch above them is
+    -- cloned with the built children, and both clone keys are expanded.
     , eq "tree filterTree 'a2': the branch above the match survives, the match highlights, the path expands"
-        { tree = [ Tree.TreeOption { key = "a", label = "A", disabled = False, checkboxDisabled = False, isLeaf = False, children = Just [ Tree.TreeOption { key = "a2", label = "A2", disabled = False, checkboxDisabled = False, isLeaf = False, children = Just [ Tree.TreeOption { key = "a2y", label = "A2Y", disabled = False, checkboxDisabled = False, isLeaf = True, children = Nothing, prefix = [], suffix = [] } ], prefix = [], suffix = [] } ], prefix = [], suffix = [] } ]
-        , highlightKeys = [ "a2", "a2y" ]
-        , expandedKeys = [ "a" ]
+        { tree = [ Tree.TreeOption { key = "a", label = "A", disabled = False, checkboxDisabled = False, isLeaf = False, children = Just [ Tree.TreeOption { key = "a2", label = "A2", disabled = False, checkboxDisabled = False, isLeaf = False, children = Just [ Tree.TreeOption { key = "a2x", label = "A2X", disabled = True, checkboxDisabled = False, isLeaf = True, children = Nothing, prefix = [], suffix = [] }, Tree.TreeOption { key = "a2y", label = "A2Y", disabled = False, checkboxDisabled = False, isLeaf = True, children = Nothing, prefix = [], suffix = [] } ], prefix = [], suffix = [] } ], prefix = [], suffix = [] } ]
+        , highlightKeys = [ "a2", "a2x", "a2y" ]
+        , expandedKeys = [ "a", "a2" ]
         }
         (Tree.filterTree "a2" treeFixture)
     , eq "tree filterTree empty pattern: the whole tree passes untouched" treeFixture (Tree.filterTree "" treeFixture).tree
