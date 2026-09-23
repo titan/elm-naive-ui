@@ -54,6 +54,12 @@ const escapeRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 // by the caller to the keys `self()` actually returns, which drops matches from the
 // destructure block / theme-object literal (e.g. a spurious `borderRadiusSmall`).
 function parseVarRefs(src) {
+  // TS `interface X { … }` blocks (e.g. watermark's inline `WatermarkThemeVars`)
+  // look like object literals to the passes below — `fontFamily: string` marks
+  // the key seen-without-ref, which blocks the shorthand pass and freezes a
+  // literal where upstream means a common ref (the Empty.iconColor failure
+  // class). Bodies are flat in every styles file, so `[^}]*` suffices.
+  src = src.replace(/\binterface\s+[\w$]+[^{]*\{[^}]*\}/g, '')
   const names = new Set()
   const aliases = new Map()
   for (const m of src.matchAll(/const\s*\{([^}]*)\}\s*=\s*vars\b/g)) {

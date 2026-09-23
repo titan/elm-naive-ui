@@ -60,7 +60,8 @@ rendered at ratio 1 (upstream multiplies every canvas coordinate by
 upstream measures the text with `measureText` and anchors on the measured
 box — identical when the longest line is exactly `width` wide, and `Left`
 is exact; the `debug` rects are drawn in the SVG tile only (the image path
-has no tile to draw on); and the root sits inside a bare elm-ui wrapper
+has no tile to draw on, and the grey outline is dropped on the empty tile
+— upstream's `clearRect` wipes it); and the root sits inside a bare elm-ui wrapper
 `div` carrying the caller `attributes` (the `NUI.Table` root shape), with
 each child embedded through a `display: contents` wrapper (the
 `NUI.Descriptions` seam — there is no public `Element` → `Html`).
@@ -406,7 +407,7 @@ tileSvg theme opts =
         ++ "\" height=\""
         ++ String.fromInt (opts.yGap + opts.height)
         ++ "\">"
-        ++ (if opts.debug then
+        ++ (if opts.debug && mark /= "" then
                 debugRect "grey"
 
             else
@@ -449,16 +450,25 @@ textNode opts index line =
         ( anchorName, anchorX ) =
             case opts.textAlign of
                 Left ->
-                    ( "start", opts.xOffset )
+                    ( "start", String.fromInt opts.xOffset )
 
                 Center ->
-                    ( "middle", opts.xOffset + opts.width // 2 )
+                    -- upstream's measured-box centre lands at `width / 2` for
+                    -- the widest line; emit the exact fraction on odd widths
+                    -- (JS number formatting — `"2.5"`, not the floor `2`)
+                    ( "middle"
+                    , if remainderBy 2 opts.width == 0 then
+                        String.fromInt (opts.xOffset + opts.width // 2)
+
+                      else
+                        String.fromFloat (toFloat opts.xOffset + toFloat opts.width / 2)
+                    )
 
                 Right ->
-                    ( "end", opts.xOffset + opts.width )
+                    ( "end", String.fromInt (opts.xOffset + opts.width) )
     in
     "<text x=\""
-        ++ String.fromInt anchorX
+        ++ anchorX
         ++ "\" y=\""
         ++ String.fromInt (opts.yOffset + opts.lineHeight * (index + 1))
         ++ "\" text-anchor=\""
@@ -472,7 +482,8 @@ textNode opts index line =
 (`fontStyle fontVariant fontWeight fontStretch fontSize/lineHeight
 fontFamily`) as SVG attributes; the `normal` / empty defaults are omitted
 (no-ops on both sides; `font-weight` rides SVG's own 400 default), and
-`fontFamily` falls back to the theme's single var, as upstream's
+`fontFamily` falls back to the theme's single var on `Nothing` or the
+empty string (upstream's `||` treats both as absent), as upstream's
 `themeRef.value.self.fontFamily`.
 -}
 fontAttrs : Theme.Theme -> Options msg -> String
@@ -486,12 +497,30 @@ fontAttrs theme opts =
                 " " ++ name ++ "=\"" ++ escapeXml value ++ "\""
     in
     " font-family=\""
-        ++ escapeXml (Maybe.withDefault (WatermarkTheme.vars theme).fontFamily opts.fontFamily)
+        ++ escapeXml
+            (Maybe.withDefault (WatermarkTheme.vars theme).fontFamily
+                (Maybe.andThen
+                    (\f ->
+                        if String.isEmpty f then
+                            Nothing
+
+                        else
+                            Just f
+                    )
+                    opts.fontFamily
+                )
+            )
         ++ "\" font-size=\""
         ++ String.fromInt opts.fontSize
         ++ "\" fill=\""
         ++ escapeXml opts.fontColor
         ++ "\""
+        ++ (if opts.fontWeight /= 400 then
+                " font-weight=\"" ++ String.fromInt opts.fontWeight ++ "\""
+
+            else
+                ""
+           )
         ++ ifNot "font-style" opts.fontStyle "normal"
         ++ ifNot "font-variant" opts.fontVariant ""
         ++ ifNot "font-stretch" opts.fontStretch ""

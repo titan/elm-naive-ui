@@ -24,7 +24,7 @@ vars theme =
 
 light : Common -> Vars
 light common =
-    { fontFamily = "v-sans, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\""
+    { fontFamily = common.fontFamily
     }
 
 
