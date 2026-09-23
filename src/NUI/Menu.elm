@@ -114,8 +114,11 @@ the popover layer.
     `type: 'render'` options are not modelled — upstream drops them silently
     (their `render` field is never called).
   - Upstream quirk kept: menu-level `disabled` flows into submenus (it is
-    checked in `NSubmenu` only), never into root-level options or groups —
-    root nodes inherit nothing but their own `disabled`.
+    checked in `NSubmenu` only), never into root-level options or groups.
+    Group `disabled` is likewise an injection its LEAF children read — a
+    submenu (or nested group) under a disabled group stays alive, and a leaf
+    under `submenu > group` reads the submenu's merged state and ignores the
+    group's (upstream's `NSubmenu ? … : …` ternary).
   - Upstream's leading-space text nodes before `extra` are kept (`" extra"`).
   - Derived colours (`itemColorActive*` = `changeColor(primary, α)`) are
     pinned literals in `NUI.Theme.Menu` (toolchain convention, cf. Tag).
@@ -200,7 +203,9 @@ type alias GroupOption msg =
     }
 
 
-{-| The divider rule. `attributes` land on the div.
+{-| The divider rule. `attributes` land on the div — upstream spreads the
+raw node's `props` field here (never `nodeProps`); the port's `attributes`
+are that seam.
 -}
 type alias DividerOption msg =
     { attributes : List (Element.Attribute msg) }
@@ -287,6 +292,8 @@ view theme opts options =
             , parentPaddingLeft = Nothing
             , parentKind = NoParent
             , inheritedDisabled = False
+            , submenuAbove = False
+            , groupDisabled = False
             }
     in
     Element.column
@@ -333,6 +340,8 @@ type alias Ctx msg =
     , parentPaddingLeft : Maybe Float
     , parentKind : ParentKind
     , inheritedDisabled : Bool
+    , submenuAbove : Bool
+    , groupDisabled : Bool
     }
 
 
@@ -374,8 +383,17 @@ is the collapsed-leaf popover seam; not mounted here).
 leafNode : Ctx msg -> Bool -> LeafOption msg -> Element msg
 leafNode ctx root leaf =
     let
+        parentDisabled =
+            -- upstream MenuOption reads the submenu injection FIRST and the
+            -- group injection only when no submenu sits above
+            if ctx.submenuAbove then
+                ctx.inheritedDisabled
+
+            else
+                ctx.groupDisabled
+
         mergedDisabled =
-            ctx.inheritedDisabled || leaf.disabled
+            parentDisabled || leaf.disabled
     in
     Element.el
         ([ I.classes [ "n-menu-item" ]
@@ -411,9 +429,10 @@ submenuNode ctx root leaf children =
             ctx.inheritedDisabled || ctx.opts.disabled || leaf.disabled
 
         submenuCollapsed =
-            ctx.isHorizontal
-                || ctx.opts.collapsed
-                || not (List.member leaf.key ctx.opts.expandedKeys)
+            not ctx.isHorizontal
+                && (ctx.opts.collapsed
+                        || not (List.member leaf.key ctx.opts.expandedKeys)
+                   )
 
         paddingLeft =
             paddingLeftFor ctx root False
@@ -423,6 +442,8 @@ submenuNode ctx root leaf children =
                 | parentPaddingLeft = paddingLeft
                 , parentKind = InSubmenu
                 , inheritedDisabled = mergedDisabled
+                , submenuAbove = True
+                , groupDisabled = False
             }
 
         itemEl =
@@ -491,7 +512,8 @@ groupNode ctx root group =
             { ctx
                 | parentPaddingLeft = paddingLeft
                 , parentKind = InGroup
-                , inheritedDisabled = mergedDisabled
+                , inheritedDisabled = ctx.inheritedDisabled
+                , groupDisabled = mergedDisabled
             }
 
         titleChildren =
@@ -866,6 +888,8 @@ toggleExpanded accordion options current key =
 
 {-| Upstream `MenuInst.showOption(key)` — expand the ancestor path of `key`
 (`includeSelf: false`); under `accordion` close level-1 keys not on the path.
+Upstream's no-arg form falls back to the current value — pass your `value`
+as `key`.
 -}
 expandTo : Bool -> List (Option msg) -> String -> List String -> List String
 expandTo accordion options key current =
