@@ -390,5 +390,14 @@ export const components = {
     // upstream.
     cssr: ['mention/src/styles/index.cssr.ts'],
     theme: 'mention/styles/light.ts'
+  },
+  cascader: {
+    // Own cssr is the whole multi-column menu family (.n-cascader-menu,
+    // __empty, __action, submenu columns with dividers, option rows with
+    // prefix/label/suffix + state modifiers); the trigger is NInternalSelection
+    // (rides the `internal` chunk) and the filterable flat menu rides the
+    // `selectMenu` block. No rtl.cssr upstream.
+    cssr: ['cascader/src/styles/index.cssr.ts'],
+    theme: 'cascader/styles/light.ts'
   }
 }

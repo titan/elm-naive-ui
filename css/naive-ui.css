@@ -5955,6 +5955,136 @@ width: 100%; z-index: auto; position: relative;}.nui-root.nui-root .n-mention-me
   opacity: 1;
   transform:  scale(1);}
 
+/* ===== naive-ui: cascader ===== */
+.nui-root.nui-root .n-cascader-menu {
+
+    outline: none;
+    position: relative;
+    margin: 4px 0;
+    display: flex;
+    flex-flow: column nowrap;
+    border-radius: var(--n-menu-border-radius);
+    overflow: hidden;
+    box-shadow: var(--n-menu-box-shadow);
+    color: var(--n-option-text-color);
+    background-color: var(--n-menu-color);}.nui-root.nui-root .n-cascader-menu.fade-in-scale-up-transition-leave-active {
+  transform-origin: inherit;
+  transition: opacity 0.2s cubic-bezier(.4, 0, 1, 1), transform 0.2s cubic-bezier(.4, 0, 1, 1) ;}.nui-root.nui-root .n-cascader-menu.fade-in-scale-up-transition-enter-active {
+  transform-origin: inherit;
+  transition: opacity 0.2s cubic-bezier(0, 0, .2, 1), transform 0.2s cubic-bezier(0, 0, .2, 1) ;}.nui-root.nui-root .n-cascader-menu.fade-in-scale-up-transition-enter-from,
+.nui-root.nui-root .n-cascader-menu.fade-in-scale-up-transition-leave-to {
+  opacity: 0;
+  transform:  scale(.9);}.nui-root.nui-root .n-cascader-menu.fade-in-scale-up-transition-leave-from,
+.nui-root.nui-root .n-cascader-menu.fade-in-scale-up-transition-enter-to {
+  opacity: 1;
+  transform:  scale(1);}.nui-root.nui-root .n-cascader-menu .n-cascader-menu__empty {
+
+      display: flex;
+      padding: 12px 32px;
+      flex: 1;
+      justify-content: center;}.nui-root.nui-root .n-cascader-menu .n-scrollbar {
+
+      width: 100%;}.nui-root.nui-root .n-cascader-menu .n-base-menu-mask {
+
+      background-color: var(--n-menu-mask-color);}.nui-root.nui-root .n-cascader-menu .n-base-loading {
+
+      color: var(--n-loading-color);}.nui-root.nui-root .n-cascader-menu .n-cascader-submenu-wrapper {
+
+      position: relative;
+      display: flex;
+      flex-wrap: nowrap;}.nui-root.nui-root .n-cascader-menu .n-cascader-submenu {
+
+      height: var(--n-menu-height);
+      min-width: var(--n-column-width);
+      position: relative;}.nui-root.nui-root .n-cascader-menu .n-cascader-submenu.n-cascader-submenu--virtual {
+
+        width: var(--n-column-width);}.nui-root.nui-root .n-cascader-menu .n-cascader-submenu .n-scrollbar-content {
+
+        position: relative;}.nui-root.nui-root .n-cascader-menu .n-cascader-submenu:first-child {
+
+        border-top-left-radius: var(--n-menu-border-radius);
+        border-bottom-left-radius: var(--n-menu-border-radius);}.nui-root.nui-root .n-cascader-menu .n-cascader-submenu:last-child {
+
+        border-top-right-radius: var(--n-menu-border-radius);
+        border-bottom-right-radius: var(--n-menu-border-radius);}.nui-root.nui-root .n-cascader-menu .n-cascader-submenu:not(:first-child) {
+
+        border-left: 1px solid var(--n-menu-divider-color);}.nui-root.nui-root .n-cascader-menu .n-cascader-menu-action {
+
+      box-sizing: border-box;
+      padding: 8px;
+      border-top: 1px solid var(--n-menu-divider-color);}.nui-root.nui-root .n-cascader-menu .n-cascader-option {
+
+      height: var(--n-option-height);
+      line-height: var(--n-option-height);
+      font-size: var(--n-option-font-size);
+      padding: 0 0 0 18px;
+      box-sizing: border-box;
+      min-width: 182px;
+      background-color: #0000;
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+      position: relative;
+      cursor: pointer;
+      transition:
+        background-color .2s var(--n-bezier),
+        color 0.2s var(--n-bezier);}.nui-root.nui-root .n-cascader-menu .n-cascader-option.n-cascader-option--show-prefix {
+
+        padding-left: 0;}.nui-root.nui-root .n-cascader-menu .n-cascader-option .n-cascader-option__label {
+
+        flex: 1 0 0;
+        overflow: hidden;
+        text-overflow: ellipsis;}.nui-root.nui-root .n-cascader-menu .n-cascader-option .n-cascader-option__prefix {
+
+        min-width: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;}.nui-root.nui-root .n-cascader-menu .n-cascader-option .n-cascader-option__suffix {
+
+        min-width: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;}.nui-root.nui-root .n-cascader-menu .n-cascader-option .n-cascader-option-icon-placeholder {
+
+        line-height: 0;
+        position: relative;
+        width: 16px;
+        height: 16px;
+        font-size: 16px;}.nui-root.nui-root .n-cascader-menu .n-cascader-option .n-cascader-option-icon-placeholder .n-cascader-option-icon.n-cascader-option-icon--checkmark {
+
+            color: var(--n-option-check-mark-color);}.nui-root.nui-root .n-cascader-menu .n-cascader-option .n-cascader-option-icon-placeholder .n-cascader-option-icon.n-cascader-option-icon--checkmark.fade-in-scale-up-transition-leave-active {
+  transform-origin: inherit;
+  transition: opacity .2s cubic-bezier(.4, 0, 1, 1), transform .2s cubic-bezier(.4, 0, 1, 1) ,background-color .3s var(--n-bezier), box-shadow .3s var(--n-bezier);}.nui-root.nui-root .n-cascader-menu .n-cascader-option .n-cascader-option-icon-placeholder .n-cascader-option-icon.n-cascader-option-icon--checkmark.fade-in-scale-up-transition-enter-active {
+  transform-origin: inherit;
+  transition: opacity .2s cubic-bezier(0, 0, .2, 1), transform .2s cubic-bezier(0, 0, .2, 1) ,background-color .3s var(--n-bezier), box-shadow .3s var(--n-bezier);}.nui-root.nui-root .n-cascader-menu .n-cascader-option .n-cascader-option-icon-placeholder .n-cascader-option-icon.n-cascader-option-icon--checkmark.fade-in-scale-up-transition-enter-from,
+.nui-root.nui-root .n-cascader-menu .n-cascader-option .n-cascader-option-icon-placeholder .n-cascader-option-icon.n-cascader-option-icon--checkmark.fade-in-scale-up-transition-leave-to {
+  opacity: 0;
+  transform:  scale(.9);}.nui-root.nui-root .n-cascader-menu .n-cascader-option .n-cascader-option-icon-placeholder .n-cascader-option-icon.n-cascader-option-icon--checkmark.fade-in-scale-up-transition-leave-from,
+.nui-root.nui-root .n-cascader-menu .n-cascader-option .n-cascader-option-icon-placeholder .n-cascader-option-icon.n-cascader-option-icon--checkmark.fade-in-scale-up-transition-enter-to {
+  opacity: 1;
+  transform:  scale(1);}.nui-root.nui-root .n-cascader-menu .n-cascader-option .n-cascader-option-icon-placeholder .n-cascader-option-icon.n-cascader-option-icon--arrow {
+
+            color: var(--n-option-arrow-color);}.nui-root.nui-root .n-cascader-menu .n-cascader-option.n-cascader-option--selected {
+
+        color: var(--n-option-text-color-active);}.nui-root.nui-root .n-cascader-menu .n-cascader-option.n-cascader-option--active {
+
+        color: var(--n-option-text-color-active);
+        background-color: var(--n-option-color-hover);}.nui-root.nui-root .n-cascader-menu .n-cascader-option.n-cascader-option--pending {
+
+        background-color: var(--n-option-color-hover);}.nui-root.nui-root .n-cascader-menu .n-cascader-option:hover {
+
+        background-color: var(--n-option-color-hover);}.nui-root.nui-root .n-cascader-menu .n-cascader-option.n-cascader-option--disabled {
+
+        color: var(--n-option-text-color-disabled);
+        background-color: #0000;
+        cursor: not-allowed;}.nui-root.nui-root .n-cascader-menu .n-cascader-option.n-cascader-option--disabled .n-cascader-option-icon.n-cascader-option-icon--arrow {
+
+            color: var(--n-option-text-color-disabled);}.nui-root.nui-root .n-cascader {
+
+    z-index: auto;
+    position: relative;
+    width: 100%;}
+
 /* ===== elm-ui bridge =====
  *
  * Components are built from elm-ui elements, and elm-ui styles its own helper classes
