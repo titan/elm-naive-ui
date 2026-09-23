@@ -89,6 +89,7 @@ bridge, tests).
 | `NUI.Tree`        | ✅ |
 | `NUI.Table`       | ✅ |
 | `NUI.Watermark`   | ✅ |
+| `NUI.Menu`        | ✅ |
 | `NUI.Checkbox`    | ✅ |
 | `NUI.Collapse`    | ✅ |
 | `NUI.Countdown`   | ✅ |
