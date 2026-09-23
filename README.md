@@ -87,6 +87,7 @@ bridge, tests).
 | `NUI.Card`        | ✅ |
 | `NUI.Cascader`    | ✅ |
 | `NUI.Tree`        | ✅ |
+| `NUI.Table`       | ✅ |
 | `NUI.Checkbox`    | ✅ |
 | `NUI.Collapse`    | ✅ |
 | `NUI.Countdown`   | ✅ |
