@@ -98,7 +98,7 @@ view theme opts _ =
 
         knobIcon =
             if opts.loading then
-                Just loadingEl
+                Just (loadingEl opts)
 
             else
                 let
@@ -234,9 +234,12 @@ and no sizing is inlined. The svg is `NUI.Internal.Loading.spinner` via
 elm/svg, a true SVG-namespaced element (the old data-URI background
 workaround predates both this stylesheet extraction and elm/svg's arrival:
 `Html.node "svg"` lands in the HTML namespace, which no browser renders).
+The four `spin*` options port upstream's `spinProps` spread over the
+`<NBaseLoading strokeWidth={20}/>` (Switch.tsx:394): a caller-set field wins
+per-field over the sw-20 baseline; `Nothing` keeps the baseline value.
 -}
-loadingEl : Element msg
-loadingEl =
+loadingEl : Options msg -> Element msg
+loadingEl opts =
     Element.el
         [ I.classes [ "n-base-loading" ]
         , Element.htmlAttribute (HA.attribute "role" "img")
@@ -248,10 +251,12 @@ loadingEl =
                 [ I.classes [ "n-base-loading__container" ] ]
                 (Element.html
                     (Loading.spinner
-                        { strokeWidth = 20
-                        , radius = 100
-                        , scale = 1
-                        , stroke = Nothing
+                        { strokeWidth =
+                            Maybe.withDefault 20 (Maybe.map toFloat opts.spinStrokeWidth)
+                        , radius =
+                            Maybe.withDefault 100 (Maybe.map toFloat opts.spinRadius)
+                        , scale = Maybe.withDefault 1 opts.spinScale
+                        , stroke = opts.spinStroke
                         }
                     )
                 )
