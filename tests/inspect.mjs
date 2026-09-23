@@ -8041,7 +8041,7 @@ dEq(
 )
 dEq(
   'DOM: Tree switcher carries data-switcher, width = indent (24px), and the __icon cell',
-  'true|width:24px|true',
+  'true|width: 24px;|true',
   (() => {
     const sw = doc.querySelector('#live-tree-basic .n-tree-node-switcher')
     return [
