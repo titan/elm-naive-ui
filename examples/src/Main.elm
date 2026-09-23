@@ -57,6 +57,7 @@ import NUI.List as NList
 import NUI.LoadingBar as LoadingBar
 import NUI.Marquee as Marquee
 import NUI.Mention as Mention
+import NUI.Menu as Menu
 import NUI.Modal as Modal
 import NUI.NumberAnimation as NumberAnimation
 import NUI.PageHeader as PageHeader
@@ -282,6 +283,11 @@ mnD =
 mnMenuD : Mention.MenuOptions msg
 mnMenuD =
     Mention.menuDefaults
+
+
+menuD : Menu.Options msg
+menuD =
+    Menu.defaults
 
 
 tooltipD : Tooltip.Options msg
@@ -696,6 +702,7 @@ body =
     , mentionSection
     , tooltipSection
     , dropdownSection
+    , menuSection
     , modalSection
     , drawerSection
     , dialogSection
@@ -3763,6 +3770,153 @@ dialogSection =
                         , content = Just (Element.text "modalColor surface, dark-common close/kind colors.")
                         , positiveText = Just "OK"
                     }
+                )
+            ]
+        ]
+
+
+menuOpts : List (Menu.Option msg)
+menuOpts =
+    [ Menu.Option
+        { key = "home"
+        , label = "Home"
+        , extra = Nothing
+        , icon = Just starIcon
+        , disabled = False
+        , children = Nothing
+        , attributes = []
+        }
+    , Menu.Option
+        { key = "sub-1"
+        , label = "Components"
+        , extra = Just "16"
+        , icon = Just starIcon
+        , disabled = False
+        , children =
+            Just
+                [ Menu.Option
+                    { key = "sub-2"
+                    , label = "Nested submenu"
+                    , extra = Nothing
+                    , icon = Just starIcon
+                    , disabled = False
+                    , children =
+                        Just
+                            [ Menu.Option
+                                { key = "table", label = "Table", extra = Nothing, icon = Just starIcon, disabled = False, children = Nothing, attributes = [] }
+                            , Menu.Option
+                                { key = "cascader", label = "Cascader", extra = Nothing, icon = Nothing, disabled = False, children = Nothing, attributes = [] }
+                            ]
+                    , attributes = []
+                    }
+                , Menu.Group
+                    { key = "group-1"
+                    , label = "Layout"
+                    , extra = Nothing
+                    , disabled = False
+                    , children =
+                        [ Menu.Option
+                            { key = "who", label = "Who is selected", extra = Nothing, icon = Just starIcon, disabled = False, children = Nothing, attributes = [] }
+                        , Menu.Option
+                            { key = "grid", label = "Grid (disabled)", extra = Nothing, icon = Nothing, disabled = True, children = Nothing, attributes = [] }
+                        ]
+                    , attributes = []
+                    }
+                ]
+        , attributes = []
+        }
+    , Menu.Divider { attributes = [] }
+    , Menu.Option
+        { key = "about", label = "About", extra = Nothing, icon = Nothing, disabled = False, children = Nothing, attributes = [] }
+    ]
+
+
+menuSection : Element msg
+menuSection =
+    section "Menu"
+        "The navigation tree (upstream `NMenu` over treemate options) — one recursive walk renders submenu/option/group/divider. State is caller-owned: `value` + `expandedKeys` in, `onSelect` / `onExpandedKeysChange` out (accordion applied via `toggleExpanded`); `initialExpandedKeys` / `expandTo` mirror the uncontrolled and imperative seams. Horizontal and collapsed submenus, and collapsed-leaf tooltips, are caller-mounted popovers — `submenuDropdownOptions` feeds `NUI.Dropdown.view`."
+    <|
+        [ demoRow "Vertical (fixed state: path expanded, leaf selected)"
+            [ cell
+                (Element.el [ Element.width (Element.px 240) ]
+                    (Menu.view theme
+                        { menuD
+                            | value = Just "who"
+                            , expandedKeys = [ "sub-1", "sub-2", "group-1" ]
+                        }
+                        menuOpts
+                    )
+                )
+            ]
+        , demoRow "Accordion + expand-all / value-path init"
+            [ cell
+                (Element.el [ Element.width (Element.px 240) ]
+                    (Menu.view theme
+                        { menuD
+                            | accordion = True
+                            , expandedKeys = Menu.initialExpandedKeys True Nothing menuOpts
+                        }
+                        menuOpts
+                    )
+                )
+            , cell
+                (Element.el [ Element.width (Element.px 240) ]
+                    (Menu.view theme
+                        { menuD
+                            | expandedKeys = Menu.initialExpandedKeys False (Just "cascader") menuOpts
+                        }
+                        menuOpts
+                    )
+                )
+            ]
+        , demoRow "Collapsed (icon-only centering) + indent tuning"
+            [ cell
+                (Element.el [ Element.width (Element.px 64) ]
+                    (Menu.view theme
+                        { menuD | collapsed = True, value = Just "who", expandedKeys = [ "sub-1" ] }
+                        menuOpts
+                    )
+                )
+            , cell
+                (Element.el [ Element.width (Element.px 240) ]
+                    (Menu.view theme
+                        { menuD
+                            | rootIndent = Just 12
+                            , indent = 16
+                            , value = Just "who"
+                            , expandedKeys = [ "sub-1", "group-1" ]
+                        }
+                        menuOpts
+                    )
+                )
+            ]
+        , demoRow "Horizontal + inverted"
+            [ cell
+                (Element.el [ Element.width Element.fill ]
+                    (Menu.view theme
+                        { menuD | mode = Menu.Horizontal, value = Just "who" }
+                        menuOpts
+                    )
+                )
+            , cell
+                (Element.el
+                    [ Element.width (Element.px 240)
+                    , Element.padding 8
+                    , Element.htmlAttribute (HA.attribute "style" "background:rgb(16,16,20)")
+                    ]
+                    (Menu.view theme
+                        { menuD | inverted = True, value = Just "who", expandedKeys = [ "sub-1", "group-1" ] }
+                        menuOpts
+                    )
+                )
+            ]
+        , demoRow "Menu disabled (submenu dead, root leaf alive — upstream quirk)"
+            [ cell
+                (Element.el [ Element.width (Element.px 240) ]
+                    (Menu.view theme
+                        { menuD | disabled = True, expandedKeys = [ "sub-1" ] }
+                        menuOpts
+                    )
                 )
             ]
         ]

@@ -428,12 +428,14 @@ export const components = {
     theme: 'watermark/styles/light.ts'
   },
   menu: {
-    // Own cssr is the whole menu family (.n-menu with --vertical/--horizontal
-    // /--collapsed/--inverted modifiers, .n-menu-item-content state modifiers,
-    // .n-submenu with __arrow/__children, .n-menu-item-group,
-    // .n-menu-divider, and the popover-shared tooltip/dropdown bodies the
-    // horizontal/collapsed modes mount — those ride the tooltip/dropdown
-    // blocks with caller-owned runtime, house pattern). No rtl.cssr upstream.
+    // Own cssr is the whole menu family (.n-menu with --horizontal/--collapsed
+    // /--responsive modifiers — --vertical is emitted but carries no rule, and
+    // --inverted is vars-only, no class; .n-menu-item-content state grid,
+    // .n-submenu with __children + fade-in-height-expand rules,
+    // .n-menu-item-group, .n-menu-divider, .n-menu-tooltip for the
+    // collapsed-leaf popover label). The horizontal/collapsed popovers ride
+    // the tooltip/dropdown blocks with caller-owned runtime (house pattern).
+    // No rtl.cssr upstream.
     cssr: ['menu/src/styles/index.cssr.ts'],
     theme: 'menu/styles/light.ts'
   }

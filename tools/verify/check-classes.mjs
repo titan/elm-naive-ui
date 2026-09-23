@@ -38,6 +38,10 @@ const ALLOW = new Set([
   // Upstream emits it next to --disabled; no rule targets it (the --disabled
   // rules carry the styles).
   'n-calendar-cell--not-allowed',
+  // Menu.tsx emits --vertical on the root; no cssr rule targets it (only
+  // --horizontal/--collapsed/--responsive have rules; --inverted is
+  // vars-only upstream — no class exists to emit).
+  'n-menu--vertical',
   // Tree.tsx emits --checkable on the root; no rule targets it (checkable
   // gates whether the checkbox column renders at all).
   'n-tree--checkable',

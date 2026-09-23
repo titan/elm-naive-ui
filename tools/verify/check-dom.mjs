@@ -130,7 +130,9 @@ const targets = {
   // feeds the tile's font fallback, not a custom property) — only the bridge
   // is asserted, on both the container and the tiled overlay.
   '.n-watermark-container': false,
-  '.n-watermark': false
+  '.n-watermark': false,
+  // Menu: all 43 vars sit on the root (inverted swaps values, not class).
+  '.n-menu': true
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {
