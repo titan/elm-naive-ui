@@ -45,7 +45,9 @@ Divergences from upstream (documented): the root sits inside a bare
 elm-ui wrapper `div` (the `NUI.Descriptions` root shape — caller
 `attributes` need an elm-ui element to land on; Naive UI's own root IS
 the `table` tag, and every `.n-table` rule resolves identically through
-the wrapper).
+the wrapper), and `thead` / `tbody` take no caller attributes (upstream
+reaches them only through Vue fallthrough on the hand-composed wrappers;
+row and cell attributes are modelled, section attributes are not).
 
 Not ported: nothing — the component is fully static (no runtime state, no
 slots beyond the rows themselves). `--n-merged-border-color` is derived on
