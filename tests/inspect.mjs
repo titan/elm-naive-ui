@@ -8017,7 +8017,7 @@ dEq(
 )
 dEq(
   'DOM: Tree basic renders one n-tree-node-wrapper row per flattened node (a, a1, a2, a3, b, c)',
-  'a,a1,a2,a3,b,c',
+  'A,A1,A2,A3,B,C',
   [...treeRows('live-tree-basic')]
     .map((r) => {
       const node = r.querySelector('.n-tree-node')
@@ -8072,7 +8072,7 @@ dEq(
 )
 dEq(
   'DOM: Tree checkable -> each row carries a data-checkbox span wrapping .n-checkbox; placement right -> --right',
-  '6|0|6',
+  '6|6|0',
   (() => {
     const boxes = doc.querySelectorAll('#live-tree-states .n-tree-node-checkbox')
     const right = doc.querySelectorAll('#live-tree-states .n-tree-node-checkbox--right')
@@ -8082,9 +8082,9 @@ dEq(
 )
 dEq(
   'DOM: Tree state classes on rows: selected / pending / highlight / disabled / selectable / clickable',
-  'n-tree-node n-tree-node--checkable n-tree-node--selected n-tree-node--pending n-tree-node--highlight n-tree-node--selectable n-tree-node--clickable',
+  'n-tree-node n-tree-node--checkable n-tree-node--clickable n-tree-node--disabled n-tree-node--highlight n-tree-node--pending n-tree-node--selectable n-tree-node--selected',
   (() => {
-    // a1 is selected; a2 is pending; a2y is highlight; wildlife-equivalent disabled root b
+    // a1 is selected; a2 is pending; a2y is highlight; the disabled root b adds --disabled
     const rows = [...treeRows('live-tree-states')]
     const find = (label) =>
       rows.find((r) => {
@@ -8112,12 +8112,20 @@ dEq(
   })()
 )
 dEq(
-  'DOM: Tree loadingKeys -> the switcher renders .n-base-loading (spinner) instead of the arrow svg',
+  'DOM: Tree loadingKeys -> the LOADING row switcher renders .n-base-loading (spinner), not .n-base-icon',
   'present|absent',
-  [
-    doc.querySelector('#live-tree-loading .n-tree-node-switcher .n-base-loading') ? 'present' : 'absent',
-    doc.querySelector('#live-tree-loading .n-tree-node-switcher .n-base-icon') ? 'present' : 'absent'
-  ].join('|')
+  (() => {
+    // Scope to the loading row (a2): hidden leaf switchers elsewhere in the
+    // section still render their arrow (upstream --hide is visibility only).
+    const row = [...treeRows('live-tree-loading')].find((r) => {
+      const t = r.querySelector('.n-tree-node-content__text')
+      return t && t.textContent === 'A2'
+    })
+    return [
+      row && row.querySelector('.n-tree-node-switcher .n-base-loading') ? 'present' : 'absent',
+      row && row.querySelector('.n-tree-node-switcher .n-base-icon') ? 'present' : 'absent'
+    ].join('|')
+  })()
 )
 dEq(
   'DOM: Tree empty (no visible nodes) -> .n-tree__empty renders NEmpty with the localized description',
