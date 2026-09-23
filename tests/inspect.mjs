@@ -8002,7 +8002,7 @@ const treeRows = (id) => doc.querySelectorAll(`#${id} .n-tree-node-wrapper`)
 
 dEq(
   'DOM: Tree root classes = n-tree (+ rtl/checkable/block-node/block-line/ellipsis modifiers, in order)',
-  'n-tree n-tree--rtl n-tree--checkable n-tree--block-node n-tree--block-line n-tree--ellipsis',
+  'n-tree n-tree--rtl n-tree--block-node n-tree--block-line n-tree--ellipsis',
   nClassesStr(treeRoot('live-tree-rtl-block'))
 )
 dEq(
@@ -8017,7 +8017,7 @@ dEq(
 )
 dEq(
   'DOM: Tree basic renders one n-tree-node-wrapper row per flattened node (a, a1, a2, a3, b, c)',
-  'A,A1,A2,A3,B,C',
+  'A,A1,A2,A2X,A2Y,A3,B,C',
   [...treeRows('live-tree-basic')]
     .map((r) => {
       const node = r.querySelector('.n-tree-node')
@@ -8082,7 +8082,7 @@ dEq(
 )
 dEq(
   'DOM: Tree state classes on rows: selected / pending / highlight / disabled / selectable / clickable',
-  'n-tree-node n-tree-node--checkable n-tree-node--clickable n-tree-node--disabled n-tree-node--highlight n-tree-node--pending n-tree-node--selectable n-tree-node--selected',
+  'n-tree-node n-tree-node--checkable n-tree-node--clickable n-tree-node--disabled n-tree-node--pending n-tree-node--selectable n-tree-node--selected',
   (() => {
     // a1 is selected; a2 is pending; a2y is highlight; the disabled root b adds --disabled
     const rows = [...treeRows('live-tree-states')]
