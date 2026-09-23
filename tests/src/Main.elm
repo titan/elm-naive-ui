@@ -3618,6 +3618,41 @@ cascSelectMenuD =
     Cascader.selectMenuDefaults
 
 
+{-| The minimal mixed-order fixtures — parent `m` with an unchecked leaf
+followed by a checked one, and the mirror `m2` (checked first). Real
+treemate lands BOTH parents in the indeterminate set whatever the order
+(the scan only breaks on an unchecked child when partial is already set).
+-}
+cascMixedTree : List Cascader.Option
+cascMixedTree =
+    [ Cascader.Option
+        { value = "m"
+        , label = "M"
+        , disabled = False
+        , children =
+            Just
+                [ Cascader.Option { value = "mu", label = "MU", disabled = False, children = Nothing }
+                , Cascader.Option { value = "mc", label = "MC", disabled = False, children = Nothing }
+                ]
+        }
+    ]
+
+
+cascMixedTreeRev : List Cascader.Option
+cascMixedTreeRev =
+    [ Cascader.Option
+        { value = "m2"
+        , label = "M2"
+        , disabled = False
+        , children =
+            Just
+                [ Cascader.Option { value = "mc2", label = "MC2", disabled = False, children = Nothing }
+                , Cascader.Option { value = "mu2", label = "MU2", disabled = False, children = Nothing }
+                ]
+        }
+    ]
+
+
 {-| The tree fixture — mirrors the cascader one (a branch with a leaf, a
 nested branch, a loaded-but-empty branch, a disabled root with a child, a
 root leaf) so the treemate pins run on a tree with the same shape upstream's
@@ -6958,6 +6993,12 @@ checks =
     , eq "cascader gck all [b1]: a disabled parent is never indeterminate" { checkedKeys = [ "b1" ], indeterminateKeys = [] } (Cascader.getCheckedKeys True Cascader.All [ "b1" ] cascTree)
     , eq "cascader gck all [b,b1]: disabled keys stay put" { checkedKeys = [ "b", "b1" ], indeterminateKeys = [] } (Cascader.getCheckedKeys True Cascader.All [ "b", "b1" ] cascTree)
     , eq "cascader gck no-cascade [a1,a2y]: passthrough, nothing indeterminate" { checkedKeys = [ "a1", "a2y" ], indeterminateKeys = [] } (Cascader.getCheckedKeys False Cascader.All [ "a1", "a2y" ] cascTree)
+    , eq "cascader gck all [mc] mixed tree: unchecked before checked still indeterminate" { checkedKeys = [ "mc" ], indeterminateKeys = [ "m" ] } (Cascader.getCheckedKeys True Cascader.All [ "mc" ] cascMixedTree)
+    , eq "cascader gck all [mc2] mixed tree reversed: checked first, same verdict" { checkedKeys = [ "mc2" ], indeterminateKeys = [ "m2" ] } (Cascader.getCheckedKeys True Cascader.All [ "mc2" ] cascMixedTreeRev)
+    , eq "cascader gck no-cascade [a1,a1]: the no-toggle view keeps raw keys" { checkedKeys = [ "a1", "a1" ], indeterminateKeys = [] } (Cascader.getCheckedKeys False Cascader.All [ "a1", "a1" ] cascTree)
+    , eq "cascader check no-cascade c <- [a1,a1]: merge dedupes the current value" [ "a1", "c" ] (Cascader.check False Cascader.All "c" [ "a1", "a1" ] cascTree)
+    , eq "cascader check no-cascade a1 <- [a1,a1]: the key itself dedupes" [ "a1" ] (Cascader.check False Cascader.All "a1" [ "a1", "a1" ] cascTree)
+    , eq "cascader uncheck no-cascade a1 <- [a1,a1,a2y]: minus drops every occurrence" [ "a2y" ] (Cascader.uncheck False Cascader.All "a1" [ "a1", "a1", "a2y" ] cascTree)
     , eq "cascader gck all [zz]: an unknown key stays" { checkedKeys = [ "zz" ], indeterminateKeys = [] } (Cascader.getCheckedKeys True Cascader.All [ "zz" ] cascTree)
     , eq "cascader check a <- [c]: the subtree joins, DFS order, disabled leaf blocked" [ "c", "a", "a1", "a2", "a2y", "a3" ] (Cascader.check True Cascader.All "a" [ "c" ] cascTree)
     , eq "cascader check a2x <- [c]: a disabled key itself stays" [ "c", "a2x" ] (Cascader.check True Cascader.All "a2x" [ "c" ] cascTree)

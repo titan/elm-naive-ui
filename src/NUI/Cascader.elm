@@ -639,10 +639,10 @@ normalize cascade strategy toggle keys nodes =
         { checkedKeys =
             case toggle of
                 ToCheck key ->
-                    addIfAbsent key keys
+                    dedupe (keys ++ [ key ])
 
                 ToUncheck key ->
-                    List.filter ((/=) key) keys
+                    dedupe (List.filter ((/=) key) keys)
 
                 NoToggle ->
                     keys
