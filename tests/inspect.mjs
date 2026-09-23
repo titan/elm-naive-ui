@@ -8157,6 +8157,95 @@ dEq(
   })()
 )
 
+// --- Table --------------------------------------------------------------------
+// The static n-table: a REAL <table> tag carries the classes + the 21-var set
+// (Table.tsx render), over the typed thead/tbody tree (the five upstream tag
+// wrappers — Th/Td/Tr/Thead/Tbody — are bare, no classes/attrs of their own).
+const tblRoot = (id) => doc.querySelector('#' + id + ' table.n-table')
+dEq(
+  'DOM: Table root IS a <table> tag with class exactly "n-table n-table--bottom-bordered n-table--bordered n-table--single-line" (order!)',
+  'n-table n-table--bottom-bordered n-table--bordered n-table--single-line',
+  nClassesStr(tblRoot('live-table-basic'))
+)
+dEq('DOM: Table root tag is TABLE', 'TABLE', tagOf(tblRoot('live-table-basic')))
+dEq(
+  'DOM: Table root style attr starts with --n-bezier (first of the 21-var set)',
+  true,
+  (styleAt(tblRoot('live-table-basic')) || '').startsWith('--n-bezier:')
+)
+dEq(
+  'DOM: Table root carries the full 21-var set',
+  21,
+  countVars(tblRoot('live-table-basic'))
+)
+dEq(
+  'DOM: Table basic renders thead>tr>th count 2 and tbody>tr>td count 6',
+  '2|6',
+  (() => {
+    const root = tblRoot('live-table-basic')
+    return [
+      root ? root.querySelectorAll('thead > tr > th').length : -1,
+      root ? root.querySelectorAll('tbody > tr > td').length : -1
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: Table modifiers flip per option (no --bordered etc. when False, + --single-column + --striped)',
+  'n-table n-table--single-column n-table--striped',
+  nClassesStr(tblRoot('live-table-modifiers'))
+)
+dEq(
+  'DOM: Table span cells carry colspan/rowspan attributes with exact values',
+  '2|2|absent',
+  (() => {
+    const root = tblRoot('live-table-span')
+    const th = root ? root.querySelector('thead th') : null
+    const td = root ? root.querySelector('tbody td') : null
+    return [
+      th ? th.getAttribute('colspan') : null,
+      td ? td.getAttribute('rowspan') : null,
+      td && td.hasAttribute('colspan') ? 'present' : 'absent'
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: Table rtl -> --rtl class present',
+  true,
+  hasCls(tblRoot('live-table-rtl'), 'n-table--rtl')
+)
+dEq(
+  'DOM: Table empty-head (body only) -> NO thead element, tbody present',
+  'absent|present',
+  (() => {
+    const root = tblRoot('live-table-empty-head')
+    return [
+      root && root.querySelector('thead') ? 'present' : 'absent',
+      root && root.querySelector('tbody') ? 'present' : 'absent'
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: Table empty-body (head only) -> thead present, NO tbody',
+  'present|absent',
+  (() => {
+    const root = tblRoot('live-table-empty-body')
+    return [
+      root && root.querySelector('thead') ? 'present' : 'absent',
+      root && root.querySelector('tbody') ? 'present' : 'absent'
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: Table small --n-font-size matches the small theme value (14px)',
+  true,
+  (styleAt(tblRoot('live-table-small')) || '').includes('--n-font-size:14px')
+)
+dEq(
+  'DOM: Table large --n-font-size matches the large theme value (15px)',
+  true,
+  (styleAt(tblRoot('live-table-large')) || '').includes('--n-font-size:15px')
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

@@ -89,6 +89,7 @@ import NUI.Split as Split
 import NUI.Statistic as Statistic
 import NUI.Steps as Steps
 import NUI.Switch as Switch
+import NUI.Table as Table
 import NUI.Tabs as Tabs
 import NUI.Tag as Tag
 import NUI.Theme as Theme
@@ -106,6 +107,7 @@ import NUI.Theme.InternalSelection as InternalSelectionTheme
 import NUI.Theme.Layout as LayoutTheme
 import NUI.Theme.Mention as MentionTheme
 import NUI.Theme.Select as SelectTheme
+import NUI.Theme.Table as TableTheme
 import NUI.Theme.Tag as TagTheme
 import NUI.Theme.Tree as TreeTheme
 import NUI.Thing as Thing
@@ -3788,6 +3790,64 @@ treeD =
     Tree.defaults
 
 
+{-| The plain table defaults binding (the `let d = Table.defaults` pattern).
+-}
+tblD : Table.Options msg
+tblD =
+    Table.defaults
+
+
+{-| One table cell with just text content (spans unset, no attributes).
+-}
+tblCell : String -> Table.Cell msg
+tblCell s =
+    let
+        d =
+            Table.cellDefaults
+    in
+    { d | content = [ Element.text s ] }
+
+
+{-| A 2-column head + 3 body rows fixture — the pin target for the live
+views and the DOM checks (`thead > tr > th` count 2, `tbody > tr > td` 6).
+-}
+tblTable : Table.Table msg
+tblTable =
+    { head =
+        [ { cells = [ tblCell "Name", tblCell "Count" ], attributes = [] } ]
+    , body =
+        [ { cells = [ tblCell "Alpha", tblCell "1" ], attributes = [] }
+        , { cells = [ tblCell "Beta", tblCell "2" ], attributes = [] }
+        , { cells = [ tblCell "Gamma", tblCell "3" ], attributes = [] }
+        ]
+    }
+
+
+{-| A span fixture — one `colspan 2` head cell and one `rowspan 2` body cell.
+-}
+tblSpanTable : Table.Table msg
+tblSpanTable =
+    let
+        spanned =
+            tblCell "Span"
+
+        a =
+            tblCell "A"
+    in
+    { head =
+        [ { cells = [ { spanned | colspan = Just 2 } ], attributes = [] } ]
+    , body =
+        [ { cells = [ { a | rowspan = Just 2 }, tblCell "B" ], attributes = [] }
+        , { cells = [ tblCell "C" ], attributes = [] }
+        ]
+    }
+
+
+tblVar : Theme.Theme -> Table.Options msg -> String -> Maybe String
+tblVar theme opts key =
+    lookup key (Table.cssVars theme opts)
+
+
 {-| The flat rows of a `filterOptions` run, as their values.
 -}
 cascRowValues : List (SelectMenu.Option msg) -> List String
@@ -7328,6 +7388,47 @@ checks =
     , eq "tree cssVars: --n-arrow-color = common.textColor3" (Just light.common.textColor3) (lookup "--n-arrow-color" (Tree.cssVars light))
     , eq "tree cssVars: --n-loading-color = common.primaryColor" (Just light.common.primaryColor) (lookup "--n-loading-color" (Tree.cssVars light))
     , eq "tree cssVars: --n-node-color-active = the theme self value" (Just (TreeTheme.vars light).nodeColorActive) (lookup "--n-node-color-active" (Tree.cssVars light))
+
+    -- table: the static n-table (upstream Table.tsx tableProps defaults +
+    -- cssVarsRef declaration order; the five tag wrappers are bare) --------
+    , eq "table defaults: size == Medium" Table.Medium tblD.size
+    , eq "table defaults: bordered == True" True tblD.bordered
+    , eq "table defaults: bottomBordered == True" True tblD.bottomBordered
+    , eq "table defaults: singleLine == True" True tblD.singleLine
+    , eq "table defaults: singleColumn == False" False tblD.singleColumn
+    , eq "table defaults: striped == False" False tblD.striped
+    , eq "table defaults: rtl == False" False tblD.rtl
+    , eq "table defaults: attributes empty" True (List.isEmpty tblD.attributes)
+    , eq "table rowDefaults: cells empty" True (List.isEmpty Table.rowDefaults.cells)
+    , eq "table rowDefaults: attributes empty" True (List.isEmpty Table.rowDefaults.attributes)
+    , eq "table cellDefaults: content empty" True (List.isEmpty Table.cellDefaults.content)
+    , eq "table cellDefaults: colspan Nothing" Nothing Table.cellDefaults.colspan
+    , eq "table cellDefaults: rowspan Nothing" Nothing Table.cellDefaults.rowspan
+    , eq "table cellDefaults: attributes empty" True (List.isEmpty Table.cellDefaults.attributes)
+    , eq "table cssVars: 21 keys (light, default opts)" 21 (List.length (Table.cssVars light tblD))
+    , eq "table cssVars: exact key order (upstream cssVarsRef)"
+        [ "--n-bezier", "--n-td-color", "--n-td-color-modal", "--n-td-color-popover", "--n-td-text-color", "--n-border-color", "--n-border-color-modal", "--n-border-color-popover", "--n-border-radius", "--n-font-size", "--n-th-color", "--n-th-color-modal", "--n-th-color-popover", "--n-th-font-weight", "--n-th-text-color", "--n-line-height", "--n-td-padding", "--n-th-padding", "--n-td-color-striped", "--n-td-color-striped-modal", "--n-td-color-striped-popover" ]
+        (varKeys (Table.cssVars light tblD))
+    , eq "table cssVars: length == 21 for default opts (nothing dropped)" 21 (List.length (Table.cssVars light tblD))
+    , eq "table cssVars: --n-td-color = common cardColor (#fff)" (Just "#fff") (tblVar light tblD "--n-td-color")
+    , eq "table cssVars: --n-th-font-weight = common fontWeightStrong (500)" (Just "500") (tblVar light tblD "--n-th-font-weight")
+    , eq "table cssVars: --n-bezier = common cubicBezierEaseInOut" (Just "cubic-bezier(.4, 0, .2, 1)") (tblVar light tblD "--n-bezier")
+    , eq "table cssVars: --n-border-radius = common borderRadius (3px)" (Just "3px") (tblVar light tblD "--n-border-radius")
+    , eq "table cssVars: --n-line-height = common lineHeight (1.6)" (Just "1.6") (tblVar light tblD "--n-line-height")
+    , eq "table cssVars: --n-th-text-color = common textColor1" (Just "rgb(31, 34, 37)") (tblVar light tblD "--n-th-text-color")
+    , eq "table cssVars: --n-td-text-color = common textColor2" (Just "rgb(51, 54, 57)") (tblVar light tblD "--n-td-text-color")
+    , eq "table cssVars: --n-th-color = composite(cardColor, tableHeaderColor)" (Just "rgba(250, 250, 252, 1)") (tblVar light tblD "--n-th-color")
+    , eq "table cssVars: --n-border-color = composite(cardColor, dividerColor)" (Just "rgba(239, 239, 245, 1)") (tblVar light tblD "--n-border-color")
+    , eq "table cssVars: --n-td-color-striped = composite(cardColor, tableColorStriped)" (Just "rgba(250, 250, 252, 1)") (tblVar light tblD "--n-td-color-striped")
+    , eq "table cssVars: medium font size (createKey fontSize medium)" (Just "14px") (tblVar light tblD "--n-font-size")
+    , eq "table cssVars: small font size" (Just "14px") (tblVar light { tblD | size = Table.Small } "--n-font-size")
+    , eq "table cssVars: large font size" (Just "15px") (tblVar light { tblD | size = Table.Large } "--n-font-size")
+    , eq "table cssVars: medium td padding" (Just "12px") (tblVar light tblD "--n-td-padding")
+    , eq "table cssVars: small td padding" (Just "6px") (tblVar light { tblD | size = Table.Small } "--n-td-padding")
+    , eq "table cssVars: large td padding" (Just "12px") (tblVar light { tblD | size = Table.Large } "--n-td-padding")
+    , eq "table cssVars: medium th padding" (Just "12px") (tblVar light tblD "--n-th-padding")
+    , eq "table cssVars: small th padding" (Just "6px") (tblVar light { tblD | size = Table.Small } "--n-th-padding")
+    , eq "table cssVars: large th padding" (Just "12px") (tblVar light { tblD | size = Table.Large } "--n-th-padding")
     ]
 
 
@@ -8842,6 +8943,28 @@ liveNodes =
                                     }
                         }
                     )
+
+                -- Table.view (the static n-table — root classes + 21 vars
+                -- over the typed thead/tbody tree)
+                , Element.el [ Element.htmlAttribute (HA.id "live-table-basic") ]
+                    (Table.view Theme.default tblD tblTable)
+                , Element.el [ Element.htmlAttribute (HA.id "live-table-modifiers") ]
+                    (Table.view Theme.default
+                        { tblD | bordered = False, bottomBordered = False, singleLine = False, singleColumn = True, striped = True }
+                        tblTable
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-table-small") ]
+                    (Table.view Theme.default { tblD | size = Table.Small } tblTable)
+                , Element.el [ Element.htmlAttribute (HA.id "live-table-large") ]
+                    (Table.view Theme.default { tblD | size = Table.Large } tblTable)
+                , Element.el [ Element.htmlAttribute (HA.id "live-table-rtl") ]
+                    (Table.view Theme.default { tblD | rtl = True } tblTable)
+                , Element.el [ Element.htmlAttribute (HA.id "live-table-span") ]
+                    (Table.view Theme.default tblD tblSpanTable)
+                , Element.el [ Element.htmlAttribute (HA.id "live-table-empty-head") ]
+                    (Table.view Theme.default tblD { head = [], body = tblTable.body })
+                , Element.el [ Element.htmlAttribute (HA.id "live-table-empty-body") ]
+                    (Table.view Theme.default tblD { head = tblTable.head, body = [] })
                 ]
             )
         ]
