@@ -72,10 +72,17 @@ indicator; `showTooltip` is the persistent non-range override (upstream's
   - `formatTooltip` formats the indicator text only (upstream default is
     the raw number — `String.fromFloat` is byte-identical to JS
     `String(number)`).
-  - Upstream's `handleCountExceeds2` (more than two values: fill
-    suppressed, all dots inactive) is kept; `aria-disabled` reads the RAW
-    `disabled` prop (upstream quirk — the attribute is emitted only when
-    disabled; never the form-item merge, which the port has none of).
+  - Upstream's `handleCountExceeds2` (more than two values: the fill
+    renders unstyled — a bare node is kept — and all dots go inactive) is
+    kept; `aria-disabled` reads the RAW `disabled` prop (upstream quirk —
+    the attribute is emitted only when disabled; never the form-item
+    merge, which the port has none of).
+  - Accepted edges: `stepPrecision` counts the decimals segment of the
+    step's string (upstream counts every char after the dot, exponent
+    included — only reachable for degenerate exponent-form steps); the
+    sanitize buffer is always `±1` (upstream treats a falsy `0` as unset
+    and substitutes the direction default — the port's call sites never
+    pass anything but `±1`).
 
 (Record updates bind `defaults` to a local first — see `NUI.Button`.)
 
@@ -153,8 +160,9 @@ type alias Options msg =
     }
 
 
-{-| Upstream `sliderProps` defaults: 0–100, step 1, everything off /
-`Nothing` / `[]`; indices are upstream's `-1` sentinels.
+{-| Upstream `sliderProps` defaults: 0–100, step 1, everything else off /
+`Nothing` / `[]` (except `tooltip`, on as upstream); indices are
+upstream's `-1` sentinels.
 -}
 defaults : Options msg
 defaults =
@@ -276,14 +284,17 @@ railNode ctx =
 -- FILL (upstream fillStyleRef) ------------------------------------------------------
 
 
-{-| The fill span — skipped entirely when more than two values (upstream
-`handleCountExceeds2`); single spans `min → value`, range spans
-`min(values) → max(values)`; the direction key first, then width/height.
+{-| The fill span — >2 values leave it UNSTYLED (upstream `fillStyleRef`
+returns undefined but keeps the node — a bare div); single spans
+`min → value`, range spans `min(values) → max(values)`; the direction key
+first, then width/height.
 -}
 fillNode : Ctx msg -> Element msg
 fillNode ctx =
     if ctx.exceeds2 then
-        Element.none
+        -- upstream renders the fill div unconditionally; >2 values just
+        -- leaves fillStyle undefined — a bare unstyled node (kept)
+        Element.el [ I.classes [ "n-slider-rail__fill" ] ] Element.none
 
     else
         let
@@ -638,7 +649,8 @@ valueToPercentage lo hi value =
 caller's drag runtime. `railStart` is the measured `.n-slider-handles`
 rect's `left` (horizontal) or `bottom` (vertical); `railSize` its
 width/height; `pointer` the event's `clientX`/`clientY`. `reverse` flips
-the percentage, exactly as upstream.
+the percentage, exactly as upstream. Returns the RAW unclamped value —
+`sanitizeValue` owns the clamp (upstream likewise).
 -}
 pointerToValue :
     { vertical : Bool
@@ -681,11 +693,14 @@ type alias SanitizeConfig =
 
 
 {-| Upstream `sanitizeValue` — the snap. `step: 'mark'` picks the closest
-mark (the current value appended as a candidate); `step <= 0` freezes the
-current value; stepping (`buffer` present — keyboard/drag direction)
-builds the surrounding step grid and lets marks hijack it; otherwise the
-rounded value competes with the marks (marks win ties — they precede the
-round value in the candidate list).
+mark (the current value appended as a candidate) and returns it RAW — no
+clamp, so an out-of-range mark survives verbatim; `step <= 0` freezes the
+current value, also RAW; stepping (`buffer` present — keyboard/drag
+direction, always `±1`; upstream treats `0` as falsy/unset) builds the
+surrounding step grid and lets marks hijack it; otherwise the rounded
+value competes with the marks (marks win ties — they precede the round
+value in the candidate list). Only the numeric branches clamp (and fall
+back to the current value when no candidate passes).
 -}
 sanitizeValue : SanitizeConfig -> Float -> Float -> Maybe Float -> Float
 sanitizeValue config value currentValue maybeBuffer =
@@ -702,30 +717,34 @@ sanitizeValue config value currentValue maybeBuffer =
                     -1
                 )
                 maybeBuffer
+    in
+    case config.step of
+        StepMarks ->
+            -- upstream returns the closest mark RAW — no clamp (the mark can
+            -- sit outside [min, max]; render clamps via the arrified map)
+            closestMarkWithBuffer (config.markValues ++ [ currentValue ])
+                value
+                (if stepping then
+                    Just buffer
 
-        closest : Maybe Float
-        closest =
-            case config.step of
-                StepMarks ->
-                    closestMarkWithBuffer (config.markValues ++ [ currentValue ])
-                        value
-                        (if stepping then
-                            Just buffer
+                 else
+                    Nothing
+                )
+                |> Maybe.map .value
+                |> Maybe.withDefault currentValue
 
-                         else
-                            Nothing
-                        )
-                        |> Maybe.map .value
+        Step step ->
+            if step <= 0 then
+                -- frozen: RAW currentValue (upstream returns it verbatim)
+                currentValue
 
-                Step step ->
-                    if step <= 0 then
-                        Just currentValue
+            else
+                let
+                    p =
+                        stepPrecision step
 
-                    else
-                        let
-                            p =
-                                stepPrecision step
-                        in
+                    closest : Maybe Float
+                    closest =
                         if stepping then
                             let
                                 currentStep =
@@ -763,13 +782,13 @@ sanitizeValue config value currentValue maybeBuffer =
                                 value
                                 Nothing
                                 |> Maybe.map .value
-    in
-    case closest of
-        Just candidate ->
-            clampValue config.min config.max candidate
+                in
+                case closest of
+                    Just candidate ->
+                        clampValue config.min config.max candidate
 
-        Nothing ->
-            currentValue
+                    Nothing ->
+                        currentValue
 
 
 {-| Upstream `handleStepValue` — the arrow-key step (ratio `±1`): the

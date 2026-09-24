@@ -8739,10 +8739,16 @@ dEq(
   })()
 )
 dEq(
-  'DOM: Slider >2 values: fill suppressed + every dot inactive (handleCountExceeds2 quirks)',
-  'absent|0',
-  (doc.querySelector('#live-slider-x .n-slider-rail__fill') ? 'present' : 'absent') +
-    '|' + String(doc.querySelectorAll('#live-slider-x .n-slider-dot--active').length)
+  'DOM: Slider >2 values: fill kept as a bare UNSTYLED node + every dot inactive (handleCountExceeds2 quirks)',
+  'present||0',
+  (() => {
+    const fill = doc.querySelector('#live-slider-x .n-slider-rail__fill')
+    return [
+      fill ? 'present' : 'absent',
+      fill ? styleAt(fill) : '?',
+      String(doc.querySelectorAll('#live-slider-x .n-slider-dot--active').length)
+    ].join('|')
+  })()
 )
 
 // --- report -----------------------------------------------------------------

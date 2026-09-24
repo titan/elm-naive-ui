@@ -8147,6 +8147,15 @@ checks =
         50
         (Slider.sanitizeValue { step = Slider.StepMarks, min = 0, max = 100, markValues = [ 34, 75 ] } 40 50 (Just 1))
 
+    -- S1/S2 oracle round: the 'mark' and frozen branches return RAW — no
+    -- clamp (out-of-range values survive verbatim; only numeric clamps) --
+    , eq "slider sanitize step:'mark' returns the out-of-range mark RAW (no clamp)"
+        120
+        (Slider.sanitizeValue { step = Slider.StepMarks, min = 0, max = 100, markValues = [ 120 ] } 110 50 Nothing)
+    , eq "slider sanitize frozen step returns the out-of-range current RAW (no clamp)"
+        130
+        (Slider.sanitizeValue { step = Slider.Step 0, min = 0, max = 100, markValues = [] } 80 130 Nothing)
+
     -- step <= 0 freezes (upstream quirk) --
     , eq "slider sanitize step<=0 freezes the current value"
         20
