@@ -90,6 +90,7 @@ bridge, tests).
 | `NUI.Table`       | ✅ |
 | `NUI.Watermark`   | ✅ |
 | `NUI.Menu`        | ✅ |
+| `NUI.Slider`      | ✅ |
 | `NUI.Checkbox`    | ✅ |
 | `NUI.Collapse`    | ✅ |
 | `NUI.Countdown`   | ✅ |
