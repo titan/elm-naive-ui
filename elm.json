@@ -43,6 +43,7 @@
     "NUI.Highlight",
     "NUI.Icon",
     "NUI.IconWrapper",
+    "NUI.Image",
     "NUI.Input",
     "NUI.InputNumber",
     "NUI.InputOtp",

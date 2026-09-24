@@ -45,6 +45,7 @@ import NUI.Heatmap as Heatmap
 import NUI.Highlight as Highlight
 import NUI.Icon as Icon
 import NUI.IconWrapper as IconWrapper
+import NUI.Image as Image
 import NUI.Input as Input
 import NUI.InputNumber as InputNumber
 import NUI.InputOtp as InputOtp
@@ -705,6 +706,7 @@ body =
     , dropdownSection
     , menuSection
     , sliderSection
+    , imageSection
     , modalSection
     , drawerSection
     , dialogSection
@@ -4020,6 +4022,104 @@ sliderSection =
                     (Slider.view theme
                         { sliderD | range = True, value = [ 10, 50, 90 ], marks = sliderMarks }
                     )
+                )
+            ]
+        ]
+
+
+imageD : Image.Options msg
+imageD =
+    Image.defaults
+
+
+imageLogo : String
+imageLogo =
+    "https://www.naiveui.com/assets/naivelogo.93278402.svg"
+
+
+imageSection : Element msg
+imageSection =
+    section "Image"
+        "The img surface (upstream `NImage`): `n-image` root + img with the full upstream attribute pack (`data-error`, `data-preview-src`, `data-group-id`, native `loading`, `object-fit`). Load/error/lazy state is caller-owned — `showError` flips the img to `fallbackSrc` + the `--preview-disabled` class, or swaps in the error slot replacing the img entirely; a `placeholder` renders while `loaded` is False and hides the img 0×0 (upstream bytes). The preview modal is the caller's seam (`onClick` + the preview-container `cssVars`)."
+    <|
+        [ demoRow "Basic + object-fit (fixed state)"
+            [ cell
+                (Image.view theme
+                    { imageD
+                        | src = Just "https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg"
+                        , width = Just "160"
+                        , height = Just "120"
+                    }
+                )
+            , cell
+                (Image.view theme
+                    { imageD
+                        | src = Just imageLogo
+                        , width = Just "160"
+                        , height = Just "120"
+                        , objectFit = Image.Contain
+                    }
+                )
+            , cell
+                (Image.view theme
+                    { imageD
+                        | src = Just imageLogo
+                        , width = Just "160"
+                        , height = Just "120"
+                        , objectFit = Image.Cover
+                        , alt = Just "Cover fit"
+                    }
+                )
+            ]
+        , demoRow "Error → fallbackSrc + error slot (fixed state)"
+            [ cell
+                (Image.view theme
+                    { imageD
+                        | src = Just "https:// 07akioni.oss-cn-beijing.aliyuncs.com/broken.jpeg"
+                        , fallbackSrc = Just imageLogo
+                        , showError = True
+                        , width = Just "160"
+                        , height = Just "120"
+                    }
+                )
+            , cell
+                (Image.view theme
+                    { imageD
+                        | src = Just "https:// 07akioni.oss-cn-beijing.aliyuncs.com/broken.jpeg"
+                        , showError = True
+                        , error = Just (Element.text "Load failed")
+                        , width = Just "160"
+                        , height = Just "120"
+                    }
+                )
+            ]
+        , demoRow "Placeholder (img hidden 0×0 until loaded) + preview-disabled + lazy"
+            [ cell
+                (Image.view theme
+                    { imageD
+                        | src = Just imageLogo
+                        , width = Just "160"
+                        , height = Just "120"
+                        , placeholder = Just (Element.text "Placeholder")
+                    }
+                )
+            , cell
+                (Image.view theme
+                    { imageD
+                        | src = Just imageLogo
+                        , width = Just "160"
+                        , height = Just "120"
+                        , previewDisabled = True
+                    }
+                )
+            , cell
+                (Image.view theme
+                    { imageD
+                        | src = Just imageLogo
+                        , width = Just "160"
+                        , height = Just "120"
+                        , lazy = True
+                    }
                 )
             ]
         ]
