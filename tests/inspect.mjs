@@ -8751,6 +8751,96 @@ dEq(
   })()
 )
 
+// --- Image ---------------------------------------------------------------------
+// The n-image walk (Image.tsx render): root class + role=none, the img
+// attribute pack in upstream emission order (width|height|src|alt|
+// aria-label|loading|data-error stringified|data-preview-src|data-group-id),
+// the style array bytes (placeholder 0×0 hide pack then object-fit),
+// fallback swap + error-slot replacement, and the preview-disabled/lazy
+// gates. Root carries NO --n-* vars upstream (they belong to the preview
+// container).
+const imageRoot = (id) => doc.querySelector('#' + id + ' .n-image')
+const imageImg = (id) => doc.querySelector('#' + id + ' .n-image img')
+dEq(
+  'DOM: Image root class exactly "n-image" + role=none + zero inline vars (preview vars are the caller seam)',
+  'n-image|none|0',
+  [
+    nClassesStr(imageRoot('live-image-basic')),
+    imageRoot('live-image-basic').getAttribute('role'),
+    String(countVars(imageRoot('live-image-basic')))
+  ].join('|')
+)
+dEq(
+  'DOM: Image img attribute pack — width|height|src|alt|aria-label|loading|data-error|data-preview-src|data-group-id (empty post-mount)',
+  '160|120|https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg|Naive UI logo|Naive UI logo|eager|false|https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg|',
+  [
+    imageImg('live-image-basic').getAttribute('width'),
+    imageImg('live-image-basic').getAttribute('height'),
+    imageImg('live-image-basic').getAttribute('src'),
+    imageImg('live-image-basic').getAttribute('alt'),
+    imageImg('live-image-basic').getAttribute('aria-label'),
+    imageImg('live-image-basic').getAttribute('loading'),
+    imageImg('live-image-basic').getAttribute('data-error'),
+    imageImg('live-image-basic').getAttribute('data-preview-src'),
+    imageImg('live-image-basic').getAttribute('data-group-id')
+  ].join('|')
+)
+dEq(
+  'DOM: Image basic style = the object-fit entry alone (no placeholder slot → no hide pack)',
+  'object-fit: fill;',
+  styleAt(imageImg('live-image-basic'))
+)
+dEq(
+  'DOM: Image fallback: img swaps to fallbackSrc + data-error="true" + root --preview-disabled',
+  'https://www.naiveui.com/assets/naivelogo.93278402.svg|true|n-image n-image--preview-disabled',
+  [
+    imageImg('live-image-fallback').getAttribute('src'),
+    imageImg('live-image-fallback').getAttribute('data-error'),
+    nClassesStr(imageRoot('live-image-fallback'))
+  ].join('|')
+)
+dEq(
+  'DOM: Image error slot REPLACES the img node (no img; slot text; root still --preview-disabled)',
+  'absent|Load failed|n-image n-image--preview-disabled',
+  [
+    imageImg('live-image-error-slot') ? 'present' : 'absent',
+    (imageRoot('live-image-error-slot').textContent || '').trim(),
+    nClassesStr(imageRoot('live-image-error-slot'))
+  ].join('|')
+)
+dEq(
+  'DOM: Image placeholder renders while !loaded and hides the img 0×0 (hide pack precedes object-fit)',
+  'height: 0px; width: 0px; visibility: hidden; object-fit: fill;|Placeholder',
+  [
+    styleAt(imageImg('live-image-placeholder')),
+    (imageRoot('live-image-placeholder').textContent || '').trim()
+  ].join('|')
+)
+dEq(
+  'DOM: Image previewDisabled (no error): root --preview-disabled + data-error still "false"',
+  'n-image n-image--preview-disabled|false',
+  [
+    nClassesStr(imageRoot('live-image-pdisabled')),
+    imageImg('live-image-pdisabled').getAttribute('data-error')
+  ].join('|')
+)
+dEq(
+  'DOM: Image lazy: native loading="lazy" attribute (no observer), src still loadSrc',
+  'lazy|https://www.naiveui.com/assets/naivelogo.93278402.svg',
+  [
+    imageImg('live-image-lazy').getAttribute('loading'),
+    imageImg('live-image-lazy').getAttribute('src')
+  ].join('|')
+)
+dEq(
+  'DOM: Image data-preview-src = previewSrc || src (previewSrc wins)',
+  'https://www.naiveui.com/assets/naivelogo.93278402.svg|https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg',
+  [
+    imageImg('live-image-preview-src').getAttribute('data-preview-src'),
+    imageImg('live-image-preview-src').getAttribute('src')
+  ].join('|')
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

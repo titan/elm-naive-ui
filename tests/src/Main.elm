@@ -54,6 +54,7 @@ import NUI.Heatmap as Heatmap
 import NUI.Highlight as Highlight
 import NUI.Icon as Icon
 import NUI.IconWrapper as IconWrapper
+import NUI.Image as Image
 import NUI.Input as Input
 import NUI.InputNumber as InputNumber
 import NUI.InputOtp as InputOtp
@@ -4542,6 +4543,32 @@ sliderVarValue name vars =
         |> String.concat
 
 
+{-| The image fixtures — the defaults binding for the eq checks + DOM
+probes (broken/fallback URLs mirror the upstream spec tree).
+-}
+imageD : Image.Options Msg
+imageD =
+    Image.defaults
+
+
+imageVars : List ( String, String )
+imageVars =
+    Image.cssVars Theme.default
+
+
+imageDarkVars : List ( String, String )
+imageDarkVars =
+    Image.cssVars Theme.dark
+
+
+imageVarValue : String -> List ( String, String ) -> String
+imageVarValue name vars =
+    vars
+        |> List.filter (\( k, _ ) -> k == name)
+        |> List.map Tuple.second
+        |> String.concat
+
+
 checks : List Check
 checks =
     let
@@ -8214,6 +8241,85 @@ checks =
         [ sliderVarValue "--n-indicator-color" (Slider.indicatorCssVars Theme.default)
         , sliderVarValue "--n-indicator-border-radius" (Slider.indicatorCssVars Theme.default)
         ]
+
+    -- image: resolveSrc (the upstream render ternary — error→fallbackSrc,
+    -- observer-gated lazy, native lazy, plain) --
+    , eq "image resolveSrc plain → loadSrc"
+        (Just "https://x/p.jpeg")
+        (Image.resolveSrc { imageD | src = Just "https://x/p.jpeg" })
+    , eq "image resolveSrc showError → fallbackSrc"
+        (Just "https://x/fallback.svg")
+        (Image.resolveSrc
+            { imageD
+                | src = Just "https://x/broken.jpeg"
+                , fallbackSrc = Just "https://x/fallback.svg"
+                , showError = True
+            }
+        )
+    , eq "image resolveSrc showError without fallbackSrc → Nothing (attr omitted)"
+        Nothing
+        (Image.resolveSrc { imageD | src = Just "https://x/p.jpeg", showError = True })
+    , eq "image resolveSrc lazy + observer + not started → Nothing"
+        Nothing
+        (Image.resolveSrc
+            { imageD
+                | src = Just "https://x/p.jpeg"
+                , lazy = True
+                , intersectionObserver = True
+                , shouldStartLoading = False
+            }
+        )
+    , eq "image resolveSrc lazy + observer + started → loadSrc"
+        (Just "https://x/p.jpeg")
+        (Image.resolveSrc
+            { imageD
+                | src = Just "https://x/p.jpeg"
+                , lazy = True
+                , intersectionObserver = True
+                , shouldStartLoading = True
+            }
+        )
+    , eq "image resolveSrc lazy native (no observer) → loadSrc (attr gates the fetch)"
+        (Just "https://x/p.jpeg")
+        (Image.resolveSrc { imageD | src = Just "https://x/p.jpeg", lazy = True })
+
+    -- errorReplacesImg (showError && errorNode.length) / loadingValue --
+    , eq "image errorReplacesImg: showError + slot → True"
+        True
+        (Image.errorReplacesImg { imageD | showError = True, error = Just (Element.text "Load failed") })
+    , eq "image errorReplacesImg: showError without slot → False (img swaps to fallbackSrc)"
+        False
+        (Image.errorReplacesImg { imageD | showError = True })
+    , eq "image errorReplacesImg: slot without showError → False"
+        False
+        (Image.errorReplacesImg { imageD | error = Just (Element.text "Load failed") })
+    , eq "image loadingValue: lazy without observer → \"lazy\" (native lazy)"
+        "lazy"
+        (Image.loadingValue { imageD | lazy = True })
+    , eq "image loadingValue: lazy WITH observer → \"eager\" (observer owns the gate)"
+        "eager"
+        (Image.loadingValue { imageD | lazy = True, intersectionObserver = True })
+    , eq "image loadingValue: not lazy → \"eager\""
+        "eager"
+        (Image.loadingValue imageD)
+
+    -- cssVars: the 5-name preview-container block in upstream order + spots --
+    , eq "image cssVars names in upstream emission order (5)"
+        "--n-bezier|--n-toolbar-icon-color|--n-toolbar-color|--n-toolbar-border-radius|--n-toolbar-box-shadow"
+        (List.map Tuple.first imageVars
+            |> String.join "|"
+        )
+    , eq "image cssVars spots (light: toolbar literals + common bezier)"
+        [ "cubic-bezier(.4, 0, .2, 1)", "rgba(255, 255, 255, .9)", "rgba(0, 0, 0, .35)", "none", "24px" ]
+        [ imageVarValue "--n-bezier" imageVars
+        , imageVarValue "--n-toolbar-icon-color" imageVars
+        , imageVarValue "--n-toolbar-color" imageVars
+        , imageVarValue "--n-toolbar-box-shadow" imageVars
+        , imageVarValue "--n-toolbar-border-radius" imageVars
+        ]
+    , eq "image cssVars dark: icon color derives from common.textColor2"
+        "rgba(255, 255, 255, 0.82)"
+        (imageVarValue "--n-toolbar-icon-color" imageDarkVars)
     ]
 
 
@@ -9821,6 +9927,76 @@ liveNodes =
                 , Element.el [ Element.htmlAttribute (HA.id "live-slider-x") ]
                     (Slider.view Theme.default
                         { sliderD | range = True, value = [ 10, 50, 90 ], marks = sliderMarks }
+                    )
+
+                -- Image.view (the img attribute pack — alt+aria-label,
+                -- loading, data-error stringified, data-preview-src,
+                -- post-mount data-group-id; fallback swap, error-slot
+                -- replacement, placeholder 0×0 hide, gates)
+                , Element.el [ Element.htmlAttribute (HA.id "live-image-basic") ]
+                    (Image.view Theme.default
+                        { imageD
+                            | src = Just "https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg"
+                            , alt = Just "Naive UI logo"
+                            , width = Just "160"
+                            , height = Just "120"
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-image-fallback") ]
+                    (Image.view Theme.default
+                        { imageD
+                            | src = Just "https:// 07akioni.oss-cn-beijing.aliyuncs.com/broken.jpeg"
+                            , fallbackSrc = Just "https://www.naiveui.com/assets/naivelogo.93278402.svg"
+                            , showError = True
+                            , width = Just "160"
+                            , height = Just "120"
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-image-error-slot") ]
+                    (Image.view Theme.default
+                        { imageD
+                            | src = Just "https:// 07akioni.oss-cn-beijing.aliyuncs.com/broken.jpeg"
+                            , showError = True
+                            , error = Just (Element.text "Load failed")
+                            , width = Just "160"
+                            , height = Just "120"
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-image-placeholder") ]
+                    (Image.view Theme.default
+                        { imageD
+                            | src = Just "https://www.naiveui.com/assets/naivelogo.93278402.svg"
+                            , width = Just "160"
+                            , height = Just "120"
+                            , placeholder = Just (Element.text "Placeholder")
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-image-pdisabled") ]
+                    (Image.view Theme.default
+                        { imageD
+                            | src = Just "https://www.naiveui.com/assets/naivelogo.93278402.svg"
+                            , width = Just "160"
+                            , height = Just "120"
+                            , previewDisabled = True
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-image-lazy") ]
+                    (Image.view Theme.default
+                        { imageD
+                            | src = Just "https://www.naiveui.com/assets/naivelogo.93278402.svg"
+                            , width = Just "160"
+                            , height = Just "120"
+                            , lazy = True
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-image-preview-src") ]
+                    (Image.view Theme.default
+                        { imageD
+                            | src = Just "https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg"
+                            , previewSrc = Just "https://www.naiveui.com/assets/naivelogo.93278402.svg"
+                            , width = Just "160"
+                            , height = Just "120"
+                        }
                     )
                 ]
             )
