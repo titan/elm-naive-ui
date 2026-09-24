@@ -74,6 +74,7 @@ import NUI.Scrollbar as Scrollbar
 import NUI.Select as Select
 import NUI.SelectMenu as SelectMenu
 import NUI.Skeleton as Skeleton
+import NUI.Slider as Slider
 import NUI.Space as Space
 import NUI.Spin as Spin
 import NUI.Split as Split
@@ -703,6 +704,7 @@ body =
     , tooltipSection
     , dropdownSection
     , menuSection
+    , sliderSection
     , modalSection
     , drawerSection
     , dialogSection
@@ -3916,6 +3918,107 @@ menuSection =
                     (Menu.view theme
                         { menuD | disabled = True, expandedKeys = [ "sub-1" ] }
                         menuOpts
+                    )
+                )
+            ]
+        ]
+
+
+sliderD : Slider.Options msg
+sliderD =
+    Slider.defaults
+
+
+sliderMarks : List Slider.Mark
+sliderMarks =
+    [ { value = 34, label = "34" }
+    , { value = 75, label = "75" }
+    ]
+
+
+sliderSection : Element msg
+sliderSection =
+    section "Slider"
+        "The rail/fill/handles numeric input (upstream `NSlider`). Drag is caller-owned runtime (`NUI.Split` precedent): `value`/`activeIndex`/`hoverIndex`/`dragging` in, discrete handle events + the root mousedown signal out; `pointerToValue`/`sanitizeValue`/`stepValue` carry the pointer→snap math. The value indicator renders inline (the teleported follower is the caller's popover seam)."
+    <|
+        [ demoRow "Single + range (fixed state; marks feed dots/marks/snap)"
+            [ cell
+                (Element.el [ Element.width (Element.px 240) ]
+                    (Slider.view theme
+                        { sliderD
+                            | value = [ 40 ]
+                            , marks = sliderMarks
+                        }
+                    )
+                )
+            , cell
+                (Element.el [ Element.width (Element.px 240) ]
+                    (Slider.view theme
+                        { sliderD
+                            | range = True
+                            , value = [ 24, 49 ]
+                            , marks = sliderMarks
+                        }
+                    )
+                )
+            ]
+        , demoRow "Tooltip indicator (pinned via hoverIndex / drag) + disabled"
+            [ cell
+                (Element.el [ Element.width (Element.px 240) ]
+                    (Slider.view theme
+                        { sliderD | value = [ 66 ], hoverIndex = 0, activeIndex = 0, dragging = True }
+                    )
+                )
+            , cell
+                (Element.el [ Element.width (Element.px 240) ]
+                    (Slider.view theme
+                        { sliderD
+                            | value = [ 12 ]
+                            , disabled = True
+                            , formatTooltip = Just (\v -> String.fromFloat v ++ "%")
+                        }
+                    )
+                )
+            ]
+        , demoRow "Vertical + reverse (direction keys flip, dots still 34/75)"
+            [ cell
+                (Element.el [ Element.height (Element.px 220) ]
+                    (Slider.view theme
+                        { sliderD
+                            | value = [ 77 ]
+                            , vertical = True
+                            , marks = sliderMarks
+                        }
+                    )
+                )
+            , cell
+                (Element.el [ Element.height (Element.px 220) ]
+                    (Slider.view theme
+                        { sliderD
+                            | value = [ 77 ]
+                            , vertical = True
+                            , reverse = True
+                            , marks = sliderMarks
+                        }
+                    )
+                )
+            ]
+        , demoRow "Range snap (`step: 'mark'`) + >2 values (fill suppressed, dots inactive — upstream quirk)"
+            [ cell
+                (Element.el [ Element.width (Element.px 240) ]
+                    (Slider.view theme
+                        { sliderD
+                            | range = True
+                            , value = [ 34, 75 ]
+                            , step = Slider.StepMarks
+                            , marks = sliderMarks
+                        }
+                    )
+                )
+            , cell
+                (Element.el [ Element.width (Element.px 240) ]
+                    (Slider.view theme
+                        { sliderD | range = True, value = [ 10, 50, 90 ], marks = sliderMarks }
                     )
                 )
             ]

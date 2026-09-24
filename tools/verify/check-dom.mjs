@@ -132,7 +132,8 @@ const targets = {
   '.n-watermark-container': false,
   '.n-watermark': false,
   // Menu: all 43 vars sit on the root (inverted swaps values, not class).
-  '.n-menu': true
+  '.n-menu': true,
+  '.n-slider': true
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {

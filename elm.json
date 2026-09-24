@@ -72,6 +72,7 @@
     "NUI.Select",
     "NUI.SelectMenu",
     "NUI.Skeleton",
+    "NUI.Slider",
     "NUI.Space",
     "NUI.Spin",
     "NUI.Split",
