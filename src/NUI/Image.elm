@@ -37,17 +37,42 @@ byte-equivalent (`n-image` root > img) and hands the caller the preview's
 `cssVars` (upstream emits the five `--n-*` vars on the preview container,
 not the `n-image` root) plus the click seam to open their preview runtime.
 
+Upstream transition rules the caller owns (the port renders the state;
+only the caller can reproduce these, `Image.tsx` setup):
+
+  - `onError` early-returns while `intersectionObserver` is set and
+    `shouldStartLoading` is False — errors on not-yet-intersected lazy
+    images are swallowed, or every off-screen image flips to error.
+  - `onError` sets BOTH `showError = True` and `loaded = True` — the
+    latter is why an error hides the placeholder (upstream spec: "should
+    not show placeholder slot when image fails to load").
+  - `onLoad` sets `loaded = True` after the handlers.
+  - A `src` change resets `showError = False` (upstream `watchEffect`),
+    so retries start clean.
+  - `shouldStartLoading` initializes to `not lazy` — flip it yourself
+    when `lazy = True`; `defaults` hardwires `True` for the eager case.
+
+Event seams: upstream fires `props.onLoad` then `imgProps.onLoad` (same
+for `onError`); the port folds both into the single `onLoad`/`onError`
+seam — handlers attached via `imgAttributes` are Elm last-wins, not
+additive.
+
 Accepted edges (documented divergences, kept for batch-1 scope):
 
   - No `NImagePreview` child and no `NImageGroup` context yet. Upstream's
     flow DOM for a non-group image is the same `img` under the root; the
     modal (toolbar / overlay / drag / keyboard) is the preview batch.
+    `previewedImgProps` (the NImage-level prop the preview consumes via
+    `imageContextKey`) also rides with that batch.
   - The img always carries `data-group-id=""` — upstream sets it on mount
     even outside a group (`Image.tsx` `onMounted`).
   - `loading` assumes native lazy support (`isImageSupportNativeLazy`,
     true in every browser this port targets).
   - Upstream's `loadDescription` prop is declared but never consumed —
     not ported.
+  - Upstream `width`/`height` take `string | number`; the port takes the
+    string bytes (`Just "200"`). Upstream's JS `||` falsy fall-throughs
+    (`width = 0`, `alt = ""`) are unreachable in practice.
 
 Note: record updates bind `defaults` to a local first, then patch fields.
 

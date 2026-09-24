@@ -9948,6 +9948,8 @@ liveNodes =
                             | src = Just "https:// 07akioni.oss-cn-beijing.aliyuncs.com/broken.jpeg"
                             , fallbackSrc = Just "https://www.naiveui.com/assets/naivelogo.93278402.svg"
                             , showError = True
+                            , loaded = True
+                            , placeholder = Just (Element.text "Placeholder")
                             , width = Just "160"
                             , height = Just "120"
                         }

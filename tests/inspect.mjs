@@ -8791,12 +8791,13 @@ dEq(
   styleAt(imageImg('live-image-basic'))
 )
 dEq(
-  'DOM: Image fallback: img swaps to fallbackSrc + data-error="true" + root --preview-disabled',
-  'https://www.naiveui.com/assets/naivelogo.93278402.svg|true|n-image n-image--preview-disabled',
+  'DOM: Image fallback: img swaps to fallbackSrc + data-error="true" + root --preview-disabled (post-error state: loaded=true hides the placeholder — upstream spec)',
+  'https://www.naiveui.com/assets/naivelogo.93278402.svg|true|n-image n-image--preview-disabled|no-placeholder',
   [
     imageImg('live-image-fallback').getAttribute('src'),
     imageImg('live-image-fallback').getAttribute('data-error'),
-    nClassesStr(imageRoot('live-image-fallback'))
+    nClassesStr(imageRoot('live-image-fallback')),
+    (imageRoot('live-image-fallback').textContent || '').includes('Placeholder') ? 'placeholder-shown' : 'no-placeholder'
   ].join('|')
 )
 dEq(
