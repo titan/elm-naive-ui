@@ -91,6 +91,7 @@ bridge, tests).
 | `NUI.Watermark`   | ✅ |
 | `NUI.Menu`        | ✅ |
 | `NUI.Slider`      | ✅ |
+| `NUI.Image`       | ✅ |
 | `NUI.Checkbox`    | ✅ |
 | `NUI.Collapse`    | ✅ |
 | `NUI.Countdown`   | ✅ |
