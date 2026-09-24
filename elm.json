@@ -116,6 +116,7 @@
     "NUI.Theme.Heatmap",
     "NUI.Theme.Icon",
     "NUI.Theme.IconWrapper",
+    "NUI.Theme.Image",
     "NUI.Theme.Input",
     "NUI.Theme.InputNumber",
     "NUI.Theme.InputOtp",

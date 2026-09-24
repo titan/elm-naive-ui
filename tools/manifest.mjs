@@ -449,5 +449,17 @@ export const components = {
     // rtl.cssr upstream.
     cssr: ['slider/src/styles/index.cssr.ts'],
     theme: 'slider/styles/light.ts'
+  },
+  image: {
+    // One cssr block: mostly the image-preview modal family (body>container,
+    // preview-container, overlay with fade-in, toolbar with its nested
+    // .n-base-icon + fade-in, wrapper with fade-in-scale-up, .n-image-preview)
+    // plus the small .n-image surface block (`:not(--preview-disabled)`
+    // cursor + `img` border-radius inherit). Transitions come from the
+    // shared fade-in / fade-in-scale-up cssr imports. The n-image root
+    // carries NO inline --n-* vars upstream — the toolbar vars are emitted
+    // on the preview container (preview batch). No rtl.cssr upstream.
+    cssr: ['image/src/styles/index.cssr.ts'],
+    theme: 'image/styles/light.ts'
   }
 }

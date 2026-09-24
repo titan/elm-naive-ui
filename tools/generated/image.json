@@ -1,0 +1,36 @@
+{
+  "light": {
+    "toolbarIconColor": "rgba(255, 255, 255, .9)",
+    "toolbarColor": "rgba(0, 0, 0, .35)",
+    "toolbarBoxShadow": "none",
+    "toolbarBorderRadius": "24px"
+  },
+  "dark": {
+    "toolbarIconColor": "rgba(255, 255, 255, 0.82)",
+    "toolbarColor": "rgba(0, 0, 0, .35)",
+    "toolbarBoxShadow": "none",
+    "toolbarBorderRadius": "24px"
+  },
+  "refs": {
+    "light": {
+      "refs": {},
+      "seen": [
+        "toolbarIconColor",
+        "toolbarColor",
+        "toolbarBoxShadow",
+        "toolbarBorderRadius"
+      ]
+    },
+    "dark": {
+      "refs": {
+        "toolbarIconColor": "textColor2"
+      },
+      "seen": [
+        "toolbarIconColor",
+        "toolbarColor",
+        "toolbarBoxShadow",
+        "toolbarBorderRadius"
+      ]
+    }
+  }
+}

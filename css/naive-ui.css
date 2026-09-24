@@ -6983,6 +6983,90 @@ border: var(--n-dot-border-active);}.nui-root.nui-root .n-slider-handle-indicato
 background-color: var(--n-dot-color-modal);}.nui-root.nui-root .n-popover .n-slider .n-slider-dot {
 background-color: var(--n-dot-color-popover);}
 
+/* ===== naive-ui: image ===== */
+.nui-root.nui-root body > .n-image-container {
+position: fixed;}.nui-root.nui-root .n-image-preview-container {
+
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    display: flex;}.nui-root.nui-root .n-image-preview-overlay {
+
+    z-index: -1;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, .3);}.nui-root.nui-root .n-image-preview-overlay.fade-in-transition-enter-active {
+  transition: all 0.2s cubic-bezier(.4, 0, .2, 1)!important;}.nui-root.nui-root .n-image-preview-overlay.fade-in-transition-leave-active {
+  transition: all 0.2s cubic-bezier(.4, 0, .2, 1)!important;}.nui-root.nui-root .n-image-preview-overlay.fade-in-transition-enter-from,
+.nui-root.nui-root .n-image-preview-overlay.fade-in-transition-leave-to {
+  opacity: 0;}.nui-root.nui-root .n-image-preview-overlay.fade-in-transition-leave-from,
+.nui-root.nui-root .n-image-preview-overlay.fade-in-transition-enter-to {
+  opacity: 1;}.nui-root.nui-root .n-image-preview-toolbar {
+
+    z-index: 1;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: var(--n-toolbar-border-radius);
+    height: 48px;
+    bottom: 40px;
+    padding: 0 12px;
+    background: var(--n-toolbar-color);
+    box-shadow: var(--n-toolbar-box-shadow);
+    color: var(--n-toolbar-icon-color);
+    transition: color .3s var(--n-bezier);
+    display: flex;
+    align-items: center;}.nui-root.nui-root .n-image-preview-toolbar .n-base-icon {
+
+      padding: 0 8px;
+      font-size: 28px;
+      cursor: pointer;}.nui-root.nui-root .n-image-preview-toolbar.fade-in-transition-enter-active {
+  transition: all 0.2s cubic-bezier(.4, 0, .2, 1)!important;}.nui-root.nui-root .n-image-preview-toolbar.fade-in-transition-leave-active {
+  transition: all 0.2s cubic-bezier(.4, 0, .2, 1)!important;}.nui-root.nui-root .n-image-preview-toolbar.fade-in-transition-enter-from,
+.nui-root.nui-root .n-image-preview-toolbar.fade-in-transition-leave-to {
+  opacity: 0;}.nui-root.nui-root .n-image-preview-toolbar.fade-in-transition-leave-from,
+.nui-root.nui-root .n-image-preview-toolbar.fade-in-transition-enter-to {
+  opacity: 1;}.nui-root.nui-root .n-image-preview-wrapper {
+
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    pointer-events: none;}.nui-root.nui-root .n-image-preview-wrapper.fade-in-scale-up-transition-leave-active {
+  transform-origin: inherit;
+  transition: opacity .2s cubic-bezier(.4, 0, 1, 1), transform .2s cubic-bezier(.4, 0, 1, 1) ;}.nui-root.nui-root .n-image-preview-wrapper.fade-in-scale-up-transition-enter-active {
+  transform-origin: inherit;
+  transition: opacity .2s cubic-bezier(0, 0, .2, 1), transform .2s cubic-bezier(0, 0, .2, 1) ;}.nui-root.nui-root .n-image-preview-wrapper.fade-in-scale-up-transition-enter-from,
+.nui-root.nui-root .n-image-preview-wrapper.fade-in-scale-up-transition-leave-to {
+  opacity: 0;
+  transform:  scale(.9);}.nui-root.nui-root .n-image-preview-wrapper.fade-in-scale-up-transition-leave-from,
+.nui-root.nui-root .n-image-preview-wrapper.fade-in-scale-up-transition-enter-to {
+  opacity: 1;
+  transform:  scale(1);}.nui-root.nui-root .n-image-preview {
+
+    user-select: none;
+    -webkit-user-select: none;
+    pointer-events: all;
+    margin: auto;
+    max-height: calc(100vh - 32px);
+    max-width: calc(100vw - 32px);
+    transition: transform .3s var(--n-bezier);}.nui-root.nui-root .n-image {
+
+    display: inline-flex;
+    max-height: 100%;
+    max-width: 100%;}.nui-root.nui-root .n-image:not(.n-image--preview-disabled) {
+
+      cursor: pointer;}.nui-root.nui-root .n-image img {
+
+      border-radius: inherit;}
+
 /* ===== elm-ui bridge =====
  *
  * Components are built from elm-ui elements, and elm-ui styles its own helper classes
