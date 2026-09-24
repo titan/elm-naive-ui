@@ -438,5 +438,16 @@ export const components = {
     // No rtl.cssr upstream.
     cssr: ['menu/src/styles/index.cssr.ts'],
     theme: 'menu/styles/light.ts'
+  },
+  slider: {
+    // One cssr block for the whole slider family: rail/fill/dots/marks/handle
+    // (+ the handle-indicator block emitted TWICE upstream — first block the
+    // fade-in-scale-up transition only, second the placement margins + same
+    // transition; the duplicated declarations land verbatim in the CSS).
+    // Upstream's invalid `translateX(50%, -50%)` on reverse dots and the
+    // four-corner handle translate matrix are kept byte-faithful. No
+    // rtl.cssr upstream.
+    cssr: ['slider/src/styles/index.cssr.ts'],
+    theme: 'slider/styles/light.ts'
   }
 }

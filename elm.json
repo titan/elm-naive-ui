@@ -139,6 +139,7 @@
     "NUI.Theme.Select",
     "NUI.Theme.SelectMenu",
     "NUI.Theme.Skeleton",
+    "NUI.Theme.Slider",
     "NUI.Theme.Space",
     "NUI.Theme.Spin",
     "NUI.Theme.Statistic",
