@@ -8606,6 +8606,145 @@ dTrue(
   'alive'
 )
 
+// --- Slider -------------------------------------------------------------------
+// The n-slider walk (Slider.tsx render + fillStyleRef/markInfosRef): root
+// class list in upstream 5-mod order, the 25-var set, fill span bytes
+// (direction key then width/height, single vs range), dot --active
+// predicates, the handle aria block + dir%/z-index styles, the inline
+// indicator (--placement + 5 own vars), disabled bytes, and the >2-values
+// quirks (fill suppressed, all dots inactive).
+const sliderRoot = (id) => doc.querySelector('#' + id + ' .n-slider')
+const sliderFillStyle = (id) => styleAt(doc.querySelector('#' + id + ' .n-slider-rail__fill'))
+const sliderHandles = (id) => [...doc.querySelectorAll('#' + id + ' .n-slider-handle-wrapper')]
+const sliderDot = (id, i) => doc.querySelectorAll('#' + id + ' .n-slider-dot')[i]
+const sliderMarkEl = (id, i) => doc.querySelectorAll('#' + id + ' .n-slider-mark')[i]
+dEq(
+  'DOM: Slider root class exactly "n-slider n-slider--with-mark" (upstream 5-mod emission order)',
+  'n-slider n-slider--with-mark',
+  nClassesStr(sliderRoot('live-slider-s'))
+)
+dEq(
+  'DOM: Slider root carries 24 rendered vars (25 declared — dotBoxShadow empty, dropped by Internal.cssVars)',
+  24,
+  countVars(sliderRoot('live-slider-s'))
+)
+dTrue(
+  'DOM: Slider single fill = min→value (left 0%, width 40%; direction key precedes width)',
+  (() => {
+    const s = sliderFillStyle('live-slider-s') || ''
+    return s.includes('left: 0%') && s.includes('width: 40%') && s.indexOf('left: 0%') < s.indexOf('width: 40%')
+  })(),
+  sliderFillStyle('live-slider-s')
+)
+dTrue(
+  'DOM: Slider range fill = min(values)→max(values) (left 24%, width 25%)',
+  (() => {
+    const s = sliderFillStyle('live-slider-r') || ''
+    return s.includes('left: 24%') && s.includes('width: 25%')
+  })(),
+  sliderFillStyle('live-slider-r')
+)
+dTrue(
+  'DOM: Slider vertical fill = bottom 0%, height 77% (styleDirection flips to bottom+height)',
+  (() => {
+    const s = sliderFillStyle('live-slider-v') || ''
+    return s.includes('bottom: 0%') && s.includes('height: 77%')
+  })(),
+  sliderFillStyle('live-slider-v')
+)
+dEq(
+  'DOM: Slider dot --active: single → num <= value (34 yes, 75 no)',
+  'n-slider-dot n-slider-dot--active|n-slider-dot',
+  nClassesStr(sliderDot('live-slider-s', 0)) + '|' + nClassesStr(sliderDot('live-slider-s', 1))
+)
+dEq(
+  'DOM: Slider dot --active: range → inclusive between min/max values (34 in [24,49], 75 out)',
+  'n-slider-dot n-slider-dot--active|n-slider-dot',
+  nClassesStr(sliderDot('live-slider-r', 0)) + '|' + nClassesStr(sliderDot('live-slider-r', 1))
+)
+dEq(
+  'DOM: Slider dot/mark style = the single direction key (left 34% / 75%) + mark labels',
+  '34|75|34|75',
+  [sliderDot('live-slider-s', 0), sliderDot('live-slider-s', 1)]
+    .map((d) => (d ? (styleAt(d) || '').replace(/left: |%;/g, '') : '?'))
+    .concat(
+      [sliderMarkEl('live-slider-s', 0), sliderMarkEl('live-slider-s', 1)].map((m) =>
+        m ? m.textContent : '?'
+      )
+    )
+    .join('|')
+)
+dEq(
+  'DOM: Slider handle aria block + tabindex 0 + z-index 0 (no aria-disabled when enabled)',
+  'slider|40|0|100|horizontal|0|0|absent',
+  (() => {
+    const h = sliderHandles('live-slider-s')[0]
+    if (!h) return 'missing'
+    const s = styleAt(h) || ''
+    return [
+      h.getAttribute('role'),
+      h.getAttribute('aria-valuenow'),
+      h.getAttribute('aria-valuemin'),
+      h.getAttribute('aria-valuemax'),
+      h.getAttribute('aria-orientation'),
+      h.getAttribute('tabindex'),
+      s.includes('z-index: 0') && s.includes('left: 40%') ? '0' : '?',
+      h.hasAttribute('aria-disabled') ? 'present' : 'absent'
+    ].join('|')
+  })()
+)
+dEq('DOM: Slider range renders one wrapper per value (aria-valuenow 24, 49)', '2|24|49', (() => {
+  const hs = sliderHandles('live-slider-r')
+  return [hs.length, hs[0] ? hs[0].getAttribute('aria-valuenow') : '?', hs[1] ? hs[1].getAttribute('aria-valuenow') : '?'].join('|')
+})())
+dEq(
+  'DOM: Slider vertical handle style = bottom 77% + z-index 0',
+  true,
+  (() => {
+    const s = styleAt(sliderHandles('live-slider-v')[0]) || ''
+    return s.includes('bottom: 77%') && s.includes('z-index: 0')
+  })()
+)
+dEq(
+  'DOM: Slider dragged handle gets z-index 1 (getHandleStyle zIndex seam)',
+  true,
+  (() => {
+    const s = styleAt(sliderHandles('live-slider-t')[0]) || ''
+    return s.includes('z-index: 1')
+  })()
+)
+dEq(
+  'DOM: Slider indicator renders inline with --top default placement + 5 own vars + raw value text',
+  'n-slider-handle-indicator n-slider-handle-indicator--top|5|66',
+  (() => {
+    const ind = doc.querySelector('#live-slider-t .n-slider-handle-indicator')
+    return [ind ? nClassesStr(ind) : 'missing', ind ? countVars(ind) : -1, ind ? ind.textContent : '?'].join('|')
+  })()
+)
+dTrue(
+  'DOM: Slider no indicator without hover/drag/showTooltip (isShowTooltip gate)',
+  !doc.querySelector('#live-slider-s .n-slider-handle-indicator'),
+  'indicator absent'
+)
+dEq(
+  'DOM: Slider disabled: root --disabled, tabindex -1, aria-disabled true (RAW prop)',
+  'true|-1|true',
+  (() => {
+    const h = sliderHandles('live-slider-d')[0]
+    return [
+      sliderRoot('live-slider-d') && sliderRoot('live-slider-d').classList.contains('n-slider--disabled') ? 'true' : 'false',
+      h ? h.getAttribute('tabindex') : '?',
+      h ? h.getAttribute('aria-disabled') : '?'
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: Slider >2 values: fill suppressed + every dot inactive (handleCountExceeds2 quirks)',
+  'absent|0',
+  (doc.querySelector('#live-slider-x .n-slider-rail__fill') ? 'present' : 'absent') +
+    '|' + String(doc.querySelectorAll('#live-slider-x .n-slider-dot--active').length)
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

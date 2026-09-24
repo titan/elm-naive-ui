@@ -84,6 +84,7 @@ import NUI.Scrollbar as Scrollbar
 import NUI.Select as Select
 import NUI.SelectMenu as SelectMenu
 import NUI.Skeleton as Skeleton
+import NUI.Slider as Slider
 import NUI.Space as Space
 import NUI.Spin as Spin
 import NUI.Split as Split
@@ -140,6 +141,7 @@ type Msg
     | DialogPositive
     | DialogNegative
     | MenuExpandedKeys (List String)
+    | SliderIndex Int
 
 
 {-| The model is a counter of dropdown `onSelect` / modal `onClose` / drawer
@@ -175,6 +177,9 @@ update msg count =
             count + 1
 
         MenuExpandedKeys _ ->
+            count + 1
+
+        SliderIndex _ ->
             count + 1
 
 
@@ -4509,6 +4514,34 @@ dropdownKind option =
             "custom"
 
 
+{-| The slider fixtures — the 34/75 marks (upstream spec-tree shape) and
+the defaults binding for the eq checks + DOM probes.
+-}
+sliderD : Slider.Options Msg
+sliderD =
+    Slider.defaults
+
+
+sliderMarks : List Slider.Mark
+sliderMarks =
+    [ { value = 34, label = "34" }
+    , { value = 75, label = "75" }
+    ]
+
+
+sliderVars : List ( String, String )
+sliderVars =
+    Slider.cssVars Theme.default
+
+
+sliderVarValue : String -> List ( String, String ) -> String
+sliderVarValue name vars =
+    vars
+        |> List.filter (\( k, _ ) -> k == name)
+        |> List.map Tuple.second
+        |> String.concat
+
+
 checks : List Check
 checks =
     let
@@ -8079,6 +8112,99 @@ checks =
     , eq "menu cssVars item-color-active inverted = primary"
         "#18a058"
         (menuVarValue "--n-item-color-active" (Menu.cssVars Theme.default True))
+
+    -- slider: getClosestMark semantics (strictly-closer, first wins ties,
+    -- index into the passed list — upstream reuses it for handle picking) --
+    , eq "slider closestMark picks the strictly-closest candidate"
+        (Just { index = 0, distance = 6, value = 34 })
+        (Slider.closestMark [ 34, 75 ] 40)
+    , eq "slider closestMark tie -> the FIRST candidate wins"
+        (Just { index = 0, distance = 10, value = 10 })
+        (Slider.closestMark [ 10, 30 ] 20)
+    , eq "slider closestMark miss -> Nothing"
+        Nothing
+        (Slider.closestMark [] 40)
+
+    -- valueToPercentage / pointerToValue (getPointValue: no clamp — sanitize owns it) --
+    , eq "slider valueToPercentage (min 1 max 101 value 24 = 23)"
+        23
+        (Slider.valueToPercentage 1 101 24)
+    , eq "slider pointerToValue horizontal (clientX 25 on a 100px rail)"
+        25
+        (Slider.pointerToValue { vertical = False, reverse = False, min = 0, max = 100, railStart = 0, railSize = 100, pointer = 25 })
+    , eq "slider pointerToValue vertical (bottom-origin, (bottom − clientY)/height)"
+        77
+        (Slider.pointerToValue { vertical = True, reverse = False, min = 0, max = 100, railStart = 100, railSize = 100, pointer = 23 })
+    , eq "slider pointerToValue reverse flips the percentage"
+        75
+        (Slider.pointerToValue { vertical = False, reverse = True, min = 0, max = 100, railStart = 0, railSize = 100, pointer = 25 })
+
+    -- sanitizeValue: 'mark' snap (the current value is a candidate), buffer direction --
+    , eq "slider sanitize step:'mark' — closest of [34, 75, current 50] to 40 = 34 (dist 6)"
+        34
+        (Slider.sanitizeValue { step = Slider.StepMarks, min = 0, max = 100, markValues = [ 34, 75 ] } 40 50 Nothing)
+    , eq "slider sanitize step:'mark' + upward buffer — 50 still beats 75 (dist 10 < 25 from target 40)"
+        50
+        (Slider.sanitizeValue { step = Slider.StepMarks, min = 0, max = 100, markValues = [ 34, 75 ] } 40 50 (Just 1))
+
+    -- step <= 0 freezes (upstream quirk) --
+    , eq "slider sanitize step<=0 freezes the current value"
+        20
+        (Slider.sanitizeValue { step = Slider.Step 0, min = 0, max = 100, markValues = [] } 80 20 Nothing)
+
+    -- stepping grid: leftStep/rightStep floor semantics, marks appended --
+    , eq "slider sanitize stepping grid (step 5 from 12 upward → 15)"
+        15
+        (Slider.sanitizeValue { step = Slider.Step 5, min = 0, max = 100, markValues = [] } 80 12 (Just 1))
+    , eq "slider sanitize stepping lets a mark hijack the grid (34 nearer than 40)"
+        34
+        (Slider.sanitizeValue { step = Slider.Step 5, min = 0, max = 100, markValues = [ 34 ] } 80 33 (Just 1))
+
+    -- non-stepping: roundValue vs marks, marks win ties, clamp at bounds --
+    , eq "slider sanitize drag rounds to the step grid"
+        40
+        (Slider.sanitizeValue { step = Slider.Step 10, min = 0, max = 100, markValues = [] } 40 50 Nothing)
+    , eq "slider sanitize drag: the nearer mark beats the rounded grid"
+        34
+        (Slider.sanitizeValue { step = Slider.Step 10, min = 0, max = 100, markValues = [ 34, 75 ] } 33 50 Nothing)
+    , eq "slider sanitize clamps to max"
+        100
+        (Slider.sanitizeValue { step = Slider.Step 50, min = 0, max = 100, markValues = [] } 95 10 Nothing)
+
+    -- stepValue (arrow keys): grid step, mark step, frozen step --
+    , eq "slider stepValue +1 from 40 → 41"
+        41
+        (Slider.stepValue { step = Slider.Step 1, min = 0, max = 100, markValues = [] } 40 1)
+    , eq "slider stepValue −1 from 40 → 39"
+        39
+        (Slider.stepValue { step = Slider.Step 1, min = 0, max = 100, markValues = [] } 40 -1)
+    , eq "slider stepValue step:'mark' still moves (to the mark above)"
+        75
+        (Slider.stepValue { step = Slider.StepMarks, min = 0, max = 100, markValues = [ 34, 75 ] } 34 1)
+
+    -- cssVars: the 25-name block in upstream order + spot values (light _common/self) --
+    , eq "slider cssVars names in upstream emission order (25)"
+        "--n-bezier|--n-dot-border|--n-dot-border-active|--n-dot-border-radius|--n-dot-box-shadow|--n-dot-color|--n-dot-color-modal|--n-dot-color-popover|--n-dot-height|--n-dot-width|--n-fill-color|--n-fill-color-hover|--n-font-size|--n-handle-box-shadow|--n-handle-box-shadow-active|--n-handle-box-shadow-focus|--n-handle-box-shadow-hover|--n-handle-color|--n-handle-size|--n-opacity-disabled|--n-rail-color|--n-rail-color-hover|--n-rail-height|--n-rail-width-vertical|--n-mark-font-size"
+        (List.map Tuple.first sliderVars
+            |> String.join "|"
+        )
+    , eq "slider cssVars spot sizes + primary fill (light _common + self)"
+        [ "4px", "18px", "#FFF", "#18a058" ]
+        [ sliderVarValue "--n-rail-height" sliderVars
+        , sliderVarValue "--n-handle-size" sliderVars
+        , sliderVarValue "--n-handle-color" sliderVars
+        , sliderVarValue "--n-fill-color" sliderVars
+        ]
+    , eq "slider indicatorCssVars 5 names in order"
+        "--n-font-size|--n-indicator-border-radius|--n-indicator-box-shadow|--n-indicator-color|--n-indicator-text-color"
+        (List.map Tuple.first (Slider.indicatorCssVars Theme.default)
+            |> String.join "|"
+        )
+    , eq "slider indicatorCssVars spot (color literal + radius)"
+        [ "rgba(0, 0, 0, .85)", "3px" ]
+        [ sliderVarValue "--n-indicator-color" (Slider.indicatorCssVars Theme.default)
+        , sliderVarValue "--n-indicator-border-radius" (Slider.indicatorCssVars Theme.default)
+        ]
     ]
 
 
@@ -9662,6 +9788,30 @@ liveNodes =
                     (Menu.view Theme.default
                         { menuD | expandedKeys = [ "gdis-sub", "gdis-out" ] }
                         menuGDisTree
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-slider-s") ]
+                    (Slider.view Theme.default
+                        { sliderD | value = [ 40 ], marks = sliderMarks }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-slider-r") ]
+                    (Slider.view Theme.default
+                        { sliderD | range = True, value = [ 24, 49 ], marks = sliderMarks }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-slider-v") ]
+                    (Slider.view Theme.default
+                        { sliderD | value = [ 77 ], vertical = True, marks = sliderMarks }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-slider-t") ]
+                    (Slider.view Theme.default
+                        { sliderD | value = [ 66 ], hoverIndex = 0, activeIndex = 0, dragging = True }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-slider-d") ]
+                    (Slider.view Theme.default
+                        { sliderD | value = [ 12 ], disabled = True }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-slider-x") ]
+                    (Slider.view Theme.default
+                        { sliderD | range = True, value = [ 10, 50, 90 ], marks = sliderMarks }
                     )
                 ]
             )
