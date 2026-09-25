@@ -134,7 +134,9 @@ const targets = {
   // Menu: all 43 vars sit on the root (inverted swaps values, not class).
   '.n-menu': true,
   '.n-slider': true,
-  '.n-image': false
+  '.n-image': false,
+  // The preview container carries the five preview vars (bezier + 4 toolbar).
+  '.n-image-preview-container': true
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {

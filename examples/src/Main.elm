@@ -46,6 +46,8 @@ import NUI.Highlight as Highlight
 import NUI.Icon as Icon
 import NUI.IconWrapper as IconWrapper
 import NUI.Image as Image
+import NUI.ImageGroup as ImageGroup
+import NUI.ImagePreview as ImagePreview
 import NUI.Input as Input
 import NUI.InputNumber as InputNumber
 import NUI.InputOtp as InputOtp
@@ -707,6 +709,7 @@ body =
     , menuSection
     , sliderSection
     , imageSection
+    , imagePreviewSection
     , modalSection
     , drawerSection
     , dialogSection
@@ -4037,6 +4040,21 @@ imageLogo =
     "https://www.naiveui.com/assets/naivelogo.93278402.svg"
 
 
+previewD : ImagePreview.Options msg
+previewD =
+    ImagePreview.defaults
+
+
+previewZoom0 : ImagePreview.Zoom
+previewZoom0 =
+    ImagePreview.zoom0
+
+
+groupD : ImageGroup.Options msg
+groupD =
+    ImageGroup.defaults
+
+
 imageSection : Element msg
 imageSection =
     section "Image"
@@ -4119,6 +4137,75 @@ imageSection =
                         , width = Just "160"
                         , height = Just "120"
                         , lazy = True
+                    }
+                )
+            ]
+        ]
+
+
+imagePreviewSection : Element msg
+imagePreviewSection =
+    section "Image Preview & Group"
+        "The preview modal family (upstream `NImagePreview`/`NImageGroup`): container (the five toolbar `--n-*` vars) > overlay (click-to-close seat) > toolbar (prev/next only when `onPrev` is set — upstream keys both on `onPrev` — then rotate CCW/CW, original size, zoomOut, zoomIn, download, close) > wrapper > `img.n-image-preview`. The runtime is caller-owned (`NUI.Modal` precedent): `zoom` starts at `zoom0` and moves through the pure transforms (`zoomIn`/`zoomOut`/`rotateClockwise`/`resizeToOriginalSize`/`toggleOriginalSize`/`switchReset`), drag clamps through `moveStrategy` + `derivedOffset`, document keys map through `keyAction`, and `syncTransformOrigin` writes the thumbnail's center into `wrapperStyle`. The group adds the url registry (`srcList` wins with `p${index}` keys, else the caller-threaded `registered` ids) and the wrap-around walk (`nextIndex`/`prevIndex` skip empty urls). Demo cells confine the fixed tree like the modal demos."
+    <|
+        [ demoRow "Standalone preview (fixed state: open, zoom identity)"
+            [ modalHost []
+                (ImagePreview.view theme
+                    { previewD
+                        | show = True
+                        , src = Just "https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg"
+                    }
+                )
+            ]
+        , demoRow "Zoom/rotate state + previewed-img props (8px white frame)"
+            [ modalHost []
+                (ImagePreview.view theme
+                    { previewD
+                        | show = True
+                        , src = Just imageLogo
+                        , zoom = { previewZoom0 | scale = 1.5, scaleExp = 1, rotate = 90 }
+                        , previewedImgStyle = [ ( "border", "8px solid white" ) ]
+                    }
+                )
+            ]
+        , demoRow "Toolbar suppressed + drag state (grabbing cursor, no transition)"
+            [ modalHost []
+                (ImagePreview.view theme
+                    { previewD
+                        | show = True
+                        , src = Just imageLogo
+                        , showToolbar = False
+                    }
+                )
+            , modalHost []
+                (ImagePreview.view theme
+                    { previewD
+                        | show = True
+                        , src = Just imageLogo
+                        , dragging = True
+                        , imgTransition = False
+                    }
+                )
+            ]
+        , demoRow "Group (srcList registry, second image current; slot thumbnails beside)"
+            [ cell
+                (Element.row [ Element.spacing 8 ]
+                    [ Image.view theme
+                        { imageD | src = Just "https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg", width = Just "80", height = Just "60" }
+                    , Image.view theme
+                        { imageD | src = Just imageLogo, width = Just "80", height = Just "60" }
+                    ]
+                )
+            , modalHost []
+                (ImageGroup.view theme
+                    { groupD
+                        | show = True
+                        , srcList =
+                            [ "https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg"
+                            , imageLogo
+                            , imageLogo
+                            ]
+                        , current = 1
                     }
                 )
             ]

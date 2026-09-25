@@ -44,6 +44,8 @@
     "NUI.Icon",
     "NUI.IconWrapper",
     "NUI.Image",
+    "NUI.ImageGroup",
+    "NUI.ImagePreview",
     "NUI.Input",
     "NUI.InputNumber",
     "NUI.InputOtp",
