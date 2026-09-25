@@ -461,5 +461,31 @@ export const components = {
     // on the preview container (preview batch). No rtl.cssr upstream.
     cssr: ['image/src/styles/index.cssr.ts'],
     theme: 'image/styles/light.ts'
+  },
+  message: {
+    // One cssr block: the fixed container family (z-index 6000, six
+    // --{placement} variants) + wrapper (carries the fade-in-height-expand
+    // transition rules + per-placement alignItems comes from JS inline) +
+    // the .n-message surface (per-type icon colour vars, content, close
+    // button) + rtl.cssr (--rtl flips direction/icon/close margins). Icon,
+    // close and loading internals ride the `internal` chunk.
+    cssr: ['message/src/styles/index.cssr.ts', 'message/src/styles/rtl.cssr.ts'],
+    theme: 'message/styles/light.ts'
+  },
+  notification: {
+    // One cssr block: the fixed container family (z-index 4000, --{placement}
+    // + --scrollable variants + the bare `.transitioning` min-height rule the
+    // provider toggles via wipTransitionCount) + wrapper (the
+    // notification-transition family, translate/scale per placement) + the
+    // .n-notification surface (avatar/close/main header/description/
+    // content-pre/footer meta+action) + rtl.cssr (--rtl; upstream's dead
+    // --n-icon-margin var reference and `margin-reft` typo kept verbatim).
+    // The scrollable scrollbar tree rides the `scrollbar` block; icon/close
+    // internals ride `internal`.
+    cssr: [
+      'notification/src/styles/index.cssr.ts',
+      'notification/src/styles/rtl.cssr.ts'
+    ],
+    theme: 'notification/styles/light.ts'
   }
 }
