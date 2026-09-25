@@ -55,6 +55,8 @@ import NUI.Highlight as Highlight
 import NUI.Icon as Icon
 import NUI.IconWrapper as IconWrapper
 import NUI.Image as Image
+import NUI.ImageGroup as ImageGroup
+import NUI.ImagePreview as ImagePreview
 import NUI.Input as Input
 import NUI.InputNumber as InputNumber
 import NUI.InputOtp as InputOtp
@@ -4569,6 +4571,97 @@ imageVarValue name vars =
         |> String.concat
 
 
+{-| The preview/group fixtures — defaults bindings for the eq checks + DOM
+probes. `groupSkipped` is the walk case: an empty (falsy) url in the middle
+that `nextIndex`/`prevIndex` must skip (upstream findNext/findPrev truthiness).
+-}
+previewD : ImagePreview.Options Msg
+previewD =
+    ImagePreview.defaults
+
+
+previewZoom0 : ImagePreview.Zoom
+previewZoom0 =
+    ImagePreview.zoom0
+
+
+previewVars : List ( String, String )
+previewVars =
+    ImagePreview.cssVars Theme.default
+
+
+groupD : ImageGroup.Options Msg
+groupD =
+    ImageGroup.defaults
+
+
+groupSkipped : ImageGroup.Options Msg
+groupSkipped =
+    { groupD
+        | srcList =
+            [ "https://a/one.jpeg"
+            , ""
+            , "https://a/three.jpeg"
+            ]
+    }
+
+
+{-| Rect literals for the derivedOffset clamp: one that fits both axes and
+one oversized overhang (negative left/top, right/bottom past the viewport).
+-}
+fitsRect : ImagePreview.Rect
+fitsRect =
+    { left = 0, top = 0, width = 300, height = 200, right = 300, bottom = 200 }
+
+
+overhangRect : ImagePreview.Rect
+overhangRect =
+    { left = -200
+    , top = -300
+    , width = 1200
+    , height = 1200
+    , right = 1000
+    , bottom = 900
+    }
+
+
+{-| The `imgStyle` pair list joined the way the style attribute serializes —
+`k: v;` per entry, single-space separated — so pins read as upstream
+`cssText` bytes.
+-}
+stylePairsString : List ( String, String ) -> String
+stylePairsString pairs =
+    List.map (\( k, v ) -> k ++ ": " ++ v ++ ";") pairs
+        |> String.join " "
+
+
+{-| keyAction rendered as names (the KeyAction union has no Eq instance).
+-}
+previewKeyName : String -> String
+previewKeyName key =
+    case ImagePreview.keyAction key of
+        Just ImagePreview.SpacePrevent ->
+            "space"
+
+        Just ImagePreview.Prev ->
+            "prev"
+
+        Just ImagePreview.Next ->
+            "next"
+
+        Just ImagePreview.ZoomInKey ->
+            "in"
+
+        Just ImagePreview.ZoomOutKey ->
+            "out"
+
+        Just ImagePreview.Close ->
+            "close"
+
+        Nothing ->
+            "miss"
+
+
 checks : List Check
 checks =
     let
@@ -8320,6 +8413,243 @@ checks =
     , eq "image cssVars dark: icon color derives from common.textColor2"
         "rgba(255, 255, 255, 0.82)"
         (imageVarValue "--n-toolbar-icon-color" imageDarkVars)
+
+    -- image preview: zoom math (ImagePreview.tsx — guards, scaleRadix 1.5,
+    -- BLEEDING 32, the ceil-log resize, the dblclick toggle that does NOT
+    -- touch scaleExp) --
+    , eq "preview zoomIn: exp+1 then min(maxScale, 1.5^exp)"
+        { scale = 1.5, scaleExp = 1, offsetX = 0, offsetY = 0, rotate = 0 }
+        (ImagePreview.zoomIn 4 previewZoom0)
+    , eq "preview zoomIn chained: 1.5^2 = 2.25 under max 4"
+        { scale = 2.25, scaleExp = 2, offsetX = 0, offsetY = 0, rotate = 0 }
+        (ImagePreview.zoomIn 4 (ImagePreview.zoomIn 4 previewZoom0))
+    , eq "preview zoomIn guard: scale >= maxScale leaves zoom untouched"
+        previewZoom0
+        (ImagePreview.zoomIn 1 previewZoom0)
+    , eq "preview zoomOut: guard 1 > 0.5, exp-1, max(0.5, 1.5^-1)"
+        { scale = 0.6666666666666666, scaleExp = -1, offsetX = 0, offsetY = 0, rotate = 0 }
+        (ImagePreview.zoomOut previewZoom0)
+    , eq "preview zoomOut floor: second step clamps at 0.5 (1.5^-2 = 0.444… loses)"
+        { scale = 0.5, scaleExp = -2, offsetX = 0, offsetY = 0, rotate = 0 }
+        (ImagePreview.zoomOut (ImagePreview.zoomOut previewZoom0))
+    , eq "preview zoomOut guard: scale 0.5 is the floor, unchanged"
+        { scale = 0.5, scaleExp = -2, offsetX = 0, offsetY = 0, rotate = 0 }
+        (ImagePreview.zoomOut { scale = 0.5, scaleExp = -2, offsetX = 0, offsetY = 0, rotate = 0 })
+    , eq "preview maxScale: max(3, h*2, w*2) with BLEEDING=32 (936/468=2, 1000/500=2)"
+        4
+        (ImagePreview.maxScale { naturalWidth = 1000, naturalHeight = 936, innerWidth = 532, innerHeight = 500 })
+    , eq "preview maxScale: the 3-floor holds for fitting images"
+        3
+        (ImagePreview.maxScale { naturalWidth = 100, naturalHeight = 100, innerWidth = 800, innerHeight = 600 })
+    , eq "preview originalSizeScale: fitting image → 1"
+        1
+        (ImagePreview.originalSizeScale { naturalWidth = 100, naturalHeight = 100, innerWidth = 800, innerHeight = 600 })
+    , eq "preview originalSizeScale: overshoot takes the max ratio (1000/500=2 vs 500/1000=0.5)"
+        2
+        (ImagePreview.originalSizeScale { naturalWidth = 1000, naturalHeight = 500, innerWidth = 532, innerHeight = 1032 })
+    , eq "preview resizeToOriginalSize: scale to target, exp = ceil(log_1.5 2) = 2, offsets zeroed"
+        { scale = 2, scaleExp = 2, offsetX = 0, offsetY = 0, rotate = 0 }
+        (ImagePreview.resizeToOriginalSize 2 previewZoom0)
+    , eq "preview toggleOriginalSize (dblclick): scale → target with scaleExp untouched"
+        { scale = 2, scaleExp = 0, offsetX = 0, offsetY = 0, rotate = 0 }
+        (ImagePreview.toggleOriginalSize 2 previewZoom0)
+    , eq "preview toggleOriginalSize: second dblclick returns to 1 (scale == target)"
+        { scale = 1, scaleExp = 0, offsetX = 0, offsetY = 0, rotate = 0 }
+        (ImagePreview.toggleOriginalSize 2 (ImagePreview.toggleOriginalSize 2 previewZoom0))
+    , eq "preview switchReset: the prev/next reset (scale 1, exp 0, offsets 0, rotate 0)"
+        previewZoom0
+        (ImagePreview.switchReset { scale = 2.25, scaleExp = 2, offsetX = 30, offsetY = -12, rotate = 180 })
+    , eq "preview rotate: +90 clockwise / -90 counterclockwise"
+        ( 90, -90 )
+        ( ImagePreview.rotateClockwise previewZoom0 |> .rotate
+        , ImagePreview.rotateCounterclockwise previewZoom0 |> .rotate
+        )
+
+    -- transformStyle / imgStyle: the derivePreviewStyle bytes (raw floats,
+    -- no toFixed; transition:none BEFORE the transform while dragging, AFTER
+    -- it otherwise) --
+    , eq "preview transformStyle: the exact transform fragment, raw floats"
+        "transform-origin:center|transform:translateX(12.5px) translateY(-3px) rotate(90deg) scale(1.5)"
+        (ImagePreview.transformStyle { scale = 1.5, scaleExp = 1, offsetX = 12.5, offsetY = -3, rotate = 90 }
+            |> List.map (\( k, v ) -> k ++ ":" ++ v)
+            |> String.join "|"
+        )
+    , eq "preview imgStyle resting: controlled prefix, cursor grab, transform (transition stays implicit)"
+        "border: 8px solid white; cursor: grab; transform-origin: center; transform: translateX(0px) translateY(0px) rotate(0deg) scale(1);"
+        (ImagePreview.imgStyle
+            { dragging = False
+            , transition = True
+            , controlled = [ ( "border", "8px solid white" ) ]
+            , zoom = previewZoom0
+            }
+            |> stylePairsString
+        )
+    , eq "preview imgStyle dragging: grabbing + transition:none BEFORE the transform"
+        "cursor: grabbing; transition: none; transform-origin: center; transform: translateX(0px) translateY(0px) rotate(0deg) scale(1);"
+        (ImagePreview.imgStyle
+            { dragging = True
+            , transition = True
+            , controlled = []
+            , zoom = previewZoom0
+            }
+            |> stylePairsString
+        )
+    , eq "preview imgStyle suppressed transition: transition:none AFTER the transform"
+        "cursor: grab; transform-origin: center; transform: translateX(0px) translateY(0px) rotate(0deg) scale(1); transition: none;"
+        (ImagePreview.imgStyle
+            { dragging = False
+            , transition = False
+            , controlled = []
+            , zoom = previewZoom0
+            }
+            |> stylePairsString
+        )
+
+    -- drag math: getMoveStrategy signs + the getDerivedOffset clamp --
+    , eq "preview moveStrategy: positive deltas → Left/Top"
+        { horizontal = ImagePreview.HorizontalLeft, vertical = ImagePreview.VerticalTop, deltaHorizontal = 60, deltaVertical = 40 }
+        (let
+            s =
+                ImagePreview.moveStrategy { mouseDownClientX = 100, mouseDownClientY = 100, mouseUpClientX = 40, mouseUpClientY = 60 }
+         in
+         { horizontal = s.horizontal, vertical = s.vertical, deltaHorizontal = s.deltaHorizontal, deltaVertical = s.deltaVertical }
+        )
+    , eq "preview moveStrategy: negative deltas → Right/Bottom"
+        { horizontal = ImagePreview.HorizontalRight, vertical = ImagePreview.VerticalBottom, deltaHorizontal = -60, deltaVertical = -40 }
+        (let
+            s =
+                ImagePreview.moveStrategy { mouseDownClientX = 40, mouseDownClientY = 60, mouseUpClientX = 100, mouseUpClientY = 100 }
+         in
+         { horizontal = s.horizontal, vertical = s.vertical, deltaHorizontal = s.deltaHorizontal, deltaVertical = s.deltaVertical }
+        )
+    , eq "preview derivedOffset: image fits the viewport → 0/0"
+        { offsetX = 0, offsetY = 0 }
+        (ImagePreview.derivedOffset Nothing
+            { rect = fitsRect
+            , viewport = { width = 800, height = 600 }
+            , start = { offsetX = 40, offsetY = 40 }
+            }
+        )
+    , eq "preview derivedOffset: left/top edges visible → snap in (+half each axis)"
+        { offsetX = 100, offsetY = 200 }
+        (ImagePreview.derivedOffset Nothing
+            { rect = { left = 10, top = 20, width = 1000, height = 1000, right = 1010, bottom = 1020 }
+            , viewport = { width = 800, height = 600 }
+            , start = { offsetX = 0, offsetY = 0 }
+            }
+        )
+    , eq "preview derivedOffset: right/bottom edges visible → tuck in (−half each axis)"
+        { offsetX = -100, offsetY = -200 }
+        (ImagePreview.derivedOffset Nothing
+            { rect = { left = -700, top = -500, width = 1000, height = 1000, right = 300, bottom = 500 }
+            , viewport = { width = 800, height = 600 }
+            , start = { offsetX = 0, offsetY = 0 }
+            }
+        )
+    , eq "preview derivedOffset: overhang + Right/Top strategy → X min, Y falls to max (upstream keys min on verticalBottom)"
+        { offsetX = 200, offsetY = 460 }
+        (ImagePreview.derivedOffset
+            (Just { deltaHorizontal = -250, deltaVertical = 40, horizontal = ImagePreview.HorizontalRight, vertical = ImagePreview.VerticalTop })
+            { rect = overhangRect
+            , viewport = { width = 800, height = 600 }
+            , start = { offsetX = 500, offsetY = 500 }
+            }
+        )
+    , eq "preview derivedOffset: overhang + Left/Bottom strategy → X max, Y min (Bottom hits the min branch)"
+        { offsetX = 750, offsetY = 300 }
+        (ImagePreview.derivedOffset
+            (Just { deltaHorizontal = -250, deltaVertical = 40, horizontal = ImagePreview.HorizontalLeft, vertical = ImagePreview.VerticalBottom })
+            { rect = overhangRect
+            , viewport = { width = 800, height = 600 }
+            , start = { offsetX = 500, offsetY = 500 }
+            }
+        )
+    , eq "preview derivedOffset: no strategy → the undefined-destructure fallback (max −half, start)"
+        { offsetX = 500, offsetY = 500 }
+        (ImagePreview.derivedOffset Nothing
+            { rect = overhangRect
+            , viewport = { width = 800, height = 600 }
+            , start = { offsetX = 500, offsetY = 500 }
+            }
+        )
+
+    -- keyboard: the document keydown mapping (handleKeydown) --
+    , eq "preview keyAction: Space prevent-only, ←/→ prev/next, ↑/↓ zoom, Escape close, miss"
+        "space|prev|next|in|out|close|miss"
+        (String.join "|"
+            (List.map previewKeyName
+                [ " ", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Escape", "a" ]
+            )
+        )
+
+    -- group: the merged registry (p-keys win) + the wrap-around walk that
+    -- skips falsy (empty) urls (upstream findNext/findPrev truthiness) --
+    , eq "group urlMap: srcList wins with p-keys, registered entries ignored"
+        [ ( "p0", "https://a/one.jpeg" ), ( "p1", "" ), ( "p2", "https://a/three.jpeg" ) ]
+        (ImageGroup.urlMap { groupSkipped | registered = [ ( "r1", "https://x/reg.jpeg" ) ] })
+    , eq "group urlMap: without srcList the registered (imageId, url) pairs stand verbatim"
+        [ ( "r7", "u7" ), ( "r9", "" ) ]
+        (ImageGroup.urlMap { groupD | registered = [ ( "r7", "u7" ), ( "r9", "" ) ] })
+    , eq "group imageIds/currentId/currentUrl at current=0"
+        ( [ "p0", "p1", "p2" ], Just "p0", Just "https://a/one.jpeg" )
+        ( ImageGroup.imageIds groupSkipped
+        , ImageGroup.currentId groupSkipped
+        , ImageGroup.currentUrl groupSkipped
+        )
+    , eq "group currentUrl with a falsy entry reads Just \"\" (upstream map.get falsiness)"
+        (Just "")
+        (ImageGroup.currentUrl { groupD | registered = [ ( "r7", "u7" ), ( "r9", "" ) ], current = 1 })
+    , eq "group nextIndex skips the empty p1 (findNext truthiness)"
+        (Just 2)
+        (ImageGroup.nextIndex groupSkipped)
+    , eq "group prevIndex from 0 wraps to the tail"
+        (Just 2)
+        (ImageGroup.prevIndex groupSkipped)
+    , eq "group nextIndex from the tail wraps to 0"
+        (Just 0)
+        (ImageGroup.nextIndex { groupSkipped | current = 2 })
+    , eq "group prevIndex from 2 skips back over the empty p1 to 0"
+        (Just 0)
+        (ImageGroup.prevIndex { groupSkipped | current = 2 })
+    , eq "group go: +1 → 2 (skip), then +1 → 0 (wrap), −1 from 2 → 0"
+        ( 2, 0, 0 )
+        ( ImageGroup.go 1 groupSkipped |> .current
+        , ImageGroup.go 1 { groupSkipped | current = 2 } |> .current
+        , ImageGroup.go -1 { groupSkipped | current = 2 } |> .current
+        )
+    , eq "group go with no truthy target leaves current unchanged"
+        0
+        (ImageGroup.go 1 { groupD | registered = [ ( "r7", "" ) ] } |> .current)
+    , eq "group showImage: moves to the id, is idempotent there, refuses unknown ids"
+        ( 2, 2, 0 )
+        ( ImageGroup.showImage "p2" groupSkipped |> .current
+        , ImageGroup.showImage "p2" (ImageGroup.showImage "p2" groupSkipped) |> .current
+        , ImageGroup.showImage "pX" groupSkipped |> .current
+        )
+    , eq "group previewOptions: the preview is fed src=currentUrl, the seams pass through, no previewed-img context"
+        { src = Just "https://a/three.jpeg", showToolbar = True, onPrev = Just NoOp, scale = 2, previewedImgStyle = [] }
+        (let
+            po =
+                ImageGroup.previewOptions
+                    { groupSkipped
+                        | current = 2
+                        , show = True
+                        , onPrev = Just NoOp
+                        , zoom = { previewZoom0 | scale = 2 }
+                    }
+         in
+         { src = po.src
+         , showToolbar = po.showToolbar
+         , onPrev = po.onPrev
+         , scale = po.zoom.scale
+         , previewedImgStyle = po.previewedImgStyle
+         }
+        )
+
+    -- cssVars: the preview delegates to the image batch's five-var list --
+    , eq "preview cssVars = the image batch's five-var emission verbatim"
+        imageVars
+        previewVars
     ]
 
 
@@ -9998,6 +10328,43 @@ liveNodes =
                             , previewSrc = Just "https://www.naiveui.com/assets/naivelogo.93278402.svg"
                             , width = Just "160"
                             , height = Just "120"
+                        }
+                    )
+
+                -- ImagePreview.view (the preview container tree — overlay,
+                -- toolbar icon count keyed on onPrev, resting img style) and
+                -- ImageGroup.view (the registry walk: current=2 skips the
+                -- empty p1 url)
+                , Element.el [ Element.htmlAttribute (HA.id "live-preview-basic") ]
+                    (ImagePreview.view Theme.default
+                        { previewD
+                            | show = True
+                            , src = Just "https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg"
+                            , onClose = Just NoOp
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-preview-dragging") ]
+                    (ImagePreview.view Theme.default
+                        { previewD
+                            | show = True
+                            , src = Just "https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg"
+                            , dragging = True
+                            , previewedImgStyle = [ ( "border", "8px solid white" ) ]
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-preview-group") ]
+                    (ImageGroup.view Theme.default
+                        { groupD
+                            | show = True
+                            , srcList =
+                                [ "https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg"
+                                , ""
+                                , "https://www.naiveui.com/assets/naivelogo.93278402.svg"
+                                ]
+                            , current = 2
+                            , onPrev = Just NoOp
+                            , onNext = Just NoOp
+                            , onClose = Just NoOp
                         }
                     )
                 ]

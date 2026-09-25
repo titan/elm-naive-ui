@@ -8842,6 +8842,70 @@ dEq(
   ].join('|')
 )
 
+// --- ImagePreview / ImageGroup --------------------------------------------------
+// The preview container tree (ImagePreview.tsx render): container (the five
+// preview vars), overlay (click-to-close seat), toolbar whose icon count is
+// keyed on onPrev ALONE (upstream renders prev+next as a pair behind
+// `this.onPrev ?`), wrapper + img.n-image-preview carrying the
+// derivePreviewStyle bytes (cursor grab/grabbing around the raw-float
+// transform; transition:none BEFORE the transform while dragging). The group
+// feeds the same tree from the registry walk (current=2 skips the empty p1).
+const previewRoot = (id) => doc.querySelector('#' + id + ' .n-image-preview-container')
+const previewOverlay = (id) => doc.querySelector('#' + id + ' .n-image-preview-overlay')
+const previewToolbarIcons = (id) => doc.querySelectorAll('#' + id + ' .n-image-preview-toolbar i.n-base-icon')
+const previewImg = (id) => doc.querySelector('#' + id + ' img.n-image-preview')
+dEq(
+  'DOM: Preview container class exactly "n-image-preview-container" + all 5 preview vars (--n-bezier + 4 toolbar)',
+  'n-image-preview-container|5',
+  [
+    nClassesStr(previewRoot('live-preview-basic')),
+    String(countVars(previewRoot('live-preview-basic')))
+  ].join('|')
+)
+dTrue(
+  'DOM: Preview overlay present while shown (the click-to-close seat upstream renders behind its own fade-in)',
+  !!previewOverlay('live-preview-basic'),
+  previewOverlay('live-preview-basic') ? nClassesStr(previewOverlay('live-preview-basic')) : 'absent'
+)
+dEq(
+  'DOM: Preview toolbar without onPrev → exactly 7 i.n-base-icon (no prev/next pair)',
+  '7',
+  String(previewToolbarIcons('live-preview-basic').length)
+)
+dEq(
+  'DOM: Preview img class + resting derivePreviewStyle bytes (grab, raw-float identity transform)',
+  'n-image-preview|cursor: grab; transform-origin: center; transform: translateX(0px) translateY(0px) rotate(0deg) scale(1);',
+  [
+    previewImg('live-preview-basic').getAttribute('class'),
+    styleAt(previewImg('live-preview-basic'))
+  ].join('|')
+)
+dEq(
+  'DOM: Preview dragging style — controlled prefix, grabbing, transition:none BEFORE the transform (dragging branch order)',
+  'border: 8px solid white; cursor: grabbing; transition: none; transform-origin: center; transform: translateX(0px) translateY(0px) rotate(0deg) scale(1);|before',
+  [
+    styleAt(previewImg('live-preview-dragging')),
+    (() => {
+      const s = styleAt(previewImg('live-preview-dragging')) || ''
+      return s.indexOf('transition: none') < s.indexOf('transform:') ? 'before' : 'after/missing'
+    })()
+  ].join('|')
+)
+dEq(
+  'DOM: Group toolbar with onPrev → 9 i.n-base-icon, first two are the prev/next pair (exact path bytes)',
+  '9|M6 5C5.75454|M13.5 5C13.7',
+  [
+    String(previewToolbarIcons('live-preview-group').length),
+    (previewToolbarIcons('live-preview-group')[0]?.querySelector('path')?.getAttribute('d') || '').slice(0, 12),
+    (previewToolbarIcons('live-preview-group')[1]?.querySelector('path')?.getAttribute('d') || '').slice(0, 12)
+  ].join('|')
+)
+dEq(
+  'DOM: Group preview img src = currentUrl after the walk (current=2 skipped the empty p1 — findNext truthiness through the DOM)',
+  'https://www.naiveui.com/assets/naivelogo.93278402.svg',
+  previewImg('live-preview-group').getAttribute('src')
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

@@ -10,6 +10,7 @@ module NUI.ImagePreview exposing
     , cssVars
     , defaults
     , derivedOffset
+    , imgStyle
     , keyAction
     , maxScale
     , moveStrategy
