@@ -68,6 +68,9 @@ service pattern, over the `NUI.Modal` shell contract):
     outside-click, `closeOnEsc`/`onEsc`, `autoFocus`/`trapFocus`,
     `blockScroll`, drag, mouse `transformOrigin`) is `NUI.Modal`-layer caller
     runtime by that module's contract (its mask is inert and `aria-hidden`).
+    Upstream defaults worth reproducing: `maskClosable: true`, and
+    `closeOnEsc: true` — Esc closes the dialog _after_ emitting `onEsc`
+    (`Modal.handleEsc` emits, then `doUpdateShow(false)`).
   - **z-index is per item, caller-allocated** (upstream `zindexable`
     increments; here `NUI.Modal` renders what you pass).
 
@@ -203,7 +206,11 @@ destroy key state =
 
 {-| `destroyAll()` — `hide()` on every registered instance. Already-leaving
 items are untouched (upstream's `hide` on a hiding dialog is a no-op), live
-items stamp the leave.
+items stamp the leave. Same-tick race, waived like Message's create-eviction:
+a `create` + `destroy`/`destroyAll` in the same tick stamps the leave
+immediately, while upstream's instance isn't registered in `dialogInstRefs`
+until the environment mounts — its `destroy` no-ops and the dialog still
+appears; here it renders mid-leave.
 -}
 destroyAll : State msg -> State msg
 destroyAll state =

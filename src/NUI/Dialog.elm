@@ -71,7 +71,8 @@ NOT as CSS `style`; only raw `HA.attribute "style"` (or `I.cssVars`)
 reaches the upstream `titleStyle/contentStyle/actionStyle` channel. The root
 `style` option (the env's `style`/`internalStyle`, upstream's fallthrough)
 has its own `style : Maybe String` field — merged into the one root style
-attribute after the vars, never a second attribute. The
+attribute after the vars, never a second attribute (string form only —
+upstream's `CSSProperties` object is the caller's fragment here). The
 close is the ported `n-base-close` **classes-only** (its structure CSS is in
 the generated sheet; dialog's cssr positions it — no `--absolute`, sized by
 `--n-close-size`), `closeFocusable` driving its tabindex (0 vs −1).
