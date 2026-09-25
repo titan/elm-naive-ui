@@ -94,6 +94,8 @@ bridge, tests).
 | `NUI.Image`       | ✅ |
 | `NUI.ImageGroup`  | ✅ |
 | `NUI.ImagePreview` | ✅ |
+| `NUI.Message` | ✅ |
+| `NUI.Notification` | ✅ |
 | `NUI.Checkbox`    | ✅ |
 | `NUI.Collapse`    | ✅ |
 | `NUI.Countdown`   | ✅ |
