@@ -61,7 +61,9 @@ import NUI.LoadingBar as LoadingBar
 import NUI.Marquee as Marquee
 import NUI.Mention as Mention
 import NUI.Menu as Menu
+import NUI.Message as Message
 import NUI.Modal as Modal
+import NUI.Notification as Notification
 import NUI.NumberAnimation as NumberAnimation
 import NUI.PageHeader as PageHeader
 import NUI.Pagination as Pagination
@@ -184,6 +186,36 @@ dtagsD =
 lbD : LoadingBar.Options msg
 lbD =
     LoadingBar.defaults
+
+
+messageD : Message.Options msg
+messageD =
+    Message.defaults
+
+
+messageI : Message.Item msg
+messageI =
+    Message.item
+
+
+messageS : Message.State msg
+messageS =
+    Message.init
+
+
+notificationD : Notification.Options msg
+notificationD =
+    Notification.defaults
+
+
+notificationI : Notification.Item msg
+notificationI =
+    Notification.item
+
+
+notificationS : Notification.State msg
+notificationS =
+    Notification.init
 
 
 diD : DynamicInput.InputOptions msg
@@ -710,6 +742,8 @@ body =
     , sliderSection
     , imageSection
     , imagePreviewSection
+    , messageSection
+    , notificationSection
     , modalSection
     , drawerSection
     , dialogSection
@@ -3385,6 +3419,200 @@ demoIcon =
                 []
             ]
         )
+
+
+{-| One static message demo cell: a fresh provider state in the given
+placement; the fixed container is pinned into the cell with `position:
+relative` (the LoadingBar demo's trick).
+-}
+messageState : Message.Placement -> List (Message.Item msg) -> Element msg
+messageState placement items =
+    modalHost []
+        (Message.view theme
+            { messageS
+                | placement = placement
+                , containerStyle = Just "position:relative;"
+                , items = items
+            }
+        )
+
+
+messageOf : String -> Message.Kind -> String -> Message.Item msg
+messageOf key kind content =
+    { messageI
+        | key = key
+        , options = { messageD | kind = kind, content = content }
+    }
+
+
+messageSection : Element msg
+messageSection =
+    section "Message"
+        "Naive UI's message service: one caller-owned `State` holds the provider props (`max` — `Just 0` is unlimited and evictions drop the oldest item instantly, the 3000ms default, merged `keepAliveOnHover`/`closable`, `placement`) plus the queue. `create` appends and stamps the enter phase; `destroy` stamps the leave phase (a no-op while already leaving, like upstream's `hide()` on a hidden message); `remove` splices once the leave has run — the caller owns the hide clock, so these demos are static entered states (`phase = Nothing`) with one mid-enter item. A close click emits `onClose` only — completing the close is the caller's `destroy`; a message's close is never vetoed."
+    <|
+        [ demoRow "Kinds (one container, stacked)"
+            [ messageState Message.Top
+                [ messageOf "d" Message.Default "A default message — no icon wrapper"
+                , messageOf "i" Message.Info "An info message"
+                , messageOf "s" Message.Success "A success message"
+                , messageOf "w" Message.Warning "A warning message"
+                , messageOf "e" Message.Error "An error message"
+                , messageOf "l" Message.Loading "A loading message — n-base-loading spinner"
+                ]
+            , messageState Message.BottomRight
+                [ messageOf "b1" Message.Info "Bottom-right placement"
+                , messageOf "b2" Message.Success "align-items flips to flex-end"
+                ]
+            ]
+        , demoRow "Closable (onClose fires; you destroy)"
+            [ messageState Message.Top
+                [ { messageI
+                    | key = "c1"
+                    , options =
+                        { messageD
+                            | kind = Message.Info
+                            , content = "Close me"
+                            , closable = Just True
+                            , onClose = Nothing
+                        }
+                  }
+                , { messageI
+                    | key = "c2"
+                    , options =
+                        { messageD
+                            | kind = Message.Success
+                            , content = "Also closable"
+                            , closable = Just True
+                        }
+                  }
+                ]
+            ]
+        , demoRow "Transition phases (caller clock)"
+            [ messageState Message.Top
+                [ messageOf "idle" Message.Info "Settled — no phase class"
+                , { messageI
+                    | key = "entering"
+                    , options = { messageD | kind = Message.Success, content = "Entering — fade-in-height-expand-enter-active" }
+                    , phase = Just I.EnterActive
+                  }
+                , { messageI
+                    | key = "leaving"
+                    , options = { messageD | kind = Message.Warning, content = "Leaving — fade-in-height-expand-leave-from" }
+                    , phase = Just I.LeaveFrom
+                  }
+                ]
+            ]
+        , demoRow "Custom icon + render (replaces the whole body)"
+            [ messageState Message.Top
+                [ { messageI
+                    | key = "icon"
+                    , options =
+                        { messageD
+                            | content = "Custom icon — the wrapper appears for a Default kind"
+                            , icon = Just (Element.text "✓")
+                        }
+                  }
+                , { messageI
+                    | key = "render"
+                    , options =
+                        { messageD
+                            | render =
+                                Just
+                                    [ Element.el
+                                        [ Element.htmlAttribute
+                                            (HA.attribute
+                                                "style"
+                                                "background:var(--n-color);box-shadow:var(--n-box-shadow);border-radius:3px;padding:10px 20px;color:var(--n-text-color)"
+                                            )
+                                        ]
+                                        (Element.text "render — no .n-message tree, no icon/content/close")
+                                    ]
+                        }
+                  }
+                ]
+            ]
+        ]
+
+
+{-| One static notification demo cell — the message demo's trick: a fresh
+provider state per cell, pinned into it with `position: relative`.
+-}
+notificationState : Notification.Placement -> List (Notification.Item msg) -> Element msg
+notificationState placement items =
+    modalHost []
+        (Notification.view theme
+            { notificationS
+                | placement = placement
+                , containerStyle = Just "position:relative;"
+                , items = items
+            }
+        )
+
+
+notificationOf : String -> String -> Notification.Kind -> Notification.Item msg
+notificationOf key title kind =
+    { notificationI
+        | key = key
+        , options = { notificationD | title = Just title, kind = kind }
+    }
+
+
+notificationSection : Element msg
+notificationSection =
+    section "Notification"
+        "Naive UI's notification service — the `NUI.Message` twin: one caller-owned `State` (provider props + queue) and pure transforms. Deltas: vars ride BOTH the wrapper and `n-notification`; `--n-icon-color` is emitted only for typed kinds (no `iconColorDefault` upstream); the default `scrollable` provider wraps the queue in an `n-scrollbar` tree (forced off for the `top`/`bottom` centers); the container gains a bare `transitioning` class while any item holds a phase; `content` renders in a `<pre>`; the close click emits `onClose` and the VETO is the caller not calling `destroy` (upstream's `false`/rejected-promise rule). These demos are static entered states — the caller owns the hide clock."
+    <|
+        [ demoRow "Kinds (top-right — scrollable, so the n-scrollbar tree shows)"
+            [ notificationState Notification.TopRight
+                [ notificationOf "d" "A default notification" Notification.Default
+                , notificationOf "i" "An info notification" Notification.Info
+                , notificationOf "s" "A success notification" Notification.Success
+                , notificationOf "w" "A warning notification" Notification.Warning
+                , notificationOf "e" "An error notification" Notification.Error
+                ]
+            ]
+        , demoRow "Closable + description / content-in-pre / meta + action"
+            [ notificationState Notification.TopRight
+                [ { notificationI
+                    | key = "full"
+                    , options =
+                        { notificationD
+                            | kind = Notification.Info
+                            , title = Just "Closable with the full tree"
+                            , description = Just "The description row"
+                            , content = Just "The content — upstream renders this in a <pre>"
+                            , meta = Just "the meta line"
+                            , action = Just (Element.text "action")
+                            , closable = Just True
+                        }
+                  }
+                , notificationOf "plain" "No avatar, no close — bare main" Notification.Default
+                ]
+            ]
+        , demoRow "Placements (top/bottom centers force the scrollbar off)"
+            [ notificationState Notification.TopLeft
+                [ notificationOf "tl" "Top-left — scrollable" Notification.Success ]
+            , notificationState Notification.Top
+                [ notificationOf "tc" "Top center — scrollable forced off (no scrollbar tree)" Notification.Warning ]
+            , notificationState Notification.BottomRight
+                [ notificationOf "br" "Bottom-right — align flips" Notification.Error ]
+            ]
+        , demoRow "Transition phases (caller clock) + the container's transitioning class"
+            [ notificationState Notification.TopRight
+                [ notificationOf "idle" "Settled — no phase class" Notification.Info
+                , { notificationI
+                    | key = "entering"
+                    , options = { notificationD | title = Just "Entering — notification-transition-enter-active", kind = Notification.Success }
+                    , phase = Just I.EnterActive
+                  }
+                , { notificationI
+                    | key = "leaving"
+                    , options = { notificationD | title = Just "Leaving — notification-transition-leave-from", kind = Notification.Warning }
+                    , phase = Just I.LeaveFrom
+                  }
+                ]
+            ]
+        ]
 
 
 {-| The caller-owned modal host: upstream teleports the fixed tree to `to`; here a

@@ -126,6 +126,13 @@ const targets = {
   '.n-dropdown': true,
   // The modal container carries the 4-var set (bezier/box-shadow/color/text).
   '.n-modal-container': true,
+  // The message wrapper carries the full kind-keyed --n-* var set (27 vars)
+  // plus the inline align-items.
+  '.n-message-wrapper': true,
+  // The notification wrapper carries the full --n-* set (31 vars for typed
+  // kinds; --n-icon-color drops for the default kind — no iconColorDefault
+  // upstream) plus the transition phase class when mid-window.
+  '.n-notification-wrapper': true,
   // The watermark pair carries no --n-* vars (the theme's single fontFamily
   // feeds the tile's font fallback, not a custom property) — only the bridge
   // is asserted, on both the container and the tiled overlay.
