@@ -67,21 +67,34 @@ The runtime is caller-owned (Modal/Slider precedent):
     `zoomOut`'s upstream dance (measure the rect at the new scale, clamp
     offsets, restore) is the caller's two-step: apply `zoomOut`,
     re-measure, then `derivedOffset` + write `zoom.offsetX/Y`.
-  - **The img style.** Upstream rewrites `style.cssText` wholesale
-    (`derivePreviewStyle`); `transformStyle` is the exact transform
-    fragment (raw floats — `String.fromFloat` ≡ `String(number)`) and the
-    view renders `cursor: grab`/`grabbing` around it in upstream order
-    (dragging: `transition: none` BEFORE the transform, else AFTER, and
-    only when the transition is suppressed). `previewedImgStyle` is the
-    controlled prefix (upstream `previewedImgProps.style`); pass keys
-    already kebab-cased.
+  - **The img style.** Upstream derives the style pack ONLY on interaction
+    (every zoom/rotate/resize/dblclick/drag handler calls
+    `derivePreviewStyle`; nothing derives on mount or on `show`), so a
+    freshly opened preview's img carries just `previewedImgProps.style` —
+    no inline cursor/transform. The port mirrors that: set `imgDerived`
+    (in every interaction handler, alongside the zoom/drag transforms) and
+    the full pack renders; before that, only the controlled pairs.
+    `transformStyle` is the exact transform fragment (raw floats —
+    `String.fromFloat` ≡ `String(number)`) and the pack renders
+    `cursor: grab`/`grabbing` in upstream order (dragging: `transition:
+    none` BEFORE the transform, else AFTER, and only when the transition
+    is suppressed). `previewedImgStyle` is the controlled prefix (upstream
+    `previewedImgProps.style`); pass keys already kebab-cased.
   - **Drag.** `moveStrategy` + `derivedOffset` port `getMoveStrategy` /
     `getDerivedOffset` (the viewport clamp); bind `onImgMousedown` and run
-    them in your update. `keepDragOffset` is simply "skip the `derivedOffset`
-    application on mouseup".
+    them in your update. `keepDragOffset` is simply "skip the
+    `derivedOffset` application on mouseup". Two upstream guards the seam
+    leaves to you: mousedown starts a drag only for the primary button
+    (`event.button !== 0` early-returns), and dragstart is ALWAYS
+    preventDefault-ed — guard both in your decoders (a custom
+    `Events.on` / `preventDefault` decoder via `previewedImgAttributes`,
+    since the plain `onImgMousedown` seam carries no button info).
   - **Keyboard.** Upstream binds `keydown` on `document`; bind it in your
     own runtime and feed `keyAction` (Space → preventDefault only, ←/→ →
-    prev/next, ↑/↓ → zoom in/out, Escape → close).
+    prev/next, ↑/↓ → zoom in/out, Escape → close). ←/→ fire the RAW
+    `onPrev`/`onNext` upstream — keyboard navigation does NOT reset
+    zoom/offset/rotate (only the toolbar switch buttons route through
+    `handleSwitch*`), so apply `switchReset` on the toolbar path only.
   - **`syncTransformOrigin`.** Measure the thumbnail's bounding-rect center
     and write it into `wrapperStyle` as `("transform-origin",
     "<tx>px <ty>px")` on enter/before-leave.
@@ -132,6 +145,7 @@ type alias Options msg =
     , showToolbar : Bool
     , zoom : Zoom
     , dragging : Bool
+    , imgDerived : Bool
     , imgTransition : Bool
     , overlayTransition : Maybe I.TransitionPhase
     , toolbarTransition : Maybe I.TransitionPhase
@@ -163,6 +177,7 @@ defaults =
     , showToolbar = True
     , zoom = zoom0
     , dragging = False
+    , imgDerived = False
     , imgTransition = True
     , overlayTransition = Nothing
     , toolbarTransition = Nothing
@@ -653,11 +668,13 @@ overlayEl : Options msg -> List (Element msg)
 overlayEl opts =
     if opts.show || leaving opts.overlayTransition then
         [ Element.el
-            [ I.classes
+            ([ I.classes
                 ("n-image-preview-overlay"
                     :: phaseClasses "fade-in-transition" opts.overlayTransition
                 )
-            ]
+             ]
+                ++ List.map Element.htmlAttribute (eventAttr "click" opts.onClose)
+            )
             Element.none
         ]
 
@@ -773,12 +790,19 @@ previewImg opts =
                         []
                )
             ++ List.map (\( k, v ) -> HA.style k v)
-                (imgStyle
-                    { dragging = opts.dragging
-                    , transition = opts.imgTransition
-                    , controlled = opts.previewedImgStyle
-                    , zoom = opts.zoom
-                    }
+                (if opts.imgDerived then
+                    imgStyle
+                        { dragging = opts.dragging
+                        , transition = opts.imgTransition
+                        , controlled = opts.previewedImgStyle
+                        , zoom = opts.zoom
+                        }
+
+                 else
+                    -- upstream derives only on interaction: a fresh preview's
+                    -- img carries just the controlled style (the spread
+                    -- `previewedImgProps.style`)
+                    opts.previewedImgStyle
                 )
             ++ eventAttr "dragstart" opts.onImgDragstart
         )

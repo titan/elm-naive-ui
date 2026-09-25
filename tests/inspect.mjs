@@ -8873,15 +8873,15 @@ dEq(
   String(previewToolbarIcons('live-preview-basic').length)
 )
 dEq(
-  'DOM: Preview img class + resting derivePreviewStyle bytes (grab, raw-float identity transform)',
-  'n-image-preview|cursor: grab; transform-origin: center; transform: translateX(0px) translateY(0px) rotate(0deg) scale(1);',
+  'DOM: Preview img at rest carries NO inline style (upstream derives only on interaction — fresh preview = spread controlled style, none here) + class',
+  'n-image-preview|',
   [
     previewImg('live-preview-basic').getAttribute('class'),
-    styleAt(previewImg('live-preview-basic'))
+    previewImg('live-preview-basic').getAttribute('style')
   ].join('|')
 )
 dEq(
-  'DOM: Preview dragging style — controlled prefix, grabbing, transition:none BEFORE the transform (dragging branch order)',
+  'DOM: Preview img once derived (imgDerived) — controlled prefix, grabbing, transition:none BEFORE the transform (dragging branch order)',
   'border: 8px solid white; cursor: grabbing; transition: none; transform-origin: center; transform: translateX(0px) translateY(0px) rotate(0deg) scale(1);|before',
   [
     styleAt(previewImg('live-preview-dragging')),
@@ -8890,6 +8890,18 @@ dEq(
       return s.indexOf('transition: none') < s.indexOf('transform:') ? 'before' : 'after/missing'
     })()
   ].join('|')
+)
+const pvCloseCount = () =>
+  (doc.getElementById('preview-close-count') || {}).textContent
+const pvBefore = Number(pvCloseCount())
+previewOverlay('live-preview-basic').dispatchEvent(
+  new window.MouseEvent('click', { bubbles: true, cancelable: true })
+)
+await new Promise((r) => setTimeout(r, 30))
+dEq(
+  'DOM: clicking the overlay dispatches onClose (upstream overlay onClick → close — S1 seam)',
+  String(pvBefore + 1),
+  pvCloseCount()
 )
 dEq(
   'DOM: Group toolbar with onPrev → 9 i.n-base-icon, first two are the prev/next pair (exact path bytes)',

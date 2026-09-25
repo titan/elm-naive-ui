@@ -41,12 +41,15 @@ Two url registries, byte-faithful to upstream's merged map:
     WINS over the registered map, and upstream throws if a child `n-image`
     registers anyway (a caller-side contract here — don't mix them).
   - `registered` — the `r`-scheme entries the child `n-image`s contribute,
-    as `(imageId, url)` pairs in registration order. Upstream's
-    `registerImageUrl` double-prefixes its `has('r' + sid)` check (always
-    false → every registration lands) and `unregisterPreviewUrl` deletes
-    only when the key is NOT present (never deletes) — both bugs are
-    unobservable in the pure model: you own the list, so registration is
-    append and unregistration is your filter.
+    as `(imageId, url)` pairs. Model it as upstream's keyed map: keep the
+    imageIds UNIQUE and let a later registration overwrite (upstream's
+    `registerImageUrl` double-prefixes its `has('r' + sid)` check, so the
+    `set` always runs — re-registration overwrites the url); and treat
+    unregistration as a no-op (upstream's `unregisterPreviewUrl` deletes
+    only when the key is NOT present, so it never deletes — unmounted
+    children stay walkable in the wrap space). The port does not dedupe
+    for you; duplicate ids would double-count in `imageIds` and skew the
+    walk's index space.
 
 Index walk (all pure, upstream bytes):
 
@@ -60,10 +63,13 @@ Index walk (all pure, upstream bytes):
     do both in your msg handler.
   - `currentId` / `currentUrl` read the merged registry.
 
-Prev/next wiring (upstream `handleSwitchPrev/Next` inside the preview):
-reset the zoom (`NUI.ImagePreview.switchReset`), then fire `go`. The
-`onPrev` / `onNext` msgs here are YOUR msgs that do both; `previewOptions`
-hands them to the preview unchanged.
+Prev/next wiring (upstream has TWO paths with different resets): the
+toolbar switch buttons route through `handleSwitchPrev/Next` — reset the
+zoom (`NUI.ImagePreview.switchReset`), then fire `go`. The document
+keyboard handlers (←/→) fire the RAW prev/next — `go` WITHOUT the reset.
+So the `onPrev` / `onNext` msgs here are YOUR toolbar msgs (reset + go);
+keep the keyboard path reset-free by mapping `NUI.ImagePreview.keyAction`
+Prev/Next to `go` only.
 
 `NUI.ImagePreview`'s `previewedImgProps` do not apply: in group mode
 upstream's preview gets no `imageContext` (the inject fails), so the img
@@ -100,6 +106,7 @@ type alias Options msg =
     , showToolbar : Bool
     , zoom : Preview.Zoom
     , dragging : Bool
+    , imgDerived : Bool
     , imgTransition : Bool
     , overlayTransition : Maybe I.TransitionPhase
     , toolbarTransition : Maybe I.TransitionPhase
@@ -121,6 +128,7 @@ defaults =
     , showToolbar = True
     , zoom = Preview.zoom0
     , dragging = False
+    , imgDerived = False
     , imgTransition = True
     , overlayTransition = Nothing
     , toolbarTransition = Nothing
@@ -326,6 +334,7 @@ previewOptions opts =
     , showToolbar = opts.showToolbar
     , zoom = opts.zoom
     , dragging = opts.dragging
+    , imgDerived = opts.imgDerived
     , imgTransition = opts.imgTransition
     , overlayTransition = opts.overlayTransition
     , toolbarTransition = opts.toolbarTransition

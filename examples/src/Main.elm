@@ -4164,6 +4164,7 @@ imagePreviewSection =
                         | show = True
                         , src = Just imageLogo
                         , zoom = { previewZoom0 | scale = 1.5, scaleExp = 1, rotate = 90 }
+                        , imgDerived = True
                         , previewedImgStyle = [ ( "border", "8px solid white" ) ]
                     }
                 )
@@ -4183,7 +4184,8 @@ imagePreviewSection =
                         | show = True
                         , src = Just imageLogo
                         , dragging = True
-                        , imgTransition = False
+                        , imgDerived = True
+                        , previewedImgStyle = [ ( "border", "8px solid white" ) ]
                     }
                 )
             ]

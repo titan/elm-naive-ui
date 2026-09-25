@@ -145,6 +145,7 @@ type Msg
     | DialogNegative
     | MenuExpandedKeys (List String)
     | SliderIndex Int
+    | PreviewClose
 
 
 {-| The model is a counter of dropdown `onSelect` / modal `onClose` / drawer
@@ -183,6 +184,9 @@ update msg count =
             count + 1
 
         SliderIndex _ ->
+            count + 1
+
+        PreviewClose ->
             count + 1
 
 
@@ -8681,6 +8685,7 @@ view count =
         , probeNodes
         , liveNodes
         , Html.div [ HA.id "dropdown-click-count" ] [ Html.text (String.fromInt count) ]
+        , Html.div [ HA.id "preview-close-count" ] [ Html.text (String.fromInt count) ]
         ]
 
 
@@ -10340,7 +10345,7 @@ liveNodes =
                         { previewD
                             | show = True
                             , src = Just "https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg"
-                            , onClose = Just NoOp
+                            , onClose = Just PreviewClose
                         }
                     )
                 , Element.el [ Element.htmlAttribute (HA.id "live-preview-dragging") ]
@@ -10349,6 +10354,7 @@ liveNodes =
                             | show = True
                             , src = Just "https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg"
                             , dragging = True
+                            , imgDerived = True
                             , previewedImgStyle = [ ( "border", "8px solid white" ) ]
                         }
                     )
