@@ -101,6 +101,7 @@ bridge, tests).
 | `NUI.Countdown`   | ✅ |
 | `NUI.Divider`     | ✅ |
 | `NUI.Dialog`      | ✅ |
+| `NUI.DialogProvider` | ✅ |
 | `NUI.Drawer`      | ✅ |
 | `NUI.Dropdown`    | ✅ |
 | `NUI.DynamicTags` | ✅ |
