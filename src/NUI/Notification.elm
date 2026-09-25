@@ -328,40 +328,22 @@ isLive it =
             True
 
 
-{-| Upstream's head walk: skip the leaving, destroy the first live one.
+{-| Upstream's head walk: skip the leaving, DESTROY the first live one —
+animated, exactly a `destroy` (upstream calls the env's `destroy()`; nothing
+is dropped instantly on this path).
 -}
 evictOldestLive : List (Item msg) -> List (Item msg)
 evictOldestLive items =
-    let
-        ( kept, tail ) =
-            spanLive items
-    in
-    case tail of
-        [] ->
-            kept
-
-        _ :: rest ->
-            kept ++ rest
-
-
-{-| Everything before the first live item, and the live item + the rest.
--}
-spanLive : List (Item msg) -> ( List (Item msg), List (Item msg) )
-spanLive items =
     case items of
         [] ->
-            ( [], [] )
+            []
 
         first :: rest ->
             if isLive first then
-                ( [], items )
+                hidePhase first :: rest
 
             else
-                let
-                    ( kept, tail ) =
-                        spanLive rest
-                in
-                ( first :: kept, tail )
+                first :: evictOldestLive rest
 
 
 {-| Upstream `info()` — `create` with the kind stamped.

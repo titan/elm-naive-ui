@@ -5421,6 +5421,11 @@ const nClassesOf = (el) =>
   el ? [...el.classList].filter((c) => c.startsWith('n-')) : null
 const nClassesStr = (el) => (nClassesOf(el) || []).join(' ')
 
+// Full class list — transition classes (fade-in-height-expand-* /
+// notification-transition-*) deliberately do NOT start with `n-`, so
+// nClassesOf filters them out.
+const fullClasses = (el) => (el ? el.className.split(/\s+/) : [])
+
 const DRAWER_LIGHT_STYLE =
   '--n-line-height:1.6' +
   ';--n-color:#fff' +
@@ -8916,6 +8921,125 @@ dEq(
   'DOM: Group preview img src = currentUrl after the walk (current=2 skipped the empty p1 — findNext truthiness through the DOM)',
   'https://www.naiveui.com/assets/naivelogo.93278402.svg',
   previewImg('live-preview-group').getAttribute('src')
+)
+
+// --- Message / Notification ------------------------------------------------
+// The service pair: container (fixed, per-placement class + --scrollable),
+// wrapper carrying the vars (message: 27; notification: 31 typed kinds on
+// wrapper AND n-notification), the icon-wrapper rule (default kind with no
+// custom icon → NO .n-message__icon even at showIcon), close buttons, the
+// <pre> content row, the notification container's bare `transitioning` class
+// while an item holds a phase, and the scrollbar tree (scrollable on — top /
+// bottom centers force it off). Close clicks emit the counters' msgs.
+const msgRoot = (id) => doc.querySelector('#' + id + ' .n-message-container')
+const msgWrappers = (id) => doc.querySelectorAll('#' + id + ' .n-message-wrapper')
+const msgIcons = (id) => doc.querySelectorAll('#' + id + ' .n-message__icon')
+const msgCloses = (id) => doc.querySelectorAll('#' + id + ' .n-message__close')
+const noteRoot = (id) => doc.querySelector('#' + id + ' .n-notification-container')
+const noteWrappers = (id) => doc.querySelectorAll('#' + id + ' .n-notification-wrapper')
+const noteBodies = (id) => doc.querySelectorAll('#' + id + ' .n-notification')
+dEq(
+  'DOM: Message container class exactly "n-message-container n-message-container--top" (no transitioning concept upstream)',
+  'n-message-container|n-message-container--top',
+  [
+    nClassesStr(msgRoot('live-message-basic')).split(' ')[0],
+    nClassesStr(msgRoot('live-message-basic')).split(' ')[1]
+  ].join('|')
+)
+dEq(
+  'DOM: Message wrapper carries the 27 --n-* vars (upstream Message.tsx cssVarsRef)',
+  '27',
+  String(countVars(msgWrappers('live-message-basic')[0]))
+)
+dEq(
+  'DOM: icon-wrapper rule — 3 messages render exactly 2 .n-message__icon (default kind + no custom icon = no wrapper, upstream spec "showIcon")',
+  '3|2',
+  [String(msgWrappers('live-message-basic').length), String(msgIcons('live-message-basic').length)].join('|')
+)
+dEq(
+  'DOM: closable message → .n-message__close present (upstream spec "provider closable"); the others none',
+  '1',
+  String(msgCloses('live-message-basic').length)
+)
+dEq(
+  'DOM: message phase classes land LAST on the wrapper (enter-active + leave-from windows driven by the caller clock)',
+  'fade-in-height-expand-transition-enter-active|fade-in-height-expand-transition-leave-from',
+  [
+    fullClasses(msgWrappers('live-message-phases')[0]).pop(),
+    fullClasses(msgWrappers('live-message-phases')[1]).pop()
+  ].join('|')
+)
+const msgCloseCount = () =>
+  (doc.getElementById('message-close-count') || {}).textContent
+const mcBefore = Number(msgCloseCount())
+msgCloses('live-message-basic')[0].dispatchEvent(
+  new window.MouseEvent('click', { bubbles: true, cancelable: true })
+)
+await new Promise((r) => setTimeout(r, 30))
+dEq(
+  'DOM: clicking the message close dispatches onClose only (fire-and-forget — completing the close is the caller destroy)',
+  String(mcBefore + 1),
+  msgCloseCount()
+)
+dEq(
+  'DOM: Notification container has --top-right + --scrollable (default scrollable provider) + the n-scrollbar tree present',
+  'true|true|1',
+  [
+    String(nClassesStr(noteRoot('live-notification-basic')).includes('n-notification-container--top-right')),
+    String(nClassesStr(noteRoot('live-notification-basic')).includes('n-notification-container--scrollable')),
+    String(doc.querySelectorAll('#live-notification-basic .n-scrollbar').length)
+  ].join('|')
+)
+dEq(
+  'DOM: Notification vars ride BOTH the wrapper and n-notification — 31 typed vars each (30 for the bare default kind)',
+  '31|31|30|30',
+  [
+    String(countVars(noteWrappers('live-notification-basic')[0])),
+    String(countVars(noteBodies('live-notification-basic')[0])),
+    String(countVars(noteWrappers('live-notification-basic')[1])),
+    String(countVars(noteBodies('live-notification-basic')[1]))
+  ].join('|')
+)
+dEq(
+  'DOM: --n-icon-color emitted only for the typed kind (no iconColorDefault upstream — the bare default drops the var)',
+  'true|false',
+  [
+    String((styleAt(noteBodies('live-notification-basic')[0]) || '').includes('--n-icon-color:')),
+    String((styleAt(noteBodies('live-notification-basic')[1]) || '').includes('--n-icon-color:'))
+  ].join('|')
+)
+dEq(
+  'DOM: content renders in a literal <pre> (upstream whitespace-significant row)',
+  'PRE',
+  (noteBodies('live-notification-basic')[0].querySelector('.n-notification-main__content') || {}).tagName || 'absent'
+)
+dEq(
+  'DOM: notification phase class on the wrapper + the container gains the bare `transitioning` class while an item holds a phase',
+  'notification-transition-enter-active|transitioning',
+  [
+    fullClasses(noteWrappers('live-notification-phases')[0]).pop(),
+    noteRoot('live-notification-phases').className.includes('transitioning') ? 'transitioning' : 'missing'
+  ].join('|')
+)
+dEq(
+  'DOM: top center placement — scrollbar FORCED off (no --scrollable class, no n-scrollbar tree)',
+  'false|0',
+  [
+    String(nClassesStr(noteRoot('live-notification-top')).includes('--scrollable')),
+    String(doc.querySelectorAll('#live-notification-top .n-scrollbar').length)
+  ].join('|')
+)
+const noteCloseCount = () =>
+  (doc.getElementById('notification-close-count') || {}).textContent
+const ncBefore = Number(noteCloseCount())
+noteBodies('live-notification-basic')[0].querySelector('.n-notification__close').dispatchEvent(
+  new window.MouseEvent('click', { bubbles: true, cancelable: true })
+)
+await new Promise((r) => setTimeout(r, 30))
+dEq(
+  'DOM: clicking the notification close dispatches onClose once (the veto is the caller NOT calling destroy — upstream false/reject rule)',
+  String(ncBefore + 1),
+  noteCloseCount()
 )
 
 // --- report -----------------------------------------------------------------

@@ -70,7 +70,9 @@ import NUI.LoadingBar as LoadingBar
 import NUI.Marquee as Marquee
 import NUI.Mention as Mention
 import NUI.Menu as Menu
+import NUI.Message as Message
 import NUI.Modal as Modal
+import NUI.Notification as Notification
 import NUI.NumberAnimation as NumberAnimation
 import NUI.PageHeader as PageHeader
 import NUI.Pagination as Pagination
@@ -146,6 +148,8 @@ type Msg
     | MenuExpandedKeys (List String)
     | SliderIndex Int
     | PreviewClose
+    | MessageClose
+    | NotificationClose
 
 
 {-| The model is a counter of dropdown `onSelect` / modal `onClose` / drawer
@@ -187,6 +191,12 @@ update msg count =
             count + 1
 
         PreviewClose ->
+            count + 1
+
+        MessageClose ->
+            count + 1
+
+        NotificationClose ->
             count + 1
 
 
@@ -4666,6 +4676,45 @@ previewKeyName key =
             "miss"
 
 
+
+{-
+   | The message/notification fixtures — the first service-style ports. The
+   | provider + queue is one caller-owned `State`; the pins below derive from
+   | upstream's spec bytes (Message.spec.tsx / Notification.spec.tsx) and the
+   | provider/environment loop, NOT from the port's output.
+-}
+
+
+messageD : Message.Options Msg
+messageD =
+    Message.defaults
+
+
+messageS : Message.State Msg
+messageS =
+    Message.init
+
+
+messageI : Message.Item Msg
+messageI =
+    Message.item
+
+
+noteD : Notification.Options Msg
+noteD =
+    Notification.defaults
+
+
+noteS : Notification.State Msg
+noteS =
+    Notification.init
+
+
+noteI : Notification.Item Msg
+noteI =
+    Notification.item
+
+
 checks : List Check
 checks =
     let
@@ -8654,6 +8703,181 @@ checks =
     , eq "preview cssVars = the image batch's five-var emission verbatim"
         imageVars
         previewVars
+
+    -- ===================================================================
+    -- Message / Notification — the first service-style ports. Upstream is an
+    -- imperative provider (message.create() → MessageReactive); the port is a
+    -- caller-owned `State` + pure `State -> State` transforms. Expectations
+    -- derived from MessageProvider/NotificationProvider/Environment bytes and
+    -- the upstream spec files, not from the port's output.
+    -- ===================================================================
+    -- message: create stamps the enter phase (upstream mounts its Transition
+    -- with appear — the FIRST paint already carries the enter-from class) --
+    , eq "message create stamps Just EnterFrom (upstream appear=true)"
+        [ Just Internal.EnterFrom ]
+        (Message.create "m1" { messageD | content = "Saved" } messageS
+            |> .items
+            |> List.map .phase
+        )
+    , eq "message create appends in order (the DOM order upstream renders)"
+        [ "m1", "m2" ]
+        (messageS
+            |> Message.create "m1" { messageD | content = "one" }
+            |> Message.create "m2" { messageD | content = "two" }
+            |> .items
+            |> List.map .key
+        )
+    , eq "message typed helpers stamp the kind AFTER the options (upstream create(content, { type: 'info', ...options }))"
+        Message.Info
+        (Message.info "k" { messageD | kind = Message.Error } messageS
+            |> .items
+            |> List.reverse
+            |> List.head
+            |> Maybe.map .options
+            |> Maybe.map .kind
+            |> Maybe.withDefault Message.Default
+        )
+
+    -- message: max eviction — upstream `if (max && list.length >= max)
+    -- shift()`: instant, no leave, NO callbacks on the evictee; count
+    -- includes leaving items; exactly one drop per create; Just 0 (falsy) is
+    -- unlimited --
+    , eq "message max: exactly one instant head-drop per create, count includes leaving items"
+        [ "m2", "m3", "m4" ]
+        ({ messageS
+            | max = Just 2
+            , items =
+                [ { messageI | key = "m1", phase = Just Internal.LeaveTo }
+                , { messageI | key = "m2" }
+                , { messageI | key = "m3" }
+                ]
+         }
+            |> Message.create "m4" messageD
+            |> .items
+            |> List.map .key
+        )
+    , eq "message max = Just 0 is UNLIMITED (JS truthiness — no eviction ever)"
+        3
+        ({ messageS | max = Just 0 }
+            |> Message.create "a" messageD
+            |> Message.create "b" messageD
+            |> Message.create "c" messageD
+            |> .items
+            |> List.length
+        )
+
+    -- message: destroy — upstream hide() on an already-hidden env is a true
+    -- no-op; resetting the ladder would restart the collapse (byte-visible) --
+    , eq "message destroy on an already-leaving item is a NO-OP (no ladder restart)"
+        (Just Internal.LeaveTo)
+        ({ messageS | items = [ { messageI | key = "m1", phase = Just Internal.LeaveTo } ] }
+            |> Message.destroy "m1"
+            |> .items
+            |> List.head
+            |> Maybe.map .phase
+            |> Maybe.withDefault Nothing
+        )
+    , eq "message destroy on an idle item stamps LeaveFrom; unknown key is a no-op"
+        ( [ Just Internal.LeaveFrom, Nothing ], [ "m1", "m2" ] )
+        ({ messageS | items = [ { messageI | key = "m1" }, { messageI | key = "m2" } ] }
+            |> Message.destroy "m1"
+            |> Message.destroy "zz"
+            |> (\s -> ( List.map .phase s.items, List.map .key s.items ))
+        )
+    , eq "message destroyAll: live items enter LeaveFrom, leaving ones keep their phase"
+        [ Just Internal.LeaveFrom, Just Internal.LeaveFrom, Just Internal.LeaveTo ]
+        ({ messageS
+            | items =
+                [ { messageI | key = "a" }
+                , { messageI | key = "b", phase = Just Internal.EnterTo }
+                , { messageI | key = "c", phase = Just Internal.LeaveTo }
+                ]
+         }
+            |> Message.destroyAll
+            |> .items
+            |> List.map .phase
+        )
+    , eq "message remove splices by key (upstream onInternalAfterLeave → splice — what empties the container)"
+        [ "m1", "m3" ]
+        ({ messageS | items = List.map (\k -> { messageI | key = k }) [ "m1", "m2", "m3" ] }
+            |> Message.remove "m2"
+            |> .items
+            |> List.map .key
+        )
+
+    -- message: the hide clock — upstream setHideTimeout guards `if
+    -- (duration)`, so Just 0 stays never and does NOT fall back to the
+    -- provider default --
+    , eq "message effectiveDuration: Nothing → provider default (3000); Just 0 → never (the falsy check beats the fallback)"
+        ( Just 3000, Just 0 )
+        ( Message.effectiveDuration { messageD | duration = Nothing } { messageS | duration = 3000 }
+        , Message.effectiveDuration { messageD | duration = Just 0 } { messageS | duration = 3000 }
+        )
+    , eq "message cssVars: the 27 wrapper vars (upstream Message.tsx cssVarsRef — same names for every kind, values kind-keyed)"
+        27
+        (List.length (Message.cssVarsFor Theme.default Message.Info))
+
+    -- ===================================================================
+    -- Notification — the message twin with byte-visible deltas.
+    -- ===================================================================
+    -- notification: max eviction DESTROYS (animated) the oldest LIVE item —
+    -- upstream walks the head, skips keys in leavingKeySet, calls its
+    -- destroy(); nothing is dropped instantly (the pure port always animates
+    -- — upstream's instant splice is a not-yet-mounted ref race) --
+    , eq "notification max: evicts the oldest live item ANIMATEDLY (LeaveFrom), new item still appended"
+        ( [ "m1", "m2", "m3" ], [ Just Internal.LeaveFrom, Nothing, Just Internal.EnterFrom ] )
+        ({ noteS
+            | max = Just 2
+            , items = [ { noteI | key = "m1" }, { noteI | key = "m2" } ]
+         }
+            |> Notification.create "m3" noteD
+            |> (\s -> ( List.map .key s.items, List.map .phase s.items ))
+        )
+
+    -- notification: max counts only LIVE items (leavingKeySet subtracted;
+    -- enter-phase items count — they are live) --
+    , eq "notification max counts only live items (a leaving item does not count toward max)"
+        [ "m1", "m2" ]
+        ({ noteS
+            | max = Just 1
+            , items = [ { noteI | key = "m1", phase = Just Internal.LeaveTo } ]
+         }
+            |> Notification.create "m2" noteD
+            |> .items
+            |> List.map .key
+        )
+    , eq "notification destroy no-op on leaving; destroyAll leaves already-leaving phases alone"
+        [ Just Internal.LeaveFrom, Just Internal.LeaveTo ]
+        ({ noteS | items = [ { noteI | key = "a" }, { noteI | key = "b", phase = Just Internal.LeaveTo } ] }
+            |> Notification.destroyAll
+            |> .items
+            |> List.map .phase
+        )
+
+    -- notification: NO provider duration (upstream notificationProviderProps
+    -- has none) — Nothing means never; the State arg is template symmetry --
+    , eq "notification effectiveDuration: the item's own duration ONLY — Nothing stays Nothing (no provider fallback)"
+        ( Nothing, Just 0, Just 4500 )
+        ( Notification.effectiveDuration noteD noteS
+        , Notification.effectiveDuration { noteD | duration = Just 0 } noteS
+        , Notification.effectiveDuration { noteD | duration = Just 4500 } noteS
+        )
+
+    -- notification: vars ride the wrapper AND n-notification;
+    -- --n-icon-color only for typed kinds (no iconColorDefault upstream —
+    -- Vue skips the undefined style) --
+    , eq "notification cssVars: 30 vars for the default kind, 31 once typed (--n-icon-color appears)"
+        ( 30, 31 )
+        ( List.length (Notification.cssVarsFor Theme.default Notification.Default)
+        , List.length (Notification.cssVarsFor Theme.default Notification.Info)
+        )
+    , eq "notification --n-icon-color per kind = the theme's typed iconColour (createKey('iconColor', type))"
+        ( [], [ ( "--n-icon-color", Theme.default.common.infoColor ) ] )
+        ( Notification.cssVarsFor Theme.default Notification.Default
+            |> List.filter (\( k, _ ) -> k == "--n-icon-color")
+        , Notification.cssVarsFor Theme.default Notification.Info
+            |> List.filter (\( k, _ ) -> k == "--n-icon-color")
+        )
     ]
 
 
@@ -8686,6 +8910,8 @@ view count =
         , liveNodes
         , Html.div [ HA.id "dropdown-click-count" ] [ Html.text (String.fromInt count) ]
         , Html.div [ HA.id "preview-close-count" ] [ Html.text (String.fromInt count) ]
+        , Html.div [ HA.id "message-close-count" ] [ Html.text (String.fromInt count) ]
+        , Html.div [ HA.id "notification-close-count" ] [ Html.text (String.fromInt count) ]
         ]
 
 
@@ -10371,6 +10597,101 @@ liveNodes =
                             , onPrev = Just NoOp
                             , onNext = Just NoOp
                             , onClose = Just NoOp
+                        }
+                    )
+
+                -- Message / Notification: static entered states + phase
+                -- windows (the caller owns the hide clock; the close buttons
+                -- emit the counters' msgs)
+                , Element.el [ Element.htmlAttribute (HA.id "live-message-basic") ]
+                    (Message.view Theme.default
+                        { messageS
+                            | items =
+                                [ { messageI
+                                    | key = "d"
+                                    , options = { messageD | content = "A default message — no icon wrapper" }
+                                  }
+                                , { messageI
+                                    | key = "i"
+                                    , options = { messageD | kind = Message.Info, content = "An info message" }
+                                  }
+                                , { messageI
+                                    | key = "c"
+                                    , options =
+                                        { messageD
+                                            | kind = Message.Success
+                                            , content = "Closable"
+                                            , closable = Just True
+                                            , onClose = Just MessageClose
+                                        }
+                                  }
+                                ]
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-message-phases") ]
+                    (Message.view Theme.default
+                        { messageS
+                            | items =
+                                [ { messageI
+                                    | key = "entering"
+                                    , options = { messageD | kind = Message.Info, content = "Entering" }
+                                    , phase = Just Internal.EnterActive
+                                  }
+                                , { messageI
+                                    | key = "leaving"
+                                    , options = { messageD | kind = Message.Warning, content = "Leaving" }
+                                    , phase = Just Internal.LeaveFrom
+                                  }
+                                ]
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-notification-basic") ]
+                    (Notification.view Theme.default
+                        { noteS
+                            | items =
+                                [ { noteI
+                                    | key = "full"
+                                    , options =
+                                        { noteD
+                                            | kind = Notification.Info
+                                            , title = Just "Full tree"
+                                            , description = Just "The description row"
+                                            , content = Just "Content in a pre"
+                                            , meta = Just "the meta line"
+                                            , action = Just (Element.text "action")
+                                            , closable = Just True
+                                            , onClose = Just NotificationClose
+                                        }
+                                  }
+                                , { noteI
+                                    | key = "bare"
+                                    , options = { noteD | title = Just "Bare — no avatar, no close" }
+                                  }
+                                ]
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-notification-phases") ]
+                    (Notification.view Theme.default
+                        { noteS
+                            | items =
+                                [ { noteI
+                                    | key = "entering"
+                                    , options = { noteD | title = Just "Entering", kind = Notification.Success }
+                                    , phase = Just Internal.EnterActive
+                                  }
+                                ]
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-notification-top") ]
+                    (Notification.view Theme.default
+                        { noteS
+                            | placement = Notification.Top
+                            , items =
+                                [ { noteI
+                                    | key = "tc"
+                                    , options = { noteD | title = Just "Top center", kind = Notification.Warning }
+                                  }
+                                ]
                         }
                     )
                 ]
