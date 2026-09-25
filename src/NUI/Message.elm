@@ -51,7 +51,10 @@ renders exactly the DOM the environments would show:
     `fade-in-height-expand-transition-enter-from` class). When the provider is
     at `max`, the OLDEST item is dropped from the state instantly — no leave
     phase, none of its callbacks fire (upstream `shift()` unmounts it
-    untransitioned). `max` follows JS truthiness: `Just 0` is UNLIMITED, and
+    untransitioned). `max` follows JS truthiness: `Just 0` and `Nothing` are
+    UNLIMITED (a negative `Just` would be truthy upstream — evicting on every
+    create — while the port never evicts for `n <= 0`; the same pathological
+    divergence noted on `NUI.Notification`), and
     the count includes items already leaving. Exactly one drop per create.
   - `info` / `success` / `warning` / `error` / `loading` — upstream's typed
     API: `create` with the kind stamped (`{ type: 'info', ...options }`).
@@ -454,7 +457,7 @@ messageNode state it =
     Element.row
         [ I.classes
             ([ "n-message"
-             , "n-message--" ++ kindClass it.options.kind
+             , "n-message--" ++ kindClass it.options.kind ++ "-type"
              ]
                 ++ I.classIf state.rtl "n-message--rtl"
             )
@@ -484,7 +487,7 @@ iconWrapper it =
             (Element.el
                 [ I.classes
                     [ "n-message__icon"
-                    , "n-message__icon--" ++ kindClass it.options.kind
+                    , "n-message__icon--" ++ kindClass it.options.kind ++ "-type"
                     ]
                 ]
                 (iconNode it.options)
@@ -949,7 +952,10 @@ kindSvg kind =
 svgIcon : String -> String -> Html.Html msg
 svgIcon viewBox d =
     Svg.node "svg"
-        [ HA.attribute "viewBox" viewBox ]
+        [ HA.attribute "viewBox" viewBox
+        , HA.attribute "version" "1.1"
+        , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
+        ]
         [ Svg.node "g"
             [ HA.attribute "stroke" "none"
             , HA.attribute "stroke-width" "1"
@@ -965,7 +971,11 @@ svgIcon viewBox d =
 closeIcon : Html.Html msg
 closeIcon =
     Svg.node "svg"
-        [ HA.attribute "viewBox" "0 0 12 12" ]
+        [ HA.attribute "viewBox" "0 0 12 12"
+        , HA.attribute "version" "1.1"
+        , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
+        , HA.attribute "aria-hidden" "true"
+        ]
         [ Svg.node "g"
             [ HA.attribute "stroke" "none"
             , HA.attribute "stroke-width" "1"
@@ -1019,7 +1029,7 @@ successPath =
 
 warningPath : String
 warningPath =
-    "M12,2 C17.523,2 22,6.478 22,12 C22,17.522 17.523,22 12,22 C6.477,22 2,17.522 2,12 C2,6.478 6.477,2 12,2 Z M12.0018002,15.0037242 C11.450254,15.0037242 11.0031376,15.4508407 11.0031376,16.0023869 C11.0031376,16.553933 11.450254,17.0010495 12.0018002,17.0010495 C12.5533463,17.0010495 13.0004628,16.553933 13.0004628,16.0023869 C13.0004628,15.4508407 12.5533463,15.0037242 12.0018002,15.0037242 Z M11.99964,7 C11.4868042,7.00018474 11.0642719,7.38637706 11.0066858,7.8837365 L11,8.00036004 L11.0018003,13.0012393 L11.00857,13.117858 C11.0665141,13.6151755 11.4893244,14.0010638 12.0021602,14.0008793 C12.5149968,14.0006946 12.9375283,13.6145023 12.9951144,13.1171428 L13.0018002,13.0005193 L13,7.99964009 L12.9932301,7.8830214 C12.9352861,7.38570354 12.5124757,6.99981552 11.99964,7 Z"
+    "M12,2 C17.523,2 22,6.478 22,12 C22,17.522 17.523,22 12,22 C6.477,22 2,17.522 2,12 C2,6.478 6.477,2 12,2 Z M12.0018002,15.0037242 C11.450254,15.0037242 11.0031376,15.4508407 11.0031376,16.0023869 C11.0031376,16.553933 11.450254,17.0010495 12.0018002,17.0010495 C12.5533463,17.0010495 13.0004628,16.553933 13.0004628,16.0023869 C13.0004628,15.4508407 12.5533463,15.0037242 12.0018002,15.0037242 Z M11.99964,7 C11.4868042,7.00018474 11.0642719,7.38637706 11.0066858,7.8837365 L11,8.00036004 L11.0018003,13.0012393 L11.00857,13.117858 C11.0665141,13.6151758 11.4893244,14.0010638 12.0021602,14.0008793 C12.514996,14.0006946 12.9375283,13.6145023 12.9951144,13.1171428 L13.0018002,13.0005193 L13,7.99964009 L12.9932303,7.8830214 C12.9352861,7.38570354 12.5124758,6.99981552 11.99964,7 Z"
 
 
 errorPath : String

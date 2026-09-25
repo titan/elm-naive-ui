@@ -3492,12 +3492,12 @@ messageSection =
                 [ messageOf "idle" Message.Info "Settled — no phase class"
                 , { messageI
                     | key = "entering"
-                    , options = { messageD | kind = Message.Success, content = "Entering — fade-in-height-expand-enter-active" }
+                    , options = { messageD | kind = Message.Success, content = "Entering — fade-in-height-expand-transition-enter-active" }
                     , phase = Just I.EnterActive
                   }
                 , { messageI
                     | key = "leaving"
-                    , options = { messageD | kind = Message.Warning, content = "Leaving — fade-in-height-expand-leave-from" }
+                    , options = { messageD | kind = Message.Warning, content = "Leaving — fade-in-height-expand-transition-leave-from" }
                     , phase = Just I.LeaveFrom
                   }
                 ]
@@ -3586,7 +3586,7 @@ notificationSection =
                             , closable = Just True
                         }
                   }
-                , notificationOf "plain" "No avatar, no close — bare main" Notification.Default
+                , notificationOf "plain" "No avatar — bare main (close renders: closable defaults true)" Notification.Default
                 ]
             ]
         , demoRow "Placements (top/bottom centers force the scrollbar off)"

@@ -54,7 +54,10 @@ renders exactly the DOM the environments would show:
     destroyed instead of dropped: it enters its leave ladder animated, exactly
     like a `destroy` (upstream's one instant-splice path is a Vue mount race
     for not-yet-mounted refs; the pure port always animates — documented
-    divergence). `max` follows JS truthiness: `Just 0` is UNLIMITED. Exactly
+    divergence). `max` follows JS truthiness: `Just 0` and `Nothing` are
+    UNLIMITED (upstream would also treat a negative `Just` as truthy and evict
+    on every create — the port never evicts for `n <= 0`, the one documented
+    divergence on that pathological input). Exactly
     one eviction per create.
   - `info` / `success` / `warning` / `error` — upstream's typed API: `create`
     with the kind stamped (there is no `loading` kind here, unlike message).
@@ -175,7 +178,8 @@ type Kind
 
 {-| One notification's options — upstream `NotificationOptions`. Text fields
 render only when `Just` AND non-empty (upstream's falsy check); `action` /
-`avatar` are the Element seams for the render-fn variants.
+`avatar` are the Element seams for the render-fn variants. `attributes` is a
+port-only seam (no upstream counterpart): extra attributes on the wrapper.
 -}
 type alias Options msg =
     { kind : Kind
@@ -312,6 +316,9 @@ create key options state =
 
 {-| Items not currently in a leave phase — upstream
 `list.length - leavingKeySet.size` (enter-phase items count: they are live).
+Exact for destroy-driven leaves: upstream's set only receives keys from the
+reactive `destroy()`, so items hidden by other paths still count as live
+until the after-leave splice.
 -}
 liveCount : List (Item msg) -> Int
 liveCount items =
@@ -509,13 +516,24 @@ itemNode theme state it =
     let
         vars =
             cssVarsFor theme it.options.kind
+
+        -- Upstream's env gate is `this.duration && this.keepAliveOnHover`
+        -- (JS truthiness): `Nothing` (undefined) AND `Just 0` are both falsy,
+        -- so neither arms the internal hover-pause pair.
+        hasDuration =
+            case effectiveDuration it.options state of
+                Just d ->
+                    d /= 0
+
+                Nothing ->
+                    False
     in
     Element.el
         ([ I.classes ([ "n-notification-wrapper" ] ++ phaseClasses it.phase)
          , I.cssVars vars
          ]
             ++ wrapperMouseAttrs it.options
-                { hasDuration = effectiveDuration it.options state /= Nothing
+                { hasDuration = hasDuration
                 , keepAlive = Maybe.withDefault state.keepAliveOnHover it.options.keepAliveOnHover
                 }
             ++ it.options.attributes
@@ -933,7 +951,10 @@ kindSvg kind =
 svgIcon : String -> String -> Html.Html msg
 svgIcon viewBox d =
     Svg.node "svg"
-        [ HA.attribute "viewBox" viewBox ]
+        [ HA.attribute "viewBox" viewBox
+        , HA.attribute "version" "1.1"
+        , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
+        ]
         [ Svg.node "g"
             [ HA.attribute "stroke" "none"
             , HA.attribute "stroke-width" "1"
@@ -949,7 +970,11 @@ svgIcon viewBox d =
 closeIcon : Html.Html msg
 closeIcon =
     Svg.node "svg"
-        [ HA.attribute "viewBox" "0 0 12 12" ]
+        [ HA.attribute "viewBox" "0 0 12 12"
+        , HA.attribute "version" "1.1"
+        , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
+        , HA.attribute "aria-hidden" "true"
+        ]
         [ Svg.node "g"
             [ HA.attribute "stroke" "none"
             , HA.attribute "stroke-width" "1"
@@ -977,7 +1002,7 @@ successPath =
 
 warningPath : String
 warningPath =
-    "M12,2 C17.523,2 22,6.478 22,12 C22,17.522 17.523,22 12,22 C6.477,22 2,17.522 2,12 C2,6.478 6.477,2 12,2 Z M12.0018002,15.0037242 C11.450254,15.0037242 11.0031376,15.4508407 11.0031376,16.0023869 C11.0031376,16.553933 11.450254,17.0010495 12.0018002,17.0010495 C12.5533463,17.0010495 13.0004628,16.553933 13.0004628,16.0023869 C13.0004628,15.4508407 12.5533463,15.0037242 12.0018002,15.0037242 Z M11.99964,7 C11.4868042,7.00018474 11.0642719,7.38637706 11.0066858,7.8837365 L11,8.00036004 L11.0018003,13.0012393 L11.00857,13.117858 C11.0665141,13.6151755 11.4893244,14.0010638 12.0021602,14.0008793 C12.5149968,14.0006946 12.9375283,13.6145023 12.9951144,13.1171428 L13.0018002,13.0005193 L13,7.99964009 L12.9932301,7.8830214 C12.9352861,7.38570354 12.5124757,6.99981552 11.99964,7 Z"
+    "M12,2 C17.523,2 22,6.478 22,12 C22,17.522 17.523,22 12,22 C6.477,22 2,17.522 2,12 C2,6.478 6.477,2 12,2 Z M12.0018002,15.0037242 C11.450254,15.0037242 11.0031376,15.4508407 11.0031376,16.0023869 C11.0031376,16.553933 11.450254,17.0010495 12.0018002,17.0010495 C12.5533463,17.0010495 13.0004628,16.553933 13.0004628,16.0023869 C13.0004628,15.4508407 12.5533463,15.0037242 12.0018002,15.0037242 Z M11.99964,7 C11.4868042,7.00018474 11.0642719,7.38637706 11.0066858,7.8837365 L11,8.00036004 L11.0018003,13.0012393 L11.00857,13.117858 C11.0665141,13.6151758 11.4893244,14.0010638 12.0021602,14.0008793 C12.514996,14.0006946 12.9375283,13.6145023 12.9951144,13.1171428 L13.0018002,13.0005193 L13,7.99964009 L12.9932303,7.8830214 C12.9352861,7.38570354 12.5124758,6.99981552 11.99964,7 Z"
 
 
 errorPath : String

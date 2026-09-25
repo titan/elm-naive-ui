@@ -8938,6 +8938,8 @@ const msgCloses = (id) => doc.querySelectorAll('#' + id + ' .n-message__close')
 const noteRoot = (id) => doc.querySelector('#' + id + ' .n-notification-container')
 const noteWrappers = (id) => doc.querySelectorAll('#' + id + ' .n-notification-wrapper')
 const noteBodies = (id) => doc.querySelectorAll('#' + id + ' .n-notification')
+// Existence probe: first match of `sel` under the live section `id`.
+const note0 = (sel, id) => Boolean(doc.querySelector('#' + id + ' ' + sel))
 dEq(
   'DOM: Message container class exactly "n-message-container n-message-container--top" (no transitioning concept upstream)',
   'n-message-container|n-message-container--top',
@@ -9040,6 +9042,36 @@ dEq(
   'DOM: clicking the notification close dispatches onClose once (the veto is the caller NOT calling destroy — upstream false/reject rule)',
   String(ncBefore + 1),
   noteCloseCount()
+)
+
+dEq(
+  'DOM: kind-modifier bytes — n-message--info-type on the body, n-message__icon--info-type / --success-type on the icon wrappers (the -type suffix the per-kind CSS colors key on)',
+  'true|true|true',
+  [
+    String(note0('.n-message--info-type', 'live-message-basic')),
+    String(note0('.n-message__icon--info-type', 'live-message-basic')),
+    String(note0('.n-message__icon--success-type', 'live-message-basic'))
+  ].join('|')
+)
+dEq(
+  'DOM: notification body modifiers — --closable + --show-avatar when closable/avatar, neither on the bare one (both props default-true paths)',
+  'true|true|false|false',
+  [
+    String(nClassesStr(noteBodies('live-notification-basic')[0]).includes('n-notification--closable')),
+    String(nClassesStr(noteBodies('live-notification-basic')[0]).includes('n-notification--show-avatar')),
+    String(nClassesStr(noteBodies('live-notification-basic')[1]).includes('n-notification--closable')),
+    String(nClassesStr(noteBodies('live-notification-basic')[1]).includes('n-notification--show-avatar'))
+  ].join('|')
+)
+dEq(
+  'DOM: message wrapper carries the inline align-items (upstream style array, first) — flex-start for the default top-right placement',
+  'flex-start',
+  styleAt(msgWrappers('live-message-basic')[0]).match(/align-items:\s*([^;"]+)/) ? styleAt(msgWrappers('live-message-basic')[0]).match(/align-items:\s*([^;"]+)/)[1].trim() : 'missing'
+)
+dEq(
+  'DOM: notification wrapper vars come FIRST in the style, then everything else (upstream merges cssVars then the rest)',
+  'true',
+  String((styleAt(noteWrappers('live-notification-basic')[0]) || '').trim().startsWith('--n-color:'))
 )
 
 // --- report -----------------------------------------------------------------

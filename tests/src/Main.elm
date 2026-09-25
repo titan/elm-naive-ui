@@ -8727,7 +8727,7 @@ checks =
             |> .items
             |> List.map .key
         )
-    , eq "message typed helpers stamp the kind AFTER the options (upstream create(content, { type: 'info', ...options }))"
+    , eq "message typed helpers stamp the kind AFTER the options (upstream create(content, { ...options, type: 'info' }))"
         Message.Info
         (Message.info "k" { messageD | kind = Message.Error } messageS
             |> .items
@@ -10665,7 +10665,11 @@ liveNodes =
                                   }
                                 , { noteI
                                     | key = "bare"
-                                    , options = { noteD | title = Just "Bare — no avatar, no close" }
+                                    , options =
+                                        { noteD
+                                            | title = Just "Bare — no avatar"
+                                            , closable = Just False
+                                        }
                                   }
                                 ]
                         }
