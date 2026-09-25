@@ -37,6 +37,7 @@ import NUI.Countdown as Countdown
 import NUI.Css as Css
 import NUI.Descriptions as Descriptions
 import NUI.Dialog as Dialog
+import NUI.DialogProvider as DialogProvider
 import NUI.Drawer as Drawer
 import NUI.DrawerContent as DrawerContent
 import NUI.Dropdown as Dropdown
@@ -4715,6 +4716,16 @@ noteI =
     Notification.item
 
 
+dgPD : DialogProvider.Item Msg
+dgPD =
+    DialogProvider.item
+
+
+dgPS : DialogProvider.State Msg
+dgPS =
+    DialogProvider.init
+
+
 checks : List Check
 checks =
     let
@@ -8878,6 +8889,94 @@ checks =
         , Notification.cssVarsFor Theme.default Notification.Info
             |> List.filter (\( k, _ ) -> k == "--n-icon-color")
         )
+
+    -- ===================================================================
+    -- Dialog service — the provider half (NDialogProvider + environments).
+    -- Upstream: a reactive dialogList; create appends keyed (internalAppear
+    -- mounts through the transition); hide() -> show = false; after-leave
+    -- splices by key. No clock, no max: a dialog lives until destroyed.
+    -- ===================================================================
+    , eq "dialog create appends keyed and stamps Just EnterFrom (upstream mounts with internalAppear)"
+        [ Just Internal.EnterFrom ]
+        (DialogProvider.create "d1" { dgD | content = Just (Element.text "Hi") } dgPS
+            |> .items
+            |> List.map .phase
+        )
+    , eq "dialog typed helper stamps kind AFTER the options (create({ ...options, type }))"
+        ( [ T.Info ], [ T.Error ] )
+        ( DialogProvider.info "d1" { dgD | kind = T.Error } dgPS
+            |> .items
+            |> List.map (.options >> .kind)
+        , DialogProvider.error "d1" { dgD | kind = T.Success } dgPS
+            |> .items
+            |> List.map (.options >> .kind)
+        )
+    , eq "dialog destroy on a mid-leave item does not restart the ladder (upstream hide() on show = false is a no-op)"
+        [ Just Internal.LeaveTo ]
+        ({ dgPS | items = [ { dgPD | key = "d1", phase = Just Internal.LeaveTo } ] }
+            |> DialogProvider.destroy "d1"
+            |> .items
+            |> List.map .phase
+        )
+    , eq "dialog destroyAll stamps the leave on every live item; already-leaving ones keep their phase"
+        [ Just Internal.LeaveFrom, Just Internal.LeaveFrom ]
+        (dgPS
+            |> DialogProvider.create "d1" dgD
+            |> DialogProvider.create "d2" dgD
+            |> DialogProvider.destroy "d2"
+            |> DialogProvider.destroyAll
+            |> .items
+            |> List.map .phase
+        )
+    , eq "dialog remove splices by key (upstream handleAfterLeave); an unknown key is a no-op"
+        ( [ "d2" ], [ "d1", "d2" ] )
+        ( dgPS
+            |> DialogProvider.create "d1" dgD
+            |> DialogProvider.create "d2" dgD
+            |> DialogProvider.remove "d1"
+            |> .items
+            |> List.map .key
+        , dgPS
+            |> DialogProvider.create "d1" dgD
+            |> DialogProvider.create "d2" dgD
+            |> DialogProvider.remove "nope"
+            |> .items
+            |> List.map .key
+        )
+    , eq "dialog view: an empty queue renders no trees (upstream renders a Fragment of environments)"
+        ( 0, 2 )
+        ( DialogProvider.view Theme.default dgPS |> List.length
+        , dgPS
+            |> DialogProvider.create "d1" dgD
+            |> DialogProvider.create "d2" dgD
+            |> DialogProvider.view Theme.default
+            |> List.length
+        )
+    , eq "dialog service kind keys the body --n-icon-color (upstream spec: info #2080f0, error #d03050)"
+        ( [ ( "--n-icon-color", Theme.default.common.infoColor ) ]
+        , [ ( "--n-icon-color", Theme.default.common.errorColor ) ]
+        )
+        ( case
+            DialogProvider.info "d1" { dgD | kind = T.Error } dgPS
+                |> .items
+          of
+            [ it ] ->
+                Dialog.cssVars Theme.default it.options
+                    |> List.filter (\( k, _ ) -> k == "--n-icon-color")
+
+            _ ->
+                []
+        , case
+            DialogProvider.error "d1" { dgD | kind = T.Success } dgPS
+                |> .items
+          of
+            [ it ] ->
+                Dialog.cssVars Theme.default it.options
+                    |> List.filter (\( k, _ ) -> k == "--n-icon-color")
+
+            _ ->
+                []
+        )
     ]
 
 
@@ -10697,6 +10796,71 @@ liveNodes =
                                   }
                                 ]
                         }
+                    )
+
+                -- Dialog service: the provider renders a Fragment — each item
+                -- is one full modal tree (container > mask + body-wrapper >
+                -- scrollbar > .n-dialog.n-modal).
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-basic") ]
+                    (Element.column []
+                        (DialogProvider.view Theme.default
+                            { dgPS
+                                | items =
+                                    [ { dgPD
+                                        | key = "d1"
+                                        , zIndex = Just 2000
+                                        , options =
+                                            { dgD
+                                                | kind = T.Warning
+                                                , title = Just (Element.text "Delete file?")
+                                                , content = Just (Element.text "A settled dialog — no phase classes anywhere.")
+                                                , positiveText = Just "OK"
+                                                , negativeText = Just "Cancel"
+                                            }
+                                      }
+                                    ]
+                            }
+                        )
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-phases") ]
+                    (Element.column []
+                        (DialogProvider.view Theme.default
+                            { dgPS
+                                | items =
+                                    [ { dgPD
+                                        | key = "d2"
+                                        , phase = Just Internal.EnterActive
+                                        , zIndex = Just 2000
+                                        , options = { dgD | kind = T.Info, content = Just (Element.text "Entering") }
+                                      }
+                                    , { dgPD
+                                        | key = "d3"
+                                        , phase = Just Internal.LeaveFrom
+                                        , zIndex = Just 2001
+                                        , options = { dgD | kind = T.Error, content = Just (Element.text "Leaving") }
+                                      }
+                                    ]
+                            }
+                        )
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-dialog-style") ]
+                    (Element.column []
+                        (DialogProvider.view Theme.default
+                            { dgPS
+                                | items =
+                                    [ { dgPD
+                                        | key = "d4"
+                                        , zIndex = Just 2000
+                                        , options =
+                                            { dgD
+                                                | kind = T.Warning
+                                                , content = Just (Element.text "The style fragment lands after the vars.")
+                                                , style = Just "color: rgb(79, 178, 51);"
+                                            }
+                                      }
+                                    ]
+                            }
+                        )
                     )
                 ]
             )

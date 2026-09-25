@@ -9074,6 +9074,58 @@ dEq(
   String((styleAt(noteWrappers('live-notification-basic')[0]) || '').trim().startsWith('--n-color:'))
 )
 
+// --- Dialog service ---------------------------------------------------------
+// NDialogProvider renders a Fragment of environments — no container element.
+// Each item IS one full modal tree: n-modal-container > n-modal-mask +
+// n-modal-body-wrapper > scrollbar (n-modal-scroll-content) > .n-dialog.n-modal.
+// One phase clock drives BOTH transitions: the mask runs fade-in-transition-*,
+// the dialog body fade-in-scale-up-transition-* (phase class LAST on the root).
+const dlgContainers = (id) => doc.querySelectorAll('#' + id + ' .n-modal-container')
+const dlgMaskOf = (id, i) => doc.querySelectorAll('#' + id + ' .n-modal-mask')[i]
+const dlgBodyOf = (id, i) => doc.querySelectorAll('#' + id + ' .n-dialog')[i]
+
+dEq(
+  'DOM: DialogProvider settled queue — one bare n-modal-container per item',
+  '1|n-modal-container',
+  [ String(dlgContainers('live-dialog-basic').length),
+    nClassesStr(dlgContainers('live-dialog-basic')[0]) ].join('|')
+)
+dEq(
+  'DOM: settled dialog mask has no phase classes',
+  'n-modal-mask',
+  nClassesStr(dlgMaskOf('live-dialog-basic', 0))
+)
+dEq(
+  'DOM: dialog service body root — n-dialog, default modifiers, then n-modal prepended before the (empty) phase slot; raw last class stays n-modal',
+  'n-dialog n-dialog--closable n-dialog--icon-left n-modal|n-modal',
+  [ nClassesStr(dlgBodyOf('live-dialog-basic', 0)),
+    fullClasses(dlgBodyOf('live-dialog-basic', 0)).pop() ].join('|')
+)
+dTrue(
+  'DOM: the modal shell around the service dialog — aria-modal on the body, scroll content present in the container',
+  dlgBodyOf('live-dialog-basic', 0).getAttribute('aria-modal') === 'true' &&
+    !!dlgContainers('live-dialog-basic')[0].querySelector('.n-modal-scroll-content')
+)
+dEq(
+  'DOM: one clock drives both transitions — mask fade-in-transition-*, body fade-in-scale-up-transition-* (entering + leaving items)',
+  'fade-in-transition-enter-active|fade-in-scale-up-transition-enter-active|fade-in-transition-leave-from|fade-in-scale-up-transition-leave-from',
+  [ fullClasses(dlgMaskOf('live-dialog-phases', 0)).pop(),
+    fullClasses(dlgBodyOf('live-dialog-phases', 0)).pop(),
+    fullClasses(dlgMaskOf('live-dialog-phases', 1)).pop(),
+    fullClasses(dlgBodyOf('live-dialog-phases', 1)).pop() ].join('|')
+)
+dTrue(
+  'DOM: caller z-index lands on the container style; the env style fragment lands on .n-dialog after the vars (upstream spec: toContain "color: rgb(79, 178, 51);")',
+  /z-index:\s*2000/.test(styleAt(dlgContainers('live-dialog-basic')[0])) &&
+    /z-index:\s*2001/.test(styleAt(dlgContainers('live-dialog-phases')[1])) &&
+    styleAt(dlgBodyOf('live-dialog-style', 0)).startsWith('--n-') &&
+    styleAt(dlgBodyOf('live-dialog-style', 0)).includes('color: rgb(79, 178, 51);')
+)
+dTrue(
+  'DOM: the service kind keys the body vars — warning --n-icon-color is the upstream spec byte #f0a020',
+  styleAt(dlgBodyOf('live-dialog-style', 0)).includes('--n-icon-color:#f0a020')
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

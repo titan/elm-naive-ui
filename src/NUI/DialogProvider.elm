@@ -1,33 +1,45 @@
 module NUI.DialogProvider exposing
-    ( Item, State, create, destroy, destroyAll, error, info, init, item
-    , remove, success, view, warning
+    ( Item
+    , State
+    , create
+    , destroy
+    , destroyAll
+    , error
+    , info
+    , init
+    , item
+    , remove
+    , success
+    , view
+    , warning
     )
 
 {-| Naive UI's dialog service (upstream `NDialogProvider` + `NDialogEnvironment`
-+ `useDialog()`): one caller-owned `State` holds the queue; the transforms are
-the provider API; each item renders the full `NModal` shell around its
-`NUI.Dialog` body via `NUI.Modal.view`'s `Dialog` preset.
 
-    div.n-modal-container (4 modal vars [+ z-index])     — per item, no shared
-      ├─ div.n-modal-mask (fade-in-transition phase)       container upstream:
-      └─ div.n-modal-body-wrapper                          the provider renders
-          └─ n-scrollbar > .n-modal-scroll-content         a Fragment
-              └─ div.n-dialog.n-modal [phase class LAST]
-                  (the NUI.Dialog body, 28 vars, aria-modal)
+  - `useDialog()`): one caller-owned `State` holds the queue; the transforms are
+    the provider API; each item renders the full `NModal` shell around its
+    `NUI.Dialog` body via `NUI.Modal.view`'s `Dialog` preset.
+
+    div.n-modal-container (4 modal vars [+ z-index]) — per item, no shared
+    ├─ div.n-modal-mask (fade-in-transition phase) container upstream:
+    └─ div.n-modal-body-wrapper the provider renders
+    └─ n-scrollbar > .n-modal-scroll-content a Fragment
+    └─ div.n-dialog.n-modal [phase class LAST]
+    (the NUI.Dialog body, 28 vars, aria-modal)
 
     import NUI.Dialog as Dialog
     import NUI.DialogProvider as DialogProvider
     import NUI.Theme as Theme
 
     state =
-        DialogProvider.info "d1"
-            { Dialog.defaults
-                | kind = T.Warning
-                , title = Just (Element.text "Delete")
-                , content = Just (Element.text "Once deleted, gone.")
-                , positiveText = Just "Delete"
-            }
-            DialogProvider.init
+    DialogProvider.info "d1"
+    { Dialog.defaults
+    | kind = T.Warning
+    , title = Just (Element.text "Delete")
+    , content = Just (Element.text "Once deleted, gone.")
+    , positiveText = Just "Delete"
+    }
+    DialogProvider.init
 
     -- wrap the fragment at the call site:
     Element.column [] (DialogProvider.view Theme.default state)
@@ -52,7 +64,7 @@ service pattern, over the `NUI.Modal` shell contract):
     `false` (`Promise.resolve(cb).then(r => r === false || hide())`). Here
     `onPositiveClick`/`onNegativeClick`/`onClose` are plain msgs on the body
     options; completing a close is the caller calling `destroy` — the veto is
-    *not* calling it. The shell-level runtime (`maskClosable`/`onMaskClick`
+    _not_ calling it. The shell-level runtime (`maskClosable`/`onMaskClick`
     outside-click, `closeOnEsc`/`onEsc`, `autoFocus`/`trapFocus`,
     `blockScroll`, drag, mouse `transformOrigin`) is `NUI.Modal`-layer caller
     runtime by that module's contract (its mask is inert and `aria-hidden`).
