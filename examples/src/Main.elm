@@ -28,6 +28,7 @@ import NUI.Countdown as Countdown
 import NUI.Css as Css
 import NUI.Descriptions as Descriptions
 import NUI.Dialog as Dialog
+import NUI.DialogProvider as DialogProvider
 import NUI.Divider as Divider
 import NUI.Drawer as Drawer
 import NUI.DrawerContent as DrawerContent
@@ -359,6 +360,14 @@ drawerContentD =
 dialogD : Dialog.Options msg
 dialogD =
     Dialog.defaults
+
+
+dialogPI =
+    DialogProvider.item
+
+
+dialogPS =
+    DialogProvider.init
 
 
 avD : Avatar.Options msg
@@ -3888,10 +3897,16 @@ drawerSection =
         ]
 
 
+dialogState : List (DialogProvider.Item msg) -> Element msg
+dialogState items =
+    modalHost []
+        (Element.column [] (DialogProvider.view theme { dialogPS | items = items }))
+
+
 dialogSection : Element msg
 dialogSection =
     section "Dialog"
-        "A pure body component (upstream `NDialog`) — the `.n-dialog` card, never a mask or container. Standalone here, and as Modal's `dialog`/`confirm` preset bodies (the preset adds `n-modal` + `aria-modal`, phase class last). Composed actions (negative ghost/small first, positive small + kind-derived + loading), the kind→ icon/type system, icon-top placement, and the caller-owned runtime: the `useDialog` queue, close gating, mask/esc are yours (see Modal)."
+        "A pure body component (upstream `NDialog`) — the `.n-dialog` card, never a mask or container. Standalone here, and as Modal's `dialog`/`confirm` preset bodies (the preset adds `n-modal` + `aria-modal`, phase class last). Composed actions (negative ghost/small first, positive small + kind-derived + loading), the kind→ icon/type system, icon-top placement, and the caller-owned runtime: the `useDialog` queue is ported as `NUI.DialogProvider` (fixed queues below — one caller-owned `State`, pure transforms, no clock: dialogs persist until destroyed), while close gating, mask/esc stay yours (see Modal)."
     <|
         [ demoRow "Kinds (bare body — the icon/type system)"
             [ cell
@@ -3949,6 +3964,50 @@ dialogSection =
                         }
                     )
                 )
+            ]
+        , demoRow "useDialog service (NUI.DialogProvider — fixed queues)"
+            [ dialogState
+                [ { dialogPI
+                    | key = "d1"
+                    , zIndex = Just 2000
+                    , options =
+                        { dialogD
+                            | kind = T.Warning
+                            , title = Just (Element.text "Delete file?")
+                            , content = Just (Element.text "A settled dialog — phase Nothing; the caller allocated z-index 2000.")
+                            , positiveText = Just "OK"
+                            , negativeText = Just "Cancel"
+                        }
+                  }
+                ]
+            , dialogState
+                [ { dialogPI
+                    | key = "d2"
+                    , phase = Just I.EnterActive
+                    , zIndex = Just 2000
+                    , options =
+                        { dialogD
+                            | kind = T.Info
+                            , title = Just (Element.text "Entering")
+                            , content = Just (Element.text "Mid-enter — the mask fades in, the body scales up from 0.5.")
+                            , positiveText = Just "OK"
+                            , negativeText = Just "Cancel"
+                        }
+                  }
+                , { dialogPI
+                    | key = "d3"
+                    , phase = Just I.LeaveActive
+                    , zIndex = Just 2001
+                    , options =
+                        { dialogD
+                            | kind = T.Error
+                            , title = Just (Element.text "Leaving")
+                            , content = Just (Element.text "Mid-leave — destroy stamped LeaveFrom; remove splices on after-leave.")
+                            , positiveText = Just "OK"
+                            , negativeText = Just "Cancel"
+                        }
+                  }
+                ]
             ]
         , demoRow "icon-top, bordered, custom action"
             [ cell

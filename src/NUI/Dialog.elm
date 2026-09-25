@@ -68,7 +68,10 @@ emitted (house rule). `titleClass/titleStyle/…` pairs collapse to
 `*Attributes` lists — note the style asymmetry: elm-ui layout attributes
 (`Element.width`, `Element.padding`, …) land as elm-ui classes on the node,
 NOT as CSS `style`; only raw `HA.attribute "style"` (or `I.cssVars`)
-reaches the upstream `titleStyle/contentStyle/actionStyle` channel. The
+reaches the upstream `titleStyle/contentStyle/actionStyle` channel. The root
+`style` option (the env's `style`/`internalStyle`, upstream's fallthrough)
+has its own `style : Maybe String` field — merged into the one root style
+attribute after the vars, never a second attribute. The
 close is the ported `n-base-close` **classes-only** (its structure CSS is in
 the generated sheet; dialog's cssr positions it — no `--absolute`, sized by
 `--n-close-size`), `closeFocusable` driving its tabindex (0 vs −1).
@@ -122,6 +125,7 @@ type alias Options msg =
     , onClose : Maybe msg
     , extraClasses : List String
     , attributes : List (Element.Attribute msg)
+    , style : Maybe String
     }
 
 
@@ -152,6 +156,7 @@ defaults =
     , onClose = Nothing
     , extraClasses = []
     , attributes = []
+    , style = Nothing
     }
 
 
@@ -252,7 +257,7 @@ view : Theme -> Options msg -> Element msg
 view theme opts =
     Element.column
         ([ I.classes (rootClasses opts ++ opts.extraClasses)
-         , I.cssVars (cssVars theme opts)
+         , rootStyleAttr theme opts
          , Element.htmlAttribute (HA.attribute "role" "dialog")
          ]
             ++ opts.attributes
@@ -264,6 +269,26 @@ view theme opts =
             , Just (contentNode opts)
             , actionNode theme opts
             ]
+        )
+
+
+{-| The root `style` attribute: the 28 custom properties, then the caller's
+`style` fragment verbatim (upstream's `style`/`internalStyle` option falls
+through onto `.n-dialog` — Vue merges it into the same attribute after the
+vars; the spec pins `color: rgb(79, 178, 51);` containment). One attribute:
+a second `style` attribute would clobber the vars in the DOM.
+-}
+rootStyleAttr : Theme -> Options msg -> Element.Attribute msg
+rootStyleAttr theme opts =
+    Element.htmlAttribute
+        (HA.attribute "style"
+            (case opts.style of
+                Just fragment ->
+                    I.renderVars (cssVars theme opts) ++ ";" ++ fragment
+
+                Nothing ->
+                    I.renderVars (cssVars theme opts)
+            )
         )
 
 

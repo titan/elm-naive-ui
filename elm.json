@@ -25,6 +25,7 @@
     "NUI.Css",
     "NUI.Descriptions",
     "NUI.Dialog",
+    "NUI.DialogProvider",
     "NUI.Divider",
     "NUI.Drawer",
     "NUI.DrawerContent",
