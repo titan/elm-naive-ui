@@ -487,5 +487,20 @@ export const components = {
       'notification/src/styles/rtl.cssr.ts'
     ],
     theme: 'notification/styles/light.ts'
+  },
+  'data-table': {
+    // Whole .n-data-table family in one cssr: root + wrapper + base-table
+    // (+ --empty/--flex-height layout overrides), th/td/tr/thead/tbody rows,
+    // sorter/filter/expand-trigger/resize-button/selection internals,
+    // __pagination + loading-wrapper + empty nodes, the insideModal/
+    // insidePopover var re-pointing blocks, + rtl.cssr (--rtl). Peer
+    // components (scrollbar/checkbox/radio/dropdown/popover/pagination/
+    // ellipsis/empty/button) and internals (loading/icon) ride their own
+    // chunks already shipped.
+    cssr: [
+      'data-table/src/styles/index.cssr.ts',
+      'data-table/src/styles/rtl.cssr.ts'
+    ],
+    theme: 'data-table/styles/light.ts'
   }
 }
