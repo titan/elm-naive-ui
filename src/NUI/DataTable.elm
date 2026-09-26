@@ -97,6 +97,26 @@ Divergences (documented):
     `DataTable.renderSorter` component prop) and `customNextSortOrder` have
     no Elm surface: the sort button always renders the base icon span and
     the click cycle is fixed `false → descend → ascend`.
+  - **One sorter-change channel.** Upstream's `doUpdateSorter` fires
+    `'onUpdate:sorter'`, then `onUpdateSorter`, then the deprecated
+    `onSorterChange`, and the component exposes imperative
+    `sort(columnKey, order)` / `clearSorter()` methods; the port carries
+    `onSorterChange` only — the imperative surface is the caller applying
+    the exposed pure `createNextSorter` / `deriveNextSorter` (empty key
+    ≙ `clearSorter`).
+  - **`column.cellProps` is not modelled.** Upstream's
+    `CommonColumnInfo.cellProps` resolves per-cell class / style / attrs
+    onto every td of the column (`resolvedCellProps`); the field is
+    absent — extend `Column` when a batch needs it.
+  - **`upsertSortState` replaces every same-key state.** Upstream's
+    `updateSortStatesByNewSortState` replaces the FIRST matching index
+    only; reachable only with caller-authored duplicate keys in
+    `sortStates` / columns (`defaultSortStates` / `deriveNextSorter`
+    never produce duplicates).
+  - **`getSortFunction` omits upstream's truthy-`columnKey` gate** on the
+    default-sorter branch (`columnKey &&`): a `""`-keyed `SorterDefault`
+    column diverges (upstream ties through `row['']` being undefined;
+    the port sorts by the accessor) — pathological.
   - **An ordinal `compare` stands in for `localeCompare`** in the default
     sorter (`sortValueCompare`) — Elm has no `String.compare` / ICU
     collation, so string ordering is by code point.
