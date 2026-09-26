@@ -9126,6 +9126,146 @@ dTrue(
   styleAt(dlgBodyOf('live-dialog-style', 0)).includes('--n-icon-color:#f0a020')
 )
 
+// --- Data table (batch 1) ---------------------------------------------------
+// Core static render (DataTable.tsx :493-510 root + MainTable/Body/Header
+// basic path): root class order, the mergedBottomBordered rule, size-keyed
+// vars, the single-table headerInBody shape, th/td class+style byte order,
+// colgroup col styles, striped parity, the empty restructure.
+const dtRoot = (id) => doc.querySelector('#' + id + ' .n-data-table')
+const dtTable = (id) => doc.querySelector('#' + id + ' table.n-data-table-table')
+const dtThs = (id) => doc.querySelectorAll('#' + id + ' .n-data-table-th')
+const dtTrs = (id) => doc.querySelectorAll('#' + id + ' .n-data-table-tbody .n-data-table-tr')
+const dtTds = (id) => doc.querySelectorAll('#' + id + ' .n-data-table-td')
+const dtCols = (id) => doc.querySelectorAll('#' + id + ' colgroup col')
+const dtScrollbar = (id) => doc.querySelector('#' + id + ' .n-data-table-base-table-body')
+const dtContent = (id) => doc.querySelector('#' + id + ' .n-scrollbar-content')
+
+dEq(
+  'DOM: dt root default — base + --bordered + --single-line, byte order (DataTable.tsx class array)',
+  'n-data-table n-data-table--bordered n-data-table--single-line',
+  nClassesStr(dtRoot('live-data-table-basic'))
+)
+dEq(
+  'DOM: dt root bordered=false — --bottom-bordered lights up ONLY unbordered (mergedBottomBordered :98-107)',
+  'n-data-table n-data-table--bottom-bordered n-data-table--single-line',
+  nClassesStr(dtRoot('live-data-table-noborder'))
+)
+dEq(
+  'DOM: dt root singleLine=false + singleColumn=true — no --single-line, --single-column slots after it',
+  'n-data-table n-data-table--bordered n-data-table--single-column',
+  nClassesStr(dtRoot('live-data-table-single'))
+)
+dEq(
+  'DOM: dt root empty data — --empty appended last (paginated length 0)',
+  'n-data-table n-data-table--bordered n-data-table--single-line n-data-table--empty',
+  nClassesStr(dtRoot('live-data-table-empty'))
+)
+dTrue(
+  'DOM: dt root carries the 47 vars (Medium); the size keys font + paddings',
+  countVars(dtRoot('live-data-table-basic')) === 47 &&
+    styleAt(dtRoot('live-data-table-basic')).includes('--n-font-size:14px') &&
+    styleAt(dtRoot('live-data-table-basic')).includes('--n-th-padding:12px') &&
+    styleAt(dtRoot('live-data-table-basic')).includes('--n-td-padding:12px')
+)
+dTrue(
+  'DOM: dt Small keys the 8px th/td paddings (font stays 14px)',
+  styleAt(dtRoot('live-data-table-small')).includes('--n-th-padding:8px') &&
+    styleAt(dtRoot('live-data-table-small')).includes('--n-td-padding:8px') &&
+    styleAt(dtRoot('live-data-table-small')).includes('--n-font-size:14px')
+)
+dTrue(
+  'DOM: dt wrapper chain — wrapper > base-table; headerInBody: ONE table, no base-table-header without maxHeight',
+  doc.querySelector('#live-data-table-basic .n-data-table-wrapper .n-data-table-base-table') !== null &&
+    doc.querySelectorAll('#live-data-table-basic .n-data-table-base-table-header').length === 0 &&
+    doc.querySelectorAll('#live-data-table-basic table').length === 1
+)
+dEq(
+  'DOM: dt body scrollbar — the fallthrough class lands after n-scrollbar (mergeProps)',
+  'n-scrollbar n-data-table-base-table-body',
+  nClassesStr(dtScrollbar('live-data-table-basic'))
+)
+dTrue(
+  'DOM: dt scrollbar content — minWidth 100% (formatLength(scrollX) || 100% with no scrollX)',
+  styleAt(dtContent('live-data-table-basic')).includes('min-width: 100%')
+)
+dEq(
+  'DOM: dt table — class + inline table-layout auto; NO width/minWidth on the body table',
+  'n-data-table-table|table-layout:auto',
+  [nClassesStr(dtTable('live-data-table-basic')), styleAt(dtTable('live-data-table-basic'))].join('|')
+)
+dEq(
+  'DOM: dt colgroup — one col per leaf; name col styleless (attr dropped), age width+min←width, address min+max',
+  '3||width:100px;min-width:100px|min-width:200px;max-width:300px',
+  [
+    String(dtCols('live-data-table-basic').length),
+    dtCols('live-data-table-basic')[0].getAttribute('style') || '',
+    styleAt(dtCols('live-data-table-basic')[1]),
+    styleAt(dtCols('live-data-table-basic')[2])
+  ].join('|')
+)
+dEq(
+  'DOM: dt th — base only; --last ONLY on the last leaf; data-col-key is the column key',
+  'n-data-table-th|n-data-table-th n-data-table-th--last|name|age|address',
+  [
+    nClassesStr(dtThs('live-data-table-basic')[0]),
+    nClassesStr(dtThs('live-data-table-basic')[2]),
+    dtThs('live-data-table-basic')[0].getAttribute('data-col-key'),
+    dtThs('live-data-table-basic')[1].getAttribute('data-col-key'),
+    dtThs('live-data-table-basic')[2].getAttribute('data-col-key')
+  ].join('|')
+)
+dTrue(
+  'DOM: dt th title chain — direct title-wrapper child > title > text; width byte on the age th, style attr DROPPED on the styleless name th',
+  dtThs('live-data-table-basic')[0].firstElementChild.classList.contains('n-data-table-th__title-wrapper') &&
+    dtThs('live-data-table-basic')[0].firstElementChild.firstElementChild.classList.contains('n-data-table-th__title') &&
+    dtThs('live-data-table-basic')[0].textContent === 'Name' &&
+    styleAt(dtThs('live-data-table-basic')[1]) === 'width:100px' &&
+    !dtThs('live-data-table-basic')[0].hasAttribute('style')
+)
+dEq(
+  'DOM: dt thead/tbody data-n-id — constant "1" (upstream: random seemly id, keyed only by the later fixed-shadow cssr)',
+  '1|1',
+  [
+    doc.querySelector('#live-data-table-basic .n-data-table-thead').getAttribute('data-n-id'),
+    doc.querySelector('#live-data-table-basic .n-data-table-tbody').getAttribute('data-n-id')
+  ].join('|')
+)
+dEq(
+  'DOM: dt tr — base only by default; striped keys the ODD paginated index (zebra from the 2nd row)',
+  'n-data-table-tr|n-data-table-tr n-data-table-tr--striped|n-data-table-tr',
+  [0, 1, 2].map((i) => nClassesStr(dtTrs('live-data-table-striped')[i])).join('|')
+)
+dEq(
+  'DOM: dt td — align BEFORE last-col/last-row (Body.tsx class order); last-col on EVERY row\'s final cell, last-row only on the final row',
+  'n-data-table-td|n-data-table-td n-data-table-td--center-align n-data-table-td--last-col n-data-table-td--last-row|n-data-table-td n-data-table-td--center-align n-data-table-td--last-col',
+  [
+    nClassesStr(dtTds('live-data-table-basic')[0]),
+    nClassesStr(dtTds('live-data-table-basic')[8]),
+    nClassesStr(dtTds('live-data-table-basic')[2])
+  ].join('|')
+)
+dEq(
+  'DOM: dt td style — text-align (align col) and width (age col) byte forms, no spaces',
+  'text-align:center|width:100px',
+  [styleAt(dtTds('live-data-table-basic')[2]), styleAt(dtTds('live-data-table-basic')[1])].join('|')
+)
+dEq(
+  'DOM: dt empty — tbody omitted, thead kept, empty node AFTER the table inside the scrollbar content, wrapping NEmpty (elm-ui wraps content children in layout divs — NUI.Scrollbar house shape)',
+  '0|3|1|1|TABLE|true',
+  [
+    String(doc.querySelectorAll('#live-data-table-empty tbody').length),
+    String(dtThs('live-data-table-empty').length),
+    String(doc.querySelectorAll('#live-data-table-empty .n-data-table-empty').length),
+    String(doc.querySelectorAll('#live-data-table-empty .n-data-table-empty .n-empty').length),
+    [...dtContent('live-data-table-empty').querySelectorAll('table.n-data-table-table, .n-data-table-empty')][0].tagName,
+    String(
+      [...dtContent('live-data-table-empty').querySelectorAll('table.n-data-table-table, .n-data-table-empty')][1].classList.contains(
+        'n-data-table-empty'
+      )
+    )
+  ].join('|')
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

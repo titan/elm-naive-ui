@@ -35,6 +35,7 @@ import NUI.Checkbox as Checkbox
 import NUI.Collapse as Collapse
 import NUI.Countdown as Countdown
 import NUI.Css as Css
+import NUI.DataTable as DataTable
 import NUI.Descriptions as Descriptions
 import NUI.Dialog as Dialog
 import NUI.DialogProvider as DialogProvider
@@ -4726,6 +4727,160 @@ dgPS =
     DialogProvider.init
 
 
+
+{-
+   | The data-table fixtures — batch-1 core static table. The pins derive from
+   | the upstream vitest snapshot (DataTable.spec.tsx.snap, the `size` prop
+   | block — THE rendered-DOM ground truth) and the basic/border/empty spec
+   | blocks, NOT from the port's output.
+-}
+
+
+type alias DtRow =
+    { name : String
+    , age : Int
+    , address : String
+    }
+
+
+dtRows : List DtRow
+dtRows =
+    [ { name = "John Brown", age = 32, address = "New York No. 1 Lake Park" }
+    , { name = "Jim Green", age = 42, address = "London No. 1 Lake Park" }
+    , { name = "Joe Black", age = 32, address = "Sidney No. 1 Lake Park" }
+    ]
+
+
+dtNameCol : DataTable.Column DtRow Msg
+dtNameCol =
+    { key = "name"
+    , title = "Name"
+    , view = .name >> Element.text
+    , align = Nothing
+    , titleAlign = Nothing
+    , width = Nothing
+    , minWidth = Nothing
+    , maxWidth = Nothing
+    , className = Nothing
+    }
+
+
+dtAgeCol : DataTable.Column DtRow Msg
+dtAgeCol =
+    { key = "age"
+    , title = "Age"
+    , view = .age >> String.fromInt >> Element.text
+    , align = Nothing
+    , titleAlign = Nothing
+    , width = Just 100
+    , minWidth = Nothing
+    , maxWidth = Nothing
+    , className = Nothing
+    }
+
+
+dtAddressCol : DataTable.Column DtRow Msg
+dtAddressCol =
+    { key = "address"
+    , title = "Address"
+    , view = .address >> Element.text
+    , align = Just DataTable.AlignCenter
+    , titleAlign = Nothing
+    , width = Nothing
+    , minWidth = Just 200
+    , maxWidth = Just 300
+    , className = Nothing
+    }
+
+
+dtOpts : DataTable.Options DtRow Msg
+dtOpts =
+    let
+        d =
+            DataTable.defaults
+    in
+    { d
+        | columns = [ dtNameCol, dtAgeCol, dtAddressCol ]
+        , data = dtRows
+        , rowKey = .name
+    }
+
+
+{-| The 47-entry list `NUI.DataTable.cssVars` must emit for `Medium` (light) —
+the upstream `DataTable.spec.tsx.snap` `size` snapshot #2 byte string.
+-}
+expectedDataTableVarsMedium : List ( String, String )
+expectedDataTableVarsMedium =
+    [ ( "--n-font-size", "14px" )
+    , ( "--n-th-padding", "12px" )
+    , ( "--n-td-padding", "12px" )
+    , ( "--n-bezier", "cubic-bezier(.4, 0, .2, 1)" )
+    , ( "--n-border-radius", "3px" )
+    , ( "--n-line-height", "1.6" )
+    , ( "--n-border-color", "rgba(239, 239, 245, 1)" )
+    , ( "--n-border-color-modal", "rgba(239, 239, 245, 1)" )
+    , ( "--n-border-color-popover", "rgba(239, 239, 245, 1)" )
+    , ( "--n-th-color", "rgba(250, 250, 252, 1)" )
+    , ( "--n-th-color-hover", "rgba(243, 243, 247, 1)" )
+    , ( "--n-th-color-modal", "rgba(250, 250, 252, 1)" )
+    , ( "--n-th-color-hover-modal", "rgba(243, 243, 247, 1)" )
+    , ( "--n-th-color-popover", "rgba(250, 250, 252, 1)" )
+    , ( "--n-th-color-hover-popover", "rgba(243, 243, 247, 1)" )
+    , ( "--n-td-color", "#fff" )
+    , ( "--n-td-color-hover", "rgba(247, 247, 250, 1)" )
+    , ( "--n-td-color-modal", "#fff" )
+    , ( "--n-td-color-hover-modal", "rgba(247, 247, 250, 1)" )
+    , ( "--n-td-color-popover", "#fff" )
+    , ( "--n-td-color-hover-popover", "rgba(247, 247, 250, 1)" )
+    , ( "--n-th-text-color", "rgb(31, 34, 37)" )
+    , ( "--n-td-text-color", "rgb(51, 54, 57)" )
+    , ( "--n-th-font-weight", "500" )
+    , ( "--n-th-button-color-hover", "rgba(0, 0, 100, 0.03)" )
+    , ( "--n-th-icon-color", "rgba(194, 194, 194, 1)" )
+    , ( "--n-th-icon-color-active", "#18a058" )
+    , ( "--n-filter-size", "15px" )
+    , ( "--n-pagination-margin", "12px 0 0 0" )
+    , ( "--n-empty-padding", "48px 0" )
+    , ( "--n-box-shadow-before", "inset -12px 0 8px -12px rgba(0, 0, 0, .18)" )
+    , ( "--n-box-shadow-after", "inset 12px 0 8px -12px rgba(0, 0, 0, .18)" )
+    , ( "--n-sorter-size", "15px" )
+    , ( "--n-resizable-container-size", "8px" )
+    , ( "--n-resizable-size", "2px" )
+    , ( "--n-loading-size", "28px" )
+    , ( "--n-loading-color", "#18a058" )
+    , ( "--n-opacity-loading", "0.5" )
+    , ( "--n-td-color-striped", "rgba(250, 250, 252, 1)" )
+    , ( "--n-td-color-striped-modal", "rgba(250, 250, 252, 1)" )
+    , ( "--n-td-color-striped-popover", "rgba(250, 250, 252, 1)" )
+    , ( "--n-td-color-sorting", "rgba(247, 247, 250, 1)" )
+    , ( "--n-td-color-sorting-modal", "rgba(247, 247, 250, 1)" )
+    , ( "--n-td-color-sorting-popover", "rgba(247, 247, 250, 1)" )
+    , ( "--n-th-color-sorting", "rgba(243, 243, 247, 1)" )
+    , ( "--n-th-color-sorting-modal", "rgba(243, 243, 247, 1)" )
+    , ( "--n-th-color-sorting-popover", "rgba(243, 243, 247, 1)" )
+    ]
+
+
+dtMediumVars : List ( String, String )
+dtMediumVars =
+    DataTable.cssVars Theme.default DataTable.Medium
+
+
+dtSmallVars : List ( String, String )
+dtSmallVars =
+    DataTable.cssVars Theme.default DataTable.Small
+
+
+dtLargeVars : List ( String, String )
+dtLargeVars =
+    DataTable.cssVars Theme.default DataTable.Large
+
+
+dtDarkVars : List ( String, String )
+dtDarkVars =
+    DataTable.cssVars Theme.dark DataTable.Medium
+
+
 checks : List Check
 checks =
     let
@@ -8977,6 +9132,45 @@ checks =
             _ ->
                 []
         )
+
+    -- Data table — batch-1 core static table. Pins derive from the
+    -- upstream vitest snapshot (`size` block = the var ground truth) and
+    -- the basic/border/empty spec blocks, NOT from the port's output.
+    -- ===================================================================
+    , eq "data-table cssVars: the full 47-pair Medium set in cssVarsRef byte order"
+        expectedDataTableVarsMedium
+        dtMediumVars
+    , eq "data-table cssVars length is 47 (upstream cssVarsRef direct count)"
+        47
+        (List.length dtMediumVars)
+    , eq "data-table cssVars: Small keys the 8px th/td paddings and the 14px font"
+        [ ( "--n-font-size", "14px" ), ( "--n-th-padding", "8px" ), ( "--n-td-padding", "8px" ) ]
+        (List.take 3 dtSmallVars)
+    , eq "data-table cssVars: Large keys the 15px font (paddings stay 12px)"
+        [ ( "--n-font-size", "15px" ), ( "--n-th-padding", "12px" ), ( "--n-td-padding", "12px" ) ]
+        (List.take 3 dtLargeVars)
+    , eq "data-table cssVars dark: border/shadow/striped literals from dark.ts, cssVarsRef order"
+        [ ( "--n-border-color", "rgba(45, 45, 48, 1)" )
+        , ( "--n-box-shadow-before", "inset -12px 0 8px -12px rgba(0, 0, 0, .36)" )
+        , ( "--n-box-shadow-after", "inset 12px 0 8px -12px rgba(0, 0, 0, .36)" )
+        , ( "--n-td-color-striped", "rgba(36, 36, 39, 1)" )
+        ]
+        (List.filter
+            (\( k, _ ) ->
+                List.member k
+                    [ "--n-border-color", "--n-box-shadow-before", "--n-box-shadow-after", "--n-td-color-striped" ]
+            )
+            dtDarkVars
+        )
+    , eq "data-table defaults: bordered/singleLine/showHeader true; striped/singleColumn/rtl false (interface.ts)"
+        [ True, True, True, False, False, False ]
+        [ DataTable.defaults.bordered
+        , DataTable.defaults.singleLine
+        , DataTable.defaults.showHeader
+        , DataTable.defaults.striped
+        , DataTable.defaults.singleColumn
+        , DataTable.defaults.rtl
+        ]
     ]
 
 
@@ -10862,6 +11056,26 @@ liveNodes =
                             }
                         )
                     )
+
+                -- Data table (batch 1): the core static render — class
+                -- toggles, size-keyed vars, empty restructure
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-basic") ]
+                    (DataTable.view Theme.default dtOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-noborder") ]
+                    (DataTable.view Theme.default { dtOpts | bordered = False })
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-single") ]
+                    (DataTable.view Theme.default
+                        { dtOpts
+                            | singleLine = False
+                            , singleColumn = True
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-small") ]
+                    (DataTable.view Theme.default { dtOpts | size = DataTable.Small })
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-striped") ]
+                    (DataTable.view Theme.default { dtOpts | striped = True })
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-empty") ]
+                    (DataTable.view Theme.default { dtOpts | data = [] })
                 ]
             )
         ]
