@@ -102,6 +102,7 @@ bridge, tests).
 | `NUI.Divider`     | ✅ |
 | `NUI.Dialog`      | ✅ |
 | `NUI.DialogProvider` | ✅ |
+| `NUI.DataTable`   | ✅ |
 | `NUI.Drawer`      | ✅ |
 | `NUI.Dropdown`    | ✅ |
 | `NUI.DynamicTags` | ✅ |
