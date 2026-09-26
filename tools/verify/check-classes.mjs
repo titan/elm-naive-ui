@@ -82,6 +82,9 @@ const ALLOW = new Set([
   // n-descriptions-table-row__label (upstream selector mismatch, kept faithful —
   // the span carries no rule, exactly as upstream).
   'n-descriptions-table-content__label',
+  // Body.tsx renders <tbody class="n-data-table-tbody"> but no cssr rule targets
+  // it anywhere upstream (the tbody is laid out by its ancestors) — kept faithful.
+  'n-data-table-tbody',
   // Harmless extras: not upstream class names, but the CSS targets the tag /
   // descendant, so rendering is unaffected.
   'n-avatar__img', // upstream CSS targets `.n-avatar img`

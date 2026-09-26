@@ -26,6 +26,7 @@ import NUI.Checkbox as Checkbox
 import NUI.Collapse as Collapse
 import NUI.Countdown as Countdown
 import NUI.Css as Css
+import NUI.DataTable as DataTable
 import NUI.Descriptions as Descriptions
 import NUI.Dialog as Dialog
 import NUI.DialogProvider as DialogProvider
@@ -756,6 +757,7 @@ body =
     , modalSection
     , drawerSection
     , dialogSection
+    , dataTableSection
     , rtlSection
     , themeSection
     ]
@@ -4497,6 +4499,69 @@ imagePreviewSection =
                         , current = 1
                     }
                 )
+            ]
+        ]
+
+
+dataTableSection : Element msg
+dataTableSection =
+    let
+        dtD =
+            DataTable.defaults
+
+        colD =
+            DataTable.columnDefaults
+
+        person name age address =
+            { name = name
+            , age = age
+            , address = address
+            }
+
+        people =
+            [ person "Jesse Tripps" 28 "0350 Nesrnew Drive, Bellevue, WA"
+            , person "Jaime Whyte" 32 "1512 Radney Street, Dallas, TX"
+            , person "Boris Wuhrer" 41 "785 Skiles Walks, Roseville, WA"
+            , person "Terry Malany" 22 "752 Sutter Avenue, Sacramento, CA"
+            ]
+
+        nameCol =
+            { colD | key = "name", title = "Name", view = \p -> Element.text p.name }
+
+        ageCol =
+            { colD
+                | key = "age"
+                , title = "Age"
+                , view = \p -> Element.text (String.fromInt p.age)
+                , width = Just 120
+                , align = Just DataTable.AlignCenter
+            }
+
+        addressCol =
+            { colD | key = "address", title = "Address", view = \p -> Element.text p.address }
+
+        columns =
+            [ nameCol, ageCol, addressCol ]
+    in
+    section "Data Table"
+        "The advanced table (upstream `NDataTable`) — column definitions drive the colgroup, header cells and body cells; `rowKey` keys rows and the empty state renders `NEmpty`. Batch-1 core: sort, filter, selection, expand, pagination, fixed columns and scroll-X ship in later batches."
+    <|
+        [ demoRow "Basic"
+            [ DataTable.view theme
+                { dtD | columns = columns, data = people, rowKey = .name }
+            ]
+        , demoRow "Striped + bordered"
+            [ DataTable.view theme
+                { dtD
+                    | columns = columns
+                    , data = people
+                    , rowKey = .name
+                    , striped = True
+                }
+            ]
+        , demoRow "Empty"
+            [ DataTable.view theme
+                { dtD | columns = columns, data = [], rowKey = .name }
             ]
         ]
 

@@ -23,6 +23,7 @@
     "NUI.Collapse",
     "NUI.Countdown",
     "NUI.Css",
+    "NUI.DataTable",
     "NUI.Descriptions",
     "NUI.Dialog",
     "NUI.DialogProvider",

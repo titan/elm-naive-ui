@@ -143,7 +143,9 @@ const targets = {
   '.n-slider': true,
   '.n-image': false,
   // The preview container carries the five preview vars (bezier + 4 toolbar).
-  '.n-image-preview-container': true
+  '.n-image-preview-container': true,
+  // DataTable: all 47 vars sit on the root (size only swaps values, not class).
+  '.n-data-table': true
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {
