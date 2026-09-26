@@ -9280,6 +9280,117 @@ dEq(
   ].join('|')
 )
 
+// Sort + pagination (SortButton.tsx span template, Header.tsx th class
+// array, Body.tsx td --sorting, DataTable.tsx :500-523 pagination node) —
+// every class string re-derived from the upstream class arrays.
+const dtSorterOf = (id) => doc.querySelector('#' + id + ' .n-data-table-sorter')
+const dtAgeTh = (id) => doc.querySelectorAll('#' + id + ' .n-data-table-th')[1]
+const dtAgeTds = (id) =>
+  [...dtTds(id)].filter((td) => td.getAttribute('data-col-key') === 'age')
+const dtNameTds = (id) =>
+  [...dtTds(id)].filter((td) => td.getAttribute('data-col-key') === 'name')
+const dtRootChildren = (id) => [...dtRoot(id).querySelectorAll(':scope > div')]
+
+dEq(
+  'DOM: dt sort-desc — age th --sorting + --sortable (base→--sorting→--sortable→--last), name th base only (Header.tsx class array)',
+  'n-data-table-th n-data-table-th--sorting n-data-table-th--sortable|n-data-table-th|n-data-table-th n-data-table-th--last',
+  [nClassesStr(dtAgeTh('live-data-table-sort-desc')), nClassesStr(dtThs('live-data-table-sort-desc')[0]), nClassesStr(dtThs('live-data-table-sort-desc')[2])].join('|')
+)
+dEq(
+  'DOM: dt sort-desc — sorter span only on the sortable th, AFTER the title div, classes n-data-table-sorter n-data-table-sorter--desc (SortButton.tsx)',
+  '0|1|0|n-data-table-sorter n-data-table-sorter--desc|TITLE',
+  [
+    String(dtThs('live-data-table-sort-desc')[0].querySelectorAll('.n-data-table-sorter').length),
+    String(dtAgeTh('live-data-table-sort-desc').querySelectorAll('.n-data-table-sorter').length),
+    String(dtThs('live-data-table-sort-desc')[2].querySelectorAll('.n-data-table-sorter').length),
+    nClassesStr(dtSorterOf('live-data-table-sort-desc')),
+    dtAgeTh('live-data-table-sort-desc').querySelector('.n-data-table-th__title-wrapper').lastElementChild.classList.contains('n-data-table-th__title')
+      ? 'SORTER-FIRST'
+      : 'TITLE'
+  ].join('|')
+)
+dEq(
+  'DOM: dt sort-desc — every row\'s age td carries --sorting, name tds do not (Body.tsx whole-column highlight)',
+  '3|0|n-data-table-td n-data-table-td--sorting|n-data-table-td',
+  [
+    String(dtAgeTds('live-data-table-sort-desc').filter((td) => nClassesStr(td).includes('--sorting')).length),
+    String(dtNameTds('live-data-table-sort-desc').filter((td) => nClassesStr(td).includes('--sorting')).length),
+    nClassesStr(dtAgeTds('live-data-table-sort-desc')[0]),
+    nClassesStr(dtNameTds('live-data-table-sort-desc')[0])
+  ].join('|')
+)
+dEq(
+  'DOM: dt sort-asc — the sorter span flips to --asc only',
+  'n-data-table-sorter n-data-table-sorter--asc',
+  nClassesStr(dtSorterOf('live-data-table-sort-asc'))
+)
+dEq(
+  'DOM: dt sort-idle — base sorter class alone, th --sortable without --sorting, NO td --sorting (NoSort state)',
+  'n-data-table-sorter|n-data-table-th n-data-table-th--sortable|0',
+  [
+    nClassesStr(dtSorterOf('live-data-table-sort-idle')),
+    nClassesStr(dtAgeTh('live-data-table-sort-idle')),
+    String(dtAgeTds('live-data-table-sort-idle').filter((td) => nClassesStr(td).includes('--sorting')).length)
+  ].join('|')
+)
+dEq(
+  'DOM: dt sorter icon — i.n-base-icon > svg viewBox/version/xmlns bytes + the ArrowDown path d prefix (ArrowDown.tsx)',
+  '1|0 0 28 28|1.1|http://www.w3.org/2000/svg|M23.7916,15.2664',
+  (() => {
+    const icon = dtSorterOf('live-data-table-sort-desc').querySelector('i.n-base-icon')
+    const svg = icon && icon.querySelector('svg')
+    const path = svg && svg.querySelector('path')
+    return [
+      String(dtSorterOf('live-data-table-sort-desc').querySelectorAll('i.n-base-icon').length),
+      svg ? svg.getAttribute('viewBox') : 'NO-SVG',
+      svg ? svg.getAttribute('version') : 'NO-SVG',
+      svg ? svg.getAttribute('xmlns') : 'NO-SVG',
+      path ? path.getAttribute('d').slice(0, 16) : 'NO-PATH'
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: dt paginated — the pagination node is the LAST root child, after div.n-data-table-wrapper (DataTable.tsx :500-523)',
+  'n-data-table__pagination|n-data-table-wrapper|true',
+  (() => {
+    const kids = dtRootChildren('live-data-table-paginated')
+    const wrapperIdx = kids.findIndex((el) => el.classList.contains('n-data-table-wrapper'))
+    const pagIdx = kids.findIndex((el) => el.classList.contains('n-data-table__pagination'))
+    return [
+      nClassesStr(kids[kids.length - 1]),
+      nClassesStr(kids[0]),
+      String(wrapperIdx !== -1 && pagIdx > wrapperIdx)
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: dt paginated — the node wraps a .n-pagination whose prefix renders the slot text (NPagination + prefix)',
+  '1|3 items',
+  (() => {
+    const node = doc.querySelector('#live-data-table-paginated .n-data-table__pagination')
+    const prefix = node.querySelector('.n-pagination-prefix')
+    return [String(node.querySelectorAll('.n-pagination').length), prefix ? prefix.textContent : 'NO-PREFIX'].join('|')
+  })()
+)
+dEq(
+  'DOM: dt paginated — pageSize 2 page 1 shows exactly the first two dtRows (bounded window of the sorted data)',
+  '2|John Brown|Jim Green',
+  (() => {
+    const rows = dtTrs('live-data-table-paginated')
+    const rowName = (i) => {
+      const td = rows[i] && rows[i].querySelector('.n-data-table-td')
+      const hit = td && td.textContent.match(/John Brown|Jim Green|Joe Black|Jim Red/)
+      return hit ? hit[0] : 'NO-ROW'
+    }
+    return [String(rows.length), rowName(0), rowName(1)].join('|')
+  })()
+)
+dEq(
+  'DOM: dt pag-hidden — paginateSinglePage False + a single page: NO .n-data-table__pagination node at all (mergedShowPagination)',
+  '0',
+  String(doc.querySelectorAll('#live-data-table-pag-hidden .n-data-table__pagination').length)
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

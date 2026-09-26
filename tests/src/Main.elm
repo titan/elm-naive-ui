@@ -4815,6 +4815,324 @@ dtOpts =
     }
 
 
+{-| The `multiple sorter` spec fixture (DataTable.spec.tsx:379-460) — the
+four students byte-for-byte (Jim Red's address is "London No. 2 Lake Park"
+in the spec bytes).
+-}
+type alias DtMsRow =
+    { name : String
+    , age : Int
+    , address : String
+    , chinese : Int
+    , math : Int
+    , english : Int
+    }
+
+
+dtMsRows : List DtMsRow
+dtMsRows =
+    [ { name = "John Brown", age = 32, address = "New York No. 1 Lake Park", chinese = 98, math = 60, english = 70 }
+    , { name = "Jim Green", age = 42, address = "London No. 1 Lake Park", chinese = 98, math = 66, english = 89 }
+    , { name = "Joe Black", age = 32, address = "Sidney No. 1 Lake Park", chinese = 98, math = 66, english = 89 }
+    , { name = "Jim Red", age = 32, address = "London No. 2 Lake Park", chinese = 88, math = 99, english = 89 }
+    ]
+
+
+msScoreCol : String -> String -> Int -> (DtMsRow -> Int) -> DataTable.Column DtMsRow Msg
+msScoreCol key title priority accessor =
+    { key = key
+    , title = title
+    , view = accessor >> String.fromInt >> Element.text
+    , align = Nothing
+    , titleAlign = Nothing
+    , width = Nothing
+    , minWidth = Nothing
+    , maxWidth = Nothing
+    , className = Nothing
+    , sorter = Just (DataTable.SorterMultiple priority (Just (DataTable.CompareBy (\a b -> compare (accessor a) (accessor b)))))
+    , defaultSortOrder = DataTable.NoSort
+    , sortOrder = Nothing
+    }
+
+
+dtMsNameCol : DataTable.Column DtMsRow Msg
+dtMsNameCol =
+    { key = "name"
+    , title = "Name"
+    , view = .name >> Element.text
+    , align = Nothing
+    , titleAlign = Nothing
+    , width = Nothing
+    , minWidth = Nothing
+    , maxWidth = Nothing
+    , className = Nothing
+    , sorter = Nothing
+    , defaultSortOrder = DataTable.NoSort
+    , sortOrder = Nothing
+    }
+
+
+dtMsAgeCol : DataTable.Column DtMsRow Msg
+dtMsAgeCol =
+    { key = "age"
+    , title = "Age"
+    , view = .age >> String.fromInt >> Element.text
+    , align = Nothing
+    , titleAlign = Nothing
+    , width = Nothing
+    , minWidth = Nothing
+    , maxWidth = Nothing
+    , className = Nothing
+    , sorter = Just (DataTable.SorterBy (\a b -> compare a.age b.age))
+    , defaultSortOrder = DataTable.NoSort
+    , sortOrder = Nothing
+    }
+
+
+dtMsAddressCol : DataTable.Column DtMsRow Msg
+dtMsAddressCol =
+    { key = "address"
+    , title = "Address"
+    , view = .address >> Element.text
+    , align = Nothing
+    , titleAlign = Nothing
+    , width = Nothing
+    , minWidth = Nothing
+    , maxWidth = Nothing
+    , className = Nothing
+    , sorter = Nothing
+    , defaultSortOrder = DataTable.NoSort
+    , sortOrder = Nothing
+    }
+
+
+{-| The spec's column order: name, age, chinese (multiple 3), math (multiple
+2), english (multiple 1), address.
+-}
+dtMsColumns : List (DataTable.Column DtMsRow Msg)
+dtMsColumns =
+    [ dtMsNameCol
+    , dtMsAgeCol
+    , msScoreCol "chinese" "Chinese Score" 3 .chinese
+    , msScoreCol "math" "Math Score" 2 .math
+    , msScoreCol "english" "English Score" 1 .english
+    , dtMsAddressCol
+    ]
+
+
+dtMsOpts : List (DataTable.SortState DtMsRow) -> DataTable.Options DtMsRow Msg
+dtMsOpts states =
+    let
+        d =
+            DataTable.defaults
+    in
+    { d
+        | columns = dtMsColumns
+        , data = dtMsRows
+        , rowKey = .name
+        , sortStates = states
+    }
+
+
+dtPgD : Pagination.Options Msg
+dtPgD =
+    Pagination.defaults
+
+
+{-| `dtMsOpts` plus the pagination-flavoured overrides (the eq-pin call
+sites carry all three fields explicitly — Elm records have no partial
+merge, and updating a call result needs a bound base anyway).
+-}
+dtMsOptsU :
+    List (DataTable.SortState DtMsRow)
+    ->
+        { remote : Bool
+        , paginateSinglePage : Bool
+        , pagination : Maybe (Pagination.Options Msg)
+        }
+    -> DataTable.Options DtMsRow Msg
+dtMsOptsU states { remote, paginateSinglePage, pagination } =
+    let
+        base =
+            dtMsOpts states
+    in
+    { base
+        | remote = remote
+        , paginateSinglePage = paginateSinglePage
+        , pagination = pagination
+    }
+
+
+dtMsNames : List (DataTable.SortState DtMsRow) -> List String
+dtMsNames states =
+    List.map .name (DataTable.sortedData (dtMsOpts states))
+
+
+dtMsVals : (DtMsRow -> Int) -> List (DataTable.SortState DtMsRow) -> List Int
+dtMsVals accessor states =
+    List.map accessor (DataTable.sortedData (dtMsOpts states))
+
+
+{-| The spec's click walk (DataTable.spec.tsx:522-646): one click per spec
+step — `createNextSorter` of the column against its CURRENT merged state,
+then `deriveNextSorter` over that merged base (use-sorter.ts:180) — folded
+over the caller-owned uncontrolled list, seeded from `defaultSortStates`
+(the mount state: every sortable column, order `defaultSortOrder`).
+-}
+dtMsWalk : List (List (DataTable.SortState DtMsRow) -> Maybe (DataTable.SortState DtMsRow)) -> List (List (DataTable.SortState DtMsRow))
+dtMsWalk clickFns =
+    List.foldl
+        (\clickFn acc ->
+            let
+                previousStates =
+                    case acc of
+                        previous :: _ ->
+                            previous
+
+                        [] ->
+                            DataTable.defaultSortStates dtMsColumns
+
+                merged =
+                    DataTable.mergedSortStates dtMsColumns previousStates
+            in
+            DataTable.deriveNextSorter merged (clickFn previousStates) :: acc
+        )
+        []
+        clickFns
+        |> List.reverse
+
+
+{-| `dtMsClick "chinese"` is the spec's click on `#chinese-title` —
+`createNextSorter` of the column and its current state in the MERGED
+list (upstream `handleColHeaderClick`'s `find ... || null`).
+-}
+dtMsClick : String -> List (DataTable.SortState DtMsRow) -> Maybe (DataTable.SortState DtMsRow)
+dtMsClick key states =
+    let
+        current =
+            DataTable.mergedSortStates dtMsColumns states
+                |> List.filter (\state -> state.columnKey == key)
+                |> List.head
+    in
+    dtMsColumns
+        |> List.filter (\col -> col.key == key)
+        |> List.head
+        |> Maybe.andThen (\col -> DataTable.createNextSorter col current)
+
+
+msWalkStates : List (List (DataTable.SortState DtMsRow))
+msWalkStates =
+    dtMsWalk
+        [ dtMsClick "chinese"
+        , dtMsClick "math"
+        , dtMsClick "english"
+        , dtMsClick "chinese"
+        , dtMsClick "chinese"
+        , dtMsClick "math"
+        , dtMsClick "math"
+        , dtMsClick "chinese"
+        , dtMsClick "age"
+        ]
+
+
+{-| The 9-state walk (the 8 spec steps + the final `age` click). Each step's
+per-column value arrays come from the spec's `checkScoreIsMatched` bytes;
+the name arrays are the row order those bytes pin.
+-}
+msWalkExpect :
+    List
+        { names : List String
+        , chinese : List Int
+        , math : List Int
+        , english : List Int
+        }
+msWalkExpect =
+    [ { names = [ "John Brown", "Jim Green", "Joe Black", "Jim Red" ]
+      , chinese = [ 98, 98, 98, 88 ]
+      , math = [ 60, 66, 66, 99 ]
+      , english = [ 70, 89, 89, 89 ]
+      }
+    , { names = [ "Jim Green", "Joe Black", "John Brown", "Jim Red" ]
+      , chinese = [ 98, 98, 98, 88 ]
+      , math = [ 66, 66, 60, 99 ]
+      , english = [ 89, 89, 70, 89 ]
+      }
+    , { names = [ "Jim Green", "Joe Black", "John Brown", "Jim Red" ]
+      , chinese = [ 98, 98, 98, 88 ]
+      , math = [ 66, 66, 60, 99 ]
+      , english = [ 89, 89, 70, 89 ]
+      }
+    , { names = [ "Jim Red", "Jim Green", "Joe Black", "John Brown" ]
+      , chinese = [ 88, 98, 98, 98 ]
+      , math = [ 99, 66, 66, 60 ]
+      , english = [ 89, 89, 89, 70 ]
+      }
+    , { names = [ "Jim Red", "Jim Green", "Joe Black", "John Brown" ]
+      , chinese = [ 88, 98, 98, 98 ]
+      , math = [ 99, 66, 66, 60 ]
+      , english = [ 89, 89, 89, 70 ]
+      }
+    , { names = [ "John Brown", "Jim Green", "Joe Black", "Jim Red" ]
+      , chinese = [ 98, 98, 98, 88 ]
+      , math = [ 60, 66, 66, 99 ]
+      , english = [ 70, 89, 89, 89 ]
+      }
+    , { names = [ "Jim Green", "Joe Black", "Jim Red", "John Brown" ]
+      , chinese = [ 98, 98, 88, 98 ]
+      , math = [ 66, 66, 99, 60 ]
+      , english = [ 89, 89, 89, 70 ]
+      }
+    , { names = [ "Jim Green", "Joe Black", "John Brown", "Jim Red" ]
+      , chinese = [ 98, 98, 98, 88 ]
+      , math = [ 66, 66, 60, 99 ]
+      , english = [ 89, 89, 70, 89 ]
+      }
+    , { names = [ "Jim Green", "John Brown", "Joe Black", "Jim Red" ]
+      , chinese = [ 98, 98, 98, 88 ]
+      , math = [ 66, 60, 66, 99 ]
+      , english = [ 89, 70, 89, 89 ]
+      }
+    ]
+
+
+msWalkTitles : List String
+msWalkTitles =
+    [ "multiple sorter walk 1 — chinese descend (spec `chinese: descend, math: false, english: false`)"
+    , "multiple sorter walk 2 — math descend (spec `chinese: descend, math: descend, english: false`)"
+    , "multiple sorter walk 3 — english descend (spec `chinese: descend, math: descend, english: descend`)"
+    , "multiple sorter walk 4 — chinese ascend (spec `chinese: ascend, math: descend, english: descend`)"
+    , "multiple sorter walk 5 — chinese false (spec `chinese: false, math: descend, english: descend`)"
+    , "multiple sorter walk 6 — math ascend (spec `chinese: false, math: ascend, english: descend`)"
+    , "multiple sorter walk 7 — math false (spec `chinese: false, math: false, english: descend`)"
+    , "multiple sorter walk 8 — chinese descend (spec `chinese: descend, math: false, english: descend`)"
+    , "multiple sorter walk 9 — age descend (spec `age: descend`, single-sorter click replaces the multi state)"
+    ]
+
+
+msWalkChecks : List Check
+msWalkChecks =
+    List.map3
+        (\title states expect ->
+            eq
+                (title
+                    ++ " — row order (name array) and the spec's per-column score arrays"
+                )
+                { names = expect.names
+                , chinese = expect.chinese
+                , math = expect.math
+                , english = expect.english
+                }
+                { names = dtMsNames states
+                , chinese = dtMsVals .chinese states
+                , math = dtMsVals .math states
+                , english = dtMsVals .english states
+                }
+        )
+        msWalkTitles
+        msWalkStates
+        msWalkExpect
+
+
 {-| The 47-entry list `NUI.DataTable.cssVars` must emit for `Medium` (light) —
 the upstream `DataTable.spec.tsx.snap` `size` snapshot #2 byte string.
 -}
@@ -9180,7 +9498,365 @@ checks =
         , DataTable.defaults.singleColumn
         , DataTable.defaults.rtl
         ]
+
+    -- Data table — batch-2 sort + pagination. Pins derive from the
+    -- upstream spec bytes (DataTable.spec.tsx `multiple sorter` +
+    -- `itemCount` blocks) and the use-sorter/use-table-data/utils
+    -- source, NOT from the port's output.
+    -- ===================================================================
+    , eq "data-table nextSortOrder: the upstream click cycle false→descend→ascend→false (getNextOrderOf)"
+        [ DataTable.Descend, DataTable.Ascend, DataTable.NoSort, DataTable.Descend ]
+        [ DataTable.nextSortOrder DataTable.NoSort
+        , DataTable.nextSortOrder DataTable.Descend
+        , DataTable.nextSortOrder DataTable.Ascend
+        , DataTable.nextSortOrder DataTable.NoSort
+        ]
+    , eq "data-table createNextSorter: sorterless column → Nothing (utils.ts `column.sorter === undefined → null`)"
+        Nothing
+        (DataTable.createNextSorter dtNameCol Nothing)
+    , eq "data-table createNextSorter: no current state → fresh Descend (getNextOrderOf(false))"
+        (Just ( "age", DataTable.Descend ))
+        (DataTable.createNextSorter dtMsAgeCol Nothing
+            |> Maybe.map (\state -> ( state.columnKey, state.order ))
+        )
+    , eq "data-table createNextSorter: same-key current → order advanced through the cycle (Ascend→NoSort)"
+        (Just ( "age", DataTable.NoSort ))
+        (DataTable.createNextSorter dtMsAgeCol
+            (Just { columnKey = "age", order = DataTable.Ascend, sorter = DataTable.SorterBy (\a b -> compare a.age b.age) })
+            |> Maybe.map (\state -> ( state.columnKey, state.order ))
+        )
+    , eq "data-table createNextSorter: foreign-key current → fresh Descend on the clicked column"
+        (Just ( "chinese", DataTable.Descend ))
+        (let
+            chineseCol =
+                msScoreCol "chinese" "Chinese Score" 3 .chinese
+         in
+         DataTable.createNextSorter chineseCol
+            (Just { columnKey = "age", order = DataTable.Ascend, sorter = DataTable.SorterBy (\a b -> compare a.age b.age) })
+            |> Maybe.map (\state -> ( state.columnKey, state.order ))
+        )
+    , eq "data-table deriveNextSorter: multi click keeps only the base's multi states and upserts at the key (use-sorter.ts getUpdatedSorterState)"
+        [ ( "chinese", DataTable.Ascend ), ( "math", DataTable.Descend ) ]
+        (DataTable.deriveNextSorter
+            [ { columnKey = "chinese", order = DataTable.Ascend, sorter = DataTable.SorterMultiple 3 Nothing }
+            , { columnKey = "age", order = DataTable.Descend, sorter = DataTable.SorterBy (\a b -> compare a.age b.age) }
+            ]
+            (Just { columnKey = "math", order = DataTable.Descend, sorter = DataTable.SorterMultiple 2 Nothing })
+            |> List.map (\state -> ( state.columnKey, state.order ))
+        )
+    , eq "data-table deriveNextSorter: single click replaces the whole state with exactly [state]"
+        [ ( "age", DataTable.Descend ) ]
+        (DataTable.deriveNextSorter
+            [ { columnKey = "chinese", order = DataTable.Ascend, sorter = DataTable.SorterMultiple 3 Nothing }
+            , { columnKey = "math", order = DataTable.Descend, sorter = DataTable.SorterMultiple 2 Nothing }
+            ]
+            (Just { columnKey = "age", order = DataTable.Descend, sorter = DataTable.SorterBy (\a b -> compare a.age b.age) })
+            |> List.map (\state -> ( state.columnKey, state.order ))
+        )
+    , eq "data-table deriveNextSorter: Nothing → [] (upstream null clears the sorter)"
+        []
+        (DataTable.deriveNextSorter
+            [ { columnKey = "chinese", order = DataTable.Ascend, sorter = DataTable.SorterMultiple 3 Nothing } ]
+            Nothing
+            |> List.map (\state -> ( state.columnKey, state.order ))
+        )
+    , eq "data-table defaultSortStates: seeds every sortable column from defaultSortOrder (NoSort default, one Ascend), column order (use-sorter.ts defaultSortState)"
+        [ ( "age", DataTable.NoSort ), ( "chinese", DataTable.Ascend ), ( "math", DataTable.NoSort ) ]
+        (let
+            chineseAscend =
+                msScoreCol "chinese" "Chinese Score" 3 .chinese
+         in
+         DataTable.defaultSortStates
+            [ dtMsNameCol
+            , dtMsAgeCol
+            , { chineseAscend | defaultSortOrder = DataTable.Ascend }
+            , msScoreCol "math" "Math Score" 2 .math
+            , dtMsAddressCol
+            ]
+            |> List.map (\state -> ( state.columnKey, state.order ))
+        )
+    , eq "data-table defaultSortStates: duplicate keys upsert — replaced at the key's index, not appended (updateSortStatesByNewSortState)"
+        [ ( "age", DataTable.Ascend ) ]
+        (DataTable.defaultSortStates
+            [ { dtMsAgeCol | defaultSortOrder = DataTable.Descend }
+            , { dtMsAgeCol | defaultSortOrder = DataTable.Ascend }
+            ]
+            |> List.map (\state -> ( state.columnKey, state.order ))
+        )
+    , eq "data-table mergedSortStates: uncontrolled passthrough when no column is controlled (use-sorter.ts mergedSortStateRef)"
+        [ ( "age", DataTable.Descend ) ]
+        (DataTable.mergedSortStates dtMsColumns
+            [ { columnKey = "age", order = DataTable.Descend, sorter = DataTable.SorterBy (\a b -> compare a.age b.age) } ]
+            |> List.map (\state -> ( state.columnKey, state.order ))
+        )
+    , eq "data-table mergedSortStates: a controlled column with a real order wins — controlled columns mapped in column order"
+        [ ( "age", DataTable.Ascend ), ( "math", DataTable.Descend ) ]
+        (let
+            mathCol =
+                msScoreCol "math" "Math Score" 2 .math
+         in
+         DataTable.mergedSortStates
+            [ dtMsNameCol
+            , { dtMsAgeCol | sortOrder = Just DataTable.Ascend }
+            , msScoreCol "chinese" "Chinese Score" 3 .chinese
+            , { mathCol | sortOrder = Just DataTable.Descend }
+            , dtMsAddressCol
+            ]
+            [ { columnKey = "chinese", order = DataTable.Descend, sorter = DataTable.SorterMultiple 3 Nothing } ]
+            |> List.map (\state -> ( state.columnKey, state.order ))
+        )
+    , eq "data-table mergedSortStates: controlled-exists-but-all-NoSort → [] (the uncontrolled list is ignored)"
+        []
+        (DataTable.mergedSortStates
+            [ dtMsNameCol
+            , { dtMsAgeCol | sortOrder = Just DataTable.NoSort }
+            , msScoreCol "chinese" "Chinese Score" 3 .chinese
+            ]
+            [ { columnKey = "chinese", order = DataTable.Descend, sorter = DataTable.SorterMultiple 3 Nothing } ]
+            |> List.map (\state -> ( state.columnKey, state.order ))
+        )
+    , eq "data-table mergedSortStates: uncontrolled ignored whenever any controlled column is present (controlled NoSort contributes nothing but suppresses)"
+        []
+        (DataTable.mergedSortStates
+            [ dtMsNameCol
+            , { dtMsAgeCol | sortOrder = Just DataTable.NoSort }
+            , msScoreCol "chinese" "Chinese Score" 3 .chinese
+            ]
+            [ { columnKey = "age", order = DataTable.Descend, sorter = DataTable.SorterBy (\a b -> compare a.age b.age) } ]
+            |> List.map (\state -> ( state.columnKey, state.order ))
+        )
+
+    -- The spec `multiple sorter` walk (DataTable.spec.tsx:379-646) —
+    -- every expected array re-derived from the spec's checkScoreIsMatched
+    -- bytes (ties fall through by multiple priority 3 > 2 > 1; JS sort is
+    -- stable, so the name array is the row order the score bytes pin).
     ]
+        ++ msWalkChecks
+        ++ -- Pagination (use-table-data.ts + DataTable.tsx:454-466) and the
+           -- default sorter triage (use-sorter.ts getDefaultSorterFn).
+           [ eq "data-table mergedItemCount: local ignores the pagination itemCount and counts the data (spec `itemCount` without `remote`: local length wins)"
+                (Just 4)
+                (DataTable.mergedItemCount
+                    (dtMsOptsU
+                        []
+                        { remote = False
+                        , paginateSinglePage = True
+                        , pagination =
+                            Just
+                                { pgD
+                                    | currentPage = 1
+                                    , pageCount = Just 1
+                                    , pageSize = Just 10
+                                    , itemCount = Just 0
+                                }
+                        }
+                    )
+                )
+           , eq "data-table mergedItemCount: remote passes the pagination itemCount through (spec `itemCount` with `remote`)"
+                (Just 978)
+                (DataTable.mergedItemCount
+                    (dtMsOptsU
+                        []
+                        { remote = True
+                        , paginateSinglePage = True
+                        , pagination = Just { pgD | currentPage = 1, pageSize = Just 10, itemCount = Just 978 }
+                        }
+                    )
+                )
+           , eq "data-table mergedItemCount: remote with no itemCount → Nothing (upstream undefined)"
+                Nothing
+                (DataTable.mergedItemCount
+                    (dtMsOptsU
+                        []
+                        { remote = True
+                        , paginateSinglePage = True
+                        , pagination = Just { pgD | currentPage = 1, pageSize = Just 10 }
+                        }
+                    )
+                )
+           , eq "data-table boundedPage: local clamps page 99 to ceil(len/pageSize) and 0/-5 to 1 (use-table-data.ts boundedMergedCurrentPageRef)"
+                [ 2, 1, 1 ]
+                [ DataTable.boundedPage (dtMsOptsU [] { remote = False, paginateSinglePage = True, pagination = Just { pgD | currentPage = 99, pageSize = Just 2 } })
+                , DataTable.boundedPage (dtMsOptsU [] { remote = False, paginateSinglePage = True, pagination = Just { pgD | currentPage = 0, pageSize = Just 2 } })
+                , DataTable.boundedPage (dtMsOptsU [] { remote = False, paginateSinglePage = True, pagination = Just { pgD | currentPage = -5, pageSize = Just 2 } })
+                ]
+           , eq "data-table boundedPage: remote passes the page through unclamped"
+                [ 99, 0 ]
+                [ DataTable.boundedPage (dtMsOptsU [] { remote = True, paginateSinglePage = True, pagination = Just { pgD | currentPage = 99, pageSize = Just 2 } })
+                , DataTable.boundedPage (dtMsOptsU [] { remote = True, paginateSinglePage = True, pagination = Just { pgD | currentPage = 0, pageSize = Just 2 } })
+                ]
+           , eq "data-table mergedPageSize: the pagination pageSize wins; Nothing falls back to getDefaultPageSize (first pageSizes number, else 10)"
+                [ 5, 25, 10 ]
+                [ DataTable.mergedPageSize (dtMsOptsU [] { remote = False, paginateSinglePage = True, pagination = Just { pgD | pageSize = Just 5 } })
+                , DataTable.mergedPageSize
+                    (dtMsOptsU
+                        []
+                        { remote = False
+                        , paginateSinglePage = True
+                        , pagination = Just { pgD | pageSize = Nothing, pageSizes = [ Pagination.PageSizeNumber 25 ] }
+                        }
+                    )
+                , DataTable.mergedPageSize (dtMsOptsU [] { remote = False, paginateSinglePage = True, pagination = Just { pgD | pageSize = Nothing } })
+                ]
+           , eq "data-table paginatedData: no pagination object → the sorted data as-is (spec getCurrentPageData: full sorted data)"
+                [ "Jim Green", "John Brown", "Joe Black", "Jim Red" ]
+                (DataTable.paginatedData
+                    (dtMsOptsU
+                        [ { columnKey = "age", order = DataTable.Descend, sorter = DataTable.SorterBy (\a b -> compare a.age b.age) } ]
+                        { remote = False
+                        , paginateSinglePage = True
+                        , pagination = Nothing
+                        }
+                    )
+                    |> List.map .name
+                )
+           , eq "data-table paginatedData: pageSize 1 page 2 → exactly row 2 of the sorted data (spec getCurrentPageData)"
+                [ "John Brown" ]
+                (DataTable.paginatedData
+                    (dtMsOptsU
+                        [ { columnKey = "age", order = DataTable.Descend, sorter = DataTable.SorterBy (\a b -> compare a.age b.age) } ]
+                        { remote = False
+                        , paginateSinglePage = True
+                        , pagination = Just { pgD | currentPage = 2, pageSize = Just 1 }
+                        }
+                    )
+                    |> List.map .name
+                )
+           , eq "data-table paginatedData: remote hands the raw data back untouched even with a sort state (the server paginates)"
+                [ "John Brown", "Jim Green", "Joe Black", "Jim Red" ]
+                (DataTable.paginatedData
+                    (dtMsOptsU
+                        [ { columnKey = "age", order = DataTable.Descend, sorter = DataTable.SorterBy (\a b -> compare a.age b.age) } ]
+                        { remote = True
+                        , paginateSinglePage = True
+                        , pagination = Just { pgD | currentPage = 1, pageSize = Just 2 }
+                        }
+                    )
+                    |> List.map .name
+                )
+           , eq "data-table showPagination: no pagination object → False; default paginateSinglePage → True (DataTable.tsx mergedShowPagination)"
+                [ False, True ]
+                [ DataTable.showPagination (dtMsOpts [])
+                , DataTable.showPagination (dtMsOptsU [] { remote = False, paginateSinglePage = True, pagination = Just pgD })
+                ]
+           , eq "data-table showPagination: paginateSinglePage False reads the merged pageCount (remote keeps the caller pageCount; Just 1 → False, Just 2 → True)"
+                [ False, True ]
+                [ DataTable.showPagination
+                    (dtMsOptsU
+                        []
+                        { remote = True
+                        , paginateSinglePage = False
+                        , pagination = Just { pgD | currentPage = 1, pageCount = Just 1, pageSize = Just 10 }
+                        }
+                    )
+                , DataTable.showPagination
+                    (dtMsOptsU
+                        []
+                        { remote = True
+                        , paginateSinglePage = False
+                        , pagination = Just { pgD | currentPage = 1, pageCount = Just 2, pageSize = Just 10 }
+                        }
+                    )
+                ]
+           , eq "data-table showPagination: paginateSinglePage False + no pageCount → itemCount > pageSize (4≤4 False, 4>2 True — local counts the 4-row data)"
+                [ False, True ]
+                [ DataTable.showPagination
+                    (dtMsOptsU
+                        []
+                        { remote = False
+                        , paginateSinglePage = False
+                        , pagination = Just { pgD | currentPage = 1, pageSize = Just 4 }
+                        }
+                    )
+                , DataTable.showPagination
+                    (dtMsOptsU
+                        []
+                        { remote = False
+                        , paginateSinglePage = False
+                        , pagination = Just { pgD | currentPage = 1, pageSize = Just 2 }
+                        }
+                    )
+                ]
+           , eq "data-table showPagination: remote with no pageCount → per the itemCount rule (978 > 10 True, 5 ≤ 10 False)"
+                [ True, False ]
+                [ DataTable.showPagination
+                    (dtMsOptsU
+                        []
+                        { remote = True
+                        , paginateSinglePage = False
+                        , pagination = Just { pgD | currentPage = 1, pageSize = Just 10, itemCount = Just 978 }
+                        }
+                    )
+                , DataTable.showPagination
+                    (dtMsOptsU
+                        []
+                        { remote = True
+                        , paginateSinglePage = False
+                        , pagination = Just { pgD | currentPage = 1, pageSize = Just 10, itemCount = Just 5 }
+                        }
+                    )
+                ]
+           , eq "data-table mergedPaginationOpts: pageCount blanked when the item count is set, kept when it is Nothing (use-table-data.ts mergedPaginationRef)"
+                [ ( Nothing, Just 4 ), ( Just 7, Nothing ) ]
+                [ ( (DataTable.mergedPaginationOpts
+                        (dtMsOptsU
+                            []
+                            { remote = False
+                            , paginateSinglePage = True
+                            , pagination = Just { pgD | currentPage = 1, pageCount = Just 7, pageSize = Just 2, itemCount = Just 0 }
+                            }
+                        )
+                    ).pageCount
+                  , (DataTable.mergedPaginationOpts
+                        (dtMsOptsU
+                            []
+                            { remote = False
+                            , paginateSinglePage = True
+                            , pagination = Just { pgD | currentPage = 1, pageCount = Just 7, pageSize = Just 2, itemCount = Just 0 }
+                            }
+                        )
+                    ).itemCount
+                  )
+                , ( (DataTable.mergedPaginationOpts
+                        (dtMsOptsU
+                            []
+                            { remote = True
+                            , paginateSinglePage = True
+                            , pagination = Just { pgD | currentPage = 1, pageCount = Just 7, pageSize = Just 2 }
+                            }
+                        )
+                    ).pageCount
+                  , (DataTable.mergedPaginationOpts
+                        (dtMsOptsU
+                            []
+                            { remote = True
+                            , paginateSinglePage = True
+                            , pagination = Just { pgD | currentPage = 1, pageCount = Just 7, pageSize = Just 2 }
+                            }
+                        )
+                    ).itemCount
+                  )
+                ]
+           , eq "data-table mergedPaginationOpts: currentPage is the bounded page (99 → 2 over 4 rows / pageSize 2)"
+                2
+                (DataTable.mergedPaginationOpts
+                    (dtMsOptsU
+                        []
+                        { remote = False, paginateSinglePage = True, pagination = Just { pgD | currentPage = 99, pageSize = Just 2 } }
+                    )
+                ).currentPage
+           , eq "data-table sortValueCompare: the getDefaultSorterFn triage — null/null EQ, null LT a number, a number GT null, numbers and strings ordered, mixed EQ (upstream 0)"
+                [ Basics.EQ, Basics.LT, Basics.GT, Basics.LT, Basics.GT, Basics.LT, Basics.GT, Basics.EQ ]
+                [ DataTable.sortValueCompare DataTable.SortNull DataTable.SortNull
+                , DataTable.sortValueCompare DataTable.SortNull (DataTable.SortNumber 1)
+                , DataTable.sortValueCompare (DataTable.SortNumber 1) DataTable.SortNull
+                , DataTable.sortValueCompare (DataTable.SortNumber 1) (DataTable.SortNumber 2)
+                , DataTable.sortValueCompare (DataTable.SortNumber 2) (DataTable.SortNumber 1)
+                , DataTable.sortValueCompare (DataTable.SortString "a") (DataTable.SortString "b")
+                , DataTable.sortValueCompare (DataTable.SortString "b") (DataTable.SortString "a")
+                , DataTable.sortValueCompare (DataTable.SortNumber 1) (DataTable.SortString "a")
+                ]
+           ]
 
 
 
@@ -11085,6 +11761,62 @@ liveNodes =
                     (DataTable.view Theme.default { dtOpts | striped = True })
                 , Element.el [ Element.htmlAttribute (HA.id "live-data-table-empty") ]
                     (DataTable.view Theme.default { dtOpts | data = [] })
+
+                -- Data table (batch 2): sort state → th/td classes + the
+                -- sorter span, and the pagination node after the wrapper
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-sort-desc") ]
+                    (DataTable.view Theme.default
+                        { dtOpts
+                            | columns =
+                                [ dtNameCol
+                                , { dtAgeCol | sorter = Just (DataTable.SorterBy (\a b -> compare a.age b.age)) }
+                                , dtAddressCol
+                                ]
+                            , sortStates = [ { columnKey = "age", order = DataTable.Descend, sorter = DataTable.SorterBy (\a b -> compare a.age b.age) } ]
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-sort-asc") ]
+                    (DataTable.view Theme.default
+                        { dtOpts
+                            | columns =
+                                [ dtNameCol
+                                , { dtAgeCol | sorter = Just (DataTable.SorterBy (\a b -> compare a.age b.age)) }
+                                , dtAddressCol
+                                ]
+                            , sortStates = [ { columnKey = "age", order = DataTable.Ascend, sorter = DataTable.SorterBy (\a b -> compare a.age b.age) } ]
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-sort-idle") ]
+                    (DataTable.view Theme.default
+                        { dtOpts
+                            | columns =
+                                [ dtNameCol
+                                , { dtAgeCol | sorter = Just (DataTable.SorterBy (\a b -> compare a.age b.age)) }
+                                , dtAddressCol
+                                ]
+                            , sortStates =
+                                DataTable.defaultSortStates
+                                    [ dtNameCol
+                                    , { dtAgeCol | sorter = Just (DataTable.SorterBy (\a b -> compare a.age b.age)) }
+                                    , dtAddressCol
+                                    ]
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-paginated") ]
+                    (DataTable.view Theme.default
+                        { dtOpts
+                            | pagination = Just { dtPgD | currentPage = 1, pageSize = Just 2 }
+                            , paginationPrefix = [ Element.text "3 items" ]
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-pag-hidden") ]
+                    (DataTable.view Theme.default
+                        { dtOpts
+                            | data = [ { name = "John Brown", age = 32, address = "New York No. 1 Lake Park" } ]
+                            , paginateSinglePage = False
+                            , pagination = Just { dtPgD | currentPage = 1, pageSize = Just 2 }
+                        }
+                    )
                 ]
             )
         ]
