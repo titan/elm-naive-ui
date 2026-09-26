@@ -9162,7 +9162,7 @@ checks =
             )
             dtDarkVars
         )
-    , eq "data-table defaults: bordered/singleLine/showHeader true; striped/singleColumn/rtl false (interface.ts)"
+    , eq "data-table defaults: bordered/singleLine/showHeader true; striped/singleColumn/rtl false (use-config.ts ?? true / interface.ts)"
         [ True, True, True, False, False, False ]
         [ DataTable.defaults.bordered
         , DataTable.defaults.singleLine

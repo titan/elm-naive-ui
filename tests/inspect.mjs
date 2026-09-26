@@ -9245,9 +9245,23 @@ dEq(
   ].join('|')
 )
 dEq(
-  'DOM: dt td style — text-align (align col) and width (age col) byte forms, no spaces',
-  'text-align:center|width:100px',
-  [styleAt(dtTds('live-data-table-basic')[2]), styleAt(dtTds('live-data-table-basic')[1])].join('|')
+  'DOM: dt td style — text-align (align col) and width (age col) byte forms, then the ALWAYS-present empty --indent-offset (Body.tsx seeds it unconditionally; only tree children fill the value)',
+  'text-align:center;--indent-offset:|width:100px;--indent-offset:|--indent-offset:',
+  [
+    styleAt(dtTds('live-data-table-basic')[2]),
+    styleAt(dtTds('live-data-table-basic')[1]),
+    styleAt(dtTds('live-data-table-basic')[0])
+  ].join('|')
+)
+dEq(
+  'DOM: dt th/td carry the constant colspan=1 rowspan=1 (upstream renders the spans on every cell)',
+  '1|1|1|1',
+  [
+    dtThs('live-data-table-basic')[0].getAttribute('colspan'),
+    dtThs('live-data-table-basic')[0].getAttribute('rowspan'),
+    dtTds('live-data-table-basic')[0].getAttribute('colspan'),
+    dtTds('live-data-table-basic')[0].getAttribute('rowspan')
+  ].join('|')
 )
 dEq(
   'DOM: dt empty — tbody omitted, thead kept, empty node AFTER the table inside the scrollbar content, wrapping NEmpty (elm-ui wraps content children in layout divs — NUI.Scrollbar house shape)',

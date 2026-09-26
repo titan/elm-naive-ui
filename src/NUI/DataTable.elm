@@ -75,6 +75,15 @@ Divergences (documented):
     Elm attributes are opaque, and a caller `Html.Attributes.class` would
     replace the whole `className` (Elm properties are last-wins), so prefer
     `rowClassName` for classes.
+  - **Scrollbar-content children ride elm-ui layout wrappers.** The table
+    and the empty node reach `.n-scrollbar-content` as
+    `display: contents` wrapper divs (the `NUI.Scrollbar` child-embedding
+    shape shared with the menu consumers), not as flat children — the
+    first raw `<table>` consumer. Verified equivalent: no cssr rule on
+    either side uses a direct-child combinator past the content div, and
+    the `--empty` height chain targets the content div itself.
+  - **`Column.width` is `Maybe Int` (px).** Upstream accepts
+    `number | string` (`'10%'`); a string form arrives if a batch needs it.
 
 -}
 
@@ -284,7 +293,7 @@ tableNode opts =
             [ HA.class "n-data-table-table"
             , HA.attribute "style" "table-layout:auto"
             ]
-            (colgroupNode opts.columns
+            ([ Html.colgroup [] (List.map colNode opts.columns) ]
                 ++ theadNode opts
                 ++ tbodyNode opts
             )
@@ -297,11 +306,6 @@ column whose style is built only from the set width fields, upstream
 `width`), then `max-width`. All absent → no style attribute (Vue drops the
 empty object). The vnode `key` is not a DOM attribute.
 -}
-colgroupNode : List (Column row msg) -> List (Html.Html msg)
-colgroupNode columns =
-    [ Html.colgroup [] (List.map colNode columns) ]
-
-
 colNode : Column row msg -> Html.Html msg
 colNode col =
     Html.col
@@ -361,21 +365,26 @@ theadNode opts =
 then `--last` (last column), then `column.className`; the always-present
 `data-col-key`; the style built only from the set fields (`width`, then
 `text-align` from `titleAlign || align`; upstream's fixed offsets and the
-body-path `height` are all `undefined` here). No colspan/rowspan in batch 1.
+body-path `height` are all `undefined` here). `colspan`/`rowspan` render
+the constant `1` on every th (upstream always passes them; API-level
+spans arrive with the group-header/merge-cell batch); attribute order
+matches upstream (`style`, spans, `data-col-key`, `class`).
 -}
 thNode : ( Column row msg, Bool ) -> Html.Html msg
 thNode ( col, isLast ) =
     Html.th
-        ([ HA.class
-            (String.join " "
-                ([ "n-data-table-th" ]
-                    ++ I.classIf isLast "n-data-table-th--last"
-                    ++ maybeClass col.className
-                )
-            )
-         , HA.attribute "data-col-key" col.key
-         ]
-            ++ thStyleAttr col
+        (thStyleAttr col
+            ++ [ HA.colspan 1
+               , HA.rowspan 1
+               , HA.attribute "data-col-key" col.key
+               , HA.class
+                    (String.join " "
+                        ([ "n-data-table-th" ]
+                            ++ I.classIf isLast "n-data-table-th--last"
+                            ++ maybeClass col.className
+                        )
+                    )
+               ]
         )
         [ Html.div [ HA.class "n-data-table-th__title-wrapper" ]
             [ Html.div [ HA.class "n-data-table-th__title" ]
@@ -464,9 +473,11 @@ rowAttrsOf opts row index =
 {-| One body cell — `Body.tsx`'s td for a basic column: class order is base
 → `column.className` → `--{align}-align` (iff align set — redundant with
 the inline `text-align`, upstream emits both) → `--last-col` → `--last-row`;
-the always-present `data-col-key`; the style built only from the set fields
-(`text-align`, then `width`); the cell body is the caller's element embedded
-through `layoutWith`. No colspan/rowspan in batch 1.
+the always-present `data-col-key`; the style always carries the empty
+`--indent-offset:` declaration after `text-align`/`width` (upstream seeds
+`{'--indent-offset': ''}` unconditionally — only tree children fill the
+value), with `colspan`/`rowspan` the constant `1`; the cell body is the
+caller's element embedded through `layoutWith`.
 -}
 tdNode : Options row msg -> Int -> row -> ( Column row msg, Bool ) -> Html.Html msg
 tdNode opts rowIndex row ( col, isLastCol ) =
@@ -475,36 +486,40 @@ tdNode opts rowIndex row ( col, isLastCol ) =
             rowIndex + 1 == List.length opts.data
     in
     Html.td
-        ([ HA.class
-            (String.join " "
-                ([ "n-data-table-td" ]
-                    ++ maybeClass col.className
-                    ++ (case col.align of
-                            Just align ->
-                                [ "n-data-table-td--" ++ alignName align ++ "-align" ]
+        (tdStyleAttr col
+            ++ [ HA.colspan 1
+               , HA.rowspan 1
+               , HA.attribute "data-col-key" col.key
+               , HA.class
+                    (String.join " "
+                        ([ "n-data-table-td" ]
+                            ++ maybeClass col.className
+                            ++ (case col.align of
+                                    Just align ->
+                                        [ "n-data-table-td--" ++ alignName align ++ "-align" ]
 
-                            Nothing ->
-                                []
-                       )
-                    ++ I.classIf isLastCol "n-data-table-td--last-col"
-                    ++ I.classIf isLastRow "n-data-table-td--last-row"
-                )
-            )
-         , HA.attribute "data-col-key" col.key
-         ]
-            ++ tdStyleAttr col
+                                    Nothing ->
+                                        []
+                               )
+                            ++ I.classIf isLastCol "n-data-table-td--last-col"
+                            ++ I.classIf isLastRow "n-data-table-td--last-row"
+                        )
+                    )
+               ]
         )
         [ embedChild (col.view row) ]
 
 
 tdStyleAttr : Column row msg -> List (Html.Attribute msg)
 tdStyleAttr col =
-    rawStyleAttr
-        (stylePairs
-            [ ( "text-align", Maybe.map alignName col.align )
-            , ( "width", Maybe.map pxfy col.width )
-            ]
-        )
+    let
+        parts =
+            List.filterMap identity
+                [ stylePart "text-align" (Maybe.map alignName col.align)
+                , stylePart "width" (Maybe.map pxfy col.width)
+                ]
+    in
+    [ HA.attribute "style" (String.join ";" (parts ++ [ "--indent-offset:" ])) ]
 
 
 {-| There is no public `Element` → `Html`, so a caller's element is
