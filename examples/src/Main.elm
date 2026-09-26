@@ -4542,9 +4542,21 @@ dataTableSection =
 
         columns =
             [ nameCol, ageCol, addressCol ]
+
+        ageSorter =
+            DataTable.SorterBy (\a b -> compare a.age b.age)
+
+        sortableColumns =
+            [ nameCol, { ageCol | sorter = Just ageSorter }, addressCol ]
+
+        ageDescend =
+            { columnKey = "age", order = DataTable.Descend, sorter = ageSorter }
+
+        dtPg =
+            Pagination.defaults
     in
     section "Data Table"
-        "The advanced table (upstream `NDataTable`) — column definitions drive the colgroup, header cells and body cells; `rowKey` keys rows and the empty state renders `NEmpty`. Batch-1 core: sort, filter, selection, expand, pagination, fixed columns and scroll-X ship in later batches."
+        "The advanced table (upstream `NDataTable`) — column definitions drive the colgroup, header cells and body cells; `rowKey` keys rows and the empty state renders `NEmpty`. Sorting and pagination ship in this batch; filter, selection, expand, fixed columns and scroll-X ship in later batches. The sort click cycle (false → descend → ascend) and the page changes are caller-owned — this page is static, so nothing is wired."
     <|
         [ demoRow "Basic"
             [ DataTable.view theme
@@ -4562,6 +4574,50 @@ dataTableSection =
         , demoRow "Empty"
             [ DataTable.view theme
                 { dtD | columns = columns, data = [], rowKey = .name }
+            ]
+        , demoRow "Sorting"
+            [ DataTable.view theme
+                { dtD | columns = sortableColumns, data = people, rowKey = .name }
+            , DataTable.view theme
+                { dtD
+                    | columns = sortableColumns
+                    , data = people
+                    , rowKey = .name
+                    , sortStates =
+                        DataTable.defaultSortStates sortableColumns
+                            |> List.map
+                                (\state ->
+                                    if state.columnKey == "age" then
+                                        { state | order = DataTable.Descend }
+
+                                    else
+                                        state
+                                )
+                }
+            ]
+        , demoRow "Pagination"
+            [ DataTable.view theme
+                { dtD
+                    | columns = columns
+                    , data = people
+                    , rowKey = .name
+                    , pagination = Just { dtPg | pageSize = Just 2 }
+                }
+            ]
+        , demoRow "Sort + pagination"
+            [ DataTable.view theme
+                { dtD
+                    | columns = sortableColumns
+                    , data = people
+                    , rowKey = .name
+                    , sortStates = [ ageDescend ]
+                    , pagination =
+                        Just
+                            { dtPg
+                                | pageSize = Just 2
+                                , currentPage = 2
+                            }
+                }
             ]
         ]
 

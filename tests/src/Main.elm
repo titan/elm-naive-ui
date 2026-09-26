@@ -4762,6 +4762,9 @@ dtNameCol =
     , minWidth = Nothing
     , maxWidth = Nothing
     , className = Nothing
+    , sorter = Nothing
+    , defaultSortOrder = DataTable.NoSort
+    , sortOrder = Nothing
     }
 
 
@@ -4776,6 +4779,9 @@ dtAgeCol =
     , minWidth = Nothing
     , maxWidth = Nothing
     , className = Nothing
+    , sorter = Nothing
+    , defaultSortOrder = DataTable.NoSort
+    , sortOrder = Nothing
     }
 
 
@@ -4790,6 +4796,9 @@ dtAddressCol =
     , minWidth = Just 200
     , maxWidth = Just 300
     , className = Nothing
+    , sorter = Nothing
+    , defaultSortOrder = DataTable.NoSort
+    , sortOrder = Nothing
     }
 
 
