@@ -4771,6 +4771,8 @@ dtNameCol =
     , options = []
     , renderExpand = Nothing
     , expandable = Nothing
+    , fixed = Nothing
+    , ellipsis = Nothing
     }
 
 
@@ -4794,6 +4796,8 @@ dtAgeCol =
     , options = []
     , renderExpand = Nothing
     , expandable = Nothing
+    , fixed = Nothing
+    , ellipsis = Nothing
     }
 
 
@@ -4817,6 +4821,8 @@ dtAddressCol =
     , options = []
     , renderExpand = Nothing
     , expandable = Nothing
+    , fixed = Nothing
+    , ellipsis = Nothing
     }
 
 
@@ -4876,6 +4882,8 @@ msScoreCol key title priority accessor =
     , options = []
     , renderExpand = Nothing
     , expandable = Nothing
+    , fixed = Nothing
+    , ellipsis = Nothing
     }
 
 
@@ -4899,6 +4907,8 @@ dtMsNameCol =
     , options = []
     , renderExpand = Nothing
     , expandable = Nothing
+    , fixed = Nothing
+    , ellipsis = Nothing
     }
 
 
@@ -4922,6 +4932,8 @@ dtMsAgeCol =
     , options = []
     , renderExpand = Nothing
     , expandable = Nothing
+    , fixed = Nothing
+    , ellipsis = Nothing
     }
 
 
@@ -4945,6 +4957,8 @@ dtMsAddressCol =
     , options = []
     , renderExpand = Nothing
     , expandable = Nothing
+    , fixed = Nothing
+    , ellipsis = Nothing
     }
 
 

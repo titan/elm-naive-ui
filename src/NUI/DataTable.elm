@@ -3,7 +3,9 @@ module NUI.DataTable exposing
     , CheckAction(..)
     , CheckEmit
     , Column
+    , ColumnEllipsis(..)
     , ColumnKind(..)
+    , FixedSide(..)
     , Options
     , SelectionOption(..)
     , Size(..)
@@ -12,6 +14,7 @@ module NUI.DataTable exposing
     , SortValue(..)
     , Sorter(..)
     , SorterCompare(..)
+    , TableLayout(..)
     , allRowsChecked
     , boundedPage
     , checkedKeysAfterCheck
@@ -27,6 +30,8 @@ module NUI.DataTable exposing
     , defaults
     , deriveNextSorter
     , filteredData
+    , fixedColumnLeftMap
+    , fixedColumnRightMap
     , getMultiplePriority
     , getSortFunction
     , headerCheckboxDisabled
@@ -69,38 +74,49 @@ rebuilt on elm-ui.
 
 (Record updates bind `defaults` to a local first — see `NUI.Button`.)
 
-DOM (batch-3 — one table, the header lives inside the body table, the
-pagination node after the wrapper):
+DOM (batch-4 — three body shapes; `headerInBody = maxHeight unset &&
+!flexHeight`, the scrollbar wraps unless the merged layout is `fixed`
+with no explicit scroll props):
 
     div.n-data-table [--rtl] [--bordered] [--bottom-bordered] [--single-line]
-                     [--single-column] [--empty]        (empty iff no paginated rows)
+                     [--single-column] [--loading] [--flex-height] [--empty]
       style = the 47 `--n-*` vars
       ├─ div.n-data-table-wrapper
       │  └─ div.n-data-table-base-table
-      │     └─ div.n-data-table-base-table-body (the `n-scrollbar` root)
-      │        └─ div.n-scrollbar-container > div.n-scrollbar-content
-      │           ├─ table.n-data-table-table [inline table-layout:auto]
-      │           │  ├─ colgroup > col (style width/min-width/max-width — always;
-      │           │  │   selection/expand cols default the width pair to 40px)
-      │           │  ├─ thead.n-data-table-thead[data-n-id]
-      │           │  │  └─ tr.n-data-table-tr > th[data-col-key]
-      │           │  │     [--sorting] [--sortable] [--selection] [--last]
-      │           │  │     ├─ basic col: div.n-data-table-th__title-wrapper
-      │           │  │     │   (title div + sorter span iff sortable)
-      │           │  │     └─ selection col (multiple): NCheckbox
-      │           │  │         [+ i.n-data-table-check-extra iff column options]
-      │           │  └─ tbody.n-data-table-tbody[data-n-id]             (iff paginated rows)
-      │           │     └─ tr.n-data-table-tr [--striped] [--expanded]
-      │           │        > td[data-col-key] [--sorting] [--{align}-align]
-      │           │          [--selection|--expand] [--last-col] [--last-row]
-      │           │          (selection td: NCheckbox/NRadio; expand td:
-      │           │           div.n-data-table-expand-trigger iff expandable)
-      │           │     and after each expanded parent row:
-      │           │     └─ tr.n-data-table-tr--expanded
-      │           │        > td.n-data-table-td--last-col[--last-row] colspan=all
-      │           │           [div.n-data-table-expand (iff sticky) > renderExpand]
-      │           └─ div.n-data-table-empty > NEmpty                    (iff no paginated rows)
+      │     ├─ basic (no maxHeight/flexHeight, scrollable):
+      │     │  └─ div.n-data-table-base-table-body (the `n-scrollbar` root)
+      │     │     └─ div.n-scrollbar-container > div.n-scrollbar-content
+      │     │        ├─ table.n-data-table-table [inline table-layout:{merged}]
+      │     │        │  ├─ colgroup > col (style width/min-width/max-width — always;
+      │     │        │  │   selection/expand cols default the width pair to 40px)
+      │     │        │  ├─ thead.n-data-table-thead[data-n-id] (iff showHeader)
+      │     │        │  │  └─ tr.n-data-table-tr > th[data-col-key]
+      │     │        │  │     [--fixed-left|right] [--sorting] [--sortable]
+      │     │        │  │     [--selection] [--last]
+      │     │        │  │     style: [left/right fixed offset] width [text-align]
+      │     │        │  │     ├─ basic col: div.n-data-table-th__title-wrapper
+      │     │        │  │     │   (title div [> th__ellipsis | NEllipsis] + sorter
+      │     │        │  │     │    span iff sortable)
+      │     │        │  │     └─ selection col (multiple): NCheckbox
+      │     │        │  │         [+ i.n-data-table-check-extra iff column options]
+      │     │        │  └─ tbody.n-data-table-tbody[data-n-id]             (iff rows)
+      │     │        │     └─ tr.n-data-table-tr [--striped] [--expanded]
+      │     │        │        > td[data-col-key] [--sorting] [--fixed-left|right]
+      │     │        │          [--{align}-align] [--selection|--expand]
+      │     │        │          [--last-col] [--last-row]
+      │     │        │          style: [text-align] [width] [left/right offset]
+      │     │        │          --indent-offset:
+      │     │        └─ div.n-data-table-empty[--hide] [style bodyStyle +
+      │     │           sticky string iff xScrollable] > NEmpty        (iff empty)
+      │     ├─ split (maxHeight/flexHeight): div.n-data-table-base-table-header
+      │     │  > table [style min-width?+table-layout:fixed] > colgroup + thead,
+      │     │  then the body scrollbar WITHOUT the inline thead (its slot
+      │     │  renders ONLY the empty div when empty — no table)
+      │     └─ bare (merged layout fixed, no scrollX/maxHeight/flexHeight —
+      │        `tableLayout = TableFixed` or any ellipsis column): the table
+      │        [table-layout:fixed] + empty div directly, NO scrollbar wrapper
       └─ div.n-data-table__pagination > NPagination + the prefix slot   (iff pagination shown)
+      └─ div.n-data-table-loading-wrapper > the NBaseLoading chain     (iff loading)
 
 Cell content is `Element msg`, embedded through `Element.layoutWith`
 (`display: contents`, the `NUI.Table` precedent); the scroll area is
@@ -109,14 +125,14 @@ Cell content is `Element msg`, embedded through `Element.layoutWith`
 
 Divergences (documented):
 
-  - **Batch-3 scope.** Selection (checkbox / radio / extra menu) and row
-    expansion ship here, on top of batch-2's sort and pagination; filter,
-    loading, fixed columns, scrollX, group headers, summary rows, virtual
-    scroll, resizable columns and tree data (`children`/cascade/async
-    `onLoad` expansion) are upcoming batches — the port models flat data
-    only. `maxHeight`/`flexHeight` (which split the header into its own
-    table) are not modelled, so the header always renders inside the
-    single body table — upstream's `headerInBody` path.
+  - **Batch-4 scope.** Scroll / layout ships here — `scrollX` / `maxHeight`
+    / `minHeight` / `flexHeight` (the discrete-header split and the
+    merged `table-layout`), fixed columns, ellipsis columns and the
+    loading overlay — on top of batch-3's selection / expand, batch-2's
+    sort / pagination and the b1 core. Filter, group headers, summary
+    rows, merge cells, resizable columns, virtual scroll and tree data
+    (`children` / cascade / async `onLoad`) remain upcoming batches; the
+    port models flat data only.
   - **Render-prop sorter customizations are not modelled.** Upstream's
     `renderSorter` / `renderSorterIcon` (per-column and the global
     `DataTable.renderSorter` component prop) and `customNextSortOrder` have
@@ -175,9 +191,13 @@ Divergences (documented):
     so the name lands nowhere (DOM otherwise equal), and clicking an
     already-checked radio fires nothing either way (upstream's change event
     never fires; the port gates `onChange` on `checked`).
-  - **`loading` gates are no-ops until the loading batch** (upstream's
-    `doCheck` / `doUncheck` / `doCheckAll` / `doUncheckAll` return early
-    while `props.loading`); `Options` has no loading field yet.
+  - **`loading` gates stay caller-side.** Upstream's `doCheck` / `doUncheck`
+    / `doCheckAll` / `doUncheckAll` return early while `props.loading`; the
+    port's pure `checkedKeysAfter*` helpers do not (the caller simply does
+    not apply them while loading). The DOM surface IS batch-4: the root
+    `--loading` class, the `n-data-table-empty--hide` empty dimmer, the
+    force-disabled pager and the `n-data-table-loading-wrapper` overlay
+    with the `NBaseLoading` chain.
   - **Selection/expand columns are flat-record fields, not variant types.**
     `Column.kind` discriminates; upstream's TS `never` fields become
     ignored-if-set with one byte-verified asymmetry: the controlled-sorter
@@ -222,8 +242,8 @@ Divergences (documented):
     then writes uncontrolled refs; Elm carries the table-level
     `onUpdatePage` / `onUpdatePageSize` only, and `mergedPaginationOpts`
     replaces the pagination record's own handlers with them. Upstream also
-    force-disables the pager while `loading` — that override arrives with
-    the loading batch.
+    force-disables the pager while `loading` — the override is in force
+    since the loading batch.
   - **`pagination.defaultPage` / `defaultPageSize` seeds are caller-owned.**
     `NUI.Pagination` has no such fields, so callers seed their model and
     pass `currentPage` / `pageSize` explicitly; the pagination prefix
@@ -237,11 +257,23 @@ Divergences (documented):
     implementation detail — if a pinned tie order ever disagrees, re-derive
     from the upstream bytes.
   - **`data-n-id` is the constant `"1"`.** Upstream stamps a random seemly
-    component id on thead/tbody; it only keys the fixed-column shadow
-    cssr that a later batch will port.
-  - **`table-layout` is pinned to `auto`** (upstream's default `tableLayout`
-    prop; upstream switches to `fixed` for virtual scroll / flexHeight /
-    maxHeight / ellipsis columns — all batch-3+ surfaces).
+    component id on thead/tbody; it only keys the fixed-column ACTIVE-shadow
+    cssr (`[data-n-id] [data-col-key]::after/before`), which mounts at
+    runtime only when the scroll position activates a column — unreachable
+    in a pure render, so the shadow strips never mount (the static
+    `cM('fixed-left')` sticky / z-index / geometry rules DO ship, and the
+    `--n-box-shadow-*` vars stay on the root). Upstream's
+    `--transition-disabled` imperative toggling is the same story — added
+    post-mount, removed on first measure; the initial render carries
+    neither.
+  - **`tableLayout` merges per upstream** (`mergedTableLayoutRef`):
+    `fixed` when `flexHeight` / `maxHeight` / any ellipsis column (virtual
+    scroll is the fourth upstream trigger — out of scope), else the
+    caller's `tableLayout`. A `fixed` merged layout with no scrollX /
+    maxHeight / flexHeight makes the body NScrollbar render the slot BARE
+    (no `n-scrollbar` wrapper, no `n-data-table-base-table-body` class,
+    the bodyStyle dropped) — byte-faithful to upstream's
+    `if (!scrollable) return slot`.
   - **`title` is a plain `String`** until the header-render batch (upstream
     also accepts a render function returning VNodes).
   - **`rowAttributes` land verbatim after the row's `class` attribute.**
@@ -256,8 +288,14 @@ Divergences (documented):
     first raw `<table>` consumer. Verified equivalent: no cssr rule on
     either side uses a direct-child combinator past the content div, and
     the `--empty` height chain targets the content div itself.
-  - **`Column.width` is `Maybe Int` (px).** Upstream accepts
-    `number | string` (`'10%'`); a string form arrives if a batch needs it.
+  - **`Column.width` / `scrollX` / `maxHeight` / `minHeight` are
+    `Maybe Int` (px).** Upstream accepts `number | string` (`'10%'`);
+    a string form arrives if a batch needs it. The port's `showHeader` is
+    an extension — upstream has NO `show-header` prop (the header always
+    renders, inline or discrete); the port gates both headers on it.
+    Upstream's `scrollbarProps` (attr passthrough onto the body
+    NScrollbar) has no surface — extend `NUI.Scrollbar.Options` if a
+    batch needs it.
 
 -}
 
@@ -267,8 +305,10 @@ import Html.Attributes as HA
 import Html.Events
 import NUI.Checkbox
 import NUI.Dropdown
+import NUI.Ellipsis
 import NUI.Empty
 import NUI.Internal as I
+import NUI.Internal.Loading as Loading
 import NUI.Pagination
 import NUI.Radio
 import NUI.Scrollbar
@@ -295,6 +335,40 @@ type Align
     = AlignLeft
     | AlignCenter
     | AlignRight
+
+
+{-| Upstream `fixed: 'left' | 'right'` on a column — the sticky-column
+surface (`use-scroll.ts`'s fixed maps drive the inline `left` / `right`
+offsets and the `--fixed-left` / `--fixed-right` classes; the shadow
+strips ride the static cssr `cM('fixed-left')` rules).
+-}
+type FixedSide
+    = FixedLeft
+    | FixedRight
+
+
+{-| Upstream `tableLayout: 'auto' | 'fixed'` (default `'auto'`) — the
+base layout, overridden to `fixed` by `flexHeight` / `maxHeight` / any
+ellipsis column (`mergedTableLayoutRef`, DataTable.tsx :191).
+-}
+type TableLayout
+    = TableAuto
+    | TableFixed
+
+
+{-| Upstream `Column.ellipsis` — `true` (the plain wrappers) or the
+`EllipsisProps` object (the `NEllipsis` component form). The port splits
+by RENDER target, not by tooltip-ness: `EllipsisPlain` is upstream's
+`true` AND the th's object-without-Tooltip case (both render the same
+plain wrapper div); `EllipsisOpts` is the `NEllipsis` form — the th's
+object-with-tooltip and the td's object (tooltip or not — the td/th
+asymmetry is upstream's, Cell.tsx :59 vs Header.tsx :254). The port's
+`NUI.Ellipsis` has no tooltip surface — that gap is the Ellipsis
+module's documented edge, inherited here.
+-}
+type ColumnEllipsis msg
+    = EllipsisPlain
+    | EllipsisOpts (NUI.Ellipsis.Options msg)
 
 
 {-| Upstream `SortOrder` — `'ascend' | 'descend' | false` (`NoSort` is the
@@ -443,6 +517,8 @@ type alias Column row msg =
     , options : List (SelectionOption row msg)
     , renderExpand : Maybe (row -> Int -> Element msg)
     , expandable : Maybe (row -> Bool)
+    , fixed : Maybe FixedSide
+    , ellipsis : Maybe (ColumnEllipsis msg)
     }
 
 
@@ -469,6 +545,8 @@ columnDefaults =
     , options = []
     , renderExpand = Nothing
     , expandable = Nothing
+    , fixed = Nothing
+    , ellipsis = Nothing
     }
 
 
@@ -495,6 +573,16 @@ toggle channel; `stickyExpandedRows` + `bodyWidth` the sticky expanded
 wrapper; `renderExpandIcon` the table-level expand-trigger icon slot; and
 `onCheckExtraClick` the click seam on the selection menu's trigger icon
 (the open menu is the caller's `NUI.Dropdown` runtime).
+
+The scroll / layout surface: `loading` (the root `--loading` class, the
+`--hide` empty dimmer, the force-disabled pager and the
+`n-data-table-loading-wrapper` overlay — the `spin*` fields the per-field
+`spinProps` spread over the sw-20 / r-100 / scale-1 baseline), `maxHeight`
+/ `minHeight` (the body fallthrough style) and `flexHeight` (the root
+`--flex-height` class) — `maxHeight` / `flexHeight` split the header into
+its own discrete table — `scrollX` (the scrollbar content `min-width` +
+`width:100%` and the discrete header's `min-width`), and `tableLayout`
+(the base layout under the `fixed` overrides — see the divergence notes).
 
 -}
 type alias Options row msg =
@@ -529,6 +617,16 @@ type alias Options row msg =
     , bodyWidth : Maybe Int
     , renderExpandIcon : Maybe (Bool -> row -> Element msg)
     , onCheckExtraClick : Maybe msg
+    , loading : Bool
+    , maxHeight : Maybe Int
+    , minHeight : Maybe Int
+    , flexHeight : Bool
+    , scrollX : Maybe Int
+    , tableLayout : TableLayout
+    , spinStrokeWidth : Maybe Int
+    , spinRadius : Maybe Int
+    , spinScale : Maybe Float
+    , spinStroke : Maybe String
     }
 
 
@@ -565,6 +663,16 @@ defaults =
     , bodyWidth = Nothing
     , renderExpandIcon = Nothing
     , onCheckExtraClick = Nothing
+    , loading = False
+    , maxHeight = Nothing
+    , minHeight = Nothing
+    , flexHeight = False
+    , scrollX = Nothing
+    , tableLayout = TableAuto
+    , spinStrokeWidth = Nothing
+    , spinRadius = Nothing
+    , spinScale = Nothing
+    , spinStroke = Nothing
     }
 
 
@@ -573,11 +681,11 @@ defaults =
 
 
 {-| The data table — the `n-data-table` root carrying the modifier classes
-(`DataTable.tsx` render's class array, minus the batch-4 `--loading` /
-`--flex-height` and the inline-theme `themeClass`) and the 47-var inline
-set, over the wrapper → base-table → scrollbar → single-table chain, with
-the pagination node after the wrapper (`mergedShowPagination` decides it;
-upstream's loading transition follows in a later batch).
+(`DataTable.tsx` render's class array, minus the inline-theme
+`themeClass`) and the 47-var inline set, over the wrapper → base-table →
+body chain, the pagination node after the wrapper and the loading
+wrapper after that (`mergedShowPagination` / the `loading` transition's
+at-rest render).
 -}
 view : Theme -> Options row msg -> Element msg
 view theme opts =
@@ -599,10 +707,9 @@ view theme opts =
             ++ opts.attributes
         )
         [ Element.el [ I.classes [ "n-data-table-wrapper" ] ]
-            (Element.el [ I.classes [ "n-data-table-base-table" ] ]
-                (scrollbarNode theme opts)
-            )
+            (baseTableNode theme opts)
         , paginationNode theme opts
+        , loadingNode opts
         ]
 
 
@@ -619,61 +726,230 @@ rootClasses opts bottomBordered empty =
         ++ I.classIf bottomBordered "n-data-table--bottom-bordered"
         ++ I.classIf opts.singleLine "n-data-table--single-line"
         ++ I.classIf opts.singleColumn "n-data-table--single-column"
+        ++ I.classIf opts.loading "n-data-table--loading"
+        ++ I.classIf opts.flexHeight "n-data-table--flex-height"
         ++ I.classIf empty "n-data-table--empty"
 
 
 {-| The pagination node (`DataTable.tsx` render): a sibling AFTER the
 wrapper — the bare `div.n-data-table__pagination` carrying only the class,
-over the merged pager. Upstream's `disabled={loading}` override on the
-pager arrives with the loading batch; the prefix slot rides
-`paginationPrefix` (upstream: a render-prop on the pagination object).
+over the merged pager. Upstream force-disables the pager while `loading`
+(`disabled={loading}` overrides the merged pagination object); the prefix
+slot rides `paginationPrefix` (upstream: a render-prop on the pagination
+object).
 -}
 paginationNode : Theme -> Options row msg -> Element msg
 paginationNode theme opts =
     if showPagination opts then
+        let
+            merged =
+                mergedPaginationOpts opts
+
+            pager =
+                if opts.loading then
+                    { merged | disabled = True }
+
+                else
+                    merged
+        in
         Element.el [ I.classes [ "n-data-table__pagination" ] ]
-            (NUI.Pagination.view theme (mergedPaginationOpts opts) opts.paginationPrefix)
+            (NUI.Pagination.view theme pager opts.paginationPrefix)
 
     else
         Element.none
 
 
+{-| The loading overlay (`DataTable.tsx` render tail): upstream wraps the
+wrapper in `<Transition name="fade-in-scale-up-transition">` — its
+at-rest initial render is the plain `div.n-data-table-loading-wrapper`
+over the `NBaseLoading` chain (`strokeWidth 20` baseline, the `spin*`
+fields the per-field `spinProps` spread — the `NUI.Button` loading
+precedent). Nothing at all while not loading (the Transition renders its
+null child).
+-}
+loadingNode : Options row msg -> Element msg
+loadingNode opts =
+    if opts.loading then
+        Element.html
+            (Html.div [ HA.class "n-data-table-loading-wrapper" ]
+                [ Html.div
+                    [ HA.class "n-base-loading"
+                    , HA.attribute "role" "img"
+                    , HA.attribute "aria-label" "loading"
+                    ]
+                    [ Html.div [ HA.class "n-base-loading__transition-wrapper" ]
+                        [ Html.div [ HA.class "n-base-loading__container" ]
+                            [ Loading.spinner
+                                { strokeWidth = toFloat (Maybe.withDefault 20 opts.spinStrokeWidth)
+                                , radius = toFloat (Maybe.withDefault 100 opts.spinRadius)
+                                , scale = Maybe.withDefault 1 opts.spinScale
+                                , stroke = opts.spinStroke
+                                }
+                            ]
+                        ]
+                    ]
+                ]
+            )
+
+    else
+        Element.none
+
+
+{-| The base-table region (`MainTable.tsx` render): the
+`div.n-data-table-base-table` over either the single body scrollbar
+(`headerInBody` — no maxHeight / flexHeight) or the discrete header div
+plus the header-less body, or — when the body is not scrollable at all
+(`mergedTableLayout` fixed via `tableLayout` / an ellipsis column with no
+scrollX / maxHeight / flexHeight) — the bare slot children straight under
+the div (upstream's `NScrollbar` `scrollable = false` renders the slot
+bare and DROPS its fallthrough class / style: no `n-scrollbar` wrapper,
+no `n-data-table-base-table-body`). The port's `showHeader` extension
+gates the discrete header too (upstream has no `show-header` prop — the
+header always renders, inline or discrete).
+-}
+baseTableNode : Theme -> Options row msg -> Element msg
+baseTableNode theme opts =
+    let
+        split =
+            not (headerInBodyOf opts)
+
+        header =
+            if split && opts.showHeader then
+                [ discreteHeaderNode theme opts ]
+
+            else
+                []
+
+        body =
+            if scrollableOf opts then
+                [ scrollbarNode theme opts ]
+
+            else
+                tableNode theme opts :: emptyNodes theme opts
+    in
+    Element.column [ I.classes [ "n-data-table-base-table" ] ]
+        (header ++ body)
+
+
+{-| The discrete header (`Header.tsx` `discrete = true`): the
+`div.n-data-table-base-table-header` over its own table — style
+`min-width` first (only with `scrollX`), then the merged `table-layout`
+(`fixed` by construction in split mode) — colgroup and the same inline
+thead node. Upstream's `onScroll` sync handler leaves no DOM byte.
+-}
+discreteHeaderNode : Theme -> Options row msg -> Element msg
+discreteHeaderNode theme opts =
+    Element.html
+        (Html.div [ HA.class "n-data-table-base-table-header" ]
+            [ Html.table
+                ([ HA.class "n-data-table-table" ]
+                    ++ rawStyleAttr (headerTableStyleOf opts)
+                )
+                (Html.colgroup [] (List.map colNode opts.columns)
+                    :: theadNode theme opts (mergedSortStates opts.columns opts.sortStates)
+                )
+            ]
+        )
+
+
 {-| The scroll area — upstream's body `NScrollbar` with the
-`n-data-table-base-table-body` fallthrough class on its root and
-`contentStyle = minWidth: 100%` (upstream `formatLength(scrollX) || '100%'`;
-no `scrollX` in this batch). Children: the table, then — upstream
-`{this.empty ? createEmptyNode() : null}` right after `</table>` — the
-empty state, a sibling inside the scrollbar content (empty keys off the
-paginated data).
+`n-data-table-base-table-body` fallthrough class on its root, the
+`bodyStyle` fallthrough style (dropped while empty — upstream
+`style={!empty ? bodyStyle : undefined}`), `xScrollable` per the scroll
+flags (the basic auto-layout table IS x-scrollable — the content
+`width:fit-content` + the x-rail), both rails carrying the table's
+`z-index:3` rail styles, and `contentStyle` per `scrollX`
+(`min-width:100%` without it). Children: split + empty renders ONLY the
+empty node (upstream `Body.tsx` :599-604 — no table in the slot);
+otherwise the table (inline thead iff `headerInBody`), then the empty
+node after it.
 -}
 scrollbarNode : Theme -> Options row msg -> Element msg
 scrollbarNode theme opts =
     let
         sb =
             NUI.Scrollbar.defaults
+
+        empty =
+            paginatedData opts == []
     in
     NUI.Scrollbar.view theme
         { sb
             | extraClasses = [ "n-data-table-base-table-body" ]
-            , contentStyle = Just "min-width: 100%"
-        }
-        (tableNode theme opts
-            :: (if paginatedData opts == [] then
-                    [ Element.el [ I.classes [ "n-data-table-empty" ] ]
-                        (NUI.Empty.view theme NUI.Empty.defaults [])
-                    ]
+            , xScrollable = xScrollableOf opts
+            , contentStyle = Just (contentStyleOf opts)
+            , rootStyle =
+                if empty then
+                    Nothing
 
                 else
-                    []
-               )
+                    bodyStyleOf opts
+            , yRailStyle = Just "z-index:3"
+            , xRailStyle = Just "z-index:3"
+        }
+        (if empty && not (headerInBodyOf opts) then
+            emptyNodes theme opts
+
+         else
+            tableNode theme opts :: emptyNodes theme opts
         )
 
 
-{-| The body's single `<table>` (no maxHeight/flexHeight in this batch, so
-there is no separate header table): class + the inline `table-layout`,
-then colgroup, thead (iff `showHeader`), tbody (iff paginated rows
-non-empty) — `Body.tsx`'s non-virtual render. No `width`/`minWidth` on
-this table (the scrollbar content's `min-width` carries it).
+{-| The empty state nodes — `[ div.n-data-table-empty [--hide] > NEmpty ]`
+iff the paginated data is empty, else `[]` (upstream
+`{this.empty ? createEmptyNode() : null}`). The div's style merges the
+`bodyStyle` object entries (no-space form) with upstream's verbatim
+sticky string when the body is x-scrollable.
+-}
+emptyNodes : Theme -> Options row msg -> List (Element msg)
+emptyNodes theme opts =
+    if paginatedData opts == [] then
+        [ Element.el
+            ([ I.classes
+                ([ "n-data-table-empty" ]
+                    ++ I.classIf opts.loading "n-data-table-empty--hide"
+                )
+             ]
+                ++ emptyStyleAttr opts
+            )
+            (NUI.Empty.view theme NUI.Empty.defaults [])
+        ]
+
+    else
+        []
+
+
+{-| The empty div's style — `Body.tsx` `createEmptyNode`'s
+`[bodyStyle, xScrollable ? 'position: sticky; left: 0; width:
+var(--n-scrollbar-current-width);' : undefined]`: the object entries
+first (no-space form), then the upstream string verbatim (authored with
+spaces and its trailing `;`), joined by `;`.
+-}
+emptyStyleAttr : Options row msg -> List (Element.Attribute msg)
+emptyStyleAttr opts =
+    let
+        parts =
+            List.filterMap identity
+                [ bodyStyleOf opts
+                , if xScrollableOf opts then
+                    Just "position: sticky; left: 0; width: var(--n-scrollbar-current-width);"
+
+                  else
+                    Nothing
+                ]
+    in
+    if List.isEmpty parts then
+        []
+
+    else
+        [ Element.htmlAttribute (HA.attribute "style" (String.join ";" parts)) ]
+
+
+{-| The body's single `<table>` (`Body.tsx` :1063): class + the inline
+merged `table-layout` (no `width`/`minWidth` — the scrollbar content's
+`min-width` carries it; the DISCRETE header's table takes the
+`min-width`), then colgroup, thead (iff `headerInBody` and the port's
+`showHeader`), tbody (iff paginated rows non-empty).
 -}
 tableNode : Theme -> Options row msg -> Element msg
 tableNode theme opts =
@@ -684,10 +960,15 @@ tableNode theme opts =
     Element.html
         (Html.table
             [ HA.class "n-data-table-table"
-            , HA.attribute "style" "table-layout:auto"
+            , HA.attribute "style" ("table-layout:" ++ layoutName (mergedTableLayoutOf opts))
             ]
             ([ Html.colgroup [] (List.map colNode opts.columns) ]
-                ++ theadNode theme opts merged
+                ++ (if headerInBodyOf opts && opts.showHeader then
+                        theadNode theme opts merged
+
+                    else
+                        []
+                   )
                 ++ tbodyNode theme opts merged
             )
         )
@@ -748,33 +1029,32 @@ colStyle col =
 {-| The `<thead>` — upstream `TableHeader` with `discrete={false}` (the
 header-in-body path): the bare thead with `data-n-id`, one `tr` with only
 its base class, one `th` per column (the per-kind content and sort wiring
-per `thNode`).
+per `thNode`). The discrete path wraps this same thead (see
+`discreteHeaderNode`).
 -}
 theadNode : Theme -> Options row msg -> List (SortState row) -> List (Html.Html msg)
 theadNode theme opts merged =
-    if opts.showHeader then
-        [ Html.thead
-            [ HA.class "n-data-table-thead"
-            , HA.attribute "data-n-id" "1"
-            ]
-            [ Html.tr [ HA.class "n-data-table-tr" ]
-                (List.map (thNode theme opts merged) (lastFlags opts.columns))
-            ]
+    [ Html.thead
+        [ HA.class "n-data-table-thead"
+        , HA.attribute "data-n-id" "1"
         ]
+        [ Html.tr [ HA.class "n-data-table-tr" ]
+            (List.map (thNode theme opts merged) (lastFlags opts.columns))
+        ]
+    ]
 
-    else
-        []
 
-
-{-| One header cell — `Header.tsx`'s th: base class, then `--sorting` (iff
-a state names this key with a truthy order), then `--sortable` (iff the
-column carries a sorter), then `--selection` (iff the column IS the
-selection column), then `--last` (last column), then `column.className`;
-the always-present `data-col-key` (`getColKey`: the `__n_selection__` /
+{-| One header cell — `Header.tsx`'s th: base class, then `--fixed-left` /
+`--fixed-right` (iff the column is fixed), then `--sorting` (iff a state
+names this key with a truthy order), then `--sortable` (iff the column
+carries a sorter), then `--selection` (iff the column IS the selection
+column), then `--last` (last column), then `column.className`; the
+always-present `data-col-key` (`getColKey`: the `__n_selection__` /
 `__n_expand__` sentinel on the special kinds, the caller key on a basic
-column); the style built only from the set fields (`width`, then
-`text-align` from `titleAlign || align`; upstream's fixed offsets and the
-body-path `height` are all `undefined` here). `colspan`/`rowspan` render
+column); the style built only from the set fields — `left` / `right`
+(the fixed-offset maps) FIRST, then `width`, then `text-align` from
+`titleAlign || align` (upstream's style-array order; the body-path
+`height` stays `undefined`). `colspan`/`rowspan` render
 the constant `1` on every th (upstream always passes them; API-level
 spans arrive with the group-header/merge-cell batch); attribute order
 matches upstream (`style`, spans, `data-col-key`, `class`, then the sort
@@ -785,7 +1065,8 @@ The content branches per kind: a selection column with `multiple` renders
 the header checkbox (plus the selection-menu trigger iff the FIRST
 selection column carries options) and one with `multiple = False` renders
 nothing (an empty th); every other kind renders the title wrapper: title
-div, then the sorter span when the column is sortable.
+div (the bare title, the `th__ellipsis` wrapper or the `NEllipsis` form),
+then the sorter span when the column is sortable.
 -}
 thNode :
     Theme
@@ -808,13 +1089,14 @@ thNode theme opts merged ( col, isLast ) =
                 |> Maybe.withDefault NoSort
     in
     Html.th
-        (thStyleAttr col
+        (thStyleAttr opts col
             ++ [ HA.colspan 1
                , HA.rowspan 1
                , HA.attribute "data-col-key" (colKeyOf col)
                , HA.class
                     (String.join " "
                         ([ "n-data-table-th" ]
+                            ++ fixedClassesOf "n-data-table-th" col
                             ++ I.classIf (isColumnSorting col merged) "n-data-table-th--sorting"
                             ++ I.classIf sortable "n-data-table-th--sortable"
                             ++ I.classIf (col.kind == KindSelection) "n-data-table-th--selection"
@@ -841,7 +1123,7 @@ thNode theme opts merged ( col, isLast ) =
             _ ->
                 [ Html.div [ HA.class "n-data-table-th__title-wrapper" ]
                     ([ Html.div [ HA.class "n-data-table-th__title" ]
-                        [ Html.text col.title ]
+                        (thTitleContent theme col)
                      ]
                         ++ (if sortable then
                                 [ sortButtonNode order ]
@@ -854,11 +1136,49 @@ thNode theme opts merged ( col, isLast ) =
         )
 
 
-thStyleAttr : Column row msg -> List (Html.Attribute msg)
-thStyleAttr col =
+{-| The title div's content — the bare title text, the
+`th__ellipsis` wrapper (plain ellipsis), or the `NEllipsis` form (the
+port's `NUI.Ellipsis` through the embed seam).
+-}
+thTitleContent : Theme -> Column row msg -> List (Html.Html msg)
+thTitleContent theme col =
+    case col.ellipsis of
+        Just EllipsisPlain ->
+            [ Html.div [ HA.class "n-data-table-th__ellipsis" ]
+                [ Html.text col.title ]
+            ]
+
+        Just (EllipsisOpts ellipsisOpts) ->
+            [ embedChild (NUI.Ellipsis.view theme ellipsisOpts [ Element.text col.title ]) ]
+
+        Nothing ->
+            [ Html.text col.title ]
+
+
+{-| The th's fixed-column classes — `--fixed-left` / `--fixed-right`
+right after the base class (upstream `leftFixed = key in
+fixedColumnLeftMap` — on flat columns, membership ⟺ `column.fixed`).
+-}
+fixedClassesOf : String -> Column row msg -> List String
+fixedClassesOf base col =
+    case col.fixed of
+        Just FixedLeft ->
+            [ base ++ "--fixed-left" ]
+
+        Just FixedRight ->
+            [ base ++ "--fixed-right" ]
+
+        Nothing ->
+            []
+
+
+thStyleAttr : Options row msg -> Column row msg -> List (Html.Attribute msg)
+thStyleAttr opts col =
     rawStyleAttr
         (stylePairs
-            [ ( "width", Maybe.map pxfy col.width )
+            [ ( "left", fixedOffsetOf (fixedColumnLeftMap opts.columns) (colKeyOf col) )
+            , ( "right", fixedOffsetOf (fixedColumnRightMap opts.columns) (colKeyOf col) )
+            , ( "width", Maybe.map pxfy col.width )
             , ( "text-align", Maybe.map alignName (orElse col.titleAlign col.align) )
             ]
         )
@@ -1045,21 +1365,23 @@ rowAttrsOf opts row index =
 
 {-| One body cell — `Body.tsx`'s td: class order is base
 → `column.className` → `--sorting` (iff a state names this key with a
-truthy order — the whole-column highlight) → `--{align}-align` (iff align
+truthy order — the whole-column highlight) → `--fixed-left` /
+`--fixed-right` (iff the column is fixed) → `--{align}-align` (iff align
 set — redundant with the inline `text-align`, upstream emits both) →
 `--selection` / `--expand` (the cell's column kind) → `--last-col` →
 `--last-row` (last over the TILED rows); the always-present `data-col-key`
 (the `__n_selection__` / `__n_expand__` sentinel on the special kinds);
 the style always carries the empty `--indent-offset:` declaration after
-`text-align`/`width` (upstream seeds `{'--indent-offset': ''}`
-unconditionally — only tree children fill the value), with `colspan`/
-`rowspan` the constant `1`. The cell body branches per kind: a selection
-column renders the body checkbox (or the body radio on `multiple =
-False`), an expand column the expand trigger (suppressed — an empty td —
-unless `!expandable || expandable(row)` over the cell's OWN column —
-upstream `Body.tsx` reads `column.expandable`, not the first expand
-column's), and a basic column the caller's element embedded through
-`layoutWith`.
+`text-align`/`width`/the `left`/`right` fixed offsets (upstream's
+style-array order: the offsets sit between `width` and the indent var),
+with `colspan`/`rowspan` the constant `1`. The cell body branches per
+kind: a selection column renders the body checkbox (or the body radio on
+`multiple = False`), an expand column the expand trigger (suppressed — an
+empty td — unless `!expandable || expandable(row)` over the cell's OWN
+column — upstream `Body.tsx` reads `column.expandable`, not the first
+expand column's), and a basic column the caller's element — bare, wrapped
+in the `span.n-data-table-td__ellipsis` (plain ellipsis) or the
+`NEllipsis` form (the `NUI.Ellipsis` embed) — all through `layoutWith`.
 -}
 tdNode :
     Theme
@@ -1076,7 +1398,7 @@ tdNode theme opts merged displayedIndex displayedCount row ( col, isLastCol ) =
             displayedIndex + 1 == displayedCount
     in
     Html.td
-        (tdStyleAttr col
+        (tdStyleAttr opts col
             ++ [ HA.colspan 1
                , HA.rowspan 1
                , HA.attribute "data-col-key" (colKeyOf col)
@@ -1085,6 +1407,7 @@ tdNode theme opts merged displayedIndex displayedCount row ( col, isLastCol ) =
                         ([ "n-data-table-td" ]
                             ++ maybeClass col.className
                             ++ I.classIf (isColumnSorting col merged) "n-data-table-td--sorting"
+                            ++ fixedClassesOf "n-data-table-td" col
                             ++ (case col.align of
                                     Just align ->
                                         [ "n-data-table-td--" ++ alignName align ++ "-align" ]
@@ -1116,17 +1439,29 @@ tdNode theme opts merged displayedIndex displayedCount row ( col, isLastCol ) =
                     []
 
             KindNormal ->
-                [ embedChild (col.view row) ]
+                case col.ellipsis of
+                    Just EllipsisPlain ->
+                        [ Html.span [ HA.class "n-data-table-td__ellipsis" ]
+                            [ embedChild (col.view row) ]
+                        ]
+
+                    Just (EllipsisOpts ellipsisOpts) ->
+                        [ embedChild (NUI.Ellipsis.view theme ellipsisOpts [ col.view row ]) ]
+
+                    Nothing ->
+                        [ embedChild (col.view row) ]
         )
 
 
-tdStyleAttr : Column row msg -> List (Html.Attribute msg)
-tdStyleAttr col =
+tdStyleAttr : Options row msg -> Column row msg -> List (Html.Attribute msg)
+tdStyleAttr opts col =
     let
         parts =
             List.filterMap identity
                 [ stylePart "text-align" (Maybe.map alignName col.align)
                 , stylePart "width" (Maybe.map pxfy col.width)
+                , stylePart "left" (fixedOffsetOf (fixedColumnLeftMap opts.columns) (colKeyOf col))
+                , stylePart "right" (fixedOffsetOf (fixedColumnRightMap opts.columns) (colKeyOf col))
                 ]
     in
     [ HA.attribute "style" (String.join ";" (parts ++ [ "--indent-offset:" ])) ]
@@ -2338,6 +2673,183 @@ defaultExpandAllKeys columns data rowKey =
 
         Nothing ->
             []
+
+
+
+-- SCROLL / LAYOUT ----------------------------------------------------------------
+
+
+{-| `explicitlyScrollableRef` (upstream `use-scroll.ts` :33) — `scrollX`,
+`maxHeight` or `flexHeight` set (`minHeight` does NOT count; neither does
+an ellipsis-driven fixed layout).
+-}
+explicitlyScrollableOf : Options row msg -> Bool
+explicitlyScrollableOf opts =
+    opts.scrollX /= Nothing || opts.maxHeight /= Nothing || opts.flexHeight
+
+
+{-| `hasEllipsisRef` (upstream `use-group-header.ts` :79) — any column
+declares `ellipsis` (the header walk covers the td surface too — one
+flag drives both).
+-}
+hasEllipsisOf : Options row msg -> Bool
+hasEllipsisOf opts =
+    List.any (\col -> col.ellipsis /= Nothing) opts.columns
+
+
+{-| `mergedTableLayoutRef` (upstream `DataTable.tsx` :191) — `fixed` when
+`flexHeight` / `maxHeight` / any ellipsis column (virtual scroll is the
+fourth upstream trigger — out of scope), else the caller's `tableLayout`.
+-}
+mergedTableLayoutOf : Options row msg -> TableLayout
+mergedTableLayoutOf opts =
+    if opts.flexHeight || opts.maxHeight /= Nothing || hasEllipsisOf opts then
+        TableFixed
+
+    else
+        opts.tableLayout
+
+
+{-| `xScrollableRef` (upstream `use-scroll.ts` :39) — `scrollX` set, or
+the basic-auto-layout fallback (not explicitly scrollable and the merged
+layout still `auto`; the spec's own comment: "auto layout empty tables
+are treated as x-scrollable").
+-}
+xScrollableOf : Options row msg -> Bool
+xScrollableOf opts =
+    opts.scrollX
+        /= Nothing
+        || (not (explicitlyScrollableOf opts) && mergedTableLayoutOf opts == TableAuto)
+
+
+{-| The body scrollbar's `scrollable` prop — upstream
+`explicitlyScrollable || xScrollable`; `false` makes the internal
+`NScrollbar` render the slot BARE (no wrapper, no rails, the fallthrough
+class / style dropped).
+-}
+scrollableOf : Options row msg -> Bool
+scrollableOf opts =
+    explicitlyScrollableOf opts || xScrollableOf opts
+
+
+{-| `headerInBody` (upstream `MainTable.tsx` render) — `maxHeight` unset
+and no `flexHeight`: the header renders inside the body's single table;
+otherwise it splits into the discrete header div.
+-}
+headerInBodyOf : Options row msg -> Bool
+headerInBodyOf opts =
+    opts.maxHeight == Nothing && not opts.flexHeight
+
+
+layoutName : TableLayout -> String
+layoutName layout =
+    case layout of
+        TableAuto ->
+            "auto"
+
+        TableFixed ->
+            "fixed"
+
+
+{-| `getNumberColWidth` (upstream `utils.ts` :20) — the numeric width of a
+column for the fixed-offset walk: selection / expand columns default 40
+(`SELECTION_COL_WIDTH` / `EXPAND_COL_WIDTH`) when unset, a group column
+carries none (b6), an unset width is 0.
+-}
+numberColWidth : Column row msg -> Int
+numberColWidth col =
+    case col.kind of
+        KindNormal ->
+            Maybe.withDefault 0 col.width
+
+        _ ->
+            Maybe.withDefault 40 col.width
+
+
+{-| `fixedColumnLeftMap` (upstream `use-scroll.ts` :64) — the left-fixed
+columns in order, each keyed with its `start` offset (the summed widths
+of the preceding left-fixed columns; group children flatten b6). Upstream
+also tracks `end` — only `?.start` is ever read by the cell styles.
+-}
+fixedColumnLeftMap : List (Column row msg) -> List ( String, Int )
+fixedColumnLeftMap columns =
+    let
+        walk acc left cols =
+            case cols of
+                [] ->
+                    List.reverse acc
+
+                col :: rest ->
+                    walk (( colKeyOf col, left ) :: acc) (left + numberColWidth col) rest
+    in
+    walk [] 0 (List.filter (\col -> col.fixed == Just FixedLeft) columns)
+
+
+{-| `fixedColumnRightMap` (upstream `use-scroll.ts` :81) — the right-fixed
+columns REVERSED, each keyed with its `start` offset (the summed widths
+of the FOLLOWING right-fixed columns).
+-}
+fixedColumnRightMap : List (Column row msg) -> List ( String, Int )
+fixedColumnRightMap columns =
+    let
+        walk acc right cols =
+            case cols of
+                [] ->
+                    List.reverse acc
+
+                col :: rest ->
+                    walk (( colKeyOf col, right ) :: acc) (right + numberColWidth col) rest
+    in
+    walk [] 0 (List.reverse (List.filter (\col -> col.fixed == Just FixedRight) columns))
+
+
+{-| The map lookup — `fixedColumnLeftMap[colKey]?.start`, `Nothing` for
+non-fixed columns (the dropped declaration).
+-}
+fixedOffsetOf : List ( String, Int ) -> String -> Maybe String
+fixedOffsetOf map key =
+    List.filter (\( k, _ ) -> k == key) map
+        |> List.head
+        |> Maybe.map (\( _, start ) -> String.fromInt start ++ "px")
+
+
+{-| The body fallthrough style (`MainTable.tsx` :43) —
+`{maxHeight: formatLength(maxHeight), minHeight: formatLength(minHeight)}`
+in the no-space object form; `Nothing` when neither is set (the dropped
+attribute).
+-}
+bodyStyleOf : Options row msg -> Maybe String
+bodyStyleOf opts =
+    stylePairs
+        [ ( "max-height", Maybe.map pxfy opts.maxHeight )
+        , ( "min-height", Maybe.map pxfy opts.minHeight )
+        ]
+
+
+{-| The scrollbar `contentStyle` (`Body.tsx` :538) —
+`minWidth: formatLength(scrollX) || '100%'`, plus `width: '100%'` when
+`scrollX` is set (authored-string spacing on this seam — the b1 pin byte).
+-}
+contentStyleOf : Options row msg -> String
+contentStyleOf opts =
+    case opts.scrollX of
+        Just width ->
+            "min-width: " ++ pxfy width ++ "; width: 100%"
+
+        Nothing ->
+            "min-width: 100%"
+
+
+{-| The discrete header table's style (`Header.tsx` :459) —
+`{minWidth: formatLength(scrollX), tableLayout: merged}` in the no-space
+object form; `min-width` drops without `scrollX`.
+-}
+headerTableStyleOf : Options row msg -> Maybe String
+headerTableStyleOf opts =
+    stylePairs
+        [ ( "min-width", Maybe.map pxfy opts.scrollX )
+        , ( "table-layout", Just (layoutName (mergedTableLayoutOf opts)) )
+        ]
 
 
 

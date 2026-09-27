@@ -51,9 +51,11 @@ the scrollbar root — `NUI.DrawerContent`'s non-native body uses it for the
     overflow) is not modelled — runtime.
   - The `fade-in-transition` on the bar is not driven (caller-owned; cf. LoadingBar).
   - The horizontal bar's RTL offset (`right` vs `left`) is caller-owned via `xBarStyle`.
-  - The `scrollable` / `duration` / `container*` / `*RailStyle` / `useUnifiedContainer`
+  - The `scrollable` / `duration` / `container*` / `useUnifiedContainer`
     / `triggerDisplayManually` / `internal*` props and the `scrollTo` / `scrollBy` /
-    `sync` instance methods are internal-only or imperative — not modelled. The
+    `sync` instance methods are internal-only or imperative — not modelled
+    (`scrollable = false` renders the slot bare upstream; wrapper
+    components branch before calling `view`). The
     `container` prop (a caller-owned scroll element) is not reproduced: the built-in
     `n-scrollbar-container` / `n-scrollbar-content` are always rendered.
 
@@ -94,6 +96,9 @@ type alias Options msg =
     , xBarStyle : Maybe String
     , contentClass : Maybe String
     , contentStyle : Maybe String
+    , rootStyle : Maybe String
+    , yRailStyle : Maybe String
+    , xRailStyle : Maybe String
     , extraClasses : List String
     , attributes : List (Element.Attribute msg)
     }
@@ -113,6 +118,9 @@ defaults =
     , xBarStyle = Nothing
     , contentClass = Nothing
     , contentStyle = Nothing
+    , rootStyle = Nothing
+    , yRailStyle = Nothing
+    , xRailStyle = Nothing
     , extraClasses = []
     , attributes = []
     }
@@ -129,7 +137,7 @@ view theme opts children =
     Element.column
         ([ I.classes
             ("n-scrollbar" :: (I.classIf opts.rtl "n-scrollbar--rtl" ++ opts.extraClasses))
-         , I.cssVars (cssVars theme opts)
+         , rootStyleAttr theme opts
          , Element.htmlAttribute (HA.attribute "role" "none")
          ]
             ++ opts.attributes
@@ -138,6 +146,23 @@ view theme opts children =
             :: Element.html (verticalRailNode opts)
             :: horizontalRailNode opts
         )
+
+
+{-| The root `style` — the `--n-*` vars, then the caller's `rootStyle`
+appended after a `;` (upstream merges the component's own cssVars style
+with the fallthrough attrs style, fallthrough declarations last). A bare
+`rootStyle` with no vars would render it alone; the vars set is never
+empty here.
+-}
+rootStyleAttr : Theme -> Options msg -> Element.Attribute msg
+rootStyleAttr theme opts =
+    case opts.rootStyle of
+        Just style ->
+            Element.htmlAttribute
+                (HA.attribute "style" (I.renderVars (cssVars theme opts) ++ ";" ++ style))
+
+        Nothing ->
+            I.cssVars (cssVars theme opts)
 
 
 {-| `n-scrollbar-container > n-scrollbar-content`; the caller's children are embedded
@@ -192,6 +217,7 @@ verticalRailNode opts =
         [ "n-scrollbar-rail--vertical"
         , "n-scrollbar-rail--vertical--" ++ verticalPlacementName opts.yPlacement
         ]
+        opts.yRailStyle
         (if opts.showYBar then
             barNode opts.yBarStyle
 
@@ -211,6 +237,7 @@ horizontalRailNode opts =
                 [ "n-scrollbar-rail--horizontal"
                 , "n-scrollbar-rail--horizontal--" ++ horizontalPlacementName opts.xPlacement
                 ]
+                opts.xRailStyle
                 (if opts.showXBar then
                     barNode opts.xBarStyle
 
@@ -227,13 +254,15 @@ horizontalRailNode opts =
 {-| A rail div (upstream renders it directly; its `Transition` / `Wrapper` adds no DOM
 node at rest).
 -}
-railNode : List String -> List (Html.Html msg) -> Html.Html msg
-railNode extraClasses children =
+railNode : List String -> Maybe String -> List (Html.Html msg) -> Html.Html msg
+railNode extraClasses maybeStyle children =
     Html.div
-        [ HA.class (String.join " " ("n-scrollbar-rail" :: extraClasses))
-        , HA.attribute "data-scrollbar-rail" ""
-        , HA.attribute "aria-hidden" "true"
-        ]
+        ([ HA.class (String.join " " ("n-scrollbar-rail" :: extraClasses))
+         , HA.attribute "data-scrollbar-rail" ""
+         , HA.attribute "aria-hidden" "true"
+         ]
+            ++ rawStyleAttr maybeStyle
+        )
         children
 
 

@@ -4556,7 +4556,7 @@ dataTableSection =
             Pagination.defaults
     in
     section "Data Table"
-        "The advanced table (upstream `NDataTable`) — column definitions drive the colgroup, header cells and body cells; `rowKey` keys rows and the empty state renders `NEmpty`. Selection (checkbox / radio / extra menu) and row expansion ship in this batch, on top of sorting and pagination; filter, fixed columns and scroll-X ship in later batches. The sort / page / checked / expanded state is caller-owned — this page is static, so nothing is wired."
+        "The advanced table (upstream `NDataTable`) — column definitions drive the colgroup, header cells and body cells; `rowKey` keys rows and the empty state renders `NEmpty`. Selection (checkbox / radio / extra menu), row expansion, scroll-X / fixed columns / max-height / flex-height (the discrete-header split), ellipsis columns and the loading overlay ship in this batch, on top of sorting and pagination; filter ships in a later batch. The sort / page / checked / expanded state is caller-owned — this page is static, so nothing is wired."
     <|
         [ demoRow "Basic"
             [ DataTable.view theme
@@ -4677,6 +4677,75 @@ dataTableSection =
                     , data = people
                     , rowKey = .name
                     , expandedRowKeys = [ "Boris Wuhrer" ]
+                }
+            ]
+        , demoRow "Scroll X + fixed columns"
+            [ DataTable.view theme
+                { dtD
+                    | columns =
+                        [ { nameCol | fixed = Just DataTable.FixedLeft, width = Just 150 }
+                        , ageCol
+                        , { colD | key = "note", title = "Note", view = \p -> Element.text (p.address ++ " — some long note column") }
+                        , { addressCol | fixed = Just DataTable.FixedRight, width = Just 220 }
+                        ]
+                    , data = people
+                    , rowKey = .name
+                    , scrollX = Just 600
+                }
+            ]
+        , demoRow "Max height (discrete header)"
+            [ DataTable.view theme
+                { dtD
+                    | columns = columns
+                    , data = people
+                    , rowKey = .name
+                    , maxHeight = Just 120
+                }
+            ]
+        , demoRow "Flex height"
+            [ Element.el [ Element.height (Element.px 220), Element.width Element.fill ]
+                (DataTable.view theme
+                    { dtD
+                        | columns = columns
+                        , data = people
+                        , rowKey = .name
+                        , flexHeight = True
+                    }
+                )
+            ]
+        , demoRow "Ellipsis"
+            [ DataTable.view theme
+                { dtD
+                    | columns =
+                        [ { colD
+                            | key = "name"
+                            , title = "Name"
+                            , view = \p -> Element.text (p.name ++ " — " ++ p.address)
+                            , ellipsis = Just DataTable.EllipsisPlain
+                            , width = Just 160
+                          }
+                        , ageCol
+                        ]
+                    , data = people
+                    , rowKey = .name
+                }
+            ]
+        , demoRow "Loading"
+            [ DataTable.view theme
+                { dtD
+                    | columns = columns
+                    , data = people
+                    , rowKey = .name
+                    , loading = True
+                }
+            ]
+        , demoRow "Table layout fixed"
+            [ DataTable.view theme
+                { dtD
+                    | columns = columns
+                    , data = people
+                    , rowKey = .name
+                    , tableLayout = DataTable.TableFixed
                 }
             ]
         ]
