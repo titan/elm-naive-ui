@@ -5075,6 +5075,80 @@ dtMsOptsU states { remote, paginateSinglePage, pagination } =
     }
 
 
+{-| The b5 filter options — the spec `:430-441` address fixture (London /
+New York / Sidney, label ≙ value).
+-}
+dtFilterOptions : List DataTable.FilterOption
+dtFilterOptions =
+    [ { label = "London", value = "London" }
+    , { label = "New York", value = "New York" }
+    , { label = "Sidney", value = "Sidney" }
+    ]
+
+
+{-| The b5 filterable address column — upstream `filter: (value, row) =>
+row.address.includes(value)` over the spec's option list (spec :446).
+-}
+dtFilterCol : DataTable.Column DtRow Msg
+dtFilterCol =
+    { dtAddressCol
+        | filter =
+            Just
+                (DataTable.FilterCustom (\value row -> String.contains value row.address))
+        , filterOptions = Just dtFilterOptions
+    }
+
+
+{-| The b5 sortable + filterable address column — the th carries BOTH
+`--sorting`-family and `--filterable` mods (the class-order pin).
+-}
+dtFilterSortCol : DataTable.Column DtRow Msg
+dtFilterSortCol =
+    { dtFilterCol
+        | sorter = Just (DataTable.SorterBy (\a b -> compare a.address b.address))
+    }
+
+
+{-| The b5 menu fixtures — multiple (Sidney checked), single (London
+checked), the array-single compat mode (the head of the temporal array
+reads checked) and the rtl root.
+-}
+dtFmMulti : DataTable.FilterMenuOptions Msg
+dtFmMulti =
+    let
+        d =
+            DataTable.filterMenuDefaults
+    in
+    { d | options = dtFilterOptions, value = DataTable.FilterMany [ "Sidney" ] }
+
+
+dtFmSingle : DataTable.FilterMenuOptions Msg
+dtFmSingle =
+    let
+        d =
+            DataTable.filterMenuDefaults
+    in
+    { d | multiple = False, options = dtFilterOptions, value = DataTable.FilterOne "London" }
+
+
+dtFmCompat : DataTable.FilterMenuOptions Msg
+dtFmCompat =
+    let
+        d =
+            DataTable.filterMenuDefaults
+    in
+    { d | multiple = False, arraySingleMode = True, options = dtFilterOptions, value = DataTable.FilterMany [ "New York", "Sidney" ] }
+
+
+dtFmRtl : DataTable.FilterMenuOptions Msg
+dtFmRtl =
+    let
+        d =
+            DataTable.filterMenuDefaults
+    in
+    { d | options = dtFilterOptions, value = DataTable.FilterMany [], rtl = True }
+
+
 {-| The b3 selection column over `DtRow` — upstream `{ type: 'selection' }`
 (spec `:961` fixture shape). The `key` is dead weight on the special kinds
 (`getColKey` emits the `__n_selection__` sentinel).
@@ -10314,6 +10388,176 @@ checks =
                     ]
                 )
            ]
+        ++ -- Filter (use-table-data.ts :91-:212, utils.ts :107-113,
+           -- FilterButton.tsx :21/:81 — the state machine and the row walk).
+           [ eq "dt defaultFilterStates: the init walk — multiple seeds [] (`|| []`), single seeds `?? null` as a PRESENT FilterNull entry (use-table-data.ts :198-212)"
+                [ ( "multi", DataTable.FilterMany [] ), ( "single", DataTable.FilterNull ) ]
+                (DataTable.defaultFilterStates
+                    [ { dtFilterCol | key = "multi", filterMultiple = True }
+                    , { dtFilterCol | key = "single", filterMultiple = False }
+                    ]
+                )
+           , eq "dt defaultFilterStates: multiple keeps defaultFilterOptionValues, single keeps defaultFilterOptionValue, single + defaultFilterOptionValues is the compat ARRAY branch (null ≡ [] documented)"
+                [ ( "multi", DataTable.FilterMany [ "London", "Sidney" ] )
+                , ( "singleV", DataTable.FilterOne "London" )
+                , ( "singleArr", DataTable.FilterMany [ "New York" ] )
+                , ( "singleNull", DataTable.FilterMany [] )
+                ]
+                (DataTable.defaultFilterStates
+                    [ { dtFilterCol | key = "multi", defaultFilterOptionValues = Just [ "London", "Sidney" ] }
+                    , { dtFilterCol | key = "singleV", filterMultiple = False, defaultFilterOptionValue = Just "London" }
+                    , { dtFilterCol | key = "singleArr", filterMultiple = False, defaultFilterOptionValues = Just [ "New York" ] }
+                    , { dtFilterCol | key = "singleNull", filterMultiple = False, defaultFilterOptionValues = Just [] }
+                    ]
+                )
+           , eq "dt defaultFilterStates: a column without `filter` seeds NOTHING (the walk's truthiness gate)"
+                []
+                (DataTable.defaultFilterStates [ dtNameCol, { dtFilterCol | filter = Nothing } ])
+           , eq "dt mergedFilterStates: controlled keys REPLACE in place / APPEND in column order (Object.assign semantics); selection kinds never overlay (use-table-data.ts :91-116)"
+                [ ( "address", DataTable.FilterMany [ "London" ] ), ( "name", DataTable.FilterOne "x" ) ]
+                (DataTable.mergedFilterStates
+                    { dtOpts
+                        | columns =
+                            [ { dtFilterCol | filterOptionValues = Just [ "London" ] }
+                            , { dtNameCol | filterOptionValue = Just (Just "x") }
+                            , { dtSelCol | filterOptionValues = Just [ "never" ] }
+                            ]
+                        , filterStates = [ ( "address", DataTable.FilterMany [ "Sidney" ] ) ]
+                    }
+                )
+           , eq "dt mergedFilterStates: filterOptionValue = Just Nothing is upstream's CONTROLLED null — it overrides the uncontrolled value (:105)"
+                [ ( "address", DataTable.FilterNull ) ]
+                (DataTable.mergedFilterStates
+                    { dtOpts
+                        | columns = [ { dtFilterCol | filterOptionValue = Just Nothing } ]
+                        , filterStates = [ ( "address", DataTable.FilterMany [ "Sidney" ] ) ]
+                    }
+                )
+           , eq "dt filtersAfterChange: createFilterState over the MERGED map — the emit carries sibling controlled values too (FilterButton.tsx :21/:81)"
+                [ ( "address", DataTable.FilterMany [ "London", "Sidney" ] ), ( "name", DataTable.FilterOne "x" ) ]
+                (DataTable.filtersAfterChange
+                    { dtOpts
+                        | columns =
+                            [ { dtNameCol | filterOptionValue = Just (Just "x") }
+                            , dtFilterCol
+                            ]
+                        , filterStates = [ ( "address", DataTable.FilterMany [ "Sidney" ] ) ]
+                    }
+                    dtFilterCol
+                    (DataTable.FilterMany [ "London", "Sidney" ])
+                )
+           , eq "dt shouldUseArrayInSingleMode: controlled filterOptionValues (EVEN []) OR defaultFilterOptionValues without a controlled single (utils.ts :107-113)"
+                [ True, False, True, False, True ]
+                (List.map DataTable.shouldUseArrayInSingleMode
+                    [ { dtFilterCol | filterOptionValues = Just [] }
+                    , { dtFilterCol | filterOptionValues = Nothing, filterOptionValue = Just (Just "x") }
+                    , { dtFilterCol | defaultFilterOptionValues = Just [] }
+                    , { dtFilterCol | defaultFilterOptionValues = Just [], filterOptionValue = Just (Just "x") }
+                    , { dtFilterCol | defaultFilterOptionValues = Just [ "a" ], filterOptionValues = Just [ "b" ] }
+                    ]
+                )
+           , eq "dt isColumnFilterable: filter AND filterOptions set — `Just []` is TRUTHY (upstream's !![]), an unset filter or unset options is not (utils.ts)"
+                [ True, False, False ]
+                (List.map DataTable.isColumnFilterable
+                    [ { dtFilterCol | filterOptions = Just [] }
+                    , { dtFilterCol | filterOptions = Nothing }
+                    , { dtFilterCol | filter = Nothing }
+                    ]
+                )
+           , eq "dt filteredData: or-mode multi — a row passes on ANY active value (use-table-data.ts :169-176; the spec :616 Sidney+New York shape)"
+                [ "John Brown", "Joe Black" ]
+                (List.map .name
+                    (DataTable.filteredData
+                        { dtOpts
+                            | columns =
+                                [ dtNameCol
+                                , { dtFilterCol | filterMode = DataTable.FilterOr }
+                                ]
+                            , filterStates = [ ( "address", DataTable.FilterMany [ "Sidney", "New York" ] ) ]
+                        }
+                    )
+                )
+           , eq "dt filteredData: and-mode — a row passes only if NO active value fails (:158-167)"
+                []
+                (List.map .name
+                    (DataTable.filteredData
+                        { dtOpts
+                            | columns = [ dtNameCol, { dtFilterCol | filterMode = DataTable.FilterAnd } ]
+                            , filterStates = [ ( "address", DataTable.FilterMany [ "Sidney", "New York" ] ) ]
+                        }
+                    )
+                )
+           , eq "dt filteredData: FilterNull and the empty array SKIP the column — everything passes (:144-151)"
+                [ "John Brown", "Jim Green", "Joe Black" ]
+                (List.map .name
+                    (DataTable.filteredData
+                        { dtOpts
+                            | columns = [ dtNameCol, dtFilterCol ]
+                            , filterStates = [ ( "address", DataTable.FilterNull ), ( "age", DataTable.FilterMany [] ) ]
+                        }
+                    )
+                )
+           , eq "dt filteredData: a single value wraps into the walk's one-element array (:147-149)"
+                [ "Jim Green" ]
+                (List.map .name
+                    (DataTable.filteredData
+                        { dtOpts
+                            | columns = [ dtNameCol, dtFilterCol ]
+                            , filterStates = [ ( "address", DataTable.FilterOne "London" ) ]
+                        }
+                    )
+                )
+           , eq "dt filteredData: 'default' is the substring filter over row[key] — indexOf semantics, not equality (:121-123)"
+                [ "Jim Green" ]
+                (List.map .name
+                    (DataTable.filteredData
+                        { dtOpts
+                            | columns =
+                                [ dtNameCol
+                                , { dtFilterCol | filter = Just (DataTable.FilterDefault .address) }
+                                ]
+                            , filterStates = [ ( "address", DataTable.FilterOne "don No" ) ]
+                        }
+                    )
+                )
+           , eq "dt filteredData: filter = true (async) tracks state but never filters — the typeof gate (:152-157)"
+                [ "John Brown", "Jim Green", "Joe Black" ]
+                (List.map .name
+                    (DataTable.filteredData
+                        { dtOpts
+                            | columns = [ dtNameCol, { dtFilterCol | filter = Just DataTable.FilterAsync } ]
+                            , filterStates = [ ( "address", DataTable.FilterMany [ "London" ] ) ]
+                        }
+                    )
+                )
+           , eq "dt filteredData → sortedData: the pipeline reads filtered BEFORE sort (use-table-data.ts :192; the spec :349-360 shape)"
+                [ "Jim Green", "Joe Black" ]
+                (List.map .name
+                    (DataTable.sortedData
+                        { dtOpts
+                            | columns =
+                                [ dtNameCol
+                                , dtAgeCol
+                                , dtFilterCol
+                                ]
+                            , filterStates = [ ( "address", DataTable.FilterMany [ "London", "Sidney" ] ) ]
+                            , sortStates =
+                                [ { columnKey = "age", order = DataTable.Descend, sorter = DataTable.SorterBy (\a b -> compare a.age b.age) }
+                                ]
+                        }
+                    )
+                )
+           , eq "dt filteredData: selection / expand columns never enter the walk even with state under their sentinel key (:125-136)"
+                [ "John Brown", "Jim Green", "Joe Black" ]
+                (List.map .name
+                    (DataTable.filteredData
+                        { dtOpts
+                            | columns = [ dtSelCol, dtNameCol, dtFilterCol ]
+                            , filterStates = [ ( "__n_selection__", DataTable.FilterMany [ "London" ] ) ]
+                        }
+                    )
+                )
+           ]
 
 
 
@@ -12449,6 +12693,43 @@ liveNodes =
                             , maxHeight = Just 300
                         }
                     )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-filter") ]
+                    (DataTable.view Theme.default
+                        { dtOpts | columns = [ dtNameCol, dtAgeCol, dtFilterCol ] }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-filter-sortable") ]
+                    (DataTable.view Theme.default
+                        { dtOpts | columns = [ dtNameCol, dtAgeCol, dtFilterSortCol ] }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-filter-active") ]
+                    (DataTable.view Theme.default
+                        { dtOpts
+                            | columns = [ dtNameCol, dtAgeCol, dtFilterCol ]
+                            , filterStates = [ ( "address", DataTable.FilterMany [ "London" ] ) ]
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-filter-shown") ]
+                    (DataTable.view Theme.default
+                        { dtOpts
+                            | columns = [ dtNameCol, dtAgeCol, dtFilterCol ]
+                            , filterMenuShown = [ "address" ]
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-filter-single") ]
+                    (DataTable.view Theme.default
+                        { dtOpts
+                            | columns = [ dtNameCol, dtAgeCol, { dtFilterCol | filterMultiple = False } ]
+                            , filterStates = [ ( "address", DataTable.FilterOne "London" ) ]
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-filter-menu-multi") ]
+                    (DataTable.filterMenu Theme.default dtFmMulti)
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-filter-menu-single") ]
+                    (DataTable.filterMenu Theme.default dtFmSingle)
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-filter-menu-compat") ]
+                    (DataTable.filterMenu Theme.default dtFmCompat)
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-filter-menu-rtl") ]
+                    (DataTable.filterMenu Theme.default dtFmRtl)
                 ]
             )
         ]

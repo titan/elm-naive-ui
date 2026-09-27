@@ -9747,6 +9747,133 @@ dEq(
   styleAt(doc.querySelector('#live-data-table-empty-sx-maxh .n-data-table-base-table-header table'))
 )
 
+// --- Data table (batch 5) — filter ------------------------------------------
+// Trigger (FilterButton.tsx :132-160): the at-rest div + the base-icon
+// glyph; th --filterable class order (Header.tsx :334 object order); the
+// merged-state --active and the caller-owned --show mods; the menu body
+// (FilterMenu.tsx :180-221) — root vars, the group fallthrough class,
+// the checked members and the action buttons.
+const dtFilter = (id) => doc.querySelector('#' + id + ' .n-data-table-filter')
+const dtFilterMenu = (id) => doc.querySelector('#' + id + ' .n-data-table-filter-menu')
+
+dEq(
+  'DOM: dt filter th — --filterable slots between --sorting and --sortable, before --last (Header.tsx :334)',
+  'n-data-table-th n-data-table-th--filterable n-data-table-th--last',
+  nClassesStr(dtThs('live-data-table-filter')[2])
+)
+dEq(
+  'DOM: dt filter+sortable th — --filterable BEFORE --sortable in the object key order',
+  'n-data-table-th n-data-table-th--filterable n-data-table-th--sortable n-data-table-th--last',
+  nClassesStr(dtThs('live-data-table-filter-sortable')[2])
+)
+dEq(
+  'DOM: dt filter trigger at rest — the bare n-data-table-filter div with data-data-table-filter',
+  'n-data-table-filter',
+  nClassesStr(dtFilter('live-data-table-filter'))
+)
+dTrue(
+  'DOM: dt filter trigger carries data-data-table-filter="" + the i.n-base-icon > FilterIcon svg bytes (Filter.tsx)',
+  (() => {
+    const t = dtFilter('live-data-table-filter')
+    const svg = t && t.querySelector('i.n-base-icon > svg')
+    const path = svg && svg.querySelector('path')
+    return (
+      !!t &&
+      t.getAttribute('data-data-table-filter') === '' &&
+      !!svg &&
+      svg.getAttribute('viewBox') === '0 0 28 28' &&
+      svg.getAttribute('version') === '1.1' &&
+      !!path &&
+      (path.getAttribute('d') || '').startsWith('M17,19 C17.5522847,19 18,19.4477153')
+    )
+  })()
+)
+dEq(
+  'DOM: dt filter trigger --active — a non-empty array lights the mod; the body filters to the match',
+  'n-data-table-filter n-data-table-filter--active',
+  nClassesStr(dtFilter('live-data-table-filter-active'))
+)
+dTrue(
+  'DOM: dt filter-active body — the London state keeps exactly Jim Green (the walk over the live table)',
+  (() => {
+    const tds = dtTds('live-data-table-filter-active')
+    return tds.length === 3 && (tds[0].textContent || '').includes('Jim Green')
+  })()
+)
+dEq(
+  'DOM: dt filter trigger --show — the caller-owned shown key, NOT active (FilterButton showPopover)',
+  'n-data-table-filter n-data-table-filter--show',
+  nClassesStr(dtFilter('live-data-table-filter-shown'))
+)
+dEq(
+  'DOM: dt filter trigger single-mode --active — a FilterOne scalar is active too',
+  'n-data-table-filter n-data-table-filter--active',
+  nClassesStr(dtFilter('live-data-table-filter-single'))
+)
+dEq(
+  'DOM: dt filter menu root — the three --n-action-* vars in filterMenuCssVars order, no spaces (DataTable.tsx :286-293)',
+  '--n-action-padding:8px 12px;--n-action-button-margin:0 8px 0 0;--n-action-divider-color:rgb(239, 239, 245)',
+  styleAt(dtFilterMenu('live-data-table-filter-menu-multi'))
+)
+dEq(
+  'DOM: dt filter menu (multiple) — the checkbox group: own class THEN the __group fallthrough + role=group (CheckboxGroup.tsx :241)',
+  'n-checkbox-group n-data-table-filter-menu__group|group',
+  (() => {
+    const g = dtFilterMenu('live-data-table-filter-menu-multi').querySelector('.n-data-table-filter-menu__group')
+    return g.className + '|' + g.getAttribute('role')
+  })()
+)
+dTrue(
+  'DOM: dt filter menu (multiple) — the NScrollbar wraps the group; Sidney checks, London / New York do not (max-height rides the ancestor CSS)',
+  (() => {
+    const m = dtFilterMenu('live-data-table-filter-menu-multi')
+    const boxes = m.querySelectorAll('.n-checkbox')
+    return (
+      !!m.querySelector('.n-scrollbar .n-data-table-filter-menu__group') &&
+      boxes.length === 3 &&
+      boxes[2].className.includes('n-checkbox--checked') &&
+      !boxes[0].className.includes('n-checkbox--checked') &&
+      !boxes[1].className.includes('n-checkbox--checked')
+    )
+  })()
+)
+dEq(
+  'DOM: dt filter menu (multiple) — the action bar: a tiny default Clear then a tiny primary Confirm (FilterMenu.tsx :198-217, enUS :57-58)',
+  'n-button n-button--default-type n-button--tiny-type|Clear|n-button n-button--primary-type n-button--tiny-type|Confirm',
+  (() => {
+    const btns = dtFilterMenu('live-data-table-filter-menu-multi').querySelectorAll('.n-data-table-filter-menu__action .n-button')
+    return [...btns].map(b => nClassesStr(b) + '|' + (b.textContent || '').trim()).join('|')
+  })()
+)
+dEq(
+  'DOM: dt filter menu (single) — the radio group carries the __group fallthrough class (RadioGroup.tsx :294)',
+  'n-radio-group n-data-table-filter-menu__group',
+  nClassesStr(dtFilterMenu('live-data-table-filter-menu-single').querySelector('.n-data-table-filter-menu__group'))
+)
+dTrue(
+  'DOM: dt filter menu (single) — London is the checked radio of three',
+  (() => {
+    const radios = dtFilterMenu('live-data-table-filter-menu-single').querySelectorAll('.n-radio')
+    return (
+      radios.length === 3 && radios[0].className.includes('n-radio--checked') &&
+      !radios[1].className.includes('n-radio--checked') &&
+      !radios[2].className.includes('n-radio--checked')
+    )
+  })()
+)
+dTrue(
+  'DOM: dt filter menu (compat) — the array-single mode reads the temporal array HEAD: New York checks, Sidney does not (FilterMenu.tsx :67-73)',
+  (() => {
+    const radios = dtFilterMenu('live-data-table-filter-menu-compat').querySelectorAll('.n-radio')
+    return radios[1].className.includes('n-radio--checked') && !radios[2].className.includes('n-radio--checked')
+  })()
+)
+dEq(
+  'DOM: dt filter menu (rtl) — the root gains --rtl after the base class',
+  'n-data-table-filter-menu n-data-table-filter-menu--rtl',
+  nClassesStr(dtFilterMenu('live-data-table-filter-menu-rtl'))
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
