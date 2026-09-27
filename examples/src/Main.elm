@@ -4549,6 +4549,24 @@ dataTableSection =
         sortableColumns =
             [ nameCol, { ageCol | sorter = Just ageSorter }, addressCol ]
 
+        filterColumns =
+            [ nameCol
+            , ageCol
+            , { addressCol
+                | filter =
+                    Just
+                        (DataTable.FilterCustom
+                            (\value p -> String.contains value p.address)
+                        )
+                , filterOptions =
+                    Just
+                        [ { label = "Bellevue, WA", value = "Bellevue" }
+                        , { label = "Dallas, TX", value = "Dallas" }
+                        , { label = "Roseville, WA", value = "Roseville" }
+                        ]
+              }
+            ]
+
         ageDescend =
             { columnKey = "age", order = DataTable.Descend, sorter = ageSorter }
 
@@ -4556,7 +4574,7 @@ dataTableSection =
             Pagination.defaults
     in
     section "Data Table"
-        "The advanced table (upstream `NDataTable`) — column definitions drive the colgroup, header cells and body cells; `rowKey` keys rows and the empty state renders `NEmpty`. Selection (checkbox / radio / extra menu), row expansion, scroll-X / fixed columns / max-height / flex-height (the discrete-header split), ellipsis columns and the loading overlay ship in this batch, on top of sorting and pagination; filter ships in a later batch. The sort / page / checked / expanded state is caller-owned — this page is static, so nothing is wired."
+        "The advanced table (upstream `NDataTable`) — column definitions drive the colgroup, header cells and body cells; `rowKey` keys rows and the empty state renders `NEmpty`. Selection (checkbox / radio / extra menu), row expansion, scroll-X / fixed columns / max-height / flex-height (the discrete-header split), ellipsis columns, the loading overlay and the filter surface (trigger, pipeline, exported `filterMenu` body) ship in this batch, on top of sorting and pagination. The sort / page / checked / expanded / filter state is caller-owned — this page is static, so nothing is wired (the open menu is the caller's `NUI.Popover` runtime)."
     <|
         [ demoRow "Basic"
             [ DataTable.view theme
@@ -4617,6 +4635,17 @@ dataTableSection =
                                 | pageSize = Just 2
                                 , currentPage = 2
                             }
+                }
+            ]
+        , demoRow "Filter"
+            [ DataTable.view theme
+                { dtD | columns = filterColumns, data = people, rowKey = .name }
+            , DataTable.view theme
+                { dtD
+                    | columns = filterColumns
+                    , data = people
+                    , rowKey = .name
+                    , filterStates = [ ( "address", DataTable.FilterMany [ "Bellevue" ] ) ]
                 }
             ]
         , demoRow "Selection"

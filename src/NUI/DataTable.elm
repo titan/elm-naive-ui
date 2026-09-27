@@ -5,8 +5,14 @@ module NUI.DataTable exposing
     , Column
     , ColumnEllipsis(..)
     , ColumnKind(..)
+    , Filter(..)
+    , FilterMenuOptions
+    , FilterMode(..)
+    , FilterOption
+    , FilterValue(..)
     , FixedSide(..)
     , Options
+    , PaginationBehavior(..)
     , SelectionOption(..)
     , Size(..)
     , SortOrder(..)
@@ -26,24 +32,31 @@ module NUI.DataTable exposing
     , createNextSorter
     , cssVars
     , defaultExpandAllKeys
+    , defaultFilterStates
     , defaultSortStates
     , defaults
     , deriveNextSorter
+    , filterMenu
+    , filterMenuDefaults
     , filteredData
+    , filtersAfterChange
     , fixedColumnLeftMap
     , fixedColumnRightMap
     , getMultiplePriority
     , getSortFunction
     , headerCheckboxDisabled
+    , isColumnFilterable
     , isColumnSorting
     , isSortable
     , mergedCheckedRowKeys
+    , mergedFilterStates
     , mergedItemCount
     , mergedPageSize
     , mergedPaginationOpts
     , mergedSortStates
     , nextSortOrder
     , paginatedData
+    , shouldUseArrayInSingleMode
     , showPagination
     , someRowsChecked
     , sortValueCompare
@@ -91,12 +104,15 @@ with no explicit scroll props):
       │     │        │  │   selection/expand cols default the width pair to 40px)
       │     │        │  ├─ thead.n-data-table-thead[data-n-id] (iff showHeader)
       │     │        │  │  └─ tr.n-data-table-tr > th[data-col-key]
-      │     │        │  │     [--fixed-left|right] [--sorting] [--sortable]
-      │     │        │  │     [--selection] [--last]
+      │     │        │  │     [--fixed-left|right] [--sorting] [--filterable]
+      │     │        │  │     [--sortable] [--selection] [--last]
       │     │        │  │     style: [left/right fixed offset] width [text-align]
       │     │        │  │     ├─ basic col: div.n-data-table-th__title-wrapper
       │     │        │  │     │   (title div [> th__ellipsis | NEllipsis] + sorter
       │     │        │  │     │    span iff sortable)
+      │     │        │  │     ├─ div.n-data-table-filter [--active] [--show]
+      │     │        │  │     │   [data-data-table-filter] > i.n-base-icon >
+      │     │        │  │     │   FilterIcon svg            (iff filterable)
       │     │        │  │     └─ selection col (multiple): NCheckbox
       │     │        │  │         [+ i.n-data-table-check-extra iff column options]
       │     │        │  └─ tbody.n-data-table-tbody[data-n-id]             (iff rows)
@@ -125,19 +141,61 @@ Cell content is `Element msg`, embedded through `Element.layoutWith`
 
 Divergences (documented):
 
-  - **Batch-4 scope.** Scroll / layout ships here — `scrollX` / `maxHeight`
-    / `minHeight` / `flexHeight` (the discrete-header split and the
-    merged `table-layout`), fixed columns, ellipsis columns and the
-    loading overlay — on top of batch-3's selection / expand, batch-2's
-    sort / pagination and the b1 core. Filter, group headers, summary
-    rows, merge cells, resizable columns, virtual scroll and tree data
-    (`children` / cascade / async `onLoad`) remain upcoming batches; the
-    port models flat data only.
+  - **Batch-5 scope.** Filter ships here — the trigger, the `--filterable`
+    th, the `filteredData` walk, the merged / uncontrolled state and the
+    exported `filterMenu` body — on top of batch-4's scroll / layout,
+    batch-3's selection / expand, batch-2's sort / pagination and the b1
+    core. Group headers, summary rows, merge cells, resizable columns,
+    virtual scroll and tree data (`children` / cascade / async `onLoad`)
+    remain upcoming batches; the port models flat data only.
   - **Render-prop sorter customizations are not modelled.** Upstream's
     `renderSorter` / `renderSorterIcon` (per-column and the global
     `DataTable.renderSorter` component prop) and `customNextSortOrder` have
     no Elm surface: the sort button always renders the base icon span and
     the click cycle is fixed `false → descend → ascend`.
+  - **Render-prop filter customizations are not modelled.** Upstream's
+    `renderFilter` / `renderFilterIcon` / `renderFilterMenu` (per-column
+    and the global `DataTable.renderFilter` component prop) and the
+    `filterIconPopoverProps` popover spread have no Elm surface:
+    `isColumnFilterable` reads `filter` × `filterOptions` only (upstream's
+    third leg is `|| !!column.renderFilterMenu`) and the trigger always
+    renders the base filter icon.
+  - **The filter popover is trigger + caller runtime.** Upstream wraps
+    the trigger in `NPopover` (`trigger="click"`, `placement="bottom"`,
+    `style padding: 0`); the port renders the at-rest trigger — `--active`
+    from the merged state, `--show` from `filterMenuShown`, the click
+    firing `onFilterTriggerClick` — and the menu body is the exported
+    `filterMenu` over the caller's `NUI.Popover` (the selection-menu
+    precedent). The menu-local temporal value is caller-owned too:
+    checkbox checks push / splice it, radios set it (`onChange`), the
+    confirm commits `filtersAfterChange opts column value` through
+    `onUpdateFilters` and the clear commits the cleared payload
+    (`[]` in multiple / array-single mode, else `null`).
+  - **One filter channel + caller-applied page reset.** Upstream's
+    `doUpdateFilters` fires three handlers
+    (`onUpdate:filters` / `onUpdateFilters` / deprecated `onFiltersChange`)
+    with `(filterState, sourceColumn)`, and `FilterButton`'s change handler
+    then resets the page on `paginationBehaviorOnFilter === 'first'`;
+    the port carries `onUpdateFilters` (the next whole state + the source
+    column key) and the flag, the caller applying the reset through
+    `onUpdatePage`. The imperative `filter()` / `filters()` /
+    `clearFilter()` / `clearFilters()` surface is the caller writing
+    `filterStates` (`filtersAfterChange` is `createFilterState` over the
+    merged state — upstream's confirm emit carries the whole merged map,
+    controlled parts included).
+  - **Filter `null` collapses.** `filterOptionValues: null` ≡ `Just []`
+    (both skip filtering and read inactive — upstream's `null` entry and
+    its empty array agree downstream); `defaultFilterOptionValues: null`
+    ≡ `[]` ≡ `Just []` (both seed the empty array). `filterOptionValue`'s
+    undefined / null split IS modelled — `Nothing` is the uncontrolled
+    column, `Just Nothing` upstream's controlled `null`.
+  - **Menu labels and option values are port-typed.** `clearLabel` /
+    `confirmLabel` are caller-supplied (`filterMenuDefaults` carries the
+    enUS bytes `'Clear'` / `'Confirm'` — upstream injects locale data),
+    `FilterOption.value` is `String` (upstream `string | number`, the
+    `RowKey` collapse), and the radio group `name` (`String(columnKey)`)
+    lands nowhere — the radio port renders no `<input>` (the `BodyRadio`
+    precedent).
   - **One checked-rows channel, one expanded-rows channel.** Upstream's
     `doUpdateCheckedRowKeys` fires three handlers (`onUpdate:checkedRowKeys`,
     `onUpdateCheckedRowKeys`, deprecated `onCheckedRowKeysChange`) with
@@ -320,6 +378,7 @@ import Element exposing (Element)
 import Html
 import Html.Attributes as HA
 import Html.Events
+import NUI.Button
 import NUI.Checkbox
 import NUI.Dropdown
 import NUI.Ellipsis
@@ -331,6 +390,7 @@ import NUI.Radio
 import NUI.Scrollbar
 import NUI.Theme exposing (Theme)
 import NUI.Theme.DataTable as DataTableTheme
+import NUI.Types as T
 import Svg
 
 
@@ -432,6 +492,58 @@ type Sorter row
     | SorterAsync
 
 
+{-| Upstream `Column.filter` (`'default' | boolean | Filter<T>`):
+`FilterDefault` is `filter: 'default'` (the substring default filter over
+the caller-supplied `row[columnKey]` accessor — the `SortValue`
+precedent), `FilterCustom` a plain `(value, row) => boolean`, `FilterAsync`
+`filter: true` (async / remote filtering — the button renders, the data is
+the caller's). Upstream's `false` / `undefined` is the plain
+`Column.filter = Nothing`.
+-}
+type Filter row
+    = FilterDefault (row -> String)
+    | FilterCustom (String -> row -> Bool)
+    | FilterAsync
+
+
+{-| Upstream `Column.filterMode` — `'or' | 'and'` (default `'or'`).
+-}
+type FilterMode
+    = FilterOr
+    | FilterAnd
+
+
+{-| One entry of `Column.filterOptions` — upstream `FilterOption`
+(`{ label, value }`); `value` is the port's `String` (upstream `string |
+number`, the `RowKey` collapse).
+-}
+type alias FilterOption =
+    { label : String
+    , value : String
+    }
+
+
+{-| One column's live filter value — upstream `FilterState`'s
+`FilterOptionValue[] | FilterOptionValue | null` (a `null` key is a
+PRESENT entry — the cleared single state — not key absence).
+-}
+type FilterValue
+    = FilterMany (List String)
+    | FilterOne String
+    | FilterNull
+
+
+{-| Upstream `paginationBehaviorOnFilter` — `'current' | 'first'` (default
+`'current'`): `'first'` resets the page to 1 when a filter commits. The
+flag is caller data (the `lastSelectedKey` precedent) — the port's filter
+emit fires before any page change (as upstream's `doUpdateFilters` does)
+and the caller applies the reset through `onUpdatePage`.
+-}
+type PaginationBehavior
+    = PaginationCurrent
+    | PaginationFirst
+
+
 {-| Upstream `SortState` — one column's live sort: its key, its order and
 the sorter it was seeded from. Upstream also lets the state's `sorter` be
 `false` / `true` / `'default'`; the show-nothing `false` has no state here
@@ -506,6 +618,15 @@ initial uncontrolled state (`NoSort` ≙ upstream's `false`), `sortOrder`
 marks the column controlled — its `Just` value (a `NoSort` included) wins
 over the uncontrolled list.
 
+The filter fields: `filter` opts the column into filtering
+(`isColumnFilterable` — with `filterOptions` set; `Just []` keeps the
+button, upstream's empty array is truthy), `filterMultiple` (default on)
+switches the menu's checkbox / radio mode, `filterMode` the or / and
+walk, the `filterOption*` pair the CONTROLLED state (overriding
+`filterStates` in `mergedFilterStates` — a `Just Nothing` single value is
+upstream's `null`), and the `defaultFilterOption*` pair the uncontrolled
+seed (`defaultFilterStates`).
+
 `kind` / `multiple` / `disabled` / `options` are the selection column's
 fields and `renderExpand` / `expandable` the expand column's (upstream
 `TableSelectionColumn` / `TableExpandColumn`) — ignored on the other
@@ -528,6 +649,14 @@ type alias Column row msg =
     , sorter : Maybe (Sorter row)
     , defaultSortOrder : SortOrder
     , sortOrder : Maybe SortOrder
+    , filter : Maybe (Filter row)
+    , filterOptions : Maybe (List FilterOption)
+    , filterOptionValues : Maybe (List String)
+    , filterOptionValue : Maybe (Maybe String)
+    , filterMode : FilterMode
+    , defaultFilterOptionValues : Maybe (List String)
+    , defaultFilterOptionValue : Maybe String
+    , filterMultiple : Bool
     , kind : ColumnKind
     , multiple : Bool
     , disabled : Maybe (row -> Bool)
@@ -556,6 +685,14 @@ columnDefaults =
     , sorter = Nothing
     , defaultSortOrder = NoSort
     , sortOrder = Nothing
+    , filter = Nothing
+    , filterOptions = Nothing
+    , filterOptionValues = Nothing
+    , filterOptionValue = Nothing
+    , filterMode = FilterOr
+    , defaultFilterOptionValues = Nothing
+    , defaultFilterOptionValue = Nothing
+    , filterMultiple = True
     , kind = KindNormal
     , multiple = True
     , disabled = Nothing
@@ -580,6 +717,15 @@ the page window to the caller, `pagination` carries the
 `NUI.Pagination.Options` object merged per upstream, `paginationPrefix`
 its prefix slot, and `onUpdatePage` / `onUpdatePageSize` the table-level
 handlers that replace the object's own (see the divergence notes).
+
+The filter surface: `filterStates` is the caller-owned uncontrolled
+filter state (seed it with `defaultFilterStates`), `onUpdateFilters` the
+commit channel — the next whole state over the merged map
+(`filtersAfterChange`) plus the source column key; `filterMenuShown` the
+open-menu keys (the trigger's `--show`), `onFilterTriggerClick` the
+trigger click (the popover runtime is the caller's), and
+`paginationBehaviorOnFilter` the page-reset flag (`PaginationFirst`
+resets to page 1 on commit — caller-applied).
 
 The selection / expand surface: `checkedRowKeys` is the caller-owned
 checked-keys state (the display merge runs over it — see
@@ -625,6 +771,11 @@ type alias Options row msg =
     , paginationPrefix : List (Element msg)
     , onUpdatePage : Maybe (Int -> msg)
     , onUpdatePageSize : Maybe (Int -> msg)
+    , filterStates : List ( String, FilterValue )
+    , onUpdateFilters : Maybe (List ( String, FilterValue ) -> String -> msg)
+    , filterMenuShown : List String
+    , onFilterTriggerClick : Maybe (String -> msg)
+    , paginationBehaviorOnFilter : PaginationBehavior
     , checkedRowKeys : List String
     , onUpdateCheckedRowKeys : Maybe (List String -> List row -> CheckEmit row -> msg)
     , lastSelectedKey : String
@@ -671,6 +822,11 @@ defaults =
     , paginationPrefix = []
     , onUpdatePage = Nothing
     , onUpdatePageSize = Nothing
+    , filterStates = []
+    , onUpdateFilters = Nothing
+    , filterMenuShown = []
+    , onFilterTriggerClick = Nothing
+    , paginationBehaviorOnFilter = PaginationCurrent
     , checkedRowKeys = []
     , onUpdateCheckedRowKeys = Nothing
     , lastSelectedKey = ""
@@ -1115,6 +1271,7 @@ thNode theme opts merged ( col, isLast ) =
                         ([ "n-data-table-th" ]
                             ++ fixedClassesOf "n-data-table-th" col
                             ++ I.classIf (isColumnSorting col merged) "n-data-table-th--sorting"
+                            ++ I.classIf (isColumnFilterable col) "n-data-table-th--filterable"
                             ++ I.classIf sortable "n-data-table-th--sortable"
                             ++ I.classIf (col.kind == KindSelection) "n-data-table-th--selection"
                             ++ I.classIf isLast "n-data-table-th--last"
@@ -1150,6 +1307,12 @@ thNode theme opts merged ( col, isLast ) =
                            )
                     )
                 ]
+                    ++ (if isColumnFilterable col then
+                            [ filterButtonNode opts col ]
+
+                        else
+                            []
+                       )
         )
 
 
@@ -1271,6 +1434,84 @@ arrowDownIcon =
                 [ Svg.node "path" [ HA.attribute "d" arrowDownPath ] [] ]
             ]
         ]
+
+
+{-| The filter trigger (`FilterButton.tsx`'s popover trigger, minus the
+popover runtime — see the divergence notes): the `n-data-table-filter`
+div carrying `data-data-table-filter` and the `--active` / `--show` mods
+(upstream's object key order — a non-empty array or a non-null scalar is
+active; `--show` mirrors the caller-owned `filterMenuShown`), wrapping
+the `n-base-icon` filter glyph. The click fires `onFilterTriggerClick`
+with the column key — the popover (the `filterMenu` body over
+`NUI.Popover`) is the caller's runtime, the selection-menu precedent.
+A merged MISSING key reads upstream's `undefined` → `[]` / `null`, both
+inactive — same as `FilterMany []` / `FilterNull`.
+-}
+filterButtonNode : Options row msg -> Column row msg -> Html.Html msg
+filterButtonNode opts col =
+    let
+        active =
+            case filterValueOf (mergedFilterStates opts) col.key of
+                Just (FilterMany (x :: _)) ->
+                    True
+
+                Just (FilterOne _) ->
+                    True
+
+                _ ->
+                    False
+
+        shown =
+            List.member col.key opts.filterMenuShown
+    in
+    Html.div
+        ([ HA.attribute "data-data-table-filter" ""
+         , HA.class
+            (String.join " "
+                ([ "n-data-table-filter" ]
+                    ++ I.classIf active "n-data-table-filter--active"
+                    ++ I.classIf shown "n-data-table-filter--show"
+                )
+            )
+         ]
+            ++ (case opts.onFilterTriggerClick of
+                    Just handler ->
+                        [ Html.Events.onClick (handler col.key) ]
+
+                    Nothing ->
+                        []
+               )
+        )
+        [ Html.i [ HA.class "n-base-icon" ] [ filterIcon ] ]
+
+
+{-| The filter glyph (upstream `FilterIcon` under `NBaseIcon`) — the
+`arrowDownIcon` pattern.
+-}
+filterIcon : Html.Html msg
+filterIcon =
+    Svg.node "svg"
+        [ HA.attribute "viewBox" "0 0 28 28"
+        , HA.attribute "version" "1.1"
+        , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
+        ]
+        [ Svg.node "g"
+            [ HA.attribute "stroke" "none"
+            , HA.attribute "stroke-width" "1"
+            , HA.attribute "fill-rule" "evenodd"
+            ]
+            [ Svg.node "g"
+                [ HA.attribute "fill-rule" "nonzero" ]
+                [ Svg.node "path" [ HA.attribute "d" filterPath ] [] ]
+            ]
+        ]
+
+
+{-| The upstream `Filter` glyph bytes (`_internal/icons/Filter.tsx`).
+-}
+filterPath : String
+filterPath =
+    "M17,19 C17.5522847,19 18,19.4477153 18,20 C18,20.5522847 17.5522847,21 17,21 L11,21 C10.4477153,21 10,20.5522847 10,20 C10,19.4477153 10.4477153,19 11,19 L17,19 Z M21,13 C21.5522847,13 22,13.4477153 22,14 C22,14.5522847 21.5522847,15 21,15 L7,15 C6.44771525,15 6,14.5522847 6,14 C6,13.4477153 6.44771525,13 7,13 L21,13 Z M24,7 C24.5522847,7 25,7.44771525 25,8 C25,8.55228475 24.5522847,9 24,9 L4,9 C3.44771525,9 3,8.55228475 3,8 C3,7.44771525 3.44771525,7 4,7 L24,7 Z"
 
 
 arrowDownPath : String
@@ -2200,13 +2441,73 @@ byPriorityDesc states =
 -- PAGINATION --------------------------------------------------------------------
 
 
-{-| `filteredDataRef` — the identity for now (the filter seam lands with
-the filter batch), kept so the pipeline reads upstream's
-treeMate → filter → sort → paginate chain.
+{-| `filteredDataRef` (upstream `use-table-data.ts` :118) — the row walk
+over the merged filter state, basic columns only (selection / expand
+columns never enter `columnEntries`): a `null` value or an empty array
+skips the column (a missing key reads `undefined`, upstream's `== null`),
+a non-array wraps into a one-element array; `FilterAsync` skips (upstream's
+`typeof filter !== 'function'`); `'default'` runs the substring default
+filter (`!!~String(row[key]).indexOf(String(value))`) and a custom fn the
+caller's; `filterMode = 'and'` excludes a row failing ANY active value,
+`'or'` (the default) keeps a row matching ANY — all per column, in column
+order, over the pre-sort rows (the b2 pipeline reads this instead of the
+raw data now).
 -}
 filteredData : Options row msg -> List row
 filteredData opts =
-    opts.data
+    let
+        states =
+            mergedFilterStates opts
+
+        basicColumns =
+            List.filter (\col -> col.kind == KindNormal) opts.columns
+
+        columnPasses col row =
+            case activeFilterValues states col of
+                [] ->
+                    True
+
+                active ->
+                    let
+                        apply match =
+                            case col.filterMode of
+                                FilterAnd ->
+                                    not (List.any (\value -> not (match value)) active)
+
+                                FilterOr ->
+                                    List.any match active
+                    in
+                    case col.filter of
+                        Just (FilterDefault accessor) ->
+                            apply (\value -> String.contains value (accessor row))
+
+                        Just (FilterCustom match) ->
+                            apply (\value -> match value row)
+
+                        _ ->
+                            True
+    in
+    List.filter (\row -> List.all (\col -> columnPasses col row) basicColumns) opts.data
+
+
+{-| The column's active filter values — the merged value unwrapped the
+walk's way (`== null` skips, a non-array wraps, an empty array skips);
+`Nothing`-filter columns still resolve their values (the walk checks
+`typeof filter` only AFTER the array gates, so an async column with a
+live value contributes nothing — `activeFilterValues` callers that need
+the un-gated value read the state directly).
+-}
+activeFilterValues : List ( String, FilterValue ) -> Column row msg -> List String
+activeFilterValues states col =
+    case filterValueOf states col.key of
+        Just (FilterMany (x :: xs)) ->
+            x :: xs
+
+        Just (FilterOne value) ->
+            [ value ]
+
+        _ ->
+            []
 
 
 {-| `mergedPageSizeRef` (upstream `use-table-data.ts`) — the pagination
@@ -2354,6 +2655,402 @@ showPagination opts =
 
                             _ ->
                                 False
+
+
+
+-- FILTER -------------------------------------------------------------------------
+
+
+{-| The uncontrolled filter state's seed — upstream's initialize walk
+(`use-table-data.ts` :198) over every column with a truthy `filter`, in
+column order: `filterMultiple` → `defaultFilterOptionValues || []` (null
+and `[]` both land `[]`); a single column with `defaultFilterOptionValues`
+set keeps them (upstream's single-mode compatibility branch — the array
+stays an array); otherwise `defaultFilterOptionValue ?? null` (the
+`FilterNull` — a present cleared key, byte-faithful to upstream's `??
+null`).
+-}
+defaultFilterStates : List (Column row msg) -> List ( String, FilterValue )
+defaultFilterStates columns =
+    List.filterMap
+        (\col ->
+            case col.filter of
+                Nothing ->
+                    Nothing
+
+                Just _ ->
+                    if col.filterMultiple then
+                        Just ( col.key, FilterMany (Maybe.withDefault [] col.defaultFilterOptionValues) )
+
+                    else
+                        case col.defaultFilterOptionValues of
+                            Just values ->
+                                Just ( col.key, FilterMany values )
+
+                            Nothing ->
+                                Just
+                                    ( col.key
+                                    , case col.defaultFilterOptionValue of
+                                        Just value ->
+                                            FilterOne value
+
+                                        Nothing ->
+                                            FilterNull
+                                    )
+        )
+        columns
+
+
+{-| `mergedFilterStateRef` (upstream `use-table-data.ts` :91) — the
+caller-owned uncontrolled state (`filterStates`) overlaid with the
+controlled columns (`filterOptionValues` set, or `filterOptionValue` set
+— a `Just Nothing` single value is upstream's `null`, `Nothing` its
+`undefined`): uncontrolled order preserved, controlled keys replaced in
+place or appended in column walk order (`Object.assign` key semantics).
+Selection / expand columns never overlay (upstream's `type` guard — their
+`never` fields would still count as "controlled" upstream).
+-}
+mergedFilterStates : Options row msg -> List ( String, FilterValue )
+mergedFilterStates opts =
+    let
+        controlled =
+            List.filterMap
+                (\col ->
+                    if col.kind /= KindNormal then
+                        Nothing
+
+                    else
+                        case ( col.filterOptionValues, col.filterOptionValue ) of
+                            ( Just values, _ ) ->
+                                Just ( col.key, FilterMany values )
+
+                            ( Nothing, Just single ) ->
+                                Just
+                                    ( col.key
+                                    , case single of
+                                        Just value ->
+                                            FilterOne value
+
+                                        Nothing ->
+                                            FilterNull
+                                    )
+
+                            ( Nothing, Nothing ) ->
+                                Nothing
+                )
+                opts.columns
+    in
+    List.foldl
+        (\entry acc -> upsertFilterState acc entry)
+        opts.filterStates
+        controlled
+
+
+{-| `createFilterState` over the MERGED state (upstream `FilterButton.tsx`
+:21 + :81) — the whole next uncontrolled state a confirm / clear commit
+emits: the merged map with this column's key set (replaced in place or
+appended — `Object.assign` semantics again).
+-}
+filtersAfterChange : Options row msg -> Column row msg -> FilterValue -> List ( String, FilterValue )
+filtersAfterChange opts col value =
+    upsertFilterState (mergedFilterStates opts) ( col.key, value )
+
+
+{-| `isColumnFilterable` (upstream `utils.ts`) — a truthy `filter` AND
+`filterOptions` set (`filterOptions = Just []` keeps the button:
+upstream's empty array is truthy). Upstream's third leg
+`|| !!column.renderFilterMenu` has no port surface (render props, the
+sorter precedent — see the divergence notes); group columns arrive with
+b6, selection / expand columns carry `never` fields upstream.
+-}
+isColumnFilterable : Column row msg -> Bool
+isColumnFilterable col =
+    case ( col.filter, col.filterOptions ) of
+        ( Just _, Just _ ) ->
+            True
+
+        _ ->
+            False
+
+
+{-| `shouldUseArrayInSingleMode` (upstream `utils.ts` :107) — the
+single-mode compatibility flag: a controlled `filterOptionValues`, or
+`defaultFilterOptionValues` without a controlled single value (the
+radio-value read and the clear payload of the menu follow it).
+-}
+shouldUseArrayInSingleMode : Column row msg -> Bool
+shouldUseArrayInSingleMode col =
+    (col.filterOptionValues /= Nothing)
+        || (col.filterOptionValue == Nothing && col.defaultFilterOptionValues /= Nothing)
+
+
+{-| One `FilterState` entry set — `Object.assign` key semantics: an
+existing key replaced in place, a new key appended.
+-}
+upsertFilterState : List ( String, FilterValue ) -> ( String, FilterValue ) -> List ( String, FilterValue )
+upsertFilterState states ( key, value ) =
+    if List.any (\( k, _ ) -> k == key) states then
+        List.map
+            (\( k, v ) ->
+                if k == key then
+                    ( k, value )
+
+                else
+                    ( k, v )
+            )
+            states
+
+    else
+        states ++ [ ( key, value ) ]
+
+
+{-| The merged state's entry for a key — `Nothing` is upstream's missing
+key (a `null` entry is `Just FilterNull`, not absence).
+-}
+filterValueOf : List ( String, FilterValue ) -> String -> Maybe FilterValue
+filterValueOf states key =
+    List.filter (\( k, _ ) -> k == key) states
+        |> List.head
+        |> Maybe.map Tuple.second
+
+
+
+-- FILTER MENU -------------------------------------------------------------------
+
+
+{-| The filter menu body's options (upstream `FilterMenu.tsx` props, plus
+the caller-owned seams): `multiple` is the column's `filterMultiple`,
+`options` its `filterOptions`, `radioGroupName` upstream's
+`String(column.key)` (carried for parity — the port's radios render no
+`<input>`, so the name lands nowhere, the `BodyRadio` precedent),
+`arraySingleMode` the column's `shouldUseArrayInSingleMode` (the radio
+value read AND the clear payload follow it), `value` the menu-local
+temporal value (caller-owned — seed the merged value, update on
+`onChange`), and the labels the locale data upstream injects (`clear` /
+`confirm` — the defaults are the enUS bytes `'Clear'` / `'Confirm'`, the
+selection-menu caller-supplied precedent).
+-}
+type alias FilterMenuOptions msg =
+    { multiple : Bool
+    , options : List FilterOption
+    , radioGroupName : String
+    , arraySingleMode : Bool
+    , value : FilterValue
+    , rtl : Bool
+    , onChange : Maybe (FilterValue -> msg)
+    , onConfirm : Maybe (FilterValue -> msg)
+    , onClear : Maybe (FilterValue -> msg)
+    , clearLabel : String
+    , confirmLabel : String
+    }
+
+
+{-| The defaults — `multiple` on (upstream `filterMultiple !== false`),
+an empty multiple value, the enUS labels, everything else off / empty.
+-}
+filterMenuDefaults : FilterMenuOptions msg
+filterMenuDefaults =
+    { multiple = True
+    , options = []
+    , radioGroupName = ""
+    , arraySingleMode = False
+    , value = FilterMany []
+    , rtl = False
+    , onChange = Nothing
+    , onConfirm = Nothing
+    , onClear = Nothing
+    , clearLabel = "Clear"
+    , confirmLabel = "Confirm"
+    }
+
+
+{-| The filter menu body (`FilterMenu.tsx` render) — the element for the
+caller's popover (upstream `FilterButton`'s `NPopover` with
+`trigger="click"`, `placement="bottom"` and `style padding: 0`; the
+port composes `NUI.Popover` over it — see the divergence notes): the
+`n-data-table-filter-menu` root carrying the three `--n-action-*` vars
+(upstream `filterMenuCssVars`), the `NScrollbar`-wrapped group
+(checkboxes when `multiple`, else radios — the group element carries
+the `__group` fallthrough class) and the `__action` bar (a tiny clear
+button, then a tiny primary confirm). The scrollbar, the group and the
+buttons are `Element`s embedded through the `display: contents` seam.
+-}
+filterMenu : Theme -> FilterMenuOptions msg -> Element msg
+filterMenu theme opts =
+    let
+        v =
+            DataTableTheme.vars theme
+
+        btn =
+            NUI.Button.defaults
+    in
+    Element.html
+        (Html.div
+            [ HA.class
+                (String.join " "
+                    ([ "n-data-table-filter-menu" ]
+                        ++ I.classIf opts.rtl "n-data-table-filter-menu--rtl"
+                    )
+                )
+            , HA.attribute "style"
+                (I.renderVars
+                    [ ( "--n-action-padding", v.actionPadding )
+                    , ( "--n-action-button-margin", v.actionButtonMargin )
+                    , ( "--n-action-divider-color", v.actionDividerColor )
+                    ]
+                )
+            ]
+            [ embedChild (filterMenuScrollbar theme opts)
+            , Html.div [ HA.class "n-data-table-filter-menu__action" ]
+                [ embedChild
+                    (NUI.Button.view theme
+                        { btn
+                            | size = T.Tiny
+                            , onPress = Maybe.map (\f -> f (filterMenuClearedValue opts)) opts.onClear
+                        }
+                        [ Element.text opts.clearLabel ]
+                    )
+                , embedChild
+                    (NUI.Button.view theme
+                        { btn
+                            | kind = T.Primary
+                            , size = T.Tiny
+                            , onPress = Maybe.map (\f -> f opts.value) opts.onConfirm
+                        }
+                        [ Element.text opts.confirmLabel ]
+                    )
+                ]
+            ]
+        )
+
+
+{-| The menu's `NScrollbar` — plain defaults; the `max-height: 240px`
+rides the `.n-data-table-filter-menu .n-scrollbar` ancestor selector.
+-}
+filterMenuScrollbar : Theme -> FilterMenuOptions msg -> Element msg
+filterMenuScrollbar theme opts =
+    NUI.Scrollbar.view theme
+        NUI.Scrollbar.defaults
+        [ if opts.multiple then
+            filterMenuCheckboxGroup theme opts
+
+          else
+            filterMenuRadioGroup theme opts
+        ]
+
+
+{-| The multiple group — upstream `NCheckboxGroup` with the `__group`
+fallthrough class (`<div class="n-checkbox-group
+n-data-table-filter-menu__group" role="group">` — no vars of its own);
+the checkboxes toggle the temporal value the way upstream's
+toggleCheckbox does: a check PUSHES at the end if absent, an uncheck
+splices the FIRST occurrence (click order, not option order).
+-}
+filterMenuCheckboxGroup : Theme -> FilterMenuOptions msg -> Element msg
+filterMenuCheckboxGroup theme opts =
+    let
+        values =
+            case opts.value of
+                FilterMany xs ->
+                    xs
+
+                _ ->
+                    []
+
+        toggled value next =
+            if next then
+                FilterMany
+                    (if List.member value values then
+                        values
+
+                     else
+                        values ++ [ value ]
+                    )
+
+            else
+                FilterMany
+                    (case indexOf (\x -> x == value) values of
+                        Just index ->
+                            List.take index values ++ List.drop (index + 1) values
+
+                        Nothing ->
+                            values
+                    )
+    in
+    Element.html
+        (Html.div
+            [ HA.class "n-checkbox-group n-data-table-filter-menu__group"
+            , HA.attribute "role" "group"
+            ]
+            (List.map
+                (\option ->
+                    let
+                        cb =
+                            NUI.Checkbox.defaults
+                    in
+                    embedChild
+                        (NUI.Checkbox.view theme
+                            { cb
+                                | checked = List.member option.value values
+                                , onCheck = Maybe.map (\f next -> f (toggled option.value next)) opts.onChange
+                            }
+                            [ Element.text option.label ]
+                        )
+                )
+                opts.options
+            )
+        )
+
+
+{-| The single group — upstream `NRadioGroup` with the `__group`
+fallthrough class; the value read is upstream `radioGroupValue` (an
+array-single mode reads a non-empty array's head, else the scalar; a
+null / array mismatch reads `Nothing`) and the change wraps the scalar
+into an array in the compat mode (`handleChange`'s branch).
+-}
+filterMenuRadioGroup : Theme -> FilterMenuOptions msg -> Element msg
+filterMenuRadioGroup theme opts =
+    let
+        radioValue =
+            case ( opts.arraySingleMode, opts.value ) of
+                ( True, FilterMany (x :: _) ) ->
+                    Just x
+
+                ( False, FilterOne value ) ->
+                    Just value
+
+                _ ->
+                    Nothing
+
+        change value =
+            if opts.arraySingleMode then
+                FilterMany [ value ]
+
+            else
+                FilterOne value
+
+        rg =
+            NUI.Radio.groupDefaults
+    in
+    NUI.Radio.group theme
+        { rg
+            | value = radioValue
+            , onChange = Maybe.map (\f value -> f (change value)) opts.onChange
+            , attributes = [ I.classes [ "n-data-table-filter-menu__group" ] ]
+        }
+        (List.map (\option -> NUI.Radio.choice option.value option.label) opts.options)
+
+
+{-| The clear button's committed value — `handleClearClick`'s payload:
+`[]` when multiple or array-in-single mode, else `null`.
+-}
+filterMenuClearedValue : FilterMenuOptions msg -> FilterValue
+filterMenuClearedValue opts =
+    if opts.multiple || opts.arraySingleMode then
+        FilterMany []
+
+    else
+        FilterNull
 
 
 

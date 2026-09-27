@@ -112,9 +112,16 @@ type alias GroupOptions value msg =
     , size : Size
     , disabled : Bool
     , rtl : Bool
+    , attributes : List (Element.Attribute msg)
     }
 
 
+{-| Naive UI's defaults (everything empty / medium / off). `attributes`
+carries the caller's fallthrough attributes — upstream a group nested in
+another component (the data-table filter menu's `__group` class) merges
+the parent's fallthrough `class` onto the group root after its own; the
+port takes them as explicit attributes.
+-}
 groupDefaults : GroupOptions value msg
 groupDefaults =
     { value = Nothing
@@ -122,6 +129,7 @@ groupDefaults =
     , size = Medium
     , disabled = False
     , rtl = False
+    , attributes = []
     }
 
 
@@ -273,13 +281,15 @@ group theme opts choices =
                     child c :: splitorBetween c d :: splitored (List.drop 1 cs)
     in
     Element.row
-        [ I.classes
+        ([ I.classes
             ("n-radio-group"
                 :: I.classIf opts.rtl "n-radio-group--rtl"
                 ++ I.classIf isButtonGroup "n-radio-group--button-group"
             )
-        , I.cssVars (groupCssVars theme v opts.size)
-        ]
+         , I.cssVars (groupCssVars theme v opts.size)
+         ]
+            ++ opts.attributes
+        )
         (if isButtonGroup then
             splitored choices
 
