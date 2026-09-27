@@ -9245,8 +9245,8 @@ dEq(
   ].join('|')
 )
 dEq(
-  'DOM: dt td style — text-align (align col) and width (age col) byte forms, then the ALWAYS-present empty --indent-offset (Body.tsx seeds it unconditionally; only tree children fill the value)',
-  'text-align:center;--indent-offset:|width:100px;--indent-offset:|--indent-offset:',
+  'DOM: dt td style — text-align (align col) and width (age col) byte forms; NO --indent-offset (the empty-string seed is dropped by CSSOM setProperty — only tree children fill it) and a field-less td carries NO style attribute (Body.tsx :905-940 + Vue setStyle)',
+  'text-align:center|width:100px|',
   [
     styleAt(dtTds('live-data-table-basic')[2]),
     styleAt(dtTds('live-data-table-basic')[1]),
@@ -9422,8 +9422,8 @@ dEq(
   ].join('|')
 )
 dEq(
-  'DOM: dt selection td — --selection between the align slot and --last-col, sentinel key, the unconditional --indent-offset seed (Body.tsx :905-940)',
-  'n-data-table-td n-data-table-td--selection|__n_selection__|--indent-offset:',
+  'DOM: dt selection td — --selection between the align slot and --last-col, sentinel key, NO style attribute (the dropped --indent-offset seed; Body.tsx :905-940)',
+  'n-data-table-td n-data-table-td--selection|__n_selection__|',
   [
     nClassesStr(dtTrs('live-data-table-selection')[0].querySelector('.n-data-table-td')),
     dtTrs('live-data-table-selection')[0].querySelector('.n-data-table-td').getAttribute('data-col-key'),
@@ -9649,7 +9649,7 @@ dTrue(
   })()
 )
 dTrue(
-  'DOM: dt fixed columns — th offsets BEFORE width (left:40px;width:150px), td offsets BETWEEN width and --indent-offset (width:150px;left:40px;--indent-offset:); the zero offset renders left:0px (seemly pxfy has NO zero special-case); --fixed-left/right classes (use-scroll.ts :58-112)',
+  'DOM: dt fixed columns — th offsets BEFORE width (left:40px;width:150px), td offsets AFTER width (width:150px;left:40px) with the empty --indent-offset seed dropped by CSSOM; the zero offset renders left:0px (seemly pxfy has NO zero special-case); --fixed-left/right classes (use-scroll.ts :58-112)',
   (() => {
     const id = 'live-data-table-fixed'
     const ths = dtThs(id)
@@ -9657,9 +9657,9 @@ dTrue(
     return ths[0].classList.contains('n-data-table-th--fixed-left') && styleAt(ths[0]) === 'left:0px' &&
       ths[1].classList.contains('n-data-table-th--fixed-left') && styleAt(ths[1]) === 'left:40px;width:150px' &&
       ths[3].classList.contains('n-data-table-th--fixed-right') && styleAt(ths[3]) === 'right:0px;width:220px;text-align:center' &&
-      tds[0].classList.contains('n-data-table-td--fixed-left') && styleAt(tds[0]) === 'left:0px;--indent-offset:' &&
-      tds[1].classList.contains('n-data-table-td--fixed-left') && styleAt(tds[1]) === 'width:150px;left:40px;--indent-offset:' &&
-      tds[3].classList.contains('n-data-table-td--fixed-right') && styleAt(tds[3]) === 'text-align:center;width:220px;right:0px;--indent-offset:'
+      tds[0].classList.contains('n-data-table-td--fixed-left') && styleAt(tds[0]) === 'left:0px' &&
+      tds[1].classList.contains('n-data-table-td--fixed-left') && styleAt(tds[1]) === 'width:150px;left:40px' &&
+      tds[3].classList.contains('n-data-table-td--fixed-right') && styleAt(tds[3]) === 'text-align:center;width:220px;right:0px'
   })()
 )
 dTrue(

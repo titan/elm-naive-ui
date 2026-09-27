@@ -128,7 +128,9 @@ with no explicit scroll props):
       │     │        │          [--{align}-align] [--selection|--expand]
       │     │        │          [--last-col] [--last-row]
       │     │        │          style: [text-align] [width] [left/right offset]
-      │     │        │          --indent-offset:
+      │     │        │          (the seed `--indent-offset` is EMPTY on flat
+      │     │        │          data and CSSOM drops an empty custom
+      │     │        │          property — no byte, no attribute at rest)
       │     │        └─ div.n-data-table-empty[--hide] [style bodyStyle +
       │     │           sticky string iff xScrollable] > NEmpty        (iff empty)
       │     ├─ split (maxHeight/flexHeight): div.n-data-table-base-table-header
@@ -199,12 +201,28 @@ Divergences (documented):
     DOM byte); the port's fn returns a list and the single object is the
     one-element list.
   - **Fixed GROUP columns flatten to leaves.** Upstream's fixed maps
-    register the fixed group's own key and auto-fix its descendants
-    through map membership (their ths take `--fixed-left` + offsets off
-    the group's `fixed` alone); the port's leaf walk keys only columns
-    marked `fixed` THEMSELVES — a fixed group whose children carry no
-    own `fixed` renders unfixed. Flat column lists are unaffected
-    (membership ⟺ `column.fixed`).
+    seed their traverse from a TOP-LEVEL `fixed` filter
+    (`props.columns.filter`): a fixed group registers its own key (its
+    th takes `--fixed-left` + the offset) and auto-fixes its descendants
+    through map membership (their ths take the class + offsets off the
+    group's `fixed` alone), while a leaf marked `fixed` under an UNFIXED
+    group never enters the map at all (upstream th: no class, no offset;
+    td: the `--fixed-*` class — the td class reads `column.fixed`
+    directly — but no offset). The port's leaf walk keys only columns
+    marked `fixed` THEMSELVES — a fixed group's own th keeps the class
+    (the port reads `column.fixed` for it) but takes no offset, its
+    children render unfixed without their own `fixed`, and a nested
+    fixed leaf registers class + offset. Flat column lists are
+    unaffected (top-level membership ⟺ `column.fixed`).
+  - **The td's seed `--indent-offset` never lands.** Upstream spreads
+    `{'--indent-offset': ''}` into every td style array, but the value
+    only ever fills for tree children (`hasChildren`), and the
+    empty-string custom property is DROPPED by CSSOM `setProperty` (the
+    client patchStyle path) — no byte, and a td with no width / align /
+    fixed-offset fields carries NO style attribute at all. The port
+    renders exactly that (the field-only `stylePairs`); an earlier batch
+    had pinned the literal `--indent-offset:` tail, corrected in the b6
+    oracle round.
   - **Render-prop sorter customizations are not modelled.** Upstream's
     `renderSorter` / `renderSorterIcon` (per-column and the global
     `DataTable.renderSorter` component prop) and `customNextSortOrder` have
@@ -1935,10 +1953,13 @@ set — redundant with the inline `text-align`, upstream emits both) →
 mergedRowSpan === rowCount` — a merged cell carries the flags of the
 area it closes, not of its own list slot); the always-present
 `data-col-key` (the `__n_selection__` / `__n_expand__` sentinel on the
-special kinds); the style always carries the empty `--indent-offset:`
-declaration after `text-align`/`width`/the `left`/`right` fixed offsets
-(upstream's style-array order: the offsets sit between `width` and the
-indent var), with `colspan`/`rowspan` the MERGED spans (both attrs on
+special kinds); the style is built only from the set fields —
+`text-align`, `width`, then the `left` / `right` fixed offsets (upstream's
+style-array order; the offsets sit after `width`) and NEVER the seed
+`--indent-offset` (upstream spreads `{'--indent-offset': ''}` on every td,
+but an empty-string custom property is DROPPED by CSSOM `setProperty` — the
+value only ever fills for tree children, out of the port's flat scope — and
+a td with no set fields carries NO style attribute at all), with `colspan`/`rowspan` the MERGED spans (both attrs on
 every td). The span math per `Body.tsx`: a summary cell reads its
 `SummaryCell.colSpan` / `rowSpan` through the `|| 1` collapse (0 /
 undefined both render 1, the #1276 fix), a data cell its column's
@@ -2120,16 +2141,14 @@ summaryCellOf summaryRow colKey =
 
 tdStyleAttr : Options row msg -> Column row msg -> List (Html.Attribute msg)
 tdStyleAttr opts col =
-    let
-        parts =
-            List.filterMap identity
-                [ stylePart "text-align" (Maybe.map alignName col.align)
-                , stylePart "width" (Maybe.map pxfy col.width)
-                , stylePart "left" (fixedOffsetOf (fixedColumnLeftMap opts.columns) (colKeyOf col))
-                , stylePart "right" (fixedOffsetOf (fixedColumnRightMap opts.columns) (colKeyOf col))
-                ]
-    in
-    [ HA.attribute "style" (String.join ";" (parts ++ [ "--indent-offset:" ])) ]
+    rawStyleAttr
+        (stylePairs
+            [ ( "text-align", Maybe.map alignName col.align )
+            , ( "width", Maybe.map pxfy col.width )
+            , ( "left", fixedOffsetOf (fixedColumnLeftMap opts.columns) (colKeyOf col) )
+            , ( "right", fixedOffsetOf (fixedColumnRightMap opts.columns) (colKeyOf col) )
+            ]
+        )
 
 
 {-| There is no public `Element` → `Html`, so a caller's element is
@@ -4105,8 +4124,10 @@ layoutName layout =
 
 {-| `getNumberColWidth` (upstream `utils.ts` :20) — the numeric width of a
 column for the fixed-offset walk: selection / expand columns default 40
-(`SELECTION_COL_WIDTH` / `EXPAND_COL_WIDTH`) when unset, a group column
-carries none (b6), an unset width is 0.
+(`SELECTION_COL_WIDTH` / `EXPAND_COL_WIDTH`) when unset, an unset width
+0 (upstream also reads `undefined` for a `children`-present column — the
+port's only callers are the LEAF fixed-offset walks, so a group column
+never reaches this).
 -}
 numberColWidth : Column row msg -> Int
 numberColWidth col =
@@ -4123,11 +4144,17 @@ columns in order, each keyed with its `start` offset (the summed widths
 of the preceding left-fixed columns; group children flatten — the walk
 is over the LEAF columns, so a nested `fixed` column found under a
 group offsets like any other). Upstream also tracks `end` — only
-`?.start` is ever read by the cell styles. Upstream's traverse registers
-the fixed GROUP's own key too (its th takes the class + offset); the
-port's leaf walk drops it, and upstream auto-fixes a fixed group's
-children through map membership where the port reads the column's own
-`fixed` — the documented group-fixed divergence.
+`?.start` is ever read by the cell styles. Upstream seeds its traverse
+from a TOP-LEVEL `fixed` filter: the fixed GROUP's own key registers
+(its th takes the class + offset) and its descendants auto-fix through
+map membership, while a leaf marked `fixed` under an UNFIXED group
+never enters the map at all (upstream th: no class, no offset; td: the
+`--fixed-*` class — the td class reads `column.fixed` directly — but no
+offset). The port's leaf walk keys only columns marked `fixed`
+THEMSELVES: a fixed group's own th keeps the class (the port reads
+`column.fixed` for it) but takes NO offset, its unfixed children render
+unfixed, and a nested fixed leaf registers class + offset — the
+documented group-fixed divergence below.
 -}
 fixedColumnLeftMap : List (Column row msg) -> List ( String, Int )
 fixedColumnLeftMap columns =
