@@ -51,6 +51,16 @@ the scrollbar root — `NUI.DrawerContent`'s non-native body uses it for the
     overflow) is not modelled — runtime.
   - The `fade-in-transition` on the bar is not driven (caller-owned; cf. LoadingBar).
   - The horizontal bar's RTL offset (`right` vs `left`) is caller-owned via `xBarStyle`.
+  - Upstream's own root merge puts the fallthrough attrs FIRST: `NScrollbar`
+    declares `inheritAttrs: false` and renders its root as
+    `mergeProps(this.$attrs, { class: 'n-scrollbar…', style: cssVars })`
+    (Scrollbar.tsx:868), so a consumer's fallthrough `class` lands BEFORE
+    `n-scrollbar` and its fallthrough style before the `--n-*` vars — the
+    reverse of Vue's template fallthrough. The port keeps the library-wide
+    own-first convention (`extraClasses` / `rootStyle` appended after, the
+    drawer seam's pinned `n-scrollbar n-drawer-body`); the order difference
+    is inert (class order never affects the cascade, and the two style
+    declaration sets are disjoint).
   - The `scrollable` / `duration` / `container*` / `useUnifiedContainer`
     / `triggerDisplayManually` / `internal*` props and the `scrollTo` / `scrollBy` /
     `sync` instance methods are internal-only or imperative — not modelled

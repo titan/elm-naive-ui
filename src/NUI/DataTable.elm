@@ -243,7 +243,11 @@ Divergences (documented):
     `onUpdatePage` / `onUpdatePageSize` only, and `mergedPaginationOpts`
     replaces the pagination record's own handlers with them. Upstream also
     force-disables the pager while `loading` — the override is in force
-    since the loading batch.
+    since the loading batch (upstream's `disabled={loading}` rides AHEAD
+    of the pagination spread, so an explicit `disabled: false` key in the
+    caller's pagination object would override IT — a distinction the
+    port's `Bool` field cannot express, and every expressible caller
+    state renders the same either way).
   - **`pagination.defaultPage` / `defaultPageSize` seeds are caller-owned.**
     `NUI.Pagination` has no such fields, so callers seed their model and
     pass `currentPage` / `pageSize` explicitly; the pagination prefix
@@ -296,6 +300,19 @@ Divergences (documented):
     Upstream's `scrollbarProps` (attr passthrough onto the body
     NScrollbar) has no surface — extend `NUI.Scrollbar.Options` if a
     batch needs it.
+  - **`formatLength`'s zero special-case is not reproduced on the scroll /
+    layout length seams.** Upstream formats the body fallthrough style
+    (`max-height` / `min-height`), the scrollbar content `min-width` +
+    `width:100%`, the discrete header's `min-width` and the `<col>` width
+    pair through `_utils`'s `formatLength`, whose `0` input renders the
+    bare `'0'` — every non-zero number is `Npx`, exactly like the port's
+    `pxfy`. A caller-set `Just 0` on those seams therefore renders `0px`
+    (CSS-equivalent), reachable only with that degenerate input; the
+    th / td inline `width` and the fixed-column offsets go through
+    seemly's `pxfy` upstream, where `0` really is `'0px'` (the port
+    matches, pinned). Same family: upstream guards the content
+    `width:100%` with `if (scrollX)` (a truthiness check), so `scrollX =
+    0` drops it where the port keeps it.
 
 -}
 
