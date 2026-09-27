@@ -10133,12 +10133,39 @@ checks =
            , eq "dt toggleExpandedRowKey: a non-member key appends (the push branch)"
                 [ "a", "b", "d" ]
                 (DataTable.toggleExpandedRowKey "d" [ "a", "b" ])
-           , eq "dt defaultExpandAllKeys: seeds the keys of the data rows passing expandable (the flat getNonLeafKeys reading)"
+           , eq "dt toggleExpandedRowKey: a duplicated key splices out at its FIRST index only — upstream indexOf + splice(index, 1), not a filter (Body.tsx :296-304)"
+                [ "a", "b" ]
+                (DataTable.toggleExpandedRowKey "a" [ "a", "a", "b" ])
+           , eq "dt defaultExpandAllKeys: with a renderExpand present, seeds the keys of the data rows passing the first expand column's expandable (the use-expand.ts walk)"
                 [ "John Brown" ]
-                (DataTable.defaultExpandAllKeys (Just (\r -> r.name == "John Brown")) dtRows .name)
+                (DataTable.defaultExpandAllKeys
+                    [ { dtExpCol
+                        | renderExpand = Just (\_ _ -> Element.none)
+                        , expandable = Just (\r -> r.name == "John Brown")
+                      }
+                    , dtNameCol
+                    ]
+                    dtRows
+                    .name
+                )
            , eq "dt defaultExpandAllKeys: an absent expandable seeds NOTHING — the optional-chain truthiness quirk kept byte-faithful (use-expand.ts)"
                 []
-                (DataTable.defaultExpandAllKeys Nothing dtRows .name)
+                (DataTable.defaultExpandAllKeys
+                    [ { dtExpCol | renderExpand = Just (\_ _ -> Element.none) }
+                    , dtNameCol
+                    ]
+                    dtRows
+                    .name
+                )
+           , eq "dt defaultExpandAllKeys: no renderExpand on the expand column seeds getNonLeafKeys — [] on flat data, EVEN with an expandable set (use-expand.ts:45-58: the walk is gated on renderExpandRef?.value)"
+                []
+                (DataTable.defaultExpandAllKeys
+                    [ { dtExpCol | expandable = Just (\r -> r.name == "John Brown") }
+                    , dtNameCol
+                    ]
+                    dtRows
+                    .name
+                )
            , eq "dt mergedSortStates: a SELECTION column never reads as controlled — upstream's type !== 'selection' gate, the uncontrolled list passes through (use-sorter.ts L108-112)"
                 [ ( "age", DataTable.Descend ) ]
                 (DataTable.mergedSortStates
@@ -12182,6 +12209,21 @@ liveNodes =
                             , expandedRowKeys = [ "0", "2" ]
                             , stickyExpandedRows = True
                             , bodyWidth = Just 200
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-expand-sticky-unmeasured") ]
+                    (DataTable.view Theme.default
+                        { dtOpts
+                            | columns =
+                                [ { dtExpCol
+                                    | expandable = Just (\r -> r.name == "0")
+                                    , renderExpand = Just (\r _ -> Element.text (r.name ++ " is a good guy."))
+                                  }
+                                , dtNameCol
+                                ]
+                            , data = List.map dtSpecRow (List.range 0 4)
+                            , expandedRowKeys = [ "0" ]
+                            , stickyExpandedRows = True
                         }
                     )
                 ]

@@ -9538,6 +9538,19 @@ dEq(
   })()
 )
 
+dEq(
+  'DOM: dt sticky expand unmeasured — stickyExpandedRows with no bodyWidth yet still renders the bare div.n-data-table-expand (upstream style={{width: undefined}} drops only the declaration, Body.tsx:713-716/770-779 — the ResizeObserver-before-measurement state)',
+  '1|none|true',
+  (() => {
+    const wrapper = doc.querySelector('#live-data-table-expand-sticky-unmeasured .n-data-table-expand')
+    return [
+      String(doc.querySelectorAll('#live-data-table-expand-sticky-unmeasured .n-data-table-expand').length),
+      wrapper ? (wrapper.hasAttribute('style') ? wrapper.getAttribute('style') : 'none') : 'NO-WRAPPER',
+      String(wrapper ? /0 is a good guy\./.test(wrapper.textContent) : false)
+    ].join('|')
+  })()
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

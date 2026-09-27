@@ -1056,8 +1056,10 @@ unconditionally — only tree children fill the value), with `colspan`/
 `rowspan` the constant `1`. The cell body branches per kind: a selection
 column renders the body checkbox (or the body radio on `multiple =
 False`), an expand column the expand trigger (suppressed — an empty td —
-unless `!expandable || expandable(row)`), and a basic column the caller's
-element embedded through `layoutWith`.
+unless `!expandable || expandable(row)` over the cell's OWN column —
+upstream `Body.tsx` reads `column.expandable`, not the first expand
+column's), and a basic column the caller's element embedded through
+`layoutWith`.
 -}
 tdNode :
     Theme
@@ -1107,7 +1109,7 @@ tdNode theme opts merged displayedIndex displayedCount row ( col, isLastCol ) =
                     [ embedChild (bodyRadioNode theme opts row) ]
 
             KindExpand ->
-                if expandableRow opts row then
+                if cellExpandable col row then
                     [ expandTriggerNode opts row ]
 
                 else
@@ -1208,15 +1210,21 @@ expandedTrNode opts row paginatedIndex displayedIndex displayedCount =
             ]
             (case renderExpandOf opts of
                 Just renderExpand ->
-                    [ case ( opts.stickyExpandedRows, opts.bodyWidth ) of
-                        ( True, Just width ) ->
+                    [ case opts.stickyExpandedRows of
+                        True ->
                             Html.div
-                                [ HA.class "n-data-table-expand"
-                                , HA.attribute "style" ("width:" ++ pxfy width)
-                                ]
+                                ([ HA.class "n-data-table-expand" ]
+                                    ++ (case opts.bodyWidth of
+                                            Just width ->
+                                                [ HA.attribute "style" ("width:" ++ pxfy width) ]
+
+                                            Nothing ->
+                                                []
+                                       )
+                                )
                                 [ embedChild (renderExpand row paginatedIndex) ]
 
-                        _ ->
+                        False ->
                             embedChild (renderExpand row paginatedIndex)
                     ]
 
@@ -1243,12 +1251,29 @@ colKeyOf col =
             col.key
 
 
-{-| `!expandable || expandable(rowData)` — whether an expand cell renders
-its trigger (an absent `expandable` passes every row).
+{-| `!expandable || expandable(rowData)` — whether an expand-cell
+renders its trigger under the FIRST expand column's `expandable`
+(upstream `expandableRef`) — the TILING gate. The CELL gate reads its own
+column's (`cellExpandable`, upstream `Body.tsx` `column.expandable`); the
+two differ only with multiple expand columns.
 -}
 expandableRow : Options row msg -> row -> Bool
 expandableRow opts row =
     case expandableOf opts of
+        Just expandable ->
+            expandable row
+
+        Nothing ->
+            True
+
+
+{-| The expand cell's own-column `!expandable || expandable(rowData)` —
+upstream reads `column.expandable` on the CELL's column (Body.tsx), not
+the first expand column's (that one gates the tiling walk).
+-}
+cellExpandable : Column row msg -> row -> Bool
+cellExpandable col row =
+    case col.expandable of
         Just expandable ->
             expandable row
 
@@ -2255,7 +2280,12 @@ column; there is no auto-insert).
 -}
 expandColumn : Options row msg -> Maybe (Column row msg)
 expandColumn opts =
-    List.filter (\col -> col.kind == KindExpand) opts.columns
+    expandColumnOf opts.columns
+
+
+expandColumnOf : List (Column row msg) -> Maybe (Column row msg)
+expandColumnOf columns =
+    List.filter (\col -> col.kind == KindExpand) columns
         |> List.head
 
 
@@ -2272,29 +2302,39 @@ expandableOf opts =
 
 
 {-| `handleUpdateExpanded`'s key splice (upstream `Body.tsx`, flat data):
-the key out at its index, else appended — order preserved.
+the key out at its FIRST index (upstream `indexOf` + `splice(index, 1)` —
+all occurrences go only with caller-authored duplicate keys), else
+appended — order preserved.
 -}
 toggleExpandedRowKey : String -> List String -> List String
 toggleExpandedRowKey key keys =
-    if List.member key keys then
-        List.filter (\k -> k /= key) keys
+    case indexOf (\k -> k == key) keys of
+        Just index ->
+            List.take index keys ++ List.drop (index + 1) keys
 
-    else
-        keys ++ [ key ]
+        Nothing ->
+            keys ++ [ key ]
 
 
 {-| The `defaultExpandAll` seed (upstream `use-expand.ts`) — flat-data
-reading: with a `renderExpand` present, the keys of the data rows passing
-the first expand column's `expandable` (an absent `expandable` fails the
-optional chain and seeds NOTHING — an upstream truthiness quirk kept
-byte-faithful); without one, `getNonLeafKeys` — `[]` on flat data.
+reading, off the FIRST expand column: with a `renderExpand` present, the
+keys of the data rows passing its `expandable` (an absent `expandable`
+fails the optional chain and seeds NOTHING — an upstream truthiness quirk
+kept byte-faithful); without one, `getNonLeafKeys` — `[]` on flat data
+(the walk never runs even with an `expandable` set).
 -}
-defaultExpandAllKeys : Maybe (row -> Bool) -> List row -> (row -> String) -> List String
-defaultExpandAllKeys expandable data rowKey =
-    case expandable of
-        Just f ->
-            List.filter f data
-                |> List.map rowKey
+defaultExpandAllKeys : List (Column row msg) -> List row -> (row -> String) -> List String
+defaultExpandAllKeys columns data rowKey =
+    let
+        expandCol =
+            expandColumnOf columns
+    in
+    case expandCol |> Maybe.andThen .renderExpand of
+        Just _ ->
+            expandCol
+                |> Maybe.andThen .expandable
+                |> Maybe.map (\expandable -> List.filter expandable data |> List.map rowKey)
+                |> Maybe.withDefault []
 
         Nothing ->
             []
