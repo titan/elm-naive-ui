@@ -4570,11 +4570,34 @@ dataTableSection =
         ageDescend =
             { columnKey = "age", order = DataTable.Descend, sorter = ageSorter }
 
+        summaryPeople =
+            List.range 0 9
+                |> List.map (\i -> { name = String.fromInt i, age = i })
+
+        summaryColumns =
+            [ { colD | key = "name", title = "Name", view = \p -> Element.text p.name }
+            , { colD | key = "age", title = "Age", view = \p -> Element.text (String.fromInt p.age) }
+            ]
+
+        summaryOf rows =
+            let
+                total =
+                    rows
+                        |> List.map .age
+                        |> List.sum
+                        |> String.fromInt
+                        |> Element.text
+            in
+            [ [ ( "name", { value = Just total, colSpan = Just 1, rowSpan = Just 2 } )
+              , ( "age", { value = Just total, colSpan = Just 2, rowSpan = Just 1 } )
+              ]
+            ]
+
         dtPg =
             Pagination.defaults
     in
     section "Data Table"
-        "The advanced table (upstream `NDataTable`) — column definitions drive the colgroup, header cells and body cells; `rowKey` keys rows and the empty state renders `NEmpty`. Selection (checkbox / radio / extra menu), row expansion, scroll-X / fixed columns / max-height / flex-height (the discrete-header split), ellipsis columns, the loading overlay and the filter surface (trigger, pipeline, exported `filterMenu` body) ship in this batch, on top of sorting and pagination. The sort / page / checked / expanded / filter state is caller-owned — this page is static, so nothing is wired (the open menu is the caller's `NUI.Popover` runtime)."
+        "The advanced table (upstream `NDataTable`) — column definitions drive the colgroup, header cells and body cells; `rowKey` keys rows and the empty state renders `NEmpty`. Selection (checkbox / radio / extra menu), row expansion, scroll-X / fixed columns / max-height / flex-height (the discrete-header split), ellipsis columns, the loading overlay, the filter surface (trigger, pipeline, exported `filterMenu` body) and the structure extras — group headers (`children`), summary rows (`summary` / `summaryPlacement`) and merge cells (`colSpan` / `rowSpan` / `titleColSpan` — a swallowed slot renders no td) — ship in this batch, on top of sorting and pagination. The sort / page / checked / expanded / filter state is caller-owned — this page is static, so nothing is wired (the open menu is the caller's `NUI.Popover` runtime)."
     <|
         [ demoRow "Basic"
             [ DataTable.view theme
@@ -4775,6 +4798,83 @@ dataTableSection =
                     , data = people
                     , rowKey = .name
                     , tableLayout = DataTable.TableFixed
+                }
+            ]
+        , demoRow "Group header"
+            [ DataTable.view theme
+                { dtD
+                    | columns =
+                        [ { nameCol | width = Just 100 }
+                        , { colD
+                            | key = "age"
+                            , title = "Age"
+                            , width = Just 100
+                            , children =
+                                Just
+                                    [ DataTable.ColumnChild
+                                        { colD
+                                            | key = "test1"
+                                            , title = "test1"
+                                            , view = \p -> Element.text (String.fromInt p.age)
+                                        }
+                                    , DataTable.ColumnChild
+                                        { colD
+                                            | key = "test2"
+                                            , title = "test2"
+                                            , view = \p -> Element.text p.address
+                                        }
+                                    ]
+                          }
+                        ]
+                    , data = people
+                    , rowKey = .name
+                }
+            ]
+        , demoRow "Summary (Σ45 · bottom / top)"
+            [ DataTable.view theme
+                { dtD
+                    | columns = summaryColumns
+                    , data = summaryPeople
+                    , rowKey = .name
+                    , summary = Just summaryOf
+                }
+            , DataTable.view theme
+                { dtD
+                    | columns = summaryColumns
+                    , data = summaryPeople
+                    , rowKey = .name
+                    , summary = Just summaryOf
+                    , summaryPlacement = DataTable.SummaryTop
+                }
+            ]
+        , demoRow "Merge cells (row 0 · colspan 3 / rowspan 2)"
+            [ DataTable.view theme
+                { dtD
+                    | columns =
+                        [ { nameCol
+                            | colSpan =
+                                Just
+                                    (\_ rowIndex ->
+                                        if rowIndex == 0 then
+                                            3
+
+                                        else
+                                            1
+                                    )
+                            , rowSpan =
+                                Just
+                                    (\_ rowIndex ->
+                                        if rowIndex == 0 then
+                                            2
+
+                                        else
+                                            1
+                                    )
+                          }
+                        , ageCol
+                        ]
+                    , data = people
+                    , rowKey = .name
                 }
             ]
         ]

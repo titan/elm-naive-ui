@@ -3,6 +3,7 @@ module NUI.DataTable exposing
     , CheckAction(..)
     , CheckEmit
     , Column
+    , ColumnChild(..)
     , ColumnEllipsis(..)
     , ColumnKind(..)
     , Filter(..)
@@ -20,6 +21,8 @@ module NUI.DataTable exposing
     , SortValue(..)
     , Sorter(..)
     , SorterCompare(..)
+    , SummaryCell
+    , SummaryPlacement(..)
     , TableLayout(..)
     , allRowsChecked
     , boundedPage
@@ -45,9 +48,11 @@ module NUI.DataTable exposing
     , getMultiplePriority
     , getSortFunction
     , headerCheckboxDisabled
+    , headerRows
     , isColumnFilterable
     , isColumnSorting
     , isSortable
+    , leafColumns
     , mergedCheckedRowKeys
     , mergedFilterStates
     , mergedItemCount
@@ -103,21 +108,23 @@ with no explicit scroll props):
       │     │        │  ├─ colgroup > col (style width/min-width/max-width — always;
       │     │        │  │   selection/expand cols default the width pair to 40px)
       │     │        │  ├─ thead.n-data-table-thead[data-n-id] (iff showHeader)
-      │     │        │  │  └─ tr.n-data-table-tr > th[data-col-key]
-      │     │        │  │     [--fixed-left|right] [--sorting] [--filterable]
-      │     │        │  │     [--sortable] [--selection] [--last]
+      │     │        │  │  └─ tr.n-data-table-tr (ONE PER HEADER ROW —
+      │     │        │  │     grouped columns stack) > th[colspan rowspan]
+      │     │        │  │     [data-col-key] [--fixed-left|right] [--sorting]
+      │     │        │  │     [--filterable] [--sortable] [--selection] [--last]
       │     │        │  │     style: [left/right fixed offset] width [text-align]
-      │     │        │  │     ├─ basic col: div.n-data-table-th__title-wrapper
+      │     │        │  │     ├─ basic/group col: div.n-data-table-th__title-wrapper
       │     │        │  │     │   (title div [> th__ellipsis | NEllipsis] + sorter
-      │     │        │  │     │    span iff sortable)
+      │     │        │  │     │    span iff sortable — never on a group th)
       │     │        │  │     ├─ div.n-data-table-filter [--active] [--show]
       │     │        │  │     │   [data-data-table-filter] > i.n-base-icon >
       │     │        │  │     │   FilterIcon svg            (iff filterable)
       │     │        │  │     └─ selection col (multiple): NCheckbox
       │     │        │  │         [+ i.n-data-table-check-extra iff column options]
       │     │        │  └─ tbody.n-data-table-tbody[data-n-id]             (iff rows)
-      │     │        │     └─ tr.n-data-table-tr [--striped] [--expanded]
-      │     │        │        > td[data-col-key] [--sorting] [--fixed-left|right]
+      │     │        │     └─ tr.n-data-table-tr [--summary] [--striped]
+      │     │        │        [--expanded] > td[colspan rowspan][data-col-key]
+      │     │        │          [--summary] [--sorting] [--fixed-left|right]
       │     │        │          [--{align}-align] [--selection|--expand]
       │     │        │          [--last-col] [--last-row]
       │     │        │          style: [text-align] [width] [left/right offset]
@@ -141,13 +148,63 @@ Cell content is `Element msg`, embedded through `Element.layoutWith`
 
 Divergences (documented):
 
-  - **Batch-5 scope.** Filter ships here — the trigger, the `--filterable`
-    th, the `filteredData` walk, the merged / uncontrolled state and the
-    exported `filterMenu` body — on top of batch-4's scroll / layout,
-    batch-3's selection / expand, batch-2's sort / pagination and the b1
-    core. Group headers, summary rows, merge cells, resizable columns,
-    virtual scroll and tree data (`children` / cascade / async `onLoad`)
-    remain upcoming batches; the port models flat data only.
+  - **Batch-6 scope.** Group headers (`children`), summary rows
+    (`summary` + `summaryPlacement`) and merge cells (`colSpan` /
+    `rowSpan` / `titleColSpan` + the `cordToPass` skip grid) ship here —
+    the two-pass `headerRows` walk, the leaf-flatten of every data-side
+    column pipeline, the summary prepend / append around the expand
+    tiling and the span math / skip grid of the body cells — on top of
+    batch-5's filter, batch-4's scroll / layout, batch-3's selection /
+    expand, batch-2's sort / pagination and the b1 core. Resizable
+    columns, virtual scroll and tree data (`children` on ROWS / cascade /
+    async `onLoad`) remain upcoming batches; the port models flat data
+    only.
+  - **`rowClassName` / `rowAttributes` are skipped on summary rows.**
+    Upstream invokes both with `(summaryRecord, -1)` on every row — the
+    summary payload included; the port's `row ->` signatures cannot carry
+    the assoc-list summary record, so summary rows take neither (the
+    `--summary` tr class still lands; DOM-identical unless a caller's
+    fn keyed off the summary row).
+  - **Summary rows never tile.** Upstream's expand tiling would run over
+    a summary entry whose `__n_summary__${i}` key a caller authored into
+    `expandedRowKeys` (the tiling gates read the summary RECORD —
+    `renderExpand(record, -1)`); the port's tiling needs a data row and
+    skips summary entries outright — an inherited edge only a caller
+    authoring Vue-internal keys reaches. The `--expanded` tr class
+    likewise never lands on a summary row in the port (same key-lookup
+    gap).
+  - **The cross-row `--hover` coordination is not ported.** Upstream's
+    `cordKey` / `hoverKey` maps (a merged td highlights its whole area on
+    hover) are runtime mouse state — a static render never mounts them,
+    so the `td--hover` class is unreachable here (the tr-hover cssr is
+    unaffected; documented, DOM-identical at rest).
+  - **Group nesting is permissive.** Upstream types `children` as base
+    columns only — a selection / expand / further-group column under a
+    group is a TS error; the port's flat record accepts it and walks the
+    leaves (`leafColumns` finds nested special columns; upstream's
+    `selectionColumnRef` short-circuits at the first group, so a
+    selection column AFTER a group is silently ignored upstream but
+    found here). Group columns carry their `fixed` / `width` / `align` /
+    `className` / ellipsis through the same th seams (CommonColumnInfo
+    upstream), and a `Just []` children list is a group with an empty
+    row — `colspan=0`, byte-faithful. Related: **`children` rides a
+    `ColumnChild` wrapper** — Elm forbids a record alias referencing
+    itself, so the child list is `List (ColumnChild row msg)` (a
+    one-token unwrap per child, the recursion carrier of the
+    `NUI.Tree`-style wrapper with the flat-record update ergonomics
+    kept).
+  - **The summary return collapses single-vs-array.** Upstream's
+    `CreateSummary` returns a row object or an array of them (distinct
+    keys `__n_summary__` / `__n_summary__${i}`, Vue-internal — never a
+    DOM byte); the port's fn returns a list and the single object is the
+    one-element list.
+  - **Fixed GROUP columns flatten to leaves.** Upstream's fixed maps
+    register the fixed group's own key and auto-fix its descendants
+    through map membership (their ths take `--fixed-left` + offsets off
+    the group's `fixed` alone); the port's leaf walk keys only columns
+    marked `fixed` THEMSELVES — a fixed group whose children carry no
+    own `fixed` renders unfixed. Flat column lists are unaffected
+    (membership ⟺ `column.fixed`).
   - **Render-prop sorter customizations are not modelled.** Upstream's
     `renderSorter` / `renderSorterIcon` (per-column and the global
     `DataTable.renderSorter` component prop) and `customNextSortOrder` have
@@ -619,6 +676,39 @@ type alias CheckEmit row =
     }
 
 
+{-| Upstream `summaryPlacement` — `'top' | 'bottom'` (default `'bottom'`):
+whether the summary rows prepend or append the body's data rows.
+-}
+type SummaryPlacement
+    = SummaryTop
+    | SummaryBottom
+
+
+{-| One entry of a summary row — upstream `SummaryCell`
+(`{ value?, colSpan?, rowSpan? }`): `value` is the cell body (a missing
+key renders an empty td), `colSpan` / `rowSpan` the summary-side spans
+(0 / undefined both read 1 — upstream's `|| 1` fix for #1276, unlike the
+data-side `colSpan` / `rowSpan` fns whose 0 results are kept).
+-}
+type alias SummaryCell msg =
+    { value : Maybe (Element msg)
+    , colSpan : Maybe Int
+    , rowSpan : Maybe Int
+    }
+
+
+{-| The group-child carrier — Elm forbids a record alias referencing
+itself, so `Column.children` cannot directly hold
+`List (Column row msg)`; each child column rides this one-token wrapper
+(the minimal form of the `NUI.Tree` `TreeOption` precedent — wrapping
+ONLY the recursion keeps the flat `Column` record and its
+`{ columnDefaults | … }` update ergonomics intact; see the divergence
+notes).
+-}
+type ColumnChild row msg
+    = ColumnChild (Column row msg)
+
+
 {-| One column — upstream's `TableBaseColumn` (`type: undefined`):
 `key` sources the `data-col-key` attribute, `view` renders the cell body
 (upstream `render`, falling back to `row[key]`). The width fields feed the
@@ -647,6 +737,21 @@ kinds; a `KindSelection` / `KindExpand` column takes its width, align and
 class fields through the same `<col>` / th / td paths as a basic column
 (see the divergence notes for the 40px col default and the `never`
 fields).
+
+The group / merge surface: `children` present (`Just`, even `Just []` —
+upstream's `'children' in column` key-presence gate) makes the column a
+GROUP header — each child rides the `ColumnChild` wrapper (Elm forbids
+the recursive record alias — see its doc) — and the group's own `view` /
+`sorter` / `filter` fields go inert (the header walks render its children
+as the leaves and the group th as a bare title); upstream types children
+as base columns only, so nesting selection / expand / further group
+columns under one is caller error the port walks permissively (see the
+divergence notes). `titleColSpan` spans
+a leaf th across the next `n` header cells (swallowing their ths);
+`colSpan` / `rowSpan` are the merge-cell fns — args `(row,
+actualRowIndex)` (the paginated index; −1 is unreachable for data rows),
+absent reads 1 and a fn result of 0 is KEPT (upstream renders the
+collapsed cell; the summary side differs — see `SummaryCell`).
 
 -}
 type alias Column row msg =
@@ -678,6 +783,10 @@ type alias Column row msg =
     , expandable : Maybe (row -> Bool)
     , fixed : Maybe FixedSide
     , ellipsis : Maybe (ColumnEllipsis msg)
+    , children : Maybe (List (ColumnChild row msg))
+    , titleColSpan : Maybe Int
+    , colSpan : Maybe (row -> Int -> Int)
+    , rowSpan : Maybe (row -> Int -> Int)
     }
 
 
@@ -714,6 +823,10 @@ columnDefaults =
     , expandable = Nothing
     , fixed = Nothing
     , ellipsis = Nothing
+    , children = Nothing
+    , titleColSpan = Nothing
+    , colSpan = Nothing
+    , rowSpan = Nothing
     }
 
 
@@ -759,6 +872,13 @@ The scroll / layout surface: `loading` (the root `--loading` class, the
 its own discrete table — `scrollX` (the scrollbar content `min-width` +
 `width:100%` and the discrete header's `min-width`), and `tableLayout`
 (the base layout under the `fixed` overrides — see the divergence notes).
+
+The summary surface (b6): `summary` receives the PAGED rows and returns
+the summary rows, each an assoc list of `(columnKey, SummaryCell)` —
+upstream's single-object return is the one-element list (the row keys
+are Vue-internal, never DOM) — and `summaryPlacement` prepends
+(`SummaryTop`) or appends (`SummaryBottom`, the default) them around the
+data rows, before the expand tiling.
 
 -}
 type alias Options row msg =
@@ -808,6 +928,8 @@ type alias Options row msg =
     , spinRadius : Maybe Int
     , spinScale : Maybe Float
     , spinStroke : Maybe String
+    , summary : Maybe (List row -> List (List ( String, SummaryCell msg )))
+    , summaryPlacement : SummaryPlacement
     }
 
 
@@ -859,6 +981,8 @@ defaults =
     , spinRadius = Nothing
     , spinScale = Nothing
     , spinStroke = Nothing
+    , summary = Nothing
+    , summaryPlacement = SummaryBottom
     }
 
 
@@ -1031,7 +1155,7 @@ discreteHeaderNode theme opts =
                 ([ HA.class "n-data-table-table" ]
                     ++ rawStyleAttr (headerTableStyleOf opts)
                 )
-                (Html.colgroup [] (List.map colNode opts.columns)
+                (Html.colgroup [] (List.map colNode (leafColumns opts.columns))
                     :: theadNode theme opts (mergedSortStates opts.columns opts.sortStates)
                 )
             ]
@@ -1148,7 +1272,7 @@ tableNode theme opts =
             [ HA.class "n-data-table-table"
             , HA.attribute "style" ("table-layout:" ++ layoutName (mergedTableLayoutOf opts))
             ]
-            ([ Html.colgroup [] (List.map colNode opts.columns) ]
+            ([ Html.colgroup [] (List.map colNode (leafColumns opts.columns)) ]
                 ++ (if headerInBodyOf opts && opts.showHeader then
                         theadNode theme opts merged
 
@@ -1214,9 +1338,10 @@ colStyle col =
 
 {-| The `<thead>` — upstream `TableHeader` with `discrete={false}` (the
 header-in-body path): the bare thead with `data-n-id`, one `tr` with only
-its base class, one `th` per column (the per-kind content and sort wiring
-per `thNode`). The discrete path wraps this same thead (see
-`discreteHeaderNode`).
+its base class PER HEADER ROW (`getRowsAndCols`' rows — one row on flat
+columns, one per group level otherwise), one `th` per row cell (the
+per-kind content and sort wiring per `thNode`). The discrete path wraps
+this same thead (see `discreteHeaderNode`).
 -}
 theadNode : Theme -> Options row msg -> List (SortState row) -> List (Html.Html msg)
 theadNode theme opts merged =
@@ -1224,44 +1349,56 @@ theadNode theme opts merged =
         [ HA.class "n-data-table-thead"
         , HA.attribute "data-n-id" "1"
         ]
-        [ Html.tr [ HA.class "n-data-table-tr" ]
-            (List.map (thNode theme opts merged) (lastFlags opts.columns))
-        ]
+        (List.map
+            (\row ->
+                Html.tr [ HA.class "n-data-table-tr" ]
+                    (List.map (thNode theme opts merged) row)
+            )
+            (headerRows opts.columns)
+        )
     ]
 
 
-{-| One header cell — `Header.tsx`'s th: base class, then `--fixed-left` /
-`--fixed-right` (iff the column is fixed), then `--sorting` (iff a state
-names this key with a truthy order), then `--sortable` (iff the column
-carries a sorter), then `--selection` (iff the column IS the selection
-column), then `--last` (last column), then `column.className`; the
-always-present `data-col-key` (`getColKey`: the `__n_selection__` /
-`__n_expand__` sentinel on the special kinds, the caller key on a basic
-column); the style built only from the set fields — `left` / `right`
-(the fixed-offset maps) FIRST, then `width`, then `text-align` from
-`titleAlign || align` (upstream's style-array order; the body-path
-`height` stays `undefined`). `colspan`/`rowspan` render
-the constant `1` on every th (upstream always passes them; API-level
-spans arrive with the group-header/merge-cell batch); attribute order
-matches upstream (`style`, spans, `data-col-key`, `class`, then the sort
-click handler — last, and only on a basic column with a sorter and
-`onSorterChange` set; the selection/expand kinds gate the listener off,
-`Header.tsx`'s `type !== 'selection' && type !== 'expand'` click guard).
-The content branches per kind: a selection column with `multiple` renders
-the header checkbox (plus the selection-menu trigger iff the FIRST
-selection column carries options) and one with `multiple = False` renders
-nothing (an empty th); every other kind renders the title wrapper: title
-div (the bare title, the `th__ellipsis` wrapper or the `NEllipsis` form),
-then the sorter span when the column is sortable.
+{-| One header cell — `Header.tsx`'s th over its `RowItem`: base class,
+then `--fixed-left` / `--fixed-right` (iff the column is fixed), then
+`--sorting` (iff a state names this key with a truthy order), then
+`--sortable` (iff the column carries a sorter), then `--selection` (iff
+the column IS the selection column), then `--last` (the RowItem's
+`isLast` flag — the span-aware last formula, not the list tail), then
+`column.className`; the always-present `data-col-key` (`getColKey`: the
+`__n_selection__` / `__n_expand__` sentinel on the special kinds, the
+caller key on a basic column); the style built only from the set fields —
+`left` / `right` (the fixed-offset maps) FIRST, then `width`, then
+`text-align` from `titleAlign || align` (upstream's style-array order;
+the body-path `height` stays `undefined`). `colspan` / `rowspan` render
+the RowItem's spans (EVERY th carries them, spans of 1 included — a
+group th spans its children's total, a leaf th under groups spans the
+remaining depth, a `titleColSpan` leaf spans the swallowed cells);
+attribute order matches upstream (`style`, spans, `data-col-key`,
+`class`, then the sort click handler — last, and only on a basic column
+with a sorter and `onSorterChange` set; the selection/expand kinds AND
+children-present columns gate the listener off, `Header.tsx`'s `type !==
+'selection' && type !== 'expand' && !('children' in column)` click guard
+— the group gate rides `isSortable` returning false). The content
+branches per kind: a selection column with `multiple` renders the header
+checkbox (plus the selection-menu trigger iff the FIRST selection column
+carries options) and one with `multiple = False` renders nothing (an
+empty th); every other kind — GROUP columns included — renders the title
+wrapper: title div (the bare title, the `th__ellipsis` wrapper or the
+`NEllipsis` form), then the sorter span when the column is sortable
+(never on a group — `isColumnSortable`'s children gate).
 -}
 thNode :
     Theme
     -> Options row msg
     -> List (SortState row)
-    -> ( Column row msg, Bool )
+    -> HeaderCell row msg
     -> Html.Html msg
-thNode theme opts merged ( col, isLast ) =
+thNode theme opts merged item =
     let
+        col =
+            item.column
+
         sortable =
             isSortable col
 
@@ -1276,8 +1413,8 @@ thNode theme opts merged ( col, isLast ) =
     in
     Html.th
         (thStyleAttr opts col
-            ++ [ HA.colspan 1
-               , HA.rowspan 1
+            ++ [ HA.colspan item.colSpan
+               , HA.rowspan item.rowSpan
                , HA.attribute "data-col-key" (colKeyOf col)
                , HA.class
                     (String.join " "
@@ -1287,7 +1424,7 @@ thNode theme opts merged ( col, isLast ) =
                             ++ I.classIf (isColumnFilterable col) "n-data-table-th--filterable"
                             ++ I.classIf sortable "n-data-table-th--sortable"
                             ++ I.classIf (col.kind == KindSelection) "n-data-table-th--selection"
-                            ++ I.classIf isLast "n-data-table-th--last"
+                            ++ I.classIf item.isLast "n-data-table-th--last"
                             ++ maybeClass col.className
                         )
                     )
@@ -1533,12 +1670,18 @@ arrowDownPath =
 
 
 {-| The `<tbody>` — omitted entirely while the paginated data is empty
-(upstream `{!this.empty ? <tbody>… : null}`); attribute order matches
-upstream (`data-n-id` first here, `class` first on the thead). The rows
-are the TILED display list (`displayedRows`): each expanded parent row
-followed by its extra expanded row, so the last-row math runs over the
-tiled entries while striped / rowClassName / `renderExpand` indices stay
-the paginated ones (`Body.tsx`'s `displayedData` / `RowRenderInfo`).
+(upstream `{!this.empty ? <tbody>… : null}`; summary rows alone do NOT
+save it — the empty gate reads the paginated data); attribute order
+matches upstream (`data-n-id` first here, `class` first on the thead).
+The rows are the TILED display list (`displayedRows`): summary rows
+prepended / appended per `summaryPlacement`, then each expanded parent
+row followed by its extra expanded row, so the last-row math runs over
+the tiled entries while striped / rowClassName / `renderExpand` indices
+stay the paginated ones (`Body.tsx`'s `displayedData` /
+`RowRenderInfo`). The `cordToPass` skip grid (upstream's
+`Record<rowIndex, colIndex[]>`) threads through the row fold — a
+merge cell registers every coordinate it covers, and a later row whose
+coordinate is registered renders NO td there (the swallowed slot).
 -}
 tbodyNode : Theme -> Options row msg -> List (SortState row) -> List (Html.Html msg)
 tbodyNode theme opts merged =
@@ -1550,34 +1693,65 @@ tbodyNode theme opts merged =
             displayed =
                 displayedRows opts
 
-            displayedCount =
+            rowCount =
                 List.length displayed
+
+            colCount =
+                List.length (leafColumns opts.columns)
+
+            step :
+                ( Int, DisplayedRow row msg )
+                -> ( List (Html.Html msg), List ( Int, List Int ) )
+                -> ( List (Html.Html msg), List ( Int, List Int ) )
+            step ( displayedIndex, dr ) ( accRows, cordToPass ) =
+                if dr.isExpandedRow then
+                    case dr.row of
+                        -- expanded rows always carry a data row (the
+                        -- tiling only ever splits data rows; summary
+                        -- rows never tile — see the divergence notes)
+                        Just row ->
+                            ( expandedTrNode opts row dr.paginatedIndex displayedIndex rowCount :: accRows
+                            , cordToPass
+                            )
+
+                        Nothing ->
+                            ( accRows, cordToPass )
+
+                else
+                    let
+                        ( row, cordToPassNext ) =
+                            parentTrNode theme opts merged displayedIndex rowCount colCount dr cordToPass
+                    in
+                    ( row :: accRows, cordToPassNext )
+
+            ( rows, _ ) =
+                List.foldl step ( [], [] ) (List.indexedMap Tuple.pair displayed)
         in
         [ Html.tbody
             [ HA.attribute "data-n-id" "1"
             , HA.class "n-data-table-tbody"
             ]
-            (List.indexedMap
-                (\displayedIndex dr ->
-                    if dr.isExpandedRow then
-                        expandedTrNode opts dr.row dr.paginatedIndex displayedIndex displayedCount
-
-                    else
-                        parentTrNode theme opts merged displayedIndex displayedCount dr
-                )
-                displayed
-            )
+            (List.reverse rows)
         ]
 
 
-{-| One paginated row of the tiled list — `Body.tsx`'s `renderRow` for a
-normal row: base class, then `--striped` (iff `striped && index % 2 === 1`
-— the parity index runs over the PAGINATED rows), then `--expanded` (iff
-the row's key is in the expanded set — NOT gated by `expandable`, a
-byte-faithful upstream quirk: an unexpandable row whose key is in the set
-gets the class but no child row), then the `rowClassName(row, index)`
-result when non-empty, then the caller's `rowAttributes` verbatim (see
-the `rowAttributes` divergence note).
+{-| One paginated or summary row of the tiled list — `Body.tsx`'s
+`renderRow` for a normal row: base class, then `--summary` (a summary
+row), then `--striped` (iff `striped && index % 2 === 1` — the parity
+index runs over the PAGINATED rows and is SUPPRESSED on summary rows),
+then `--expanded` (iff the row's key is in the expanded set — NOT gated
+by `expandable`, a byte-faithful upstream quirk: an unexpandable row
+whose key is in the set gets the class but no child row; summary rows
+never match — their `__n_summary__` keys are Vue-internal), then the
+`rowClassName(row, index)` result when non-empty, then the caller's
+`rowAttributes` verbatim (see the `rowAttributes` divergence note).
+`rowClassName` / `rowAttributes` are SKIPPED on summary rows — upstream
+invokes them with `(summaryRecord, -1)`, a value the port's `row ->`
+signature cannot carry (documented divergence). The cells fold over the
+indexed LEAF columns threading the `cordToPass` skip grid (upstream
+iterates `cols` with `colIndex = col.index`): a registered coordinate
+splices and renders nothing, else the span math registers the covered
+coordinates and renders the td.
 -}
 parentTrNode :
     Theme
@@ -1585,34 +1759,146 @@ parentTrNode :
     -> List (SortState row)
     -> Int
     -> Int
-    -> DisplayedRow row
-    -> Html.Html msg
-parentTrNode theme opts merged displayedIndex displayedCount dr =
-    Html.tr
+    -> Int
+    -> DisplayedRow row msg
+    -> List ( Int, List Int )
+    -> ( Html.Html msg, List ( Int, List Int ) )
+parentTrNode theme opts merged displayedIndex rowCount colCount dr cordToPass =
+    let
+        expanded =
+            case dr.row of
+                Just row ->
+                    List.member (opts.rowKey row) opts.expandedRowKeys
+
+                Nothing ->
+                    False
+
+        cellStep :
+            ( Int, Column row msg )
+            -> ( List (Html.Html msg), List ( Int, List Int ) )
+            -> ( List (Html.Html msg), List ( Int, List Int ) )
+        cellStep ( colIndex, col ) ( accCells, cord ) =
+            case takeCord cord displayedIndex colIndex of
+                Just cordSkipped ->
+                    ( accCells, cordSkipped )
+
+                Nothing ->
+                    let
+                        ( cell, cordNext ) =
+                            tdNode theme opts merged displayedIndex rowCount colCount dr ( colIndex, col ) cord
+                    in
+                    ( cell :: accCells, cordNext )
+
+        ( cells, cordOut ) =
+            List.foldl
+                cellStep
+                ( [], cordToPass )
+                (List.indexedMap Tuple.pair (leafColumns opts.columns))
+    in
+    ( Html.tr
         ([ HA.class
             (String.join " "
                 ([ "n-data-table-tr" ]
-                    ++ I.classIf (opts.striped && modBy 2 dr.paginatedIndex == 1) "n-data-table-tr--striped"
-                    ++ I.classIf (List.member (opts.rowKey dr.row) opts.expandedRowKeys) "n-data-table-tr--expanded"
-                    ++ rowClassNameOf opts dr.row dr.paginatedIndex
+                    ++ I.classIf dr.isSummaryRow "n-data-table-tr--summary"
+                    ++ I.classIf
+                        (not dr.isSummaryRow && opts.striped && modBy 2 dr.paginatedIndex == 1)
+                        "n-data-table-tr--striped"
+                    ++ I.classIf (not dr.isSummaryRow && expanded) "n-data-table-tr--expanded"
+                    ++ rowClassNameOf opts dr
                 )
             )
          ]
-            ++ rowAttrsOf opts dr.row dr.paginatedIndex
+            ++ rowAttrsOf opts dr
         )
-        (List.map
-            (tdNode theme opts merged displayedIndex displayedCount dr.row)
-            (lastFlags opts.columns)
-        )
+        (List.reverse cells)
+    , cordOut
+    )
 
 
-rowClassNameOf : Options row msg -> row -> Int -> List String
-rowClassNameOf opts row index =
-    case opts.rowClassName of
-        Just f ->
+{-| The `cordToPass` read — upstream's `if (displayedRowIndex in
+cordToPass)` splice: a registered `(rowIndex, colIndex)` coordinate
+removes its FIRST occurrence (the splice) and renders nothing; a row
+with other registered coordinates, or a row absent from the grid,
+renders normally (`Nothing` — no mutation).
+-}
+takeCord : List ( Int, List Int ) -> Int -> Int -> Maybe (List ( Int, List Int ))
+takeCord cord rowIndex colIndex =
+    case List.filter (\( r, _ ) -> r == rowIndex) cord of
+        ( _, cols ) :: _ ->
+            case indexOf (\c -> c == colIndex) cols of
+                Just i ->
+                    Just (upsertCord cord rowIndex (List.take i cols ++ List.drop (i + 1) cols))
+
+                Nothing ->
+                    Nothing
+
+        [] ->
+            Nothing
+
+
+{-| The `cordToPass` write — `cordToPass[i] = [j]` else `.push(j)`:
+append the coordinate to its row's list, creating the row entry at the
+tail when absent (upstream key-insertion order; only the membership and
+splice semantics are ever read).
+-}
+upsertCord : List ( Int, List Int ) -> Int -> List Int -> List ( Int, List Int )
+upsertCord cord rowIndex cols =
+    if List.any (\( r, _ ) -> r == rowIndex) cord then
+        List.map
+            (\( r, cs ) ->
+                if r == rowIndex then
+                    ( r, cols )
+
+                else
+                    ( r, cs )
+            )
+            cord
+
+    else
+        cord ++ [ ( rowIndex, cols ) ]
+
+
+{-| The merge-cell registration — upstream's double loop: for every row
+`i` in `[displayedRowIndex, displayedRowIndex + mergedRowSpan)` and
+every column `j` in `[colIndex, colIndex + mergedColSpan)`, skipping the
+cell's own coordinate, push `j` into `cordToPass[i]` (run only when a
+span exceeds 1).
+-}
+registerCord : List ( Int, List Int ) -> Int -> Int -> Int -> Int -> List ( Int, List Int )
+registerCord cord rowIndex colIndex mergedColSpan mergedRowSpan =
+    List.foldl
+        (\i cordI ->
+            List.foldl
+                (\j cordJ ->
+                    if i == rowIndex && j == colIndex then
+                        cordJ
+
+                    else
+                        case List.filter (\( r, _ ) -> r == i) cordJ of
+                            ( _, js ) :: _ ->
+                                upsertCord cordJ i (js ++ [ j ])
+
+                            [] ->
+                                upsertCord cordJ i [ j ]
+                )
+                cordI
+                (List.range colIndex (colIndex + mergedColSpan - 1))
+        )
+        cord
+        (List.range rowIndex (rowIndex + mergedRowSpan - 1))
+
+
+{-| `createRowClassName` — the `rowClassName(row, index)` result when
+non-empty, SKIPPED on summary rows (the port has no summary `row` value —
+upstream passes `(summaryRecord, -1)`; documented divergence).
+-}
+rowClassNameOf : Options row msg -> DisplayedRow row msg -> List String
+rowClassNameOf opts dr =
+    case ( dr.isSummaryRow, opts.rowClassName, dr.row ) of
+        ( False, Just f, Just row ) ->
             let
                 cls =
-                    f row index
+                    f row dr.paginatedIndex
             in
             if cls == "" then
                 []
@@ -1620,39 +1906,57 @@ rowClassNameOf opts row index =
             else
                 [ cls ]
 
-        Nothing ->
+        _ ->
             []
 
 
-rowAttrsOf : Options row msg -> row -> Int -> List (Html.Attribute msg)
-rowAttrsOf opts row index =
-    case opts.rowAttributes of
-        Just f ->
-            f row index
+{-| The caller's `rowAttributes` verbatim — likewise skipped on summary
+rows (see `rowClassNameOf`).
+-}
+rowAttrsOf : Options row msg -> DisplayedRow row msg -> List (Html.Attribute msg)
+rowAttrsOf opts dr =
+    case ( dr.isSummaryRow, opts.rowAttributes, dr.row ) of
+        ( False, Just f, Just row ) ->
+            f row dr.paginatedIndex
 
-        Nothing ->
+        _ ->
             []
 
 
-{-| One body cell — `Body.tsx`'s td: class order is base
-→ `column.className` → `--sorting` (iff a state names this key with a
-truthy order — the whole-column highlight) → `--fixed-left` /
+{-| One body cell — `Body.tsx`'s td over a LEAF column (the body iterates
+`cols`, `colIndex = col.index`): class order is base → `column.className`
+→ `--summary` (a summary row) → `--sorting` (iff a state names this key
+with a truthy order — the whole-column highlight) → `--fixed-left` /
 `--fixed-right` (iff the column is fixed) → `--{align}-align` (iff align
 set — redundant with the inline `text-align`, upstream emits both) →
 `--selection` / `--expand` (the cell's column kind) → `--last-col` →
-`--last-row` (last over the TILED rows); the always-present `data-col-key`
-(the `__n_selection__` / `__n_expand__` sentinel on the special kinds);
-the style always carries the empty `--indent-offset:` declaration after
-`text-align`/`width`/the `left`/`right` fixed offsets (upstream's
-style-array order: the offsets sit between `width` and the indent var),
-with `colspan`/`rowspan` the constant `1`. The cell body branches per
-kind: a selection column renders the body checkbox (or the body radio on
-`multiple = False`), an expand column the expand trigger (suppressed — an
-empty td — unless `!expandable || expandable(row)` over the cell's OWN
-column — upstream `Body.tsx` reads `column.expandable`, not the first
-expand column's), and a basic column the caller's element — bare, wrapped
-in the `span.n-data-table-td__ellipsis` (plain ellipsis) or the
-`NEllipsis` form (the `NUI.Ellipsis` embed) — all through `layoutWith`.
+`--last-row`; `--last-col` / `--last-row` are the SPAN-AWARE formulas
+(`colIndex + mergedColSpan === colCount`, `displayedRowIndex +
+mergedRowSpan === rowCount` — a merged cell carries the flags of the
+area it closes, not of its own list slot); the always-present
+`data-col-key` (the `__n_selection__` / `__n_expand__` sentinel on the
+special kinds); the style always carries the empty `--indent-offset:`
+declaration after `text-align`/`width`/the `left`/`right` fixed offsets
+(upstream's style-array order: the offsets sit between `width` and the
+indent var), with `colspan`/`rowspan` the MERGED spans (both attrs on
+every td). The span math per `Body.tsx`: a summary cell reads its
+`SummaryCell.colSpan` / `rowSpan` through the `|| 1` collapse (0 /
+undefined both render 1, the #1276 fix), a data cell its column's
+`colSpan(row, actualRowIndex)` / `rowSpan(…)` fns with absent reading 1
+and a fn result of 0 KEPT (the collapsed cell); a span over 1 (either
+axis) registers the covered coordinates in `cordToPass` (the returned
+grid) — a later cell whose coordinate is registered never renders. The
+cell body branches per kind: a selection column renders the body
+checkbox (or the body radio on `multiple = False`) — NOTHING on a
+summary row; an expand column the expand trigger (suppressed — an empty
+td — unless `!expandable || expandable(row)` over the cell's OWN column —
+upstream `Body.tsx` reads `column.expandable`, not the first expand
+column's) — NOTHING on a summary row; a basic column renders the
+caller's element — on a summary row the `SummaryCell.value` looked up by
+column key (a missing key renders an empty td) — bare, wrapped in the
+`span.n-data-table-td__ellipsis` (plain ellipsis) or the `NEllipsis`
+form (the `NUI.Ellipsis` embed) — the SAME wrap for summary values
+(`Cell.tsx` wraps after the summary branch) — all through `layoutWith`.
 -}
 tdNode :
     Theme
@@ -1660,23 +1964,56 @@ tdNode :
     -> List (SortState row)
     -> Int
     -> Int
-    -> row
-    -> ( Column row msg, Bool )
-    -> Html.Html msg
-tdNode theme opts merged displayedIndex displayedCount row ( col, isLastCol ) =
+    -> Int
+    -> DisplayedRow row msg
+    -> ( Int, Column row msg )
+    -> List ( Int, List Int )
+    -> ( Html.Html msg, List ( Int, List Int ) )
+tdNode theme opts merged displayedIndex rowCount colCount dr ( colIndex, col ) cord =
     let
+        actualRowIndex =
+            dr.paginatedIndex
+
+        summaryCell =
+            summaryCellOf dr.summaryRow (colKeyOf col)
+
+        mergedColSpan =
+            if dr.isSummaryRow then
+                orOne (Maybe.andThen .colSpan summaryCell)
+
+            else
+                Maybe.withDefault 1 (Maybe.map2 (\row f -> f row actualRowIndex) dr.row col.colSpan)
+
+        mergedRowSpan =
+            if dr.isSummaryRow then
+                orOne (Maybe.andThen .rowSpan summaryCell)
+
+            else
+                Maybe.withDefault 1 (Maybe.map2 (\row f -> f row actualRowIndex) dr.row col.rowSpan)
+
+        isLastCol =
+            colIndex + mergedColSpan == colCount
+
         isLastRow =
-            displayedIndex + 1 == displayedCount
+            displayedIndex + mergedRowSpan == rowCount
+
+        cordNext =
+            if mergedColSpan > 1 || mergedRowSpan > 1 then
+                registerCord cord displayedIndex colIndex mergedColSpan mergedRowSpan
+
+            else
+                cord
     in
-    Html.td
+    ( Html.td
         (tdStyleAttr opts col
-            ++ [ HA.colspan 1
-               , HA.rowspan 1
+            ++ [ HA.colspan mergedColSpan
+               , HA.rowspan mergedRowSpan
                , HA.attribute "data-col-key" (colKeyOf col)
                , HA.class
                     (String.join " "
                         ([ "n-data-table-td" ]
                             ++ maybeClass col.className
+                            ++ I.classIf dr.isSummaryRow "n-data-table-td--summary"
                             ++ I.classIf (isColumnSorting col merged) "n-data-table-td--sorting"
                             ++ fixedClassesOf "n-data-table-td" col
                             ++ (case col.align of
@@ -1696,32 +2033,89 @@ tdNode theme opts merged displayedIndex displayedCount row ( col, isLastCol ) =
         )
         (case col.kind of
             KindSelection ->
-                if col.multiple then
-                    [ embedChild (bodyCheckboxNode theme opts row) ]
-
-                else
-                    [ embedChild (bodyRadioNode theme opts row) ]
-
-            KindExpand ->
-                if cellExpandable col row then
-                    [ expandTriggerNode opts row ]
-
-                else
+                if dr.isSummaryRow then
                     []
 
+                else
+                    case dr.row of
+                        Just row ->
+                            if col.multiple then
+                                [ embedChild (bodyCheckboxNode theme opts row) ]
+
+                            else
+                                [ embedChild (bodyRadioNode theme opts row) ]
+
+                        Nothing ->
+                            []
+
+            KindExpand ->
+                if dr.isSummaryRow then
+                    []
+
+                else
+                    case dr.row of
+                        Just row ->
+                            if cellExpandable col row then
+                                [ expandTriggerNode opts row ]
+
+                            else
+                                []
+
+                        Nothing ->
+                            []
+
             KindNormal ->
+                let
+                    cell =
+                        if dr.isSummaryRow then
+                            Maybe.andThen .value summaryCell
+                                |> Maybe.withDefault Element.none
+
+                        else
+                            Maybe.map col.view dr.row
+                                |> Maybe.withDefault Element.none
+                in
                 case col.ellipsis of
                     Just EllipsisPlain ->
                         [ Html.span [ HA.class "n-data-table-td__ellipsis" ]
-                            [ embedChild (col.view row) ]
+                            [ embedChild cell ]
                         ]
 
                     Just (EllipsisOpts ellipsisOpts) ->
-                        [ embedChild (NUI.Ellipsis.view theme ellipsisOpts [ col.view row ]) ]
+                        [ embedChild (NUI.Ellipsis.view theme ellipsisOpts [ cell ]) ]
 
                     Nothing ->
-                        [ embedChild (col.view row) ]
+                        [ embedChild cell ]
         )
+    , cordNext
+    )
+
+
+{-| Upstream's `rawNode[colKey]?.colSpan || 1` (the #1276 fix) — the
+summary-side span collapse: undefined AND 0 both read 1 (the data-side
+fns differ — their 0 results are kept).
+-}
+orOne : Maybe Int -> Int
+orOne maybe =
+    case maybe of
+        Just 0 ->
+            1
+
+        Just n ->
+            n
+
+        Nothing ->
+            1
+
+
+{-| The summary row's entry for a column key — upstream's
+`row[key] as SummaryCell` (a missing key reads undefined — an empty td).
+-}
+summaryCellOf : Maybe (List ( String, SummaryCell msg )) -> String -> Maybe (SummaryCell msg)
+summaryCellOf summaryRow colKey =
+    summaryRow
+        |> Maybe.andThen (List.filter (\( k, _ ) -> k == colKey) >> List.head)
+        |> Maybe.map Tuple.second
 
 
 tdStyleAttr : Options row msg -> Column row msg -> List (Html.Attribute msg)
@@ -1756,46 +2150,79 @@ embedChild child =
 
 
 {-| One tiled display entry — upstream's `RowRenderInfo` for the flat-data
-batch: the row, its PAGINATED index (striped / rowClassName /
-`renderExpand` indices) and whether this entry is the extra expanded row.
+batch: the data row (a `Maybe` — summary rows carry NONE), the summary
+payload (a summary row's assoc list, `Nothing` on data rows), its
+PAGINATED index (striped / rowClassName / `renderExpand` indices; −1 on
+summary rows) and whether this entry is the extra expanded row. A
+summary entry is `row = Nothing, summaryRow = Just …, paginatedIndex =
+-1, isSummaryRow = True` — upstream's `{ isSummaryRow, key:`**n\_summary**${i}`, index: -1 }` (the keys are Vue-internal, never DOM).
 -}
-type alias DisplayedRow row =
-    { row : row
+type alias DisplayedRow row msg =
+    { row : Maybe row
+    , summaryRow : Maybe (List ( String, SummaryCell msg ))
     , paginatedIndex : Int
+    , isSummaryRow : Bool
     , isExpandedRow : Bool
     }
 
 
-{-| The tiling walk (`Body.tsx`): after pagination, every row whose key is
-in the expanded set — with a `renderExpand` present and the row passing
-`expandable` — is followed by an extra expanded-row entry; `rowCount` /
-last-row math run over the tiled list.
+{-| The tiling walk (`Body.tsx`): the summary rows prepend / append the
+paginated data per `summaryPlacement` FIRST (upstream merges them into
+`mergedData` before the tiling — a summary row never tiles in the port:
+there is no `row` for the tiling gates to read, an inherited edge a
+caller only reaches by authoring `__n_summary__` keys into
+`expandedRowKeys`; documented divergence), then every data row whose key
+is in the expanded set — with a `renderExpand` present and the row
+passing `expandable` — is followed by an extra expanded-row entry;
+`rowCount` / last-row math run over the tiled list.
 -}
-displayedRows : Options row msg -> List (DisplayedRow row)
+displayedRows : Options row msg -> List (DisplayedRow row msg)
 displayedRows opts =
-    paginatedData opts
-        |> List.indexedMap
-            (\index row ->
-                let
-                    isExpanded =
-                        renderExpandOf opts
-                            /= Nothing
-                            && List.member (opts.rowKey row) opts.expandedRowKeys
-                            && expandableRow opts row
-                in
-                if isExpanded then
-                    [ DisplayedRow row index False, DisplayedRow row index True ]
+    let
+        summaryRows =
+            case opts.summary of
+                Just summary ->
+                    List.map
+                        (\entries -> DisplayedRow Nothing (Just entries) -1 True False)
+                        (summary (paginatedData opts))
 
-                else
-                    [ DisplayedRow row index False ]
-            )
-        |> List.concat
+                Nothing ->
+                    []
+
+        dataRows =
+            paginatedData opts
+                |> List.indexedMap
+                    (\index row ->
+                        let
+                            isExpanded =
+                                renderExpandOf opts
+                                    /= Nothing
+                                    && List.member (opts.rowKey row) opts.expandedRowKeys
+                                    && expandableRow opts row
+                        in
+                        if isExpanded then
+                            [ DisplayedRow (Just row) Nothing index False False
+                            , DisplayedRow (Just row) Nothing index False True
+                            ]
+
+                        else
+                            [ DisplayedRow (Just row) Nothing index False False ]
+                    )
+                |> List.concat
+    in
+    case opts.summaryPlacement of
+        SummaryTop ->
+            summaryRows ++ dataRows
+
+        SummaryBottom ->
+            dataRows ++ summaryRows
 
 
 {-| The extra expanded row (`Body.tsx`'s `renderRow` isExpandedRow branch):
 the bare `tr.n-data-table-tr.n-data-table-tr--expanded` over ONE td —
 base + always `--last-col` + conditionally `--last-row` over the tiled
-rows, `colspan` = the column count, no `data-col-key` / style / spans —
+rows, `colspan` = the LEAF column count (`cols.length`), no
+`data-col-key` / style / spans —
 carrying `renderExpand(row, paginatedIndex)`, wrapped in the sticky
 `div.n-data-table-expand[style="width:{n}px"]` iff `stickyExpandedRows`
 (with `bodyWidth` measured — upstream renders the bare wrapper until its
@@ -1812,7 +2239,7 @@ expandedTrNode opts row paginatedIndex displayedIndex displayedCount =
                         ++ I.classIf (displayedIndex + 1 == displayedCount) "n-data-table-td--last-row"
                     )
                 )
-            , HA.colspan (List.length opts.columns)
+            , HA.colspan (List.length (leafColumns opts.columns))
             ]
             (case renderExpandOf opts of
                 Just renderExpand ->
@@ -2190,12 +2617,13 @@ getMultiplePriority sorter =
             Nothing
 
 
-{-| `isColumnSortable` (upstream `utils.ts`, minus the group-column guard —
-group columns are a later batch): the column carries a sorter.
+{-| `isColumnSortable` (upstream `utils.ts`) — a childless column with a
+sorter; the `'children' in column` gate makes every group header
+unsortable (its th renders the bare title wrapper, no button, no click).
 -}
 isSortable : Column row msg -> Bool
 isSortable col =
-    col.sorter /= Nothing
+    col.children == Nothing && col.sorter /= Nothing
 
 
 {-| `isColumnSorting` (upstream `utils.ts`) — some sort state names this
@@ -2228,7 +2656,7 @@ defaultSortStates columns =
                         acc
         )
         []
-        columns
+        (leafColumns columns)
 
 
 {-| `updateSortStatesByNewSortState` (upstream `use-sorter.ts`) — replace
@@ -2265,10 +2693,13 @@ gated; its sorter is unreachable upstream, see the divergence notes).
 mergedSortStates : List (Column row msg) -> List (SortState row) -> List (SortState row)
 mergedSortStates columns uncontrolled =
     let
+        dataRelatedCols =
+            leafColumns columns
+
         controlled =
             List.filter
                 (\col -> col.kind /= KindSelection && col.sorter /= Nothing && col.sortOrder /= Nothing)
-                columns
+                dataRelatedCols
 
         activeStates =
             List.filterMap
@@ -2473,7 +2904,7 @@ filteredData opts =
             mergedFilterStates opts
 
         basicColumns =
-            List.filter (\col -> col.kind == KindNormal) opts.columns
+            List.filter (\col -> col.kind == KindNormal) (leafColumns opts.columns)
 
         columnPasses col row =
             case activeFilterValues states col of
@@ -2713,7 +3144,7 @@ defaultFilterStates columns =
                                             FilterNull
                                     )
         )
-        columns
+        (leafColumns columns)
 
 
 {-| `mergedFilterStateRef` (upstream `use-table-data.ts` :91) — the
@@ -2753,7 +3184,7 @@ mergedFilterStates opts =
                             ( Nothing, Nothing ) ->
                                 Nothing
                 )
-                opts.columns
+                (leafColumns opts.columns)
     in
     List.foldl
         (\entry acc -> upsertFilterState acc entry)
@@ -2771,21 +3202,16 @@ filtersAfterChange opts col value =
     upsertFilterState (mergedFilterStates opts) ( col.key, value )
 
 
-{-| `isColumnFilterable` (upstream `utils.ts`) — a truthy `filter` AND
-`filterOptions` set (`filterOptions = Just []` keeps the button:
-upstream's empty array is truthy). Upstream's third leg
+{-| `isColumnFilterable` (upstream `utils.ts`) — a childless column with a
+truthy `filter` AND `filterOptions` set (`filterOptions = Just []` keeps
+the button: upstream's empty array is truthy). Upstream's third leg
 `|| !!column.renderFilterMenu` has no port surface (render props, the
-sorter precedent — see the divergence notes); group columns arrive with
-b6, selection / expand columns carry `never` fields upstream.
+sorter precedent — see the divergence notes); the `'children' in
+column` gate makes every group header unfilterable (a bare title th).
 -}
 isColumnFilterable : Column row msg -> Bool
 isColumnFilterable col =
-    case ( col.filter, col.filterOptions ) of
-        ( Just _, Just _ ) ->
-            True
-
-        _ ->
-            False
+    col.children == Nothing && (col.filter /= Nothing && col.filterOptions /= Nothing)
 
 
 {-| `shouldUseArrayInSingleMode` (upstream `utils.ts` :107) — the
@@ -3069,6 +3495,203 @@ filterMenuClearedValue opts =
 
 
 
+-- GROUP / SUMMARY / MERGE -------------------------------------------------------
+
+
+{-| One header cell of the group-header walk — upstream `RowItem`
+(`use-group-header.ts`): the column, its leaf index, its `colSpan` /
+`rowSpan` (rendered on EVERY th, spans of 1 included) and its `isLast`
+flag (the `--last` class).
+-}
+type alias HeaderCell row msg =
+    { column : Column row msg
+    , colIndex : Int
+    , colSpan : Int
+    , rowSpan : Int
+    , isLast : Bool
+    }
+
+
+{-| Pass 1 of `getRowsAndCols` (`use-group-header.ts`) minus the
+virtual-scroll `ColItem` build — the leaf walk: a `children`-present
+column recurses (its own record never yields — `Just []` contributes
+nothing and is NOT a leaf), a childless column IS the leaf. This drives
+every data-related column walk (colgroup, sort / filter pipelines,
+selection / expand lookup, the body cells); group columns are inert by
+construction.
+-}
+leafColumns : List (Column row msg) -> List (Column row msg)
+leafColumns columns =
+    List.concatMap
+        (\col ->
+            case childColumns col of
+                Just children ->
+                    leafColumns children
+
+                Nothing ->
+                    [ col ]
+        )
+        columns
+
+
+{-| Unwrap `children` — `Nothing` on a childless column (the group gate
+stays key-presence: `Just []` unwraps to `[]`, a group with no leaves).
+-}
+childColumns : Column row msg -> Maybe (List (Column row msg))
+childColumns col =
+    Maybe.map (List.map (\(ColumnChild child) -> child)) col.children
+
+
+{-| `getRowsAndCols` pass-2 — the header-row layout, both passes verbatim:
+pass 1 (`maxDepthOf` + `leafColumns`) fixes the leaf count
+(`totalRowSpan`), the deepest group depth and the per-depth row lists;
+pass 2 walks with a thread of the running `currentLeafIndex` and a
+`hideUntilIndex` local to EACH recursion level (an argument here — it
+does not leak across sibling subtrees):
+
+  - a leaf under `hideUntilIndex` is swallowed by an earlier
+    `titleColSpan` th — the index advances, no cell, nothing rendered;
+  - a leaf otherwise takes `titleColSpan ?? 1`, sets `hideUntilIndex` to
+    `index + colSpan` when the span exceeds 1, and lands `rowSpan =
+    maxDepth - depth + 1` with `isLast = index + colSpan == totalRowSpan`;
+  - a group saves the entry index, recurses with a FRESH
+    `hideUntilIndex` (post-order — its cell lands after its children's,
+    fixing intra-depth order), sums its direct children's cells'
+    `colSpan` (a `Just []` group sums 0 — the th renders `colspan=0`,
+    byte-faithful) and lands `rowSpan = 1` with
+    `isLast = savedIndex + colSpan == totalRowSpan`.
+
+The rows come back depth-bucketed in push order — `rows[depth]` exists
+for every depth pass 1 entered, empty ones included (the `Just []`
+edge's phantom row).
+
+-}
+headerRows : List (Column row msg) -> List (List (HeaderCell row msg))
+headerRows columns =
+    let
+        totalRowSpan =
+            List.length (leafColumns columns)
+
+        maxDepth =
+            maxDepthOf columns
+
+        walk :
+            List (Column row msg)
+            -> Int
+            -> Int
+            -> Int
+            -> WalkState row msg
+        walk cols depth leafIndex hideUntil =
+            case cols of
+                [] ->
+                    WalkState leafIndex hideUntil 0 []
+
+                col :: rest ->
+                    case childColumns col of
+                        Just children ->
+                            let
+                                cached =
+                                    leafIndex
+
+                                afterChildren =
+                                    walk children (depth + 1) leafIndex 0
+
+                                isLast =
+                                    cached + afterChildren.ownColSpans == totalRowSpan
+
+                                cell =
+                                    HeaderCell col cached afterChildren.ownColSpans 1 isLast
+
+                                afterRest =
+                                    walk rest depth afterChildren.leafIndex hideUntil
+                            in
+                            WalkState afterRest.leafIndex
+                                afterRest.hideUntil
+                                (afterChildren.ownColSpans + afterRest.ownColSpans)
+                                (afterChildren.emitted ++ (( depth, cell ) :: afterRest.emitted))
+
+                        Nothing ->
+                            if leafIndex < hideUntil then
+                                walk rest depth (leafIndex + 1) hideUntil
+
+                            else
+                                let
+                                    colSpan =
+                                        Maybe.withDefault 1 col.titleColSpan
+
+                                    hideUntilNext =
+                                        if colSpan > 1 then
+                                            leafIndex + colSpan
+
+                                        else
+                                            hideUntil
+
+                                    isLast =
+                                        leafIndex + colSpan == totalRowSpan
+
+                                    cell =
+                                        HeaderCell col leafIndex colSpan (maxDepth - depth + 1) isLast
+
+                                    afterRest =
+                                        walk rest depth (leafIndex + 1) hideUntilNext
+                                in
+                                WalkState afterRest.leafIndex
+                                    afterRest.hideUntil
+                                    (colSpan + afterRest.ownColSpans)
+                                    (( depth, cell ) :: afterRest.emitted)
+
+        final =
+            walk columns 0 0 0
+    in
+    List.range 0 maxDepth
+        |> List.map
+            (\depth ->
+                List.filterMap
+                    (\( d, cell ) ->
+                        if d == depth then
+                            Just cell
+
+                        else
+                            Nothing
+                    )
+                    final.emitted
+            )
+
+
+{-| The pass-2 walk state — the running `leafIndex`, the level-local
+`hideUntil`, the sum of the colSpans pushed at THIS walk's depth (the
+group parent's `colSpan` source) and the depth-tagged cells in push
+order.
+-}
+type alias WalkState row msg =
+    { leafIndex : Int
+    , hideUntil : Int
+    , ownColSpans : Int
+    , emitted : List ( Int, HeaderCell row msg )
+    }
+
+
+{-| Pass 1's `maxDepth` — the deepest depth the walk ENTERS: a
+`children`-present column recurses to `depth + 1` whatever its children
+(`Just []` still bumps the depth — its row exists, empty), a leaf adds
+nothing. Drives the leaf `rowSpan = maxDepth - depth + 1`.
+-}
+maxDepthOf : List (Column row msg) -> Int
+maxDepthOf columns =
+    List.foldl
+        (\col acc ->
+            case childColumns col of
+                Just children ->
+                    max (1 + maxDepthOf children) acc
+
+                Nothing ->
+                    acc
+        )
+        0
+        columns
+
+
+
 -- SELECTION ---------------------------------------------------------------------
 
 
@@ -3078,7 +3701,7 @@ order here), or nothing.
 -}
 selectionColumn : Options row msg -> Maybe (Column row msg)
 selectionColumn opts =
-    List.filter (\col -> col.kind == KindSelection) opts.columns
+    List.filter (\col -> col.kind == KindSelection) (leafColumns opts.columns)
         |> List.head
 
 
@@ -3349,7 +3972,7 @@ expandColumn opts =
 
 expandColumnOf : List (Column row msg) -> Maybe (Column row msg)
 expandColumnOf columns =
-    List.filter (\col -> col.kind == KindExpand) columns
+    List.filter (\col -> col.kind == KindExpand) (leafColumns columns)
         |> List.head
 
 
@@ -3423,7 +4046,7 @@ flag drives both).
 -}
 hasEllipsisOf : Options row msg -> Bool
 hasEllipsisOf opts =
-    List.any (\col -> col.ellipsis /= Nothing) opts.columns
+    List.any (\col -> col.ellipsis /= Nothing) (leafColumns opts.columns)
 
 
 {-| `mergedTableLayoutRef` (upstream `DataTable.tsx` :191) — `fixed` when
@@ -3497,8 +4120,14 @@ numberColWidth col =
 
 {-| `fixedColumnLeftMap` (upstream `use-scroll.ts` :64) — the left-fixed
 columns in order, each keyed with its `start` offset (the summed widths
-of the preceding left-fixed columns; group children flatten b6). Upstream
-also tracks `end` — only `?.start` is ever read by the cell styles.
+of the preceding left-fixed columns; group children flatten — the walk
+is over the LEAF columns, so a nested `fixed` column found under a
+group offsets like any other). Upstream also tracks `end` — only
+`?.start` is ever read by the cell styles. Upstream's traverse registers
+the fixed GROUP's own key too (its th takes the class + offset); the
+port's leaf walk drops it, and upstream auto-fixes a fixed group's
+children through map membership where the port reads the column's own
+`fixed` — the documented group-fixed divergence.
 -}
 fixedColumnLeftMap : List (Column row msg) -> List ( String, Int )
 fixedColumnLeftMap columns =
@@ -3511,12 +4140,13 @@ fixedColumnLeftMap columns =
                 col :: rest ->
                     walk (( colKeyOf col, left ) :: acc) (left + numberColWidth col) rest
     in
-    walk [] 0 (List.filter (\col -> col.fixed == Just FixedLeft) columns)
+    walk [] 0 (List.filter (\col -> col.fixed == Just FixedLeft) (leafColumns columns))
 
 
 {-| `fixedColumnRightMap` (upstream `use-scroll.ts` :81) — the right-fixed
 columns REVERSED, each keyed with its `start` offset (the summed widths
-of the FOLLOWING right-fixed columns).
+of the FOLLOWING right-fixed columns; the same leaf flatten as
+`fixedColumnLeftMap`).
 -}
 fixedColumnRightMap : List (Column row msg) -> List ( String, Int )
 fixedColumnRightMap columns =
@@ -3529,7 +4159,7 @@ fixedColumnRightMap columns =
                 col :: rest ->
                     walk (( colKeyOf col, right ) :: acc) (right + numberColWidth col) rest
     in
-    walk [] 0 (List.reverse (List.filter (\col -> col.fixed == Just FixedRight) columns))
+    walk [] 0 (List.reverse (List.filter (\col -> col.fixed == Just FixedRight) (leafColumns columns)))
 
 
 {-| The map lookup — `fixedColumnLeftMap[colKey]?.start`, `Nothing` for
@@ -3583,16 +4213,6 @@ headerTableStyleOf opts =
 
 
 -- HELPERS ----------------------------------------------------------------------
-
-
-{-| Pair each item with whether it is the last of the list — the `isLast`
-/ `isLastCol` flags of upstream's row/col iteration.
--}
-lastFlags : List a -> List ( a, Bool )
-lastFlags xs =
-    List.map2 (\x isLast -> ( x, isLast ))
-        xs
-        (List.repeat (List.length xs - 1) False ++ [ True ])
 
 
 maybeClass : Maybe String -> List String

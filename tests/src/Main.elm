@@ -4781,6 +4781,10 @@ dtNameCol =
     , expandable = Nothing
     , fixed = Nothing
     , ellipsis = Nothing
+    , children = Nothing
+    , titleColSpan = Nothing
+    , colSpan = Nothing
+    , rowSpan = Nothing
     }
 
 
@@ -4814,6 +4818,10 @@ dtAgeCol =
     , expandable = Nothing
     , fixed = Nothing
     , ellipsis = Nothing
+    , children = Nothing
+    , titleColSpan = Nothing
+    , colSpan = Nothing
+    , rowSpan = Nothing
     }
 
 
@@ -4847,6 +4855,10 @@ dtAddressCol =
     , expandable = Nothing
     , fixed = Nothing
     , ellipsis = Nothing
+    , children = Nothing
+    , titleColSpan = Nothing
+    , colSpan = Nothing
+    , rowSpan = Nothing
     }
 
 
@@ -4916,6 +4928,10 @@ msScoreCol key title priority accessor =
     , expandable = Nothing
     , fixed = Nothing
     , ellipsis = Nothing
+    , children = Nothing
+    , titleColSpan = Nothing
+    , colSpan = Nothing
+    , rowSpan = Nothing
     }
 
 
@@ -4949,6 +4965,10 @@ dtMsNameCol =
     , expandable = Nothing
     , fixed = Nothing
     , ellipsis = Nothing
+    , children = Nothing
+    , titleColSpan = Nothing
+    , colSpan = Nothing
+    , rowSpan = Nothing
     }
 
 
@@ -4982,6 +5002,10 @@ dtMsAgeCol =
     , expandable = Nothing
     , fixed = Nothing
     , ellipsis = Nothing
+    , children = Nothing
+    , titleColSpan = Nothing
+    , colSpan = Nothing
+    , rowSpan = Nothing
     }
 
 
@@ -5015,6 +5039,10 @@ dtMsAddressCol =
     , expandable = Nothing
     , fixed = Nothing
     , ellipsis = Nothing
+    , children = Nothing
+    , titleColSpan = Nothing
+    , colSpan = Nothing
+    , rowSpan = Nothing
     }
 
 
