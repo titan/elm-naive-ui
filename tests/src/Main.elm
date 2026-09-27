@@ -5238,6 +5238,283 @@ dtMsSelCol =
     { d | kind = DataTable.KindSelection }
 
 
+{-| The b6 group-header row — the spec `:1360` fixture shape (`name`, `age`,
+`test1`, `test2`), one field per LEAF column key.
+-}
+type alias DtGroupRow =
+    { name : String
+    , age : Int
+    , test1 : Int
+    , test2 : Int
+    }
+
+
+dtGroupRows : List DtGroupRow
+dtGroupRows =
+    List.map (\i -> { name = String.fromInt i, age = i, test1 = i, test2 = i }) (List.range 0 4)
+
+
+{-| A plain leaf column over `DtGroupRow` (key + title + a text render) —
+the base every b6 group fixture record-updates.
+-}
+dtGroupLeaf : String -> String -> (DtGroupRow -> String) -> DataTable.Column DtGroupRow Msg
+dtGroupLeaf key title accessor =
+    let
+        d =
+            DataTable.columnDefaults
+    in
+    { d | key = key, title = title, view = accessor >> Element.text }
+
+
+{-| The b6 group fixture A (spec `:1360`) — `name` (w100) beside `age`
+(w100) whose `children` are the `test1` / `test2` leaves. The group column
+carries `children = Just [ ColumnChild … ]` (the key-presence gate).
+-}
+dtGroupCols : List (DataTable.Column DtGroupRow Msg)
+dtGroupCols =
+    let
+        nameCol =
+            dtGroupLeaf "name" "Name" .name
+
+        ageCol =
+            dtGroupLeaf "age" "Age" (String.fromInt << .age)
+    in
+    [ { nameCol | width = Just 100 }
+    , { ageCol
+        | width = Just 100
+        , children = Just [ DataTable.ColumnChild (dtGroupLeaf "test1" "test1" (String.fromInt << .test1)), DataTable.ColumnChild (dtGroupLeaf "test2" "test2" (String.fromInt << .test2)) ]
+      }
+    ]
+
+
+{-| The b6 group fixture D — a `fixed` leaf nested under a group (`a`
+fixed-left w100, `b` w100) beside a flat `c` (fixed-left w50). The
+fixed-offset walk runs over the LEAVES only (b4 formula): `a` start 0,
+`c` start 100 (the group `g` never joins the map).
+-}
+dtGroupFixedCols : List (DataTable.Column DtGroupRow Msg)
+dtGroupFixedCols =
+    let
+        gCol =
+            dtGroupLeaf "g" "G" .name
+
+        aCol =
+            dtGroupLeaf "a" "A" .name
+
+        bCol =
+            dtGroupLeaf "b" "B" (String.fromInt << .age)
+
+        cCol =
+            dtGroupLeaf "c" "C" (String.fromInt << .test1)
+    in
+    [ { gCol
+        | children =
+            Just
+                [ DataTable.ColumnChild { aCol | width = Just 100, fixed = Just DataTable.FixedLeft }
+                , DataTable.ColumnChild { bCol | width = Just 100 }
+                ]
+      }
+    , { cCol | width = Just 50, fixed = Just DataTable.FixedLeft }
+    ]
+
+
+{-| The b6 `titleColSpan` fixture B — `a` spans 2 header cells (swallowing
+`b`), `c` is the last leaf. Leaf keys `a`/`b`/`c` over `DtGroupRow`.
+-}
+dtTitleSpanCols : List (DataTable.Column DtGroupRow Msg)
+dtTitleSpanCols =
+    let
+        aCol =
+            dtGroupLeaf "a" "A" .name
+    in
+    [ { aCol | titleColSpan = Just 2 }
+    , dtGroupLeaf "b" "B" (String.fromInt << .age)
+    , dtGroupLeaf "c" "C" (String.fromInt << .test1)
+    ]
+
+
+{-| The b6 `children = Just []` edge C — a group column with an EMPTY
+child list: `colSpan 0`, `isLast True`, and `leafColumns` yields nothing.
+-}
+dtEmptyGroupCols : List (DataTable.Column DtGroupRow Msg)
+dtEmptyGroupCols =
+    let
+        xCol =
+            dtGroupLeaf "x" "X" .name
+    in
+    [ { xCol | children = Just [] } ]
+
+
+{-| The b6 summary / merge row — the spec `:847` (`name`/`age`) and `:1113`
+fixture shape. `name` is stringified (the port's `rowKey` is `String`-keyed).
+-}
+type alias DtSumRow =
+    { name : String
+    , age : Int
+    }
+
+
+{-| The summary fixture rows — `Array.from({length: 10})` with `{name:
+index, age: index}` (spec :847); ages sum to 45.
+-}
+dtSumRows : List DtSumRow
+dtSumRows =
+    List.map (\i -> { name = String.fromInt i, age = i }) (List.range 0 9)
+
+
+{-| The summary / merge columns — plain `name` (text) + `age` (int) leaves.
+-}
+dtSumCols : List (DataTable.Column DtSumRow Msg)
+dtSumCols =
+    let
+        d =
+            DataTable.columnDefaults
+    in
+    [ { d | key = "name", title = "Name", view = .name >> Element.text }
+    , { d | key = "age", title = "Age", view = .age >> String.fromInt >> Element.text }
+    ]
+
+
+{-| The b6 `summary` fn (spec :847) — one row keyed by column key: `name`
+carries `{value 45, colSpan 1, rowSpan 2}`, `age` `{value 45, colSpan 2,
+rowSpan 1}` (the value is the summed ages over the page data).
+-}
+dtSummaryFn : List DtSumRow -> List (List ( String, DataTable.SummaryCell Msg ))
+dtSummaryFn pageData =
+    let
+        total =
+            String.fromInt (List.sum (List.map .age pageData))
+    in
+    [ [ ( "name", { value = Just (Element.text total), colSpan = Just 1, rowSpan = Just 2 } )
+      , ( "age", { value = Just (Element.text total), colSpan = Just 2, rowSpan = Just 1 } )
+      ]
+    ]
+
+
+dtSummaryOpts : DataTable.Options DtSumRow Msg
+dtSummaryOpts =
+    let
+        d =
+            DataTable.defaults
+    in
+    { d | columns = dtSumCols, data = dtSumRows, rowKey = .name, summary = Just dtSummaryFn }
+
+
+{-| The same summary with `summaryPlacement = SummaryTop` (P2) and a
+`striped` variant (the summary tr must NOT take `--striped`).
+-}
+dtSummaryTopOpts : DataTable.Options DtSumRow Msg
+dtSummaryTopOpts =
+    let
+        base =
+            dtSummaryOpts
+    in
+    { base | summaryPlacement = DataTable.SummaryTop }
+
+
+dtSummaryStripedOpts : DataTable.Options DtSumRow Msg
+dtSummaryStripedOpts =
+    let
+        base =
+            dtSummaryOpts
+    in
+    { base | striped = True }
+
+
+{-| The b6 merge fixture (spec :1113) — 5 rows `{name: index, age: index+1}`,
+`rowKey = .name`.
+-}
+dtMergeRows : List DtSumRow
+dtMergeRows =
+    List.map (\i -> { name = String.fromInt i, age = i + 1 }) (List.range 0 4)
+
+
+{-| The b6 merge columns (spec :1113) — `name` carries the merge fns
+(`rowSpan = rowIndex==0 ? 2 : 1`, `colSpan = rowIndex==0 ? 3 : 1`), `age`
+plain. The fns take `(row, actualRowIndex)`.
+-}
+dtMergeCols : List (DataTable.Column DtSumRow Msg)
+dtMergeCols =
+    let
+        d =
+            DataTable.columnDefaults
+
+        nameCol =
+            { d | key = "name", title = "Name", view = .name >> Element.text }
+
+        ageCol =
+            { d | key = "age", title = "Age", view = .age >> String.fromInt >> Element.text }
+    in
+    [ { nameCol
+        | rowSpan =
+            Just
+                (\_ i ->
+                    if i == 0 then
+                        2
+
+                    else
+                        1
+                )
+        , colSpan =
+            Just
+                (\_ i ->
+                    if i == 0 then
+                        3
+
+                    else
+                        1
+                )
+      }
+    , ageCol
+    ]
+
+
+dtMergeOpts : DataTable.Options DtSumRow Msg
+dtMergeOpts =
+    let
+        d =
+            DataTable.defaults
+    in
+    { d | columns = dtMergeCols, data = dtMergeRows, rowKey = .name }
+
+
+{-| The b6 merge + expand fixture (P5) — an expand column beside `name`
+(`colSpan = rowIndex==0 ? 2 : 1`); the expanded-row td colspan runs to the
+LEAF count (2).
+-}
+dtMergeExpandCols : List (DataTable.Column DtSumRow Msg)
+dtMergeExpandCols =
+    let
+        d =
+            DataTable.columnDefaults
+
+        nameCol =
+            { d | key = "name", title = "Name", view = .name >> Element.text }
+    in
+    [ { d | kind = DataTable.KindExpand, renderExpand = Just (\row _ -> Element.text (row.name ++ " is a good guy.")) }
+    , { nameCol
+        | colSpan =
+            Just
+                (\_ i ->
+                    if i == 0 then
+                        2
+
+                    else
+                        1
+                )
+      }
+    ]
+
+
+dtMergeExpandOpts : DataTable.Options DtSumRow Msg
+dtMergeExpandOpts =
+    let
+        d =
+            DataTable.defaults
+    in
+    { d | columns = dtMergeExpandCols, data = dtMergeRows, rowKey = .name, expandedRowKeys = [ "0" ] }
+
+
 {-| A spec-shaped row — `Array.from({length: n}).map((_, index) => ({ name:
 index }))` with the name stringified (the port's `rowKey` is `String`-keyed;
 the observable bytes — keys, renders, check states — are identical).
@@ -10586,6 +10863,38 @@ checks =
                     )
                 )
            ]
+        ++ -- Group headers / summary / merge (use-group-header.ts
+           -- `getRowsAndCols` two-pass walk + the Body.tsx summary/merge
+           -- seams) — batch 6. The eq pins walk the pure helpers
+           -- (`leafColumns`, `headerRows`, `fixedColumnLeftMap`) over the
+           -- spec `:1360` / `:1113` fixtures; expectations derived from the
+           -- upstream bytes (tasks/recon/data-table-b6-pins.md), NOT the
+           -- port output.
+           [ eq "dt leafColumns: a group column yields its LEAVES in walk order, the group itself never (spec :1360 name/age>test1,test2)"
+                [ "name", "test1", "test2" ]
+                (List.map .key (DataTable.leafColumns dtGroupCols))
+           , eq "dt leafColumns: children = Just [] is a group with NO leaves — it contributes nothing and is not itself a leaf (use-group-header pass 1)"
+                []
+                (List.map .key (DataTable.leafColumns dtEmptyGroupCols))
+           , eq "dt headerRows: the spec :1360 group matrix — row0 name{colSpan1,rowSpan2,isLast False} age{colSpan2,rowSpan1,isLast True}, row1 test1{1,1,False} test2{1,1,True} (leaf rowSpan = maxDepth-depth+1)"
+                [ [ ( 0, 1, ( 2, False ) ), ( 1, 2, ( 1, True ) ) ], [ ( 1, 1, ( 1, False ) ), ( 2, 1, ( 1, True ) ) ] ]
+                (List.map (List.map (\c -> ( c.colIndex, c.colSpan, ( c.rowSpan, c.isLast ) ))) (DataTable.headerRows dtGroupCols))
+           , eq "dt headerRows: the spec :1360 group matrix — the per-cell column keys in push order (post-order group lands after its children)"
+                [ [ "name", "age" ], [ "test1", "test2" ] ]
+                (List.map (List.map (\c -> c.column.key)) (DataTable.headerRows dtGroupCols))
+           , eq "dt headerRows: titleColSpan swallows the covered leaf — a{colSpan2,isLast False (0+2=2≠3)}, c{colSpan1,isLast True (2+1=3)}; b yields NO cell (hideUntilIndex covers index 1)"
+                [ [ ( 0, 2, ( 1, False ) ), ( 2, 1, ( 1, True ) ) ] ]
+                (List.map (List.map (\c -> ( c.colIndex, c.colSpan, ( c.rowSpan, c.isLast ) ))) (DataTable.headerRows dtTitleSpanCols))
+           , eq "dt headerRows: titleColSpan swallow — b is absent from the emitted keys (only a and c render)"
+                [ [ "a", "c" ] ]
+                (List.map (List.map (\c -> c.column.key)) (DataTable.headerRows dtTitleSpanCols))
+           , eq "dt headerRows: children = Just [] edge — x{colIndex 0, colSpan 0, rowSpan 1, isLast True (0+0==0 totalRowSpan 0)}; the phantom empty rows[1] survives (use-group-header ensureMaxDepth enters depth 1)"
+                [ [ ( 0, 0, ( 1, True ) ) ], [] ]
+                (List.map (List.map (\c -> ( c.colIndex, c.colSpan, ( c.rowSpan, c.isLast ) ))) (DataTable.headerRows dtEmptyGroupCols))
+           , eq "dt fixedColumnLeftMap over a grouped column set — the walk is over the LEAVES (nested fixed `a` start 0, flat `c` start 100); the group `g` never joins (b4 formula)"
+                [ ( "a", 0 ), ( "c", 100 ) ]
+                (DataTable.fixedColumnLeftMap dtGroupFixedCols)
+           ]
 
 
 
@@ -12758,6 +13067,25 @@ liveNodes =
                     (DataTable.filterMenu Theme.default dtFmCompat)
                 , Element.el [ Element.htmlAttribute (HA.id "live-data-table-filter-menu-rtl") ]
                     (DataTable.filterMenu Theme.default dtFmRtl)
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-summary") ]
+                    (DataTable.view Theme.default dtSummaryOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-summary-top") ]
+                    (DataTable.view Theme.default dtSummaryTopOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-summary-striped") ]
+                    (DataTable.view Theme.default dtSummaryStripedOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-merge") ]
+                    (DataTable.view Theme.default dtMergeOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-group") ]
+                    (DataTable.view Theme.default
+                        (let
+                            d =
+                                DataTable.defaults
+                         in
+                         { d | columns = dtGroupCols, data = dtGroupRows, rowKey = .name }
+                        )
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-merge-expand") ]
+                    (DataTable.view Theme.default dtMergeExpandOpts)
                 ]
             )
         ]

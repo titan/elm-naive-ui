@@ -9874,6 +9874,183 @@ dEq(
   nClassesStr(dtFilterMenu('live-data-table-filter-menu-rtl'))
 )
 
+// --- Data table (batch 6) — group headers / summary / merge cells ------------
+// use-group-header.ts getRowsAndCols (the two-pass header walk) + Body.tsx
+// (summary rows, the cordToPass span grid, --last-col/--last-row math) +
+// Header.tsx (colgroup leaves, th colspan/rowspan). Expectations from the
+// upstream bytes (spec :847 summary, :1113 merge, :1360 group, :1500 expand
+// colspan; tasks/recon/data-table-b6-pins.md), NOT the port output.
+const dtSumTds = (id) => doc.querySelectorAll('#' + id + ' .n-data-table-td--summary')
+const dtSumTr = (id) => doc.querySelector('#' + id + ' .n-data-table-tr--summary')
+const dtThByKey = (id, key) =>
+  doc.querySelector('#' + id + ' thead [data-col-key="' + key + '"]')
+const dtTdByKey = (id, key, tr) =>
+  (tr || doc).querySelector('#' + id + ' .n-data-table-td[data-col-key="' + key + '"]')
+
+// P1 summary (spec :847) — 2 summary tds in name→age order, spans + 45 text,
+// one tr--summary LAST (after 10 data trs), NO tfoot, --last-row only on age.
+dEq(
+  'DOM: dt summary — 2 .n-data-table-td--summary cells in name→age order (Body.tsx summary content path)',
+  'name|age',
+  [dtSumTds('live-data-table-summary')[0].getAttribute('data-col-key'),
+   dtSumTds('live-data-table-summary')[1].getAttribute('data-col-key')].join('|')
+)
+dEq(
+  'DOM: dt summary name cell — data-col-key name, colspan 1, rowspan 2, text 45 (spec :847; jsdom text via regex)',
+  'name|1|2|true',
+  (() => {
+    const td = dtSumTds('live-data-table-summary')[0]
+    return [td.getAttribute('data-col-key'), td.getAttribute('colspan'),
+            td.getAttribute('rowspan'), String(/45/.test(td.textContent))].join('|')
+  })()
+)
+dEq(
+  'DOM: dt summary age cell — data-col-key age, colspan 2, rowspan 1, text 45 (spec :847)',
+  'age|2|1|true',
+  (() => {
+    const td = dtSumTds('live-data-table-summary')[1]
+    return [td.getAttribute('data-col-key'), td.getAttribute('colspan'),
+            td.getAttribute('rowspan'), String(/45/.test(td.textContent))].join('|')
+  })()
+)
+dEq(
+  'DOM: dt summary — exactly one tr--summary and NO tfoot element (the summary is a tbody row, not a tfoot)',
+  '1|0',
+  [String(doc.querySelectorAll('#live-data-table-summary .n-data-table-tr--summary').length),
+   String(doc.querySelectorAll('#live-data-table-summary tfoot').length)].join('|')
+)
+dEq(
+  'DOM: dt summary placement bottom — the summary tr is the LAST tr (after 10 data trs: 11 total)',
+  '11|true',
+  (() => {
+    const trs = dtTrs('live-data-table-summary')
+    const last = trs[trs.length - 1]
+    return [String(trs.length), String(last.classList.contains('n-data-table-tr--summary'))].join('|')
+  })()
+)
+dEq(
+  'DOM: dt summary --last-row math (rowCount 11, colCount 2) — age td (10+1==11) HAS --last-row, name td (10+2==12) NOT',
+  'true|false',
+  [String(dtSumTds('live-data-table-summary')[1].classList.contains('n-data-table-td--last-row')),
+   String(dtSumTds('live-data-table-summary')[0].classList.contains('n-data-table-td--last-row'))].join('|')
+)
+dEq(
+  'DOM: dt summary --last-col — neither cell (name 0+1!=2, age 1+2!=2)',
+  'false|false',
+  [String(dtSumTds('live-data-table-summary')[0].classList.contains('n-data-table-td--last-col')),
+   String(dtSumTds('live-data-table-summary')[1].classList.contains('n-data-table-td--last-col'))].join('|')
+)
+dTrue(
+  'DOM: dt summary striped variant — the summary tr carries NO --striped (isSummary suppresses the parity class)',
+  !dtSumTr('live-data-table-summary-striped').classList.contains('n-data-table-tr--striped')
+)
+
+// P2 summaryPlacement top — the summary tr is the FIRST tr.
+dTrue(
+  'DOM: dt summary placement top — the summary tr is the FIRST tr',
+  dtTrs('live-data-table-summary-top')[0].classList.contains('n-data-table-tr--summary')
+)
+
+// P3 merge (spec :1113) — name rowSpan/colSpan fns; the cordToPass grid.
+dEq(
+  'DOM: dt merge — the first tbody td carries colspan 3, rowspan 2 (spec :1113)',
+  '3|2',
+  (() => {
+    const td = dtTrs('live-data-table-merge')[0].querySelector('.n-data-table-td')
+    return [td.getAttribute('colspan'), td.getAttribute('rowspan')].join('|')
+  })()
+)
+dEq(
+  'DOM: dt merge — 5 tbody trs; row 0 renders exactly 1 td (name colspan 3 rowspan 2); row 1 renders 0 tds (name AND age both swallowed — the colSpan-3/rowSpan-2 grid pushes colIndex 0,1 into cordToPass[1], Body.tsx :845-866)',
+  '5|1|name|0',
+  (() => {
+    const trs = dtTrs('live-data-table-merge')
+    const tds0 = trs[0].querySelectorAll('.n-data-table-td')
+    const tds1 = trs[1].querySelectorAll('.n-data-table-td')
+    return [String(trs.length), String(tds0.length),
+            tds0[0].getAttribute('data-col-key'), String(tds1.length)].join('|')
+  })()
+)
+dEq(
+  'DOM: dt merge --last-col — an age td (1+1==2) HAS it, row-0 name (0+3!=2) NOT',
+  'true|false',
+  (() => {
+    const trs = dtTrs('live-data-table-merge')
+    const ageTd = trs[2].querySelector('.n-data-table-td[data-col-key="age"]')
+    const nameTd = trs[0].querySelector('.n-data-table-td[data-col-key="name"]')
+    return [String(ageTd.classList.contains('n-data-table-td--last-col')),
+            String(nameTd.classList.contains('n-data-table-td--last-col'))].join('|')
+  })()
+)
+dTrue(
+  'DOM: dt merge --last-row — the last tr age td (4+1==5) HAS it',
+  dtTrs('live-data-table-merge')[4].querySelector('.n-data-table-td[data-col-key="age"]')
+    .classList.contains('n-data-table-td--last-row')
+)
+
+// P4 group (spec :1360) — the two-row thead + the leaf colgroup.
+dEq(
+  'DOM: dt group thead — 2 header trs, 2 + 2 ths (name/age then test1/test2)',
+  '2|2|2',
+  (() => {
+    const trs = doc.querySelectorAll('#live-data-table-group thead .n-data-table-tr')
+    return [String(trs.length),
+            String(trs[0].querySelectorAll('.n-data-table-th').length),
+            String(trs[1].querySelectorAll('.n-data-table-th').length)].join('|')
+  })()
+)
+dEq(
+  'DOM: dt group th spans (spec :1360) — name 1/2, age 2/1, test1 1/1, test2 1/1',
+  '1|2|2|1|1|1|1|1',
+  ['name', 'age', 'test1', 'test2'].map((k) => {
+    const th = dtThByKey('live-data-table-group', k)
+    return th.getAttribute('colspan') + '|' + th.getAttribute('rowspan')
+  }).join('|')
+)
+dEq(
+  'DOM: dt group --last ths — exactly age and test2 (the isLast flags)',
+  '2|age|test2',
+  (() => {
+    const ths = doc.querySelectorAll('#live-data-table-group thead .n-data-table-th--last')
+    return [String(ths.length), ...[...ths].map((t) => t.getAttribute('data-col-key'))].join('|')
+  })()
+)
+dEq(
+  'DOM: dt group colgroup — 3 LEAF cols; test1/test2 widthless (NO style attr), name width:100px;min-width:100px',
+  '3|false|false|width:100px;min-width:100px',
+  (() => {
+    const cols = dtCols('live-data-table-group')
+    return [String(cols.length),
+            String(cols[1].hasAttribute('style')),
+            String(cols[2].hasAttribute('style')),
+            cols[0].getAttribute('style')].join('|')
+  })()
+)
+dTrue(
+  'DOM: dt group th[age] style contains width:100px (the group th keeps its own width)',
+  (dtThByKey('live-data-table-group', 'age').getAttribute('style') || '').includes('width:100px')
+)
+dEq(
+  'DOM: dt group body — 3 tds per row (name/test1/test2 leaves), NO td for the age group key',
+  '3|false',
+  (() => {
+    const tds = dtTrs('live-data-table-group')[0].querySelectorAll('.n-data-table-td')
+    return [String(tds.length),
+            String(!!dtTrs('live-data-table-group')[0].querySelector('.n-data-table-td[data-col-key="age"]'))].join('|')
+  })()
+)
+
+// P5 merge + expand — the expanded-row td colspan runs to the LEAF count.
+dEq(
+  'DOM: dt merge+expand — the expanded-row (renderExpand) td colspan === leaf count (2)',
+  '2',
+  (() => {
+    const trs = dtTrs('live-data-table-merge-expand')
+    const expTr = trs[1] // the tiled expanded row (after its expanded parent, row 0)
+    return expTr.querySelector('.n-data-table-td').getAttribute('colspan')
+  })()
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
