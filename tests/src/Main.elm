@@ -5043,6 +5043,31 @@ dtExpCol =
     { d | kind = DataTable.KindExpand }
 
 
+{-| The b4 ellipsis columns — upstream `ellipsis: true` (the plain th/td
+wrappers) and the `EllipsisProps` object form (the `NEllipsis` embed;
+the spec's `ellipsis: { tooltip: true }` shape).
+-}
+dtEllPlainCol : DataTable.Column DtRow Msg
+dtEllPlainCol =
+    { dtNameCol | width = Just 100, ellipsis = Just DataTable.EllipsisPlain }
+
+
+dtEllOptsCol : DataTable.Column DtRow Msg
+dtEllOptsCol =
+    { dtAgeCol
+        | width = Just 100
+        , ellipsis = Just (DataTable.EllipsisOpts Ellipsis.defaults)
+    }
+
+
+dtEllNameCol : DataTable.Column DtRow Msg
+dtEllNameCol =
+    { dtNameCol
+        | width = Just 100
+        , ellipsis = Just (DataTable.EllipsisOpts Ellipsis.defaults)
+    }
+
+
 {-| The b3 selection column over the 4-row multiple-sorter fixture — the
 shift-range pins ride it (the `disabled` variant updates the field).
 -}
@@ -10206,6 +10231,33 @@ checks =
                     |> List.map (\state -> ( state.columnKey, state.order ))
                 )
            ]
+        ++ -- Scroll/layout (use-scroll.ts :58-112 — the fixed-offset width
+           -- walks; only `?.start` is ever read by the th/td styles).
+           [ eq "dt fixedColumnLeftMap: left-fixed columns keyed with the summed widths of the PRECEDING left-fixed ones; plain columns never join (use-scroll.ts:64)"
+                [ ( "name", 0 ), ( "age", 100 ) ]
+                (DataTable.fixedColumnLeftMap
+                    [ { dtNameCol | width = Just 100, fixed = Just DataTable.FixedLeft }
+                    , { dtAgeCol | width = Just 60, fixed = Just DataTable.FixedLeft }
+                    , dtAddressCol
+                    ]
+                )
+           , eq "dt fixedColumnLeftMap: selection defaults 40 when width unset, an unset NORMAL width counts 0 (utils.ts getNumberColWidth:20)"
+                [ ( "__n_selection__", 0 ), ( "name", 40 ), ( "age", 140 ) ]
+                (DataTable.fixedColumnLeftMap
+                    [ { dtSelCol | fixed = Just DataTable.FixedLeft }
+                    , { dtNameCol | width = Just 100, fixed = Just DataTable.FixedLeft }
+                    , { dtAgeCol | fixed = Just DataTable.FixedLeft }
+                    ]
+                )
+           , eq "dt fixedColumnRightMap: the walk is REVERSED — each right-fixed column keyed with the summed widths of the FOLLOWING ones (use-scroll.ts:81)"
+                [ ( "age", 0 ), ( "name", 60 ) ]
+                (DataTable.fixedColumnRightMap
+                    [ { dtNameCol | width = Just 100, fixed = Just DataTable.FixedRight }
+                    , { dtAgeCol | width = Just 60, fixed = Just DataTable.FixedRight }
+                    , dtAddressCol
+                    ]
+                )
+           ]
 
 
 
@@ -12238,6 +12290,107 @@ liveNodes =
                             , data = List.map dtSpecRow (List.range 0 4)
                             , expandedRowKeys = [ "0" ]
                             , stickyExpandedRows = True
+                        }
+                    )
+
+                -- Data table (batch 4): scroll/layout — the loading overlay,
+                -- flex-height/scroll-x/table-layout/max-height, fixed columns,
+                -- ellipsis, and the empty-state matrix (spec :188/:212/:740/
+                -- :911/:1147/:1230-1350)
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-loading") ]
+                    (DataTable.view Theme.default { dtOpts | loading = True })
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-loading-empty") ]
+                    (DataTable.view Theme.default { dtOpts | data = [], loading = True })
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-flexh") ]
+                    (DataTable.view Theme.default { dtOpts | flexHeight = True })
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-scrollx") ]
+                    (DataTable.view Theme.default { dtOpts | scrollX = Just 1800 })
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-layout-fixed") ]
+                    (DataTable.view Theme.default { dtOpts | tableLayout = DataTable.TableFixed })
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-maxh") ]
+                    (DataTable.view Theme.default { dtOpts | maxHeight = Just 300 })
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-fixed") ]
+                    (DataTable.view Theme.default
+                        { dtOpts
+                            | columns =
+                                [ { dtSelCol | fixed = Just DataTable.FixedLeft }
+                                , { dtNameCol | width = Just 150, fixed = Just DataTable.FixedLeft }
+                                , dtAgeCol
+                                , { dtAddressCol | width = Just 220, fixed = Just DataTable.FixedRight }
+                                ]
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-ellipsis") ]
+                    (DataTable.view Theme.default
+                        { dtOpts | columns = [ dtEllPlainCol, dtEllOptsCol ] }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-empty-minh") ]
+                    (DataTable.view Theme.default
+                        { dtOpts
+                            | columns = [ { dtNameCol | width = Just 100 } ]
+                            , data = []
+                            , minHeight = Just 300
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-empty-ellipsis") ]
+                    (DataTable.view Theme.default
+                        { dtOpts | columns = [ dtEllNameCol ], data = [] }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-empty-layout-fixed") ]
+                    (DataTable.view Theme.default
+                        { dtOpts
+                            | columns = [ { dtNameCol | width = Just 100 } ]
+                            , data = []
+                            , tableLayout = DataTable.TableFixed
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-empty-scrollx") ]
+                    (DataTable.view Theme.default
+                        { dtOpts
+                            | columns = [ { dtNameCol | width = Just 100 } ]
+                            , data = []
+                            , scrollX = Just 1800
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-empty-maxh") ]
+                    (DataTable.view Theme.default
+                        { dtOpts
+                            | columns = [ { dtNameCol | width = Just 100 } ]
+                            , data = []
+                            , maxHeight = Just 300
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-empty-flexh") ]
+                    (DataTable.view Theme.default
+                        { dtOpts
+                            | columns = [ { dtNameCol | width = Just 100 } ]
+                            , data = []
+                            , flexHeight = True
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-empty-ell-maxh") ]
+                    (DataTable.view Theme.default
+                        { dtOpts
+                            | columns = [ dtEllNameCol ]
+                            , data = []
+                            , maxHeight = Just 300
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-empty-ell-sx") ]
+                    (DataTable.view Theme.default
+                        { dtOpts
+                            | columns = [ dtEllNameCol ]
+                            , data = []
+                            , scrollX = Just 1800
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-empty-sx-maxh") ]
+                    (DataTable.view Theme.default
+                        { dtOpts
+                            | columns = [ { dtNameCol | width = Just 100 } ]
+                            , data = []
+                            , scrollX = Just 1800
+                            , maxHeight = Just 300
                         }
                     )
                 ]

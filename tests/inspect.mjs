@@ -9551,6 +9551,202 @@ dEq(
   })()
 )
 
+// --- Data table (batch 4) ---------------------------------------------------
+// Scroll/layout surfaces (use-scroll.ts flags + MainTable.tsx split +
+// Cell.tsx/Header.tsx ellipsis + the DataTable.tsx loading tail; spec
+// :188 loading, :212 flex-height, :740 scroll-x, :911 table-layout,
+// :1147 ellipsis, :1230-1350 the empty-state matrix). Inline styles in
+// the port's byte form: no-space object seams, authored-string seams
+// (Body.tsx contentStyle, the sticky empty literal) verbatim; fixed
+// offsets via seemly pxfy (0 → '0px' — NO zero special-case).
+
+dEq(
+  'DOM: dt loading — root --loading slots after --single-line, before --empty (DataTable.tsx :503 class array)',
+  'n-data-table n-data-table--bordered n-data-table--single-line n-data-table--loading',
+  nClassesStr(dtRoot('live-data-table-loading'))
+)
+dTrue(
+  'DOM: dt loading — n-data-table-loading-wrapper over the full NBaseLoading chain (role=img, aria-label=loading, __transition-wrapper > __container > svg__icon; strokeWidth 20 default — DataTable.tsx :528-543)',
+  (() => {
+    const w = dtRoot('live-data-table-loading').querySelector('.n-data-table-loading-wrapper')
+    const b = w && w.querySelector('.n-base-loading')
+    return !!b &&
+      b.getAttribute('role') === 'img' &&
+      b.getAttribute('aria-label') === 'loading' &&
+      !!b.querySelector('.n-base-loading__transition-wrapper .n-base-loading__container svg.n-base-loading__icon')
+  })()
+)
+dEq(
+  'DOM: dt loading + empty — --empty appended AFTER --loading (order: bordered, single-line, loading, flex-height, empty)',
+  'n-data-table n-data-table--bordered n-data-table--single-line n-data-table--loading n-data-table--empty',
+  nClassesStr(dtRoot('live-data-table-loading-empty'))
+)
+dTrue(
+  'DOM: dt loading + empty — the empty node survives, hidden via n-data-table-empty--hide, still sticky (spec :1347-1352)',
+  (() => {
+    const empty = doc.querySelector('#live-data-table-loading-empty .n-data-table-empty')
+    return empty.classList.contains('n-data-table-empty--hide') &&
+      (empty.getAttribute('style') || '').includes('position: sticky')
+  })()
+)
+dTrue(
+  'DOM: dt flex-height — root --flex-height; the DISCRETE header div over its own table-layout:fixed table carrying the thead; the split body table drops the inline thead (showHeader=false, MainTable.tsx)',
+  (() => {
+    const id = 'live-data-table-flexh'
+    const header = doc.querySelector('#' + id + ' .n-data-table-base-table-header')
+    const body = dtScrollbar(id)
+    const bodyTable = body && body.querySelector('table.n-data-table-table')
+    return nClassesStr(dtRoot(id)).includes('n-data-table--flex-height') &&
+      !!header &&
+      styleAt(header.querySelector('table.n-data-table-table')) === 'table-layout:fixed' &&
+      !!header.querySelector('thead .n-data-table-th') &&
+      !!body && !body.querySelector('thead') &&
+      styleAt(bodyTable) === 'table-layout:fixed'
+  })()
+)
+dEq(
+  'DOM: dt scroll-x — body scrollbar content: width:fit-content first, then the authored contentStyle "min-width: 1800px; width: 100%" (Body.tsx :538-546; spec :740 min-width byte)',
+  'width:fit-content;min-width: 1800px; width: 100%',
+  styleAt(dtContent('live-data-table-scrollx'))
+)
+dEq(
+  'DOM: dt default auto layout IS x-scrollable — fit-content + "min-width: 100%"; the table itself stays table-layout:auto (use-scroll.ts :39; spec :1232 comment + :911)',
+  'width:fit-content;min-width: 100%|table-layout:auto',
+  styleAt(dtContent('live-data-table-basic')) + '|' + styleAt(dtTable('live-data-table-basic'))
+)
+dTrue(
+  'DOM: dt body rails — data-scrollbar-rail + aria-hidden on both; the horizontal rail exists iff xScrollable (basic auto → yes); both carry z-index:3 (Body.tsx :538 rail styles)',
+  (() => {
+    const id = 'live-data-table-basic'
+    const rails = doc.querySelectorAll('#' + id + ' .n-data-table-base-table-body .n-scrollbar-rail')
+    return rails.length === 2 &&
+      [...rails].every(r => r.hasAttribute('data-scrollbar-rail') &&
+        r.getAttribute('aria-hidden') === 'true' && styleAt(r) === 'z-index:3') &&
+      !!doc.querySelector('#' + id + ' .n-data-table-base-table-body .n-scrollbar-rail--horizontal')
+  })()
+)
+dTrue(
+  'DOM: dt table-layout=fixed with no scroll props — the body slot renders BARE (Scrollbar.tsx :824 !scrollable): no scrollbar wrapper, no --base-table-body anywhere; the header stays INLINE in the single table-layout:fixed table (spec :1242 matrix row)',
+  (() => {
+    const id = 'live-data-table-layout-fixed'
+    const root = dtRoot(id)
+    return !root.querySelector('.n-data-table-base-table-body') &&
+      !root.querySelector('.n-scrollbar') &&
+      !!root.querySelector('table.n-data-table-table thead .n-data-table-th') &&
+      styleAt(dtTable(id)) === 'table-layout:fixed'
+  })()
+)
+dTrue(
+  'DOM: dt max-height — discrete header + split body; the body scrollbar root carries the fallthrough bodyStyle max-height:300px after its own vars (MainTable.tsx :43)',
+  (() => {
+    const id = 'live-data-table-maxh'
+    const header = doc.querySelector('#' + id + ' .n-data-table-base-table-header')
+    const body = dtScrollbar(id)
+    return !!header && styleAt(header.querySelector('table')) === 'table-layout:fixed' &&
+      !!body && styleAt(body).endsWith('max-height:300px') &&
+      !body.querySelector('thead') &&
+      !!body.querySelector('table tbody .n-data-table-tr')
+  })()
+)
+dTrue(
+  'DOM: dt fixed columns — th offsets BEFORE width (left:40px;width:150px), td offsets BETWEEN width and --indent-offset (width:150px;left:40px;--indent-offset:); the zero offset renders left:0px (seemly pxfy has NO zero special-case); --fixed-left/right classes (use-scroll.ts :58-112)',
+  (() => {
+    const id = 'live-data-table-fixed'
+    const ths = dtThs(id)
+    const tds = dtTds(id)
+    return ths[0].classList.contains('n-data-table-th--fixed-left') && styleAt(ths[0]) === 'left:0px' &&
+      ths[1].classList.contains('n-data-table-th--fixed-left') && styleAt(ths[1]) === 'left:40px;width:150px' &&
+      ths[3].classList.contains('n-data-table-th--fixed-right') && styleAt(ths[3]) === 'right:0px;width:220px;text-align:center' &&
+      tds[0].classList.contains('n-data-table-td--fixed-left') && styleAt(tds[0]) === 'left:0px;--indent-offset:' &&
+      tds[1].classList.contains('n-data-table-td--fixed-left') && styleAt(tds[1]) === 'width:150px;left:40px;--indent-offset:' &&
+      tds[3].classList.contains('n-data-table-td--fixed-right') && styleAt(tds[3]) === 'text-align:center;width:220px;right:0px;--indent-offset:'
+  })()
+)
+dTrue(
+  'DOM: dt ellipsis — plain form: th__ellipsis title wrapper + td__ellipsis span; object form rides NEllipsis (n-ellipsis, inline text-overflow:ellipsis) in BOTH th and td (Cell.tsx :59 td-always / Header.tsx :254); hasEllipsis flips the merged layout → the body renders BARE at table-layout:fixed (DataTable.tsx :191; spec :1147/:1237)',
+  (() => {
+    const id = 'live-data-table-ellipsis'
+    const root = dtRoot(id)
+    const ths = dtThs(id)
+    const ellTh = ths[1].querySelector('.n-ellipsis')
+    const ellTd = doc.querySelector('#' + id + ' tbody .n-ellipsis')
+    return !!ths[0].querySelector('.n-data-table-th__ellipsis') &&
+      !!doc.querySelector('#' + id + ' tbody .n-data-table-td__ellipsis') &&
+      !!ellTh && styleAt(ellTh).includes('text-overflow:ellipsis') &&
+      !!ellTd && styleAt(ellTd).includes('text-overflow:ellipsis') &&
+      !root.querySelector('.n-data-table-base-table-body') &&
+      styleAt(dtTable(id)) === 'table-layout:fixed'
+  })()
+)
+const dtEmptyShape = (id) => {
+  const root = dtRoot(id)
+  const empty = root.querySelector('.n-data-table-empty')
+  return [
+    String(!!root.querySelector('thead [data-col-key="name"]')),
+    String(!!root.querySelector('.n-data-table-base-table-header')),
+    String(!!root.querySelector('.n-data-table-base-table-body')),
+    empty && (empty.getAttribute('style') || '').includes('position: sticky') ? 'sticky' : 'plain'
+  ].join('|')
+}
+dEq(
+  'DOM: dt empty matrix (default, auto) — thead w/ data-col-key + sticky empty + scrollbar wrapper (spec :1230; the b4 xScrollable fix)',
+  'true|false|true|sticky', dtEmptyShape('live-data-table-empty')
+)
+dEq(
+  'DOM: dt empty matrix (ellipsis) — header INLINE, empty NOT sticky, slot BARE (spec :1237)',
+  'true|false|false|plain', dtEmptyShape('live-data-table-empty-ellipsis')
+)
+dEq(
+  'DOM: dt empty matrix (table-layout=fixed) — BARE, not sticky (spec :1242)',
+  'true|false|false|plain', dtEmptyShape('live-data-table-empty-layout-fixed')
+)
+dEq(
+  'DOM: dt empty matrix (scroll-x) — wrapper + sticky (spec :1247)',
+  'true|false|true|sticky', dtEmptyShape('live-data-table-empty-scrollx')
+)
+dEq(
+  'DOM: dt empty matrix (max-height) — discrete header, not sticky (spec :1252)',
+  'true|true|true|plain', dtEmptyShape('live-data-table-empty-maxh')
+)
+dEq(
+  'DOM: dt empty matrix (flex-height) — discrete header (spec :1258)',
+  'true|true|true|plain', dtEmptyShape('live-data-table-empty-flexh')
+)
+dEq(
+  'DOM: dt empty matrix (ellipsis+max-height) — discrete (spec :1270)',
+  'true|true|true|plain', dtEmptyShape('live-data-table-empty-ell-maxh')
+)
+dEq(
+  'DOM: dt empty matrix (ellipsis+scroll-x) — header inline + sticky (spec :1277)',
+  'true|false|true|sticky', dtEmptyShape('live-data-table-empty-ell-sx')
+)
+dEq(
+  'DOM: dt empty matrix (scroll-x+max-height) — discrete AND sticky (spec :1284)',
+  'true|true|true|sticky', dtEmptyShape('live-data-table-empty-sx-maxh')
+)
+dEq(
+  'DOM: dt empty + min-height — the empty div merges bodyStyle first, then the sticky literal verbatim (spec :1264 min-height byte; Body.tsx authored string)',
+  'sticky|min-height:300px;position: sticky; left: 0; width: var(--n-scrollbar-current-width);',
+  (() => {
+    const empty = doc.querySelector('#live-data-table-empty-minh .n-data-table-empty')
+    return ((empty.getAttribute('style') || '').includes('position: sticky') ? 'sticky' : 'plain') + '|' + styleAt(empty)
+  })()
+)
+dTrue(
+  'DOM: dt empty + max-height — the split body slot renders ONLY the empty div (no table inside the body); the discrete header keeps its thead table (Body.tsx :599-604)',
+  (() => {
+    const id = 'live-data-table-empty-maxh'
+    const body = dtScrollbar(id)
+    return !!body && !body.querySelector('table') && !!body.querySelector('.n-data-table-empty') &&
+      !!doc.querySelector('#' + id + ' .n-data-table-base-table-header table thead [data-col-key="name"]')
+  })()
+)
+dEq(
+  'DOM: dt scroll-x + max-height — the discrete header table style: min-width BEFORE table-layout (Header.tsx :459)',
+  'min-width:1800px;table-layout:fixed',
+  styleAt(doc.querySelector('#live-data-table-empty-sx-maxh .n-data-table-base-table-header table'))
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
