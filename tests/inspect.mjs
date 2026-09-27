@@ -9391,6 +9391,153 @@ dEq(
   String(doc.querySelectorAll('#live-data-table-pag-hidden .n-data-table__pagination').length)
 )
 
+// --- Data table (batch 3): selection + expand --------------------------------
+// Upstream bytes: Header.tsx / Body.tsx / BodyCheckbox/BodyRadio / ExpandTrigger /
+// SelectionMenu + utils.ts getColKey / SELECTION_COL_WIDTH, spec DataTable.spec.tsx
+// :961 / :1479 / :1595 / :1648 (quoted in tasks/recon/data-table-b3-upstream.md §4/§6).
+const dtRadio = (id) => doc.querySelectorAll('#' + id + ' .n-radio')
+const dtTrigger = (id) => doc.querySelector('#' + id + ' .n-data-table-expand-trigger')
+
+dEq(
+  'DOM: dt selection th — --selection in the class array after --sortable, data-col-key sentinel, NO title wrapper, no check-extra without options (Header.tsx :316-355 + utils.ts getColKey, spec :961)',
+  'n-data-table-th n-data-table-th--selection|__n_selection__|0|0',
+  [
+    nClassesStr(dtThs('live-data-table-selection')[0]),
+    dtThs('live-data-table-selection')[0].getAttribute('data-col-key'),
+    String(dtThs('live-data-table-selection')[0].querySelectorAll('.n-data-table-th__title-wrapper').length),
+    String(dtThs('live-data-table-selection')[0].querySelectorAll('.n-data-table-check-extra').length)
+  ].join('|')
+)
+dEq(
+  'DOM: dt header checkbox — privateInsideTable class, indeterminate for 1-of-2 checked (someRowsChecked on, allRowsChecked off; class order checked→disabled→indeterminate→inside-table)',
+  'n-checkbox n-checkbox--indeterminate n-checkbox--inside-table',
+  nClassesStr(dtThs('live-data-table-selection')[0].querySelector('.n-checkbox'))
+)
+dEq(
+  'DOM: dt selection col — <col> defaults to the 40px width pair (SELECTION_COL_WIDTH/EXPAND_COL_WIDTH = 40, createCustomWidthStyle min←width), the th/td keep the bare column.width — styleless th drops the attr',
+  'width:40px;min-width:40px|true',
+  [
+    styleAt(dtCols('live-data-table-selection')[0]),
+    String(!dtThs('live-data-table-selection')[0].hasAttribute('style'))
+  ].join('|')
+)
+dEq(
+  'DOM: dt selection td — --selection between the align slot and --last-col, sentinel key, the unconditional --indent-offset seed (Body.tsx :905-940)',
+  'n-data-table-td n-data-table-td--selection|__n_selection__|--indent-offset:',
+  [
+    nClassesStr(dtTrs('live-data-table-selection')[0].querySelector('.n-data-table-td')),
+    dtTrs('live-data-table-selection')[0].querySelector('.n-data-table-td').getAttribute('data-col-key'),
+    styleAt(dtTrs('live-data-table-selection')[0].querySelector('.n-data-table-td'))
+  ].join('|')
+)
+dEq(
+  'DOM: dt body checkboxes — the checked row carries --checked, every one --inside-table (BodyCheckbox.tsx privateInsideTable + chkSet.has)',
+  'n-checkbox n-checkbox--checked n-checkbox--inside-table|n-checkbox n-checkbox--inside-table',
+  [
+    nClassesStr(dtTrs('live-data-table-selection')[0].querySelector('.n-checkbox')),
+    nClassesStr(dtTrs('live-data-table-selection')[1].querySelector('.n-checkbox'))
+  ].join('|')
+)
+dEq(
+  'DOM: dt single selection — multiple false renders an EMPTY selection th, one radio per row, the display merge slices the source to ["4"] (spec :1595: radios[4] checked, radios[1] not)',
+  '0|5|true|false|__n_selection__',
+  (() => {
+    const radios = dtRadio('live-data-table-selection-single')
+    const td0 = dtTrs('live-data-table-selection-single')[0].querySelector('.n-data-table-td')
+    return [
+      String(dtThs('live-data-table-selection-single')[0].childElementCount),
+      String(radios.length),
+      String(radios[4].classList.contains('n-radio--checked')),
+      String(radios[1].classList.contains('n-radio--checked')),
+      td0.getAttribute('data-col-key')
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: dt selection extra — options render the n-base-icon.n-data-table-check-extra trigger inside the selection th, chevron-down glyph, plain header checkbox (spec :1648 + SelectionMenu.tsx :129-138)',
+  '1|n-base-icon n-data-table-check-extra|true|0 0 16 16|M3.14645 5.64645',
+  (() => {
+    const extra = doc.querySelector('#live-data-table-check-extra .n-data-table-check-extra')
+    const svg = extra && extra.querySelector('svg')
+    const path = svg && svg.querySelector('path')
+    return [
+      String(doc.querySelectorAll('#live-data-table-check-extra .n-data-table-check-extra').length),
+      extra ? nClassesStr(extra) : 'NO-EXTRA',
+      String(extra && dtThs('live-data-table-check-extra')[0].contains(extra)),
+      svg ? svg.getAttribute('viewBox') : 'NO-SVG',
+      path ? path.getAttribute('d').slice(0, 16) : 'NO-PATH'
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: dt expand cells — one td--expand per row regardless of expandable, sentinel key, trigger ONLY on the expandable row (spec :1479: 5 td--expand)',
+  '5|__n_expand__|n-data-table-td n-data-table-td--expand|1',
+  [
+    String(doc.querySelectorAll('#live-data-table-expand tbody .n-data-table-td--expand').length),
+    dtTrs('live-data-table-expand')[0].querySelector('.n-data-table-td').getAttribute('data-col-key'),
+    nClassesStr(dtTrs('live-data-table-expand')[0].querySelector('.n-data-table-td')),
+    String(doc.querySelectorAll('#live-data-table-expand .n-data-table-expand-trigger').length)
+  ].join('|')
+)
+dEq(
+  'DOM: dt expand th renders the title-wrapper branch (Header.tsx createColumnVNode default), trigger --expanded for the merged set + the chevron-right glyph bytes (ExpandTrigger.tsx :37-44)',
+  'n-data-table-th|1|n-data-table-expand-trigger n-data-table-expand-trigger--expanded|0 0 16 16|M5.64645 3.14645C5.45118 3.34171 5.45118 3.65829 5.64645 3.85355L9.79289 8L5.64645 12.1464C5.45118 12.3417 5.45118 12.6583 5.64645 12.8536C5.84171 13.0488 6.15829 13.0488 6.35355 12.8536L10.8536 8.35355C11.0488 8.15829 11.0488 7.84171 10.8536 7.64645L6.35355 3.14645C6.15829 2.95118 5.84171 2.95118 5.64645 3.14645Z',
+  (() => {
+    const trigger = dtTrigger('live-data-table-expand')
+    const svg = trigger && trigger.querySelector('svg')
+    const path = svg && svg.querySelector('path')
+    return [
+      nClassesStr(dtThs('live-data-table-expand')[0]),
+      String(dtThs('live-data-table-expand')[0].querySelectorAll('.n-data-table-th__title-wrapper').length),
+      trigger ? nClassesStr(trigger) : 'NO-TRIGGER',
+      svg ? svg.getAttribute('viewBox') : 'NO-SVG',
+      path ? path.getAttribute('d') : 'NO-PATH'
+    ].join('|')
+  })()
+)
+dEq(
+  'DOM: dt expanded tiling — the expanded row lands AFTER its parent, both trs --expanded, the single td base+--last-col (NOT last-row: the tiled count runs past it), colspan = column count (Body.tsx :686-784, spec :1479: 6 trs)',
+  '6|n-data-table-tr n-data-table-tr--expanded|n-data-table-tr n-data-table-tr--expanded|n-data-table-td n-data-table-td--last-col|2',
+  (() => {
+    const trs = dtTrs('live-data-table-expand')
+    const td = trs[1].querySelector('.n-data-table-td')
+    return [
+      String(trs.length),
+      nClassesStr(trs[0]),
+      nClassesStr(trs[1]),
+      nClassesStr(td),
+      td.getAttribute('colspan')
+    ].join('|')
+  })()
+)
+dTrue(
+  'DOM: dt expanded content — tbody [colspan="2"] text CONTAINS the renderExpand bytes (spec :1479: \'0 is a good guy.\', regex per the elm-ui style-junk convention)',
+  /0 is a good guy\./.test(doc.querySelector('#live-data-table-expand tbody [colspan="2"]').textContent)
+)
+dEq(
+  'DOM: dt expand last-row math runs over the TILED list — the LAST data row (after the extra row) carries --last-row on both its tds',
+  'n-data-table-td n-data-table-td--expand n-data-table-td--last-row|n-data-table-td n-data-table-td--last-col n-data-table-td--last-row',
+  (() => {
+    const tds = dtTrs('live-data-table-expand')[5].querySelectorAll('.n-data-table-td')
+    return [nClassesStr(tds[0]), nClassesStr(tds[1])].join('|')
+  })()
+)
+dEq(
+  'DOM: dt sticky expand — stickyExpandedRows wraps renderExpand in div.n-data-table-expand[width:{bodyWidth}px]; an unexpandable row in the set keeps --expanded with NO child row (Body.tsx :713-779 + the expandable-not-gated quirk)',
+  '1|width:200px|6|true|true',
+  (() => {
+    const sticky = doc.querySelector('#live-data-table-expand-sticky .n-data-table-expand')
+    const trs = dtTrs('live-data-table-expand-sticky')
+    return [
+      String(doc.querySelectorAll('#live-data-table-expand-sticky .n-data-table-expand').length),
+      sticky ? styleAt(sticky) : 'NO-STICKY',
+      String(trs.length),
+      String(trs[3].classList.contains('n-data-table-tr--expanded')),
+      String(sticky ? /0 is a good guy\./.test(sticky.textContent) : false)
+    ].join('|')
+  })()
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

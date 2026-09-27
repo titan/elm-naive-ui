@@ -5005,6 +5005,71 @@ dtMsOptsU states { remote, paginateSinglePage, pagination } =
     }
 
 
+{-| The b3 selection column over `DtRow` — upstream `{ type: 'selection' }`
+(spec `:961` fixture shape). The `key` is dead weight on the special kinds
+(`getColKey` emits the `__n_selection__` sentinel).
+-}
+dtSelCol : DataTable.Column DtRow Msg
+dtSelCol =
+    let
+        d =
+            DataTable.columnDefaults
+    in
+    { d | kind = DataTable.KindSelection }
+
+
+{-| The b3 expand column over `DtRow` — upstream `{ type: 'expand' }`.
+-}
+dtExpCol : DataTable.Column DtRow Msg
+dtExpCol =
+    let
+        d =
+            DataTable.columnDefaults
+    in
+    { d | kind = DataTable.KindExpand }
+
+
+{-| The b3 selection column over the 4-row multiple-sorter fixture — the
+shift-range pins ride it (the `disabled` variant updates the field).
+-}
+dtMsSelCol : DataTable.Column DtMsRow Msg
+dtMsSelCol =
+    let
+        d =
+            DataTable.columnDefaults
+    in
+    { d | kind = DataTable.KindSelection }
+
+
+{-| A spec-shaped row — `Array.from({length: n}).map((_, index) => ({ name:
+index }))` with the name stringified (the port's `rowKey` is `String`-keyed;
+the observable bytes — keys, renders, check states — are identical).
+-}
+dtSpecRow : Int -> DtRow
+dtSpecRow i =
+    { name = String.fromInt i, age = i, address = "" }
+
+
+{-| The header checkbox's (indeterminate, checked) pair over one options
+object — the two counts share a fixture.
+-}
+dtHeaderState : DataTable.Options row msg -> ( Bool, Bool )
+dtHeaderState opts =
+    ( DataTable.someRowsChecked opts, DataTable.allRowsChecked opts )
+
+
+{-| The shift-range pin base — selection + name over the 4-row multiple
+sorter fixture, no pagination (the current page is the whole data).
+-}
+dtMsSelOpts : DataTable.Options DtMsRow Msg
+dtMsSelOpts =
+    let
+        base =
+            dtMsOpts []
+    in
+    { base | columns = [ dtMsSelCol, dtMsNameCol ] }
+
+
 dtMsNames : List (DataTable.SortState DtMsRow) -> List String
 dtMsNames states =
     List.map .name (DataTable.sortedData (dtMsOpts states))
@@ -9899,6 +9964,207 @@ checks =
                 , DataTable.sortValueCompare (DataTable.SortNumber 1) (DataTable.SortString "a")
                 ]
            ]
+        ++ -- Selection (use-check.ts) and expand (use-expand.ts) — batch 3.
+           -- Every expectation derives from the upstream bytes: the treemate
+           -- flat-data rules (b3 upstream recon §2), the header math over the
+           -- CURRENT page, and the spec fixtures quoted in recon §6.
+           [ eq "dt mergedCheckedRowKeys: flat treemate derivation — the data-order filter of the source keys' members, unknown keys dropped (use-check.ts getCheckedKeys over flat rows)"
+                [ "John Brown", "Joe Black" ]
+                (DataTable.mergedCheckedRowKeys
+                    { dtOpts
+                        | columns = [ dtSelCol, dtNameCol ]
+                        , checkedRowKeys = [ "Joe Black", "bogus", "John Brown" ]
+                    }
+                )
+           , eq "dt mergedCheckedRowKeys: multiple === false slices the source to its first key — no treemate pass, order preserved, a bogus head key survives until a click replaces it (use-check.ts)"
+                [ "bogus" ]
+                (DataTable.mergedCheckedRowKeys
+                    { dtOpts
+                        | columns = [ { dtSelCol | multiple = False }, dtNameCol ]
+                        , checkedRowKeys = [ "bogus", "John Brown" ]
+                    }
+                )
+           , eq "dt checkedKeysAfterCheck: the display state, then the new keys appended in click order (the flat treemate check union)"
+                [ "Joe Black", "John Brown", "Jim Green" ]
+                (DataTable.checkedKeysAfterCheck
+                    { dtOpts
+                        | columns = [ dtSelCol, dtNameCol ]
+                        , checkedRowKeys = [ "Joe Black" ]
+                    }
+                    [ "John Brown", "Joe Black", "Jim Green" ]
+                )
+           , eq "dt checkedKeysAfterUncheck: the display order minus the removed keys (the flat treemate uncheck)"
+                [ "John Brown", "Joe Black" ]
+                (DataTable.checkedKeysAfterUncheck
+                    { dtOpts
+                        | columns = [ dtSelCol, dtNameCol ]
+                        , checkedRowKeys = [ "Joe Black", "John Brown", "Jim Green" ]
+                    }
+                    [ "Jim Green" ]
+                )
+           , eq "dt checkedKeysAfterCheckAll: the not-disabled keys of the CURRENT page union into the display state (doCheckAll(false) over paginatedData)"
+                [ "John Brown" ]
+                (DataTable.checkedKeysAfterCheckAll
+                    { dtOpts
+                        | columns =
+                            [ { dtSelCol | disabled = Just (\r -> r.name == "Jim Green") }
+                            , dtNameCol
+                            ]
+                        , checkedRowKeys = []
+                        , pagination = Just { dtPgD | currentPage = 1, pageSize = Just 2 }
+                    }
+                    False
+                )
+           , eq "dt checkedKeysAfterCheckAll: checkWholeTable spans the whole data past the page (doCheckAll(true) over treeNodes)"
+                [ "John Brown", "Joe Black" ]
+                (DataTable.checkedKeysAfterCheckAll
+                    { dtOpts
+                        | columns =
+                            [ { dtSelCol | disabled = Just (\r -> r.name == "Jim Green") }
+                            , dtNameCol
+                            ]
+                        , checkedRowKeys = []
+                        , pagination = Just { dtPgD | currentPage = 1, pageSize = Just 2 }
+                    }
+                    True
+                )
+           , eq "dt checkedKeysAfterCheckAll: no selection column is the column-null gate — the display state returns unchanged"
+                [ "Joe Black" ]
+                (DataTable.checkedKeysAfterCheckAll
+                    { dtOpts
+                        | columns = [ dtNameCol ]
+                        , checkedRowKeys = [ "Joe Black", "bogus" ]
+                    }
+                    True
+                )
+           , eq "dt checkedKeysAfterUncheckAll: the current-page diff — the disabled page row stays checked (doUncheckAll(false))"
+                [ "Jim Green", "Joe Black" ]
+                (DataTable.checkedKeysAfterUncheckAll
+                    { dtOpts
+                        | columns =
+                            [ { dtSelCol | disabled = Just (\r -> r.name == "Jim Green") }
+                            , dtNameCol
+                            ]
+                        , checkedRowKeys = [ "John Brown", "Jim Green", "Joe Black" ]
+                        , pagination = Just { dtPgD | currentPage = 1, pageSize = Just 2 }
+                    }
+                    False
+                )
+           , eq "dt header state: some but not all of the current page's enabled rows — indeterminate on, checked off (0 < countChecked < length - countDisabled)"
+                ( True, False )
+                (dtHeaderState
+                    { dtOpts
+                        | columns = [ dtSelCol, dtNameCol ]
+                        , checkedRowKeys = [ "John Brown" ]
+                    }
+                )
+           , eq "dt header state: every enabled row checked — checked on, indeterminate off (countChecked = length - countDisabled ≠ 0)"
+                ( False, True )
+                (dtHeaderState
+                    { dtOpts
+                        | columns = [ dtSelCol, dtNameCol ]
+                        , checkedRowKeys = [ "John Brown", "Jim Green", "Joe Black" ]
+                    }
+                )
+           , eq "dt header state: disabled rows leave both the numerator and the denominator — all-checked without the disabled row"
+                ( False, True )
+                (dtHeaderState
+                    { dtOpts
+                        | columns = [ { dtSelCol | disabled = Just (\r -> r.name == "Jim Green") }, dtNameCol ]
+                        , checkedRowKeys = [ "John Brown", "Joe Black" ]
+                    }
+                )
+           , eq "dt headerCheckboxDisabled: no paginated rows disable the header checkbox, rows present do not (paginatedData.length === 0)"
+                ( True, False )
+                ( DataTable.headerCheckboxDisabled { dtOpts | columns = [ dtSelCol, dtNameCol ], data = [] }
+                , DataTable.headerCheckboxDisabled { dtOpts | columns = [ dtSelCol, dtNameCol ] }
+                )
+           , eq "dt checkedKeysAfterRowClick: shift with a resolvable lastSelectedKey checks the [min(last, cur) .. max] page range together (Body.tsx handleCheckboxUpdateChecked)"
+                [ "John Brown", "Jim Green", "Joe Black" ]
+                (DataTable.checkedKeysAfterRowClick
+                    { dtMsSelOpts | lastSelectedKey = "John Brown" }
+                    "Joe Black"
+                    True
+                    True
+                )
+           , eq "dt checkedKeysAfterRowClick: the range is direction-agnostic — [min .. max] over a backward drag equals the forward one"
+                [ "John Brown", "Jim Green", "Joe Black" ]
+                (DataTable.checkedKeysAfterRowClick
+                    { dtMsSelOpts | lastSelectedKey = "Joe Black" }
+                    "John Brown"
+                    True
+                    True
+                )
+           , eq "dt checkedKeysAfterRowClick: an unresolvable lastSelectedKey (the '' init) falls back to the single clicked key even with shiftKey"
+                [ "Jim Green" ]
+                (DataTable.checkedKeysAfterRowClick
+                    dtMsSelOpts
+                    "Jim Green"
+                    True
+                    True
+                )
+           , eq "dt checkedKeysAfterRowClick: a plain click unchecks just the one key off the display state"
+                [ "Jim Green" ]
+                (DataTable.checkedKeysAfterRowClick
+                    { dtMsSelOpts
+                        | checkedRowKeys = [ "John Brown", "Jim Green" ]
+                    }
+                    "John Brown"
+                    False
+                    False
+                )
+           , eq "dt checkedKeysAfterRowClick: disabled rows drop out of the shift range (the disabled filter runs over the slice)"
+                [ "John Brown", "Joe Black" ]
+                (DataTable.checkedKeysAfterRowClick
+                    { dtMsSelOpts
+                        | columns =
+                            [ { dtMsSelCol | disabled = Just (\r -> r.name == "Jim Green") }
+                            , dtMsNameCol
+                            ]
+                        , lastSelectedKey = "John Brown"
+                    }
+                    "Joe Black"
+                    True
+                    True
+                )
+           , eq "dt toggleExpandedRowKey: a member key splices out preserving order (handleUpdateExpanded's splice branch)"
+                [ "a", "c" ]
+                (DataTable.toggleExpandedRowKey "b" [ "a", "b", "c" ])
+           , eq "dt toggleExpandedRowKey: a non-member key appends (the push branch)"
+                [ "a", "b", "d" ]
+                (DataTable.toggleExpandedRowKey "d" [ "a", "b" ])
+           , eq "dt defaultExpandAllKeys: seeds the keys of the data rows passing expandable (the flat getNonLeafKeys reading)"
+                [ "John Brown" ]
+                (DataTable.defaultExpandAllKeys (Just (\r -> r.name == "John Brown")) dtRows .name)
+           , eq "dt defaultExpandAllKeys: an absent expandable seeds NOTHING — the optional-chain truthiness quirk kept byte-faithful (use-expand.ts)"
+                []
+                (DataTable.defaultExpandAllKeys Nothing dtRows .name)
+           , eq "dt mergedSortStates: a SELECTION column never reads as controlled — upstream's type !== 'selection' gate, the uncontrolled list passes through (use-sorter.ts L108-112)"
+                [ ( "age", DataTable.Descend ) ]
+                (DataTable.mergedSortStates
+                    [ { dtSelCol
+                        | sorter = Just (DataTable.SorterBy (\a b -> compare a.age b.age))
+                        , sortOrder = Just DataTable.Descend
+                      }
+                    , dtNameCol
+                    ]
+                    [ { columnKey = "age", order = DataTable.Descend, sorter = DataTable.SorterBy (\a b -> compare a.age b.age) } ]
+                    |> List.map (\state -> ( state.columnKey, state.order ))
+                )
+           , eq "dt mergedSortStates: the gate is selection-only — an expand column with a set sortOrder reads as controlled exactly like a basic one"
+                [ ( "exp", DataTable.Descend ) ]
+                (DataTable.mergedSortStates
+                    [ { dtExpCol
+                        | key = "exp"
+                        , sorter = Just (DataTable.SorterBy (\a b -> compare a.age b.age))
+                        , sortOrder = Just DataTable.Descend
+                      }
+                    , dtNameCol
+                    ]
+                    [ { columnKey = "age", order = DataTable.Ascend, sorter = DataTable.SorterBy (\a b -> compare a.age b.age) } ]
+                    |> List.map (\state -> ( state.columnKey, state.order ))
+                )
+           ]
 
 
 
@@ -11857,6 +12123,65 @@ liveNodes =
                             | data = [ { name = "John Brown", age = 32, address = "New York No. 1 Lake Park" } ]
                             , paginateSinglePage = False
                             , pagination = Just { dtPgD | currentPage = 1, pageSize = Just 2 }
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-selection") ]
+                    (DataTable.view Theme.default
+                        { dtOpts
+                            | columns = [ dtSelCol, dtNameCol ]
+                            , data = List.map dtSpecRow (List.range 0 1)
+                            , checkedRowKeys = [ "0" ]
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-selection-single") ]
+                    (DataTable.view Theme.default
+                        { dtOpts
+                            | columns = [ { dtSelCol | multiple = False }, dtNameCol ]
+                            , data = List.map dtSpecRow (List.range 0 4)
+                            , checkedRowKeys = [ "4", "1" ]
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-check-extra") ]
+                    (DataTable.view Theme.default
+                        { dtOpts
+                            | columns =
+                                [ { dtSelCol | options = [ DataTable.SelectionAll, DataTable.SelectionNone ] }
+                                , dtNameCol
+                                ]
+                            , data =
+                                [ { name = "a", age = 0, address = "" }
+                                , { name = "b", age = 1, address = "" }
+                                ]
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-expand") ]
+                    (DataTable.view Theme.default
+                        { dtOpts
+                            | columns =
+                                [ { dtExpCol
+                                    | expandable = Just (\r -> r.name == "0")
+                                    , renderExpand = Just (\r _ -> Element.text (r.name ++ " is a good guy."))
+                                  }
+                                , dtNameCol
+                                ]
+                            , data = List.map dtSpecRow (List.range 0 4)
+                            , expandedRowKeys = [ "0" ]
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-data-table-expand-sticky") ]
+                    (DataTable.view Theme.default
+                        { dtOpts
+                            | columns =
+                                [ { dtExpCol
+                                    | expandable = Just (\r -> r.name == "0")
+                                    , renderExpand = Just (\r _ -> Element.text (r.name ++ " is a good guy."))
+                                  }
+                                , dtNameCol
+                                ]
+                            , data = List.map dtSpecRow (List.range 0 4)
+                            , expandedRowKeys = [ "0", "2" ]
+                            , stickyExpandedRows = True
+                            , bodyWidth = Just 200
                         }
                     )
                 ]
