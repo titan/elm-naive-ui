@@ -189,6 +189,19 @@ Divergences (documented):
     ≡ `[]` ≡ `Just []` (both seed the empty array). `filterOptionValue`'s
     undefined / null split IS modelled — `Nothing` is the uncontrolled
     column, `Just Nothing` upstream's controlled `null`.
+  - **`filterMultiple` is a `Bool`, not upstream's tri-state.** The menu /
+    trigger read upstream `filterMultiple !== false` (default multiple,
+    FilterButton.tsx :41), but the uncontrolled seed walk branches on
+    TRUTHINESS (`if (column.filterMultiple)` — `undefined` takes the
+    single branch, use-table-data.ts :198); the port's `Bool` (default
+    `True` ≡ `!== false`) collapses `undefined` onto `true`, so the seed
+    walk takes the multiple branch. Every cell coincides downstream (a
+    `null` and an `[]` seed agree everywhere) except `filterMultiple`
+    unset + `defaultFilterOptionValue` set (`defaultFilterOptionValues`
+    unset): upstream seeds the scalar (an `--active` trigger with no
+    checked boxes), the port seeds `[]` — a contradictory configuration
+    (a single-mode default on a multiple-mode column) the `Bool` cannot
+    express.
   - **Menu labels and option values are port-typed.** `clearLabel` /
     `confirmLabel` are caller-supplied (`filterMenuDefaults` carries the
     enUS bytes `'Clear'` / `'Confirm'` — upstream injects locale data),
@@ -2668,7 +2681,9 @@ and `[]` both land `[]`); a single column with `defaultFilterOptionValues`
 set keeps them (upstream's single-mode compatibility branch — the array
 stays an array); otherwise `defaultFilterOptionValue ?? null` (the
 `FilterNull` — a present cleared key, byte-faithful to upstream's `??
-null`).
+null`). Upstream branches on `filterMultiple` TRUTHINESS — an
+`undefined` field takes the single branch where the menu reads multiple;
+the port's `Bool` collapses that cell (see the divergence notes).
 -}
 defaultFilterStates : List (Column row msg) -> List ( String, FilterValue )
 defaultFilterStates columns =
