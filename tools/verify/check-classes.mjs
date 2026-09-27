@@ -85,6 +85,10 @@ const ALLOW = new Set([
   // Body.tsx renders <tbody class="n-data-table-tbody"> but no cssr rule targets
   // it anywhere upstream (the tbody is laid out by its ancestors) — kept faithful.
   'n-data-table-tbody',
+  // Body.tsx emits --expanded on the extra expanded tr and on every parent row
+  // whose key is in the expanded set; no cssr rule targets it upstream (an
+  // unstyled marker) — kept faithful.
+  'n-data-table-tr--expanded',
   // Harmless extras: not upstream class names, but the CSS targets the tag /
   // descendant, so rendering is unaffected.
   'n-avatar__img', // upstream CSS targets `.n-avatar img`

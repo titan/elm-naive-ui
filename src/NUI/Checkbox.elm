@@ -22,6 +22,13 @@ The list of child elements is the label slot (`naive-ui`'s default slot / `label
 prop); when it is empty no label element is rendered and the component shows only
 the box.
 
+`privateInsideTable` is upstream's internal prop of the same name — a pure class
+effect (`n-checkbox--inside-table`, emitted between `--indeterminate` and
+`--show-label`) with no theme-var story, set by the data table's header and body
+checkboxes. `onCheckEvent` carries the salient bits of upstream's
+`onUpdateChecked(value, e)` — `(checked, shiftKey)` — which the data table's
+shift-click range selection needs; it wins over `onCheck` when both are set.
+
 The visual result is Naive UI's own: the element carries the `.n-checkbox` BEM
 classes and Naive UI's `--n-*` custom properties, and `NUI.Css` ships Naive UI's
 exact CSS.
@@ -32,6 +39,8 @@ import Element exposing (Element)
 import Element.Events as Events
 import Html
 import Html.Attributes as HA
+import Html.Events
+import Json.Decode as Decode
 import NUI.Internal as I
 import NUI.Theme exposing (Theme)
 import NUI.Theme.Checkbox as CheckboxTheme
@@ -47,6 +56,8 @@ type alias Options msg =
     , disabled : Bool
     , focusable : Bool
     , onCheck : Maybe (Bool -> msg)
+    , onCheckEvent : Maybe (Bool -> Bool -> msg)
+    , privateInsideTable : Bool
     , rtl : Bool
     }
 
@@ -59,6 +70,8 @@ defaults =
     , disabled = False
     , focusable = True
     , onCheck = Nothing
+    , onCheckEvent = Nothing
+    , privateInsideTable = False
     , rtl = False
     }
 
@@ -113,6 +126,7 @@ view theme opts label =
                 ++ I.classIf opts.checked "n-checkbox--checked"
                 ++ I.classIf opts.disabled "n-checkbox--disabled"
                 ++ I.classIf opts.indeterminate "n-checkbox--indeterminate"
+                ++ I.classIf opts.privateInsideTable "n-checkbox--inside-table"
                 ++ I.classIf hasLabel "n-checkbox--show-label"
 
         interactive =
@@ -136,16 +150,26 @@ view theme opts label =
                     else
                         [ Element.htmlAttribute (HA.tabindex 0) ]
                    )
-                ++ (case opts.onCheck of
-                        Just onCheck ->
-                            if opts.disabled then
-                                []
+                ++ (if opts.disabled then
+                        []
 
-                            else
+                    else
+                        case ( opts.onCheckEvent, opts.onCheck ) of
+                            ( Just onCheckEvent, _ ) ->
+                                [ Element.htmlAttribute
+                                    (Html.Events.on "click"
+                                        (Decode.map2 onCheckEvent
+                                            (Decode.succeed (not opts.checked))
+                                            (Decode.field "shiftKey" Decode.bool)
+                                        )
+                                    )
+                                ]
+
+                            ( Nothing, Just onCheck ) ->
                                 [ Events.onClick (onCheck (not opts.checked)) ]
 
-                        Nothing ->
-                            []
+                            ( Nothing, Nothing ) ->
+                                []
                    )
     in
     Element.row

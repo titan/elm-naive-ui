@@ -4556,7 +4556,7 @@ dataTableSection =
             Pagination.defaults
     in
     section "Data Table"
-        "The advanced table (upstream `NDataTable`) — column definitions drive the colgroup, header cells and body cells; `rowKey` keys rows and the empty state renders `NEmpty`. Sorting and pagination ship in this batch; filter, selection, expand, fixed columns and scroll-X ship in later batches. The sort click cycle (false → descend → ascend) and the page changes are caller-owned — this page is static, so nothing is wired."
+        "The advanced table (upstream `NDataTable`) — column definitions drive the colgroup, header cells and body cells; `rowKey` keys rows and the empty state renders `NEmpty`. Selection (checkbox / radio / extra menu) and row expansion ship in this batch, on top of sorting and pagination; filter, fixed columns and scroll-X ship in later batches. The sort / page / checked / expanded state is caller-owned — this page is static, so nothing is wired."
     <|
         [ demoRow "Basic"
             [ DataTable.view theme
@@ -4617,6 +4617,66 @@ dataTableSection =
                                 | pageSize = Just 2
                                 , currentPage = 2
                             }
+                }
+            ]
+        , demoRow "Selection"
+            [ DataTable.view theme
+                { dtD
+                    | columns =
+                        [ { colD | kind = DataTable.KindSelection, disabled = Just (\p -> p.age >= 40) }
+                        , nameCol
+                        , ageCol
+                        , addressCol
+                        ]
+                    , data = people
+                    , rowKey = .name
+                    , checkedRowKeys = [ "Jaime Whyte", "Boris Wuhrer" ]
+                }
+            ]
+        , demoRow "Selection (single)"
+            [ DataTable.view theme
+                { dtD
+                    | columns =
+                        [ { colD | kind = DataTable.KindSelection, multiple = False }
+                        , nameCol
+                        , ageCol
+                        ]
+                    , data = people
+                    , rowKey = .name
+                    , checkedRowKeys = [ "Boris Wuhrer", "Jesse Tripps" ]
+                }
+            ]
+        , demoRow "Selection extra"
+            [ DataTable.view theme
+                { dtD
+                    | columns =
+                        [ { colD
+                            | kind = DataTable.KindSelection
+                            , options = [ DataTable.SelectionAll, DataTable.SelectionNone ]
+                          }
+                        , nameCol
+                        , ageCol
+                        ]
+                    , data = people
+                    , rowKey = .name
+                    , checkedRowKeys = [ "Terry Malany" ]
+                }
+            ]
+        , demoRow "Expand"
+            [ DataTable.view theme
+                { dtD
+                    | columns =
+                        [ { colD
+                            | kind = DataTable.KindExpand
+                            , renderExpand = Just (\p _ -> Element.text (p.name ++ " — " ++ p.address))
+                            , expandable = Just (\p -> p.age > 30)
+                          }
+                        , nameCol
+                        , ageCol
+                        ]
+                    , data = people
+                    , rowKey = .name
+                    , expandedRowKeys = [ "Boris Wuhrer" ]
                 }
             ]
         ]

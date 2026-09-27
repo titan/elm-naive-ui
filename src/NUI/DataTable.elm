@@ -1,25 +1,38 @@
 module NUI.DataTable exposing
     ( Align(..)
+    , CheckAction(..)
+    , CheckEmit
     , Column
+    , ColumnKind(..)
     , Options
+    , SelectionOption(..)
     , Size(..)
     , SortOrder(..)
     , SortState
     , SortValue(..)
     , Sorter(..)
     , SorterCompare(..)
+    , allRowsChecked
     , boundedPage
+    , checkedKeysAfterCheck
+    , checkedKeysAfterCheckAll
+    , checkedKeysAfterRowClick
+    , checkedKeysAfterUncheck
+    , checkedKeysAfterUncheckAll
     , columnDefaults
     , createNextSorter
     , cssVars
+    , defaultExpandAllKeys
     , defaultSortStates
     , defaults
     , deriveNextSorter
     , filteredData
     , getMultiplePriority
     , getSortFunction
+    , headerCheckboxDisabled
     , isColumnSorting
     , isSortable
+    , mergedCheckedRowKeys
     , mergedItemCount
     , mergedPageSize
     , mergedPaginationOpts
@@ -27,8 +40,10 @@ module NUI.DataTable exposing
     , nextSortOrder
     , paginatedData
     , showPagination
+    , someRowsChecked
     , sortValueCompare
     , sortedData
+    , toggleExpandedRowKey
     , view
     )
 
@@ -54,7 +69,7 @@ rebuilt on elm-ui.
 
 (Record updates bind `defaults` to a local first — see `NUI.Button`.)
 
-DOM (batch-2 — one table, the header lives inside the body table, the
+DOM (batch-3 — one table, the header lives inside the body table, the
 pagination node after the wrapper):
 
     div.n-data-table [--rtl] [--bordered] [--bottom-bordered] [--single-line]
@@ -65,17 +80,25 @@ pagination node after the wrapper):
       │     └─ div.n-data-table-base-table-body (the `n-scrollbar` root)
       │        └─ div.n-scrollbar-container > div.n-scrollbar-content
       │           ├─ table.n-data-table-table [inline table-layout:auto]
-      │           │  ├─ colgroup > col (style width/min-width/max-width — always)
+      │           │  ├─ colgroup > col (style width/min-width/max-width — always;
+      │           │  │   selection/expand cols default the width pair to 40px)
       │           │  ├─ thead.n-data-table-thead[data-n-id]
       │           │  │  └─ tr.n-data-table-tr > th[data-col-key]
-      │           │  │     [--sorting] [--sortable] [--last]
-      │           │  │     └─ div.n-data-table-th__title-wrapper
-      │           │  │        ├─ div.n-data-table-th__title              (iff showHeader)
-      │           │  │        └─ span.n-data-table-sorter [--asc|--desc] (iff column sortable)
-      │           │  │           └─ i.n-base-icon > svg (the arrow-down glyph)
+      │           │  │     [--sorting] [--sortable] [--selection] [--last]
+      │           │  │     ├─ basic col: div.n-data-table-th__title-wrapper
+      │           │  │     │   (title div + sorter span iff sortable)
+      │           │  │     └─ selection col (multiple): NCheckbox
+      │           │  │         [+ i.n-data-table-check-extra iff column options]
       │           │  └─ tbody.n-data-table-tbody[data-n-id]             (iff paginated rows)
-      │           │     └─ tr.n-data-table-tr [--striped] > td[data-col-key]
-      │           │        (td gains --sorting when the column is actively sorting)
+      │           │     └─ tr.n-data-table-tr [--striped] [--expanded]
+      │           │        > td[data-col-key] [--sorting] [--{align}-align]
+      │           │          [--selection|--expand] [--last-col] [--last-row]
+      │           │          (selection td: NCheckbox/NRadio; expand td:
+      │           │           div.n-data-table-expand-trigger iff expandable)
+      │           │     and after each expanded parent row:
+      │           │     └─ tr.n-data-table-tr--expanded
+      │           │        > td.n-data-table-td--last-col[--last-row] colspan=all
+      │           │           [div.n-data-table-expand (iff sticky) > renderExpand]
       │           └─ div.n-data-table-empty > NEmpty                    (iff no paginated rows)
       └─ div.n-data-table__pagination > NPagination + the prefix slot   (iff pagination shown)
 
@@ -86,17 +109,90 @@ Cell content is `Element msg`, embedded through `Element.layoutWith`
 
 Divergences (documented):
 
-  - **Batch-2 scope.** Sort and pagination ship here; filter, selection,
-    expand, loading, fixed columns, scrollX, group headers, summary rows,
-    virtual scroll and resizable columns are upcoming batches.
-    `maxHeight`/`flexHeight` (which split the header into its own table)
-    are not modelled, so the header always renders inside the single body
-    table — upstream's `headerInBody` path.
+  - **Batch-3 scope.** Selection (checkbox / radio / extra menu) and row
+    expansion ship here, on top of batch-2's sort and pagination; filter,
+    loading, fixed columns, scrollX, group headers, summary rows, virtual
+    scroll, resizable columns and tree data (`children`/cascade/async
+    `onLoad` expansion) are upcoming batches — the port models flat data
+    only. `maxHeight`/`flexHeight` (which split the header into its own
+    table) are not modelled, so the header always renders inside the
+    single body table — upstream's `headerInBody` path.
   - **Render-prop sorter customizations are not modelled.** Upstream's
     `renderSorter` / `renderSorterIcon` (per-column and the global
     `DataTable.renderSorter` component prop) and `customNextSortOrder` have
     no Elm surface: the sort button always renders the base icon span and
     the click cycle is fixed `false → descend → ascend`.
+  - **One checked-rows channel, one expanded-rows channel.** Upstream's
+    `doUpdateCheckedRowKeys` fires three handlers (`onUpdate:checkedRowKeys`,
+    `onUpdateCheckedRowKeys`, deprecated `onCheckedRowKeysChange`) with
+    `(keys, rows, { row, action })`, and `doUpdateExpandedRowKeys` two; the
+    port carries `onUpdateCheckedRowKeys` (the full payload, `CheckEmit`)
+    and `onUpdateExpandedRowKeys` (keys only) — `emitRows` drops keys that
+    resolve to no row, where upstream pushes `undefined` holes (reachable
+    only with caller-authored bogus keys).
+  - **`checkedRowKeys` / `expandedRowKeys` are single caller-owned fields.**
+    Upstream's controlled-prop / uncontrolled-internal split collapses:
+    the caller seeds their model (`defaultCheckedRowKeys`,
+    `defaultExpandedRowKeys`, or `defaultExpandAllKeys` for the flat-data
+    reading of `defaultExpandAll` — which seeds nothing without an
+    `expandable` fn, an upstream truthiness quirk kept byte-faithful) and
+    passes the current list; the pure `checkedKeysAfter*` helpers are the
+    `doCheck` / `doUncheck` / `doCheckAll` / `doUncheckAll` transforms,
+    following the flat-data treemate derivation (check = display state then
+    appended new keys; uncheck = display state minus the keys; display
+    merge = data-order members of the source list, `multiple = False`
+    slicing to the first key). Indeterminate keys are always `[]` on flat
+    data, so body checkboxes pass `indeterminate = False`.
+  - **`lastSelectedKey` is caller-owned** (upstream keeps it as component-
+    instance mutable state, init `''`): pass the clicked row's key back
+    through `Options.lastSelectedKey` — the emit payload's `row` carries it
+    — and `checkedKeysAfterRowClick` runs the shift-click range algorithm
+    (current-page rows, `disabled` filtered) over `paginatedData`.
+  - **The selection menu is trigger-icon + caller runtime.** Upstream
+    wraps the `i.n-data-table-check-extra` chevron-down trigger in an
+    `NDropdown`; the port renders the at-rest trigger icon only (its click
+    fires `onCheckExtraClick`) — the menu body, positioning and the
+    `'_n_all__'` / `'_n_none__'` whole-table actions are the caller's
+    `NUI.Dropdown` runtime over `checkedKeysAfterCheckAll` /
+    `checkedKeysAfterUncheckAll` with `wholeTable = True`; custom options
+    keep their own `onSelect` over the page rows. The menu labels are
+    locale data upstream (enUS `'Select all in the table'` / `'Unselect all
+    in the table'`) — caller-supplied here.
+  - **`stickyExpandedRows` needs a measured width.** Upstream reads the
+    body's `ResizeObserver` width; the port takes the caller-measured
+    `Options.bodyWidth` (`Nothing` renders the sticky wrapper without the
+    inline width, as upstream does before its first measurement).
+  - **`renderExpandIcon` replaces the chevron inside the expand trigger**
+    (upstream's table-level renderable slot); the custom icon and the
+    `renderExpand` content ride the same `display: contents` embed wrapper
+    as cell content, and the raw-SVG default trigger does not. Upstream's
+    expand-trigger `onMousedown` `preventDefault` has no Elm surface
+    without a no-op `msg` and leaves no DOM byte — text-selection dragging
+    from the trigger differs.
+  - **Body radios inherit the radio port's no-input edge.** Upstream's
+    `BodyRadio` passes `name = componentId` onto the inner
+    `<input class="n-radio-input">`; the `NUI.Radio` port renders no input,
+    so the name lands nowhere (DOM otherwise equal), and clicking an
+    already-checked radio fires nothing either way (upstream's change event
+    never fires; the port gates `onChange` on `checked`).
+  - **`loading` gates are no-ops until the loading batch** (upstream's
+    `doCheck` / `doUncheck` / `doCheckAll` / `doUncheckAll` return early
+    while `props.loading`); `Options` has no loading field yet.
+  - **Selection/expand columns are flat-record fields, not variant types.**
+    `Column.kind` discriminates; upstream's TS `never` fields become
+    ignored-if-set with one byte-verified asymmetry: the controlled-sorter
+    filter gates `kind /= KindSelection` only (upstream gates
+    `type !== 'selection'`, use-sorter.ts:112), so a sorter on an expand
+    column behaves like a normal column's and `defaultSortStates` seeds
+    either kind — both unreachable upstream. The `--sorting` class
+    comparison stays on the raw `key` (upstream `isColumnSorting`), which
+    selection/expand columns never match upstream (`key` undefined there).
+  - **The selection/expand `<col>` width pair defaults to 40px**
+    (`getStringColWidth`'s `SELECTION_COL_WIDTH` / `EXPAND_COL_WIDTH`
+    fallbacks) while the th/td inline `width` keeps upstream's bare
+    `pxfy(column.width)` — `undefined` and dropped when unset. The
+    `data-col-key` identity is the `__n_selection__` / `__n_expand__`
+    sentinel (`getColKey`), not the caller key.
   - **One sorter-change channel.** Upstream's `doUpdateSorter` fires
     `'onUpdate:sorter'`, then `onUpdateSorter`, then the deprecated
     `onSorterChange`, and the component exposes imperative
@@ -169,9 +265,12 @@ import Element exposing (Element)
 import Html
 import Html.Attributes as HA
 import Html.Events
+import NUI.Checkbox
+import NUI.Dropdown
 import NUI.Empty
 import NUI.Internal as I
 import NUI.Pagination
+import NUI.Radio
 import NUI.Scrollbar
 import NUI.Theme exposing (Theme)
 import NUI.Theme.DataTable as DataTableTheme
@@ -254,7 +353,57 @@ type alias SortState row =
     }
 
 
-{-| One column — upstream's basic `TableBaseColumn` (`type: undefined`):
+{-| Upstream's column `type` discriminator — a basic column (`type:
+undefined`, `KindNormal`, the only kind with a `view` cell body), the
+selection column (`KindSelection`, checkbox / radio cells) and the expand
+column (`KindExpand`, the expand-trigger cell plus per-row `renderExpand`
+content). Upstream types these as three interfaces whose shared fields ride
+`CommonColumnInfo`; the port keeps one flat record (see the divergence
+notes on the TS `never` fields).
+-}
+type ColumnKind
+    = KindNormal
+    | KindSelection
+    | KindExpand
+
+
+{-| One entry of the selection column's `options` — the extra menu behind
+the header's `n-data-table-check-extra` trigger. `SelectionAll` /
+`SelectionNone` are upstream's `'all'` / `'none'` (whole-table check /
+uncheck — the menu LABELS are locale data, enUS `'Select all in the table'`
+/ `'Unselect all in the table'`, caller-supplied); a custom option passes
+through with its `onSelect` over the page rows. The port renders the
+at-rest trigger iff the list is non-empty — the open menu is the caller's
+`NUI.Dropdown` runtime (see the divergence notes).
+-}
+type SelectionOption row msg
+    = SelectionAll
+    | SelectionNone
+    | SelectionCustom { label : String, key : String, onSelect : List row -> msg }
+
+
+{-| The `action` of a checked-rows emit — upstream's
+`'check' | 'uncheck' | 'checkAll' | 'uncheckAll'` payload field.
+-}
+type CheckAction
+    = Check
+    | Uncheck
+    | CheckAll
+    | UncheckAll
+
+
+{-| The third emit argument — upstream's `{ row, action }` payload: the row
+the interaction started from (`Nothing` for the header's check-all /
+uncheck-all) and the action. `row` also carries the clicked key for the
+caller-owned `lastSelectedKey`.
+-}
+type alias CheckEmit row =
+    { row : Maybe row
+    , action : CheckAction
+    }
+
+
+{-| One column — upstream's `TableBaseColumn` (`type: undefined`):
 `key` sources the `data-col-key` attribute, `view` renders the cell body
 (upstream `render`, falling back to `row[key]`). The width fields feed the
 `<col>` / `<th>` / `<td>` styles exactly like upstream's
@@ -265,6 +414,15 @@ column into sorting (`isColumnSortable`), `defaultSortOrder` seeds the
 initial uncontrolled state (`NoSort` ≙ upstream's `false`), `sortOrder`
 marks the column controlled — its `Just` value (a `NoSort` included) wins
 over the uncontrolled list.
+
+`kind` / `multiple` / `disabled` / `options` are the selection column's
+fields and `renderExpand` / `expandable` the expand column's (upstream
+`TableSelectionColumn` / `TableExpandColumn`) — ignored on the other
+kinds; a `KindSelection` / `KindExpand` column takes its width, align and
+class fields through the same `<col>` / th / td paths as a basic column
+(see the divergence notes for the 40px col default and the `never`
+fields).
+
 -}
 type alias Column row msg =
     { key : String
@@ -279,6 +437,12 @@ type alias Column row msg =
     , sorter : Maybe (Sorter row)
     , defaultSortOrder : SortOrder
     , sortOrder : Maybe SortOrder
+    , kind : ColumnKind
+    , multiple : Bool
+    , disabled : Maybe (row -> Bool)
+    , options : List (SelectionOption row msg)
+    , renderExpand : Maybe (row -> Int -> Element msg)
+    , expandable : Maybe (row -> Bool)
     }
 
 
@@ -299,6 +463,12 @@ columnDefaults =
     , sorter = Nothing
     , defaultSortOrder = NoSort
     , sortOrder = Nothing
+    , kind = KindNormal
+    , multiple = True
+    , disabled = Nothing
+    , options = []
+    , renderExpand = Nothing
+    , expandable = Nothing
     }
 
 
@@ -315,6 +485,17 @@ the page window to the caller, `pagination` carries the
 `NUI.Pagination.Options` object merged per upstream, `paginationPrefix`
 its prefix slot, and `onUpdatePage` / `onUpdatePageSize` the table-level
 handlers that replace the object's own (see the divergence notes).
+
+The selection / expand surface: `checkedRowKeys` is the caller-owned
+checked-keys state (the display merge runs over it — see
+`mergedCheckedRowKeys`), `onUpdateCheckedRowKeys` the single emit channel,
+`lastSelectedKey` the caller-owned shift-click anchor; `expandedRowKeys`
+the caller-owned expanded-keys state with `onUpdateExpandedRowKeys` its
+toggle channel; `stickyExpandedRows` + `bodyWidth` the sticky expanded
+wrapper; `renderExpandIcon` the table-level expand-trigger icon slot; and
+`onCheckExtraClick` the click seam on the selection menu's trigger icon
+(the open menu is the caller's `NUI.Dropdown` runtime).
+
 -}
 type alias Options row msg =
     { columns : List (Column row msg)
@@ -339,6 +520,15 @@ type alias Options row msg =
     , paginationPrefix : List (Element msg)
     , onUpdatePage : Maybe (Int -> msg)
     , onUpdatePageSize : Maybe (Int -> msg)
+    , checkedRowKeys : List String
+    , onUpdateCheckedRowKeys : Maybe (List String -> List row -> CheckEmit row -> msg)
+    , lastSelectedKey : String
+    , expandedRowKeys : List String
+    , onUpdateExpandedRowKeys : Maybe (List String -> msg)
+    , stickyExpandedRows : Bool
+    , bodyWidth : Maybe Int
+    , renderExpandIcon : Maybe (Bool -> row -> Element msg)
+    , onCheckExtraClick : Maybe msg
     }
 
 
@@ -366,6 +556,15 @@ defaults =
     , paginationPrefix = []
     , onUpdatePage = Nothing
     , onUpdatePageSize = Nothing
+    , checkedRowKeys = []
+    , onUpdateCheckedRowKeys = Nothing
+    , lastSelectedKey = ""
+    , expandedRowKeys = []
+    , onUpdateExpandedRowKeys = Nothing
+    , stickyExpandedRows = False
+    , bodyWidth = Nothing
+    , renderExpandIcon = Nothing
+    , onCheckExtraClick = Nothing
     }
 
 
@@ -458,7 +657,7 @@ scrollbarNode theme opts =
             | extraClasses = [ "n-data-table-base-table-body" ]
             , contentStyle = Just "min-width: 100%"
         }
-        (tableNode opts
+        (tableNode theme opts
             :: (if paginatedData opts == [] then
                     [ Element.el [ I.classes [ "n-data-table-empty" ] ]
                         (NUI.Empty.view theme NUI.Empty.defaults [])
@@ -476,14 +675,11 @@ then colgroup, thead (iff `showHeader`), tbody (iff paginated rows
 non-empty) — `Body.tsx`'s non-virtual render. No `width`/`minWidth` on
 this table (the scrollbar content's `min-width` carries it).
 -}
-tableNode : Options row msg -> Element msg
-tableNode opts =
+tableNode : Theme -> Options row msg -> Element msg
+tableNode theme opts =
     let
         merged =
             mergedSortStates opts.columns opts.sortStates
-
-        rows =
-            paginatedData opts
     in
     Element.html
         (Html.table
@@ -491,8 +687,8 @@ tableNode opts =
             , HA.attribute "style" "table-layout:auto"
             ]
             ([ Html.colgroup [] (List.map colNode opts.columns) ]
-                ++ theadNode opts merged
-                ++ tbodyNode opts merged rows
+                ++ theadNode theme opts merged
+                ++ tbodyNode theme opts merged
             )
         )
 
@@ -518,16 +714,27 @@ colNode col =
 
 {-| `createCustomWidthStyle` (upstream `utils.ts`), byte form without
 spaces — `width:{n}px;min-width:{n}px;max-width:{n}px` from the set fields,
-`min-width` falling back to `width` when unset.
+`min-width` falling back to `width` when unset. The width source is
+`getStringColWidth`: a selection / expand column defaults to upstream's
+`SELECTION_COL_WIDTH` / `EXPAND_COL_WIDTH` (40) when the caller set no
+width (the th / td inline styles keep the bare `column.width` — see the
+divergence notes).
 -}
 colStyle : Column row msg -> Maybe String
 colStyle col =
     let
+        width =
+            case col.kind of
+                KindNormal ->
+                    col.width
+
+                _ ->
+                    orElse col.width (Just 40)
+
         parts =
             List.filterMap identity
-                [ stylePart "width" (Maybe.map pxfy col.width)
-                , stylePart "min-width"
-                    (Maybe.map pxfy (orElse col.minWidth col.width))
+                [ stylePart "width" (Maybe.map pxfy width)
+                , stylePart "min-width" (Maybe.map pxfy (orElse col.minWidth width))
                 , stylePart "max-width" (Maybe.map pxfy col.maxWidth)
                 ]
     in
@@ -540,17 +747,18 @@ colStyle col =
 
 {-| The `<thead>` — upstream `TableHeader` with `discrete={false}` (the
 header-in-body path): the bare thead with `data-n-id`, one `tr` with only
-its base class, one `th` per column (the sort wiring per `thNode`).
+its base class, one `th` per column (the per-kind content and sort wiring
+per `thNode`).
 -}
-theadNode : Options row msg -> List (SortState row) -> List (Html.Html msg)
-theadNode opts merged =
+theadNode : Theme -> Options row msg -> List (SortState row) -> List (Html.Html msg)
+theadNode theme opts merged =
     if opts.showHeader then
         [ Html.thead
             [ HA.class "n-data-table-thead"
             , HA.attribute "data-n-id" "1"
             ]
             [ Html.tr [ HA.class "n-data-table-tr" ]
-                (List.map (thNode opts merged) (lastFlags opts.columns))
+                (List.map (thNode theme opts merged) (lastFlags opts.columns))
             ]
         ]
 
@@ -558,22 +766,34 @@ theadNode opts merged =
         []
 
 
-{-| One header cell — `Header.tsx`'s th for a basic column: base class,
-then `--sorting` (iff a state names this key with a truthy order), then
-`--sortable` (iff the column carries a sorter), then `--last` (last
-column), then `column.className`; the always-present `data-col-key`; the
-style built only from the set fields (`width`, then `text-align` from
-`titleAlign || align`; upstream's fixed offsets and the body-path `height`
-are all `undefined` here). `colspan`/`rowspan` render the constant `1` on
-every th (upstream always passes them; API-level spans arrive with the
-group-header/merge-cell batch); attribute order matches upstream (`style`,
-spans, `data-col-key`, `class`, then the sort click handler — last, and
-only on a sortable column with `onSorterChange` set). The content is the
-title wrapper: title div, then the sorter span when the column is
-sortable.
+{-| One header cell — `Header.tsx`'s th: base class, then `--sorting` (iff
+a state names this key with a truthy order), then `--sortable` (iff the
+column carries a sorter), then `--selection` (iff the column IS the
+selection column), then `--last` (last column), then `column.className`;
+the always-present `data-col-key` (`getColKey`: the `__n_selection__` /
+`__n_expand__` sentinel on the special kinds, the caller key on a basic
+column); the style built only from the set fields (`width`, then
+`text-align` from `titleAlign || align`; upstream's fixed offsets and the
+body-path `height` are all `undefined` here). `colspan`/`rowspan` render
+the constant `1` on every th (upstream always passes them; API-level
+spans arrive with the group-header/merge-cell batch); attribute order
+matches upstream (`style`, spans, `data-col-key`, `class`, then the sort
+click handler — last, and only on a basic column with a sorter and
+`onSorterChange` set; the selection/expand kinds gate the listener off,
+`Header.tsx`'s `type !== 'selection' && type !== 'expand'` click guard).
+The content branches per kind: a selection column with `multiple` renders
+the header checkbox (plus the selection-menu trigger iff the FIRST
+selection column carries options) and one with `multiple = False` renders
+nothing (an empty th); every other kind renders the title wrapper: title
+div, then the sorter span when the column is sortable.
 -}
-thNode : Options row msg -> List (SortState row) -> ( Column row msg, Bool ) -> Html.Html msg
-thNode opts merged ( col, isLast ) =
+thNode :
+    Theme
+    -> Options row msg
+    -> List (SortState row)
+    -> ( Column row msg, Bool )
+    -> Html.Html msg
+thNode theme opts merged ( col, isLast ) =
     let
         sortable =
             isSortable col
@@ -591,31 +811,47 @@ thNode opts merged ( col, isLast ) =
         (thStyleAttr col
             ++ [ HA.colspan 1
                , HA.rowspan 1
-               , HA.attribute "data-col-key" col.key
+               , HA.attribute "data-col-key" (colKeyOf col)
                , HA.class
                     (String.join " "
                         ([ "n-data-table-th" ]
                             ++ I.classIf (isColumnSorting col merged) "n-data-table-th--sorting"
                             ++ I.classIf sortable "n-data-table-th--sortable"
+                            ++ I.classIf (col.kind == KindSelection) "n-data-table-th--selection"
                             ++ I.classIf isLast "n-data-table-th--last"
                             ++ maybeClass col.className
                         )
                     )
                ]
-            ++ sortClickAttr opts merged col currentState
-        )
-        [ Html.div [ HA.class "n-data-table-th__title-wrapper" ]
-            ([ Html.div [ HA.class "n-data-table-th__title" ]
-                [ Html.text col.title ]
-             ]
-                ++ (if sortable then
-                        [ sortButtonNode order ]
+            ++ (if col.kind == KindNormal then
+                    sortClickAttr opts merged col currentState
 
-                    else
-                        []
-                   )
-            )
-        ]
+                else
+                    []
+               )
+        )
+        (case col.kind of
+            KindSelection ->
+                if col.multiple then
+                    embedChild (headerCheckboxNode theme opts) :: checkExtraNodes opts
+
+                else
+                    []
+
+            _ ->
+                [ Html.div [ HA.class "n-data-table-th__title-wrapper" ]
+                    ([ Html.div [ HA.class "n-data-table-th__title" ]
+                        [ Html.text col.title ]
+                     ]
+                        ++ (if sortable then
+                                [ sortButtonNode order ]
+
+                            else
+                                []
+                           )
+                    )
+                ]
+        )
 
 
 thStyleAttr : Column row msg -> List (Html.Attribute msg)
@@ -631,9 +867,10 @@ thStyleAttr col =
 {-| The th's sort click handler (`Header.tsx` `handleColHeaderClick`, minus
 the filter/resizable `happensIn` guards — later batches): the
 `deriveNextSorter` of the merged base and the column's next state, fed to
-`onSorterChange`. Only present when the column is sortable and the caller
-wired the channel (upstream attaches the listener to every basic-column th
-and no-ops inside).
+`onSorterChange`. Only present on a BASIC column that is sortable and
+whose caller wired the channel (upstream attaches the listener to every
+basic-column th and no-ops inside; the selection/expand kinds gate the
+listener off entirely).
 -}
 sortClickAttr :
     Options row msg
@@ -642,7 +879,7 @@ sortClickAttr :
     -> Maybe (SortState row)
     -> List (Html.Attribute msg)
 sortClickAttr opts merged col current =
-    if isSortable col then
+    if isSortable col && col.kind == KindNormal then
         case opts.onSorterChange of
             Just onSorterChange ->
                 [ Html.Events.onClick
@@ -706,42 +943,76 @@ arrowDownPath =
 
 {-| The `<tbody>` — omitted entirely while the paginated data is empty
 (upstream `{!this.empty ? <tbody>… : null}`); attribute order matches
-upstream (`data-n-id` first here, `class` first on the thead).
+upstream (`data-n-id` first here, `class` first on the thead). The rows
+are the TILED display list (`displayedRows`): each expanded parent row
+followed by its extra expanded row, so the last-row math runs over the
+tiled entries while striped / rowClassName / `renderExpand` indices stay
+the paginated ones (`Body.tsx`'s `displayedData` / `RowRenderInfo`).
 -}
-tbodyNode : Options row msg -> List (SortState row) -> List row -> List (Html.Html msg)
-tbodyNode opts merged rows =
-    if rows == [] then
+tbodyNode : Theme -> Options row msg -> List (SortState row) -> List (Html.Html msg)
+tbodyNode theme opts merged =
+    if paginatedData opts == [] then
         []
 
     else
+        let
+            displayed =
+                displayedRows opts
+
+            displayedCount =
+                List.length displayed
+        in
         [ Html.tbody
             [ HA.attribute "data-n-id" "1"
             , HA.class "n-data-table-tbody"
             ]
-            (List.indexedMap (trNode opts merged rows) rows)
+            (List.indexedMap
+                (\displayedIndex dr ->
+                    if dr.isExpandedRow then
+                        expandedTrNode opts dr.row dr.paginatedIndex displayedIndex displayedCount
+
+                    else
+                        parentTrNode theme opts merged displayedIndex displayedCount dr
+                )
+                displayed
+            )
         ]
 
 
-{-| One body row — `Body.tsx`'s `renderRow` for a normal row: base class,
-then `--striped` (iff `striped && index % 2 === 1` — the parity index runs
-over the paginated rows), then the `rowClassName(row, index)` result when
-non-empty, then the caller's `rowAttributes` verbatim (see the
-`rowAttributes` divergence note).
+{-| One paginated row of the tiled list — `Body.tsx`'s `renderRow` for a
+normal row: base class, then `--striped` (iff `striped && index % 2 === 1`
+— the parity index runs over the PAGINATED rows), then `--expanded` (iff
+the row's key is in the expanded set — NOT gated by `expandable`, a
+byte-faithful upstream quirk: an unexpandable row whose key is in the set
+gets the class but no child row), then the `rowClassName(row, index)`
+result when non-empty, then the caller's `rowAttributes` verbatim (see
+the `rowAttributes` divergence note).
 -}
-trNode : Options row msg -> List (SortState row) -> List row -> Int -> row -> Html.Html msg
-trNode opts merged rows index row =
+parentTrNode :
+    Theme
+    -> Options row msg
+    -> List (SortState row)
+    -> Int
+    -> Int
+    -> DisplayedRow row
+    -> Html.Html msg
+parentTrNode theme opts merged displayedIndex displayedCount dr =
     Html.tr
         ([ HA.class
             (String.join " "
                 ([ "n-data-table-tr" ]
-                    ++ I.classIf (opts.striped && modBy 2 index == 1) "n-data-table-tr--striped"
-                    ++ rowClassNameOf opts row index
+                    ++ I.classIf (opts.striped && modBy 2 dr.paginatedIndex == 1) "n-data-table-tr--striped"
+                    ++ I.classIf (List.member (opts.rowKey dr.row) opts.expandedRowKeys) "n-data-table-tr--expanded"
+                    ++ rowClassNameOf opts dr.row dr.paginatedIndex
                 )
             )
          ]
-            ++ rowAttrsOf opts row index
+            ++ rowAttrsOf opts dr.row dr.paginatedIndex
         )
-        (List.map (tdNode opts merged rows index row) (lastFlags opts.columns))
+        (List.map
+            (tdNode theme opts merged displayedIndex displayedCount dr.row)
+            (lastFlags opts.columns)
+        )
 
 
 rowClassNameOf : Options row msg -> row -> Int -> List String
@@ -772,35 +1043,41 @@ rowAttrsOf opts row index =
             []
 
 
-{-| One body cell — `Body.tsx`'s td for a basic column: class order is base
+{-| One body cell — `Body.tsx`'s td: class order is base
 → `column.className` → `--sorting` (iff a state names this key with a
 truthy order — the whole-column highlight) → `--{align}-align` (iff align
 set — redundant with the inline `text-align`, upstream emits both) →
-`--last-col` → `--last-row` (last over the paginated rows); the
-always-present `data-col-key`; the style always carries the empty
-`--indent-offset:` declaration after `text-align`/`width` (upstream seeds
-`{'--indent-offset': ''}` unconditionally — only tree children fill the
-value), with `colspan`/`rowspan` the constant `1`; the cell body is the
-caller's element embedded through `layoutWith`.
+`--selection` / `--expand` (the cell's column kind) → `--last-col` →
+`--last-row` (last over the TILED rows); the always-present `data-col-key`
+(the `__n_selection__` / `__n_expand__` sentinel on the special kinds);
+the style always carries the empty `--indent-offset:` declaration after
+`text-align`/`width` (upstream seeds `{'--indent-offset': ''}`
+unconditionally — only tree children fill the value), with `colspan`/
+`rowspan` the constant `1`. The cell body branches per kind: a selection
+column renders the body checkbox (or the body radio on `multiple =
+False`), an expand column the expand trigger (suppressed — an empty td —
+unless `!expandable || expandable(row)`), and a basic column the caller's
+element embedded through `layoutWith`.
 -}
 tdNode :
-    Options row msg
+    Theme
+    -> Options row msg
     -> List (SortState row)
-    -> List row
+    -> Int
     -> Int
     -> row
     -> ( Column row msg, Bool )
     -> Html.Html msg
-tdNode opts merged rows rowIndex row ( col, isLastCol ) =
+tdNode theme opts merged displayedIndex displayedCount row ( col, isLastCol ) =
     let
         isLastRow =
-            rowIndex + 1 == List.length rows
+            displayedIndex + 1 == displayedCount
     in
     Html.td
         (tdStyleAttr col
             ++ [ HA.colspan 1
                , HA.rowspan 1
-               , HA.attribute "data-col-key" col.key
+               , HA.attribute "data-col-key" (colKeyOf col)
                , HA.class
                     (String.join " "
                         ([ "n-data-table-td" ]
@@ -813,13 +1090,32 @@ tdNode opts merged rows rowIndex row ( col, isLastCol ) =
                                     Nothing ->
                                         []
                                )
+                            ++ I.classIf (col.kind == KindSelection) "n-data-table-td--selection"
+                            ++ I.classIf (col.kind == KindExpand) "n-data-table-td--expand"
                             ++ I.classIf isLastCol "n-data-table-td--last-col"
                             ++ I.classIf isLastRow "n-data-table-td--last-row"
                         )
                     )
                ]
         )
-        [ embedChild (col.view row) ]
+        (case col.kind of
+            KindSelection ->
+                if col.multiple then
+                    [ embedChild (bodyCheckboxNode theme opts row) ]
+
+                else
+                    [ embedChild (bodyRadioNode theme opts row) ]
+
+            KindExpand ->
+                if expandableRow opts row then
+                    [ expandTriggerNode opts row ]
+
+                else
+                    []
+
+            KindNormal ->
+                [ embedChild (col.view row) ]
+        )
 
 
 tdStyleAttr : Column row msg -> List (Html.Attribute msg)
@@ -845,6 +1141,344 @@ embedChild child =
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] }
         [ Element.htmlAttribute (HA.attribute "style" "display:contents;font:inherit;color:inherit") ]
         child
+
+
+
+-- SELECTION & EXPAND CELLS -------------------------------------------------------
+
+
+{-| One tiled display entry — upstream's `RowRenderInfo` for the flat-data
+batch: the row, its PAGINATED index (striped / rowClassName /
+`renderExpand` indices) and whether this entry is the extra expanded row.
+-}
+type alias DisplayedRow row =
+    { row : row
+    , paginatedIndex : Int
+    , isExpandedRow : Bool
+    }
+
+
+{-| The tiling walk (`Body.tsx`): after pagination, every row whose key is
+in the expanded set — with a `renderExpand` present and the row passing
+`expandable` — is followed by an extra expanded-row entry; `rowCount` /
+last-row math run over the tiled list.
+-}
+displayedRows : Options row msg -> List (DisplayedRow row)
+displayedRows opts =
+    paginatedData opts
+        |> List.indexedMap
+            (\index row ->
+                let
+                    isExpanded =
+                        renderExpandOf opts
+                            /= Nothing
+                            && List.member (opts.rowKey row) opts.expandedRowKeys
+                            && expandableRow opts row
+                in
+                if isExpanded then
+                    [ DisplayedRow row index False, DisplayedRow row index True ]
+
+                else
+                    [ DisplayedRow row index False ]
+            )
+        |> List.concat
+
+
+{-| The extra expanded row (`Body.tsx`'s `renderRow` isExpandedRow branch):
+the bare `tr.n-data-table-tr.n-data-table-tr--expanded` over ONE td —
+base + always `--last-col` + conditionally `--last-row` over the tiled
+rows, `colspan` = the column count, no `data-col-key` / style / spans —
+carrying `renderExpand(row, paginatedIndex)`, wrapped in the sticky
+`div.n-data-table-expand[style="width:{n}px"]` iff `stickyExpandedRows`
+(with `bodyWidth` measured — upstream renders the bare wrapper until its
+first measurement).
+-}
+expandedTrNode : Options row msg -> row -> Int -> Int -> Int -> Html.Html msg
+expandedTrNode opts row paginatedIndex displayedIndex displayedCount =
+    Html.tr
+        [ HA.class "n-data-table-tr n-data-table-tr--expanded" ]
+        [ Html.td
+            [ HA.class
+                (String.join " "
+                    ([ "n-data-table-td", "n-data-table-td--last-col" ]
+                        ++ I.classIf (displayedIndex + 1 == displayedCount) "n-data-table-td--last-row"
+                    )
+                )
+            , HA.colspan (List.length opts.columns)
+            ]
+            (case renderExpandOf opts of
+                Just renderExpand ->
+                    [ case ( opts.stickyExpandedRows, opts.bodyWidth ) of
+                        ( True, Just width ) ->
+                            Html.div
+                                [ HA.class "n-data-table-expand"
+                                , HA.attribute "style" ("width:" ++ pxfy width)
+                                ]
+                                [ embedChild (renderExpand row paginatedIndex) ]
+
+                        _ ->
+                            embedChild (renderExpand row paginatedIndex)
+                    ]
+
+                Nothing ->
+                    []
+            )
+        ]
+
+
+{-| `getColKey` (upstream `utils.ts`) — the column identity for
+`data-col-key` (and the `<col>` `key`): the sentinel on the special kinds,
+the caller key on a basic column.
+-}
+colKeyOf : Column row msg -> String
+colKeyOf col =
+    case col.kind of
+        KindSelection ->
+            "__n_selection__"
+
+        KindExpand ->
+            "__n_expand__"
+
+        KindNormal ->
+            col.key
+
+
+{-| `!expandable || expandable(rowData)` — whether an expand cell renders
+its trigger (an absent `expandable` passes every row).
+-}
+expandableRow : Options row msg -> row -> Bool
+expandableRow opts row =
+    case expandableOf opts of
+        Just expandable ->
+            expandable row
+
+        Nothing ->
+            True
+
+
+{-| The expand trigger (`ExpandTrigger.tsx` at rest — the tree-async
+loading branch and its `NBaseLoading` are out of flat scope): the div
+with `--expanded` for the merged set, the click firing the
+`toggleExpandedRowKey` splice through `onUpdateExpandedRowKeys` (wired
+only when the channel is set — listener presence is not a DOM byte), over
+the `n-base-icon` chevron-right glyph or the table-level
+`renderExpandIcon` slot (which rides the embed wrapper — see the
+divergence notes). Upstream's `onMousedown` `preventDefault` has no Elm
+surface without a no-op `msg` and no DOM byte.
+-}
+expandTriggerNode : Options row msg -> row -> Html.Html msg
+expandTriggerNode opts row =
+    let
+        expanded =
+            List.member (opts.rowKey row) opts.expandedRowKeys
+    in
+    Html.div
+        ([ HA.class
+            (String.join " "
+                ([ "n-data-table-expand-trigger" ]
+                    ++ I.classIf expanded "n-data-table-expand-trigger--expanded"
+                )
+            )
+         ]
+            ++ (case opts.onUpdateExpandedRowKeys of
+                    Just onUpdate ->
+                        [ Html.Events.onClick
+                            (onUpdate (toggleExpandedRowKey (opts.rowKey row) opts.expandedRowKeys))
+                        ]
+
+                    Nothing ->
+                        []
+               )
+        )
+        [ case opts.renderExpandIcon of
+            Just renderIcon ->
+                embedChild (renderIcon expanded row)
+
+            Nothing ->
+                Html.i [ HA.class "n-base-icon" ] [ chevronRightIcon ]
+        ]
+
+
+{-| The `viewBox="0 0 16 16"` chevron-right glyph (`_internal/icons/
+ChevronRight.tsx` under `NBaseIcon`) — the byte-identical constant the
+Dropdown port already carries.
+-}
+chevronRightIcon : Html.Html msg
+chevronRightIcon =
+    Svg.node "svg"
+        [ HA.attribute "viewBox" "0 0 16 16"
+        , HA.attribute "fill" "none"
+        , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
+        ]
+        [ Svg.node "path"
+            [ HA.attribute "d" NUI.Dropdown.chevronRightPath
+            , HA.attribute "fill" "currentColor"
+            ]
+            []
+        ]
+
+
+{-| The selection menu's at-rest trigger (`SelectionMenu.tsx`): the
+`NBaseIcon` fallthrough classes (own class first, fallthrough second) and
+the chevron-down glyph; the click fires `onCheckExtraClick` for the
+caller's `NUI.Dropdown` runtime (the open menu is not table DOM — see the
+divergence notes).
+-}
+checkExtraNodes : Options row msg -> List (Html.Html msg)
+checkExtraNodes opts =
+    if checkOptionsOf opts == [] then
+        []
+
+    else
+        [ Html.i
+            ([ HA.class "n-base-icon n-data-table-check-extra" ]
+                ++ (case opts.onCheckExtraClick of
+                        Just msg ->
+                            [ Html.Events.onClick msg ]
+
+                        Nothing ->
+                            []
+                   )
+            )
+            [ chevronDownIcon ]
+        ]
+
+
+chevronDownIcon : Html.Html msg
+chevronDownIcon =
+    Svg.node "svg"
+        [ HA.attribute "viewBox" "0 0 16 16"
+        , HA.attribute "fill" "none"
+        , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
+        ]
+        [ Svg.node "path"
+            [ HA.attribute "d" chevronDownPath
+            , HA.attribute "fill" "currentColor"
+            ]
+            []
+        ]
+
+
+{-| The upstream `ChevronDown` glyph bytes (`_internal/icons/
+ChevronDown.tsx`).
+-}
+chevronDownPath : String
+chevronDownPath =
+    "M3.14645 5.64645C3.34171 5.45118 3.65829 5.45118 3.85355 5.64645L8 9.79289L12.1464 5.64645C12.3417 5.45118 12.6583 5.45118 12.8536 5.64645C13.0488 5.84171 13.0488 6.15829 12.8536 6.35355L8.35355 10.8536C8.15829 11.0488 7.84171 11.0488 7.64645 10.8536L3.14645 6.35355C2.95118 6.15829 2.95118 5.84171 3.14645 5.64645Z"
+
+
+
+-- CHECKED / EXPANDED CELLS -------------------------------------------------------
+
+
+{-| The selection th's header checkbox (`Header.tsx` — no label, so no
+`--show-label`): `privateInsideTable`, the header state over the current
+page, and the toggle `handleCheckboxUpdateChecked` — allRowsChecked ?
+uncheck-all : check-all, current page only, `row = Nothing` (the
+checkbox's own `checked` / shift state are ignored, as upstream).
+-}
+headerCheckboxNode : Theme -> Options row msg -> Element msg
+headerCheckboxNode theme opts =
+    let
+        cb =
+            NUI.Checkbox.defaults
+    in
+    NUI.Checkbox.view theme
+        { cb
+            | privateInsideTable = True
+            , checked = allRowsChecked opts
+            , indeterminate = someRowsChecked opts
+            , disabled = headerCheckboxDisabled opts
+            , onCheckEvent =
+                Maybe.map (\onUpdate _ _ -> headerCheckMsg opts onUpdate) opts.onUpdateCheckedRowKeys
+        }
+        []
+
+
+headerCheckMsg : Options row msg -> (List String -> List row -> CheckEmit row -> msg) -> msg
+headerCheckMsg opts onUpdate =
+    if allRowsChecked opts then
+        let
+            keys =
+                checkedKeysAfterUncheckAll opts False
+        in
+        onUpdate keys (emitRows opts keys) { row = Nothing, action = UncheckAll }
+
+    else
+        let
+            keys =
+                checkedKeysAfterCheckAll opts False
+        in
+        onUpdate keys (emitRows opts keys) { row = Nothing, action = CheckAll }
+
+
+{-| The selection td's body checkbox (`BodyCheckbox.tsx`):
+`privateInsideTable`, the row's `disabled(row)`, the display-set checked
+state, indeterminate always `False` on flat data, and the shift-click
+`handleCheckboxUpdateChecked` algorithm through `onCheckEvent` (checked,
+shiftKey) — `lastSelectedKey` is the caller-owned anchor in `Options`.
+-}
+bodyCheckboxNode : Theme -> Options row msg -> row -> Element msg
+bodyCheckboxNode theme opts row =
+    let
+        cb =
+            NUI.Checkbox.defaults
+    in
+    NUI.Checkbox.view theme
+        { cb
+            | privateInsideTable = True
+            , disabled = rowDisabled opts row
+            , checked = List.member (opts.rowKey row) (mergedCheckedRowKeys opts)
+            , indeterminate = False
+            , onCheckEvent =
+                Maybe.map (bodyCheckMsg opts row) opts.onUpdateCheckedRowKeys
+        }
+        []
+
+
+bodyCheckMsg : Options row msg -> row -> (List String -> List row -> CheckEmit row -> msg) -> Bool -> Bool -> msg
+bodyCheckMsg opts row onUpdate checked shiftKey =
+    let
+        keys =
+            checkedKeysAfterRowClick opts (opts.rowKey row) checked shiftKey
+    in
+    onUpdate keys
+        (emitRows opts keys)
+        { row = Just row
+        , action =
+            if checked then
+                Check
+
+            else
+                Uncheck
+        }
+
+
+{-| The selection td's body radio (`BodyRadio.tsx`): the row's
+`disabled(row)` and display-set checked state over the replace-mode
+`doCheck(key, single = true)` — a checked radio fires nothing (the port's
+`onChange` gate matches upstream's change-event no-op). Upstream's
+`name = componentId` lands on the inner `<input>` the radio port does
+not render — the inherited no-input edge.
+-}
+bodyRadioNode : Theme -> Options row msg -> row -> Element msg
+bodyRadioNode theme opts row =
+    let
+        rd =
+            NUI.Radio.defaults
+    in
+    NUI.Radio.view theme
+        { rd
+            | disabled = rowDisabled opts row
+            , checked = List.member (opts.rowKey row) (mergedCheckedRowKeys opts)
+            , onChange =
+                Maybe.map
+                    (\onUpdate ->
+                        onUpdate [ opts.rowKey row ] [ row ] { row = Just row, action = Check }
+                    )
+                    opts.onUpdateCheckedRowKeys
+        }
+        []
 
 
 
@@ -993,14 +1627,16 @@ columns with a non-`NoSort` order mapped to `{ columnKey, order, sorter }`
 in column order (a controlled `NoSort` column contributes nothing but still
 suppresses the uncontrolled list); if some column is controlled but none
 sorts, the state is `[]`; otherwise the uncontrolled list passes through
-as-is.
+as-is. The controlled filter gates `kind /= KindSelection` — upstream's
+`column.type !== 'selection'`, and ONLY that (the expand kind is not
+gated; its sorter is unreachable upstream, see the divergence notes).
 -}
 mergedSortStates : List (Column row msg) -> List (SortState row) -> List (SortState row)
 mergedSortStates columns uncontrolled =
     let
         controlled =
             List.filter
-                (\col -> col.sorter /= Nothing && col.sortOrder /= Nothing)
+                (\col -> col.kind /= KindSelection && col.sorter /= Nothing && col.sortOrder /= Nothing)
                 columns
 
         activeStates =
@@ -1341,6 +1977,327 @@ showPagination opts =
 
                             _ ->
                                 False
+
+
+
+-- SELECTION ---------------------------------------------------------------------
+
+
+{-| `selectionColumnRef` (upstream `use-table-data.ts`) — the FIRST
+selection column (depth-first through groups upstream; the flat list
+order here), or nothing.
+-}
+selectionColumn : Options row msg -> Maybe (Column row msg)
+selectionColumn opts =
+    List.filter (\col -> col.kind == KindSelection) opts.columns
+        |> List.head
+
+
+{-| `checkOptionsRef` — the first selection column's `options` (the header
+menu renders off this list, whatever selection column's th it is).
+-}
+checkOptionsOf : Options row msg -> List (SelectionOption row msg)
+checkOptionsOf opts =
+    selectionColumn opts
+        |> Maybe.map .options
+        |> Maybe.withDefault []
+
+
+{-| treeMate's `getDisabled` — the first selection column's `disabled(row)`
+(single arg, upstream `TableSelectionColumn.disabled`), `False` when
+absent: the row-level gate behind the body checkboxes / radios, the
+header math and the check-all key walks.
+-}
+rowDisabled : Options row msg -> row -> Bool
+rowDisabled opts row =
+    selectionColumn opts
+        |> Maybe.andThen .disabled
+        |> Maybe.map (\disabled -> disabled row)
+        |> Maybe.withDefault False
+
+
+{-| The selection mode — `multiple === false` on the FIRST selection
+column (`True` when there is none, upstream's `?.multiple === false`).
+-}
+multipleOf : Options row msg -> Bool
+multipleOf opts =
+    selectionColumn opts
+        |> Maybe.map .multiple
+        |> Maybe.withDefault True
+
+
+{-| `mergedCheckState.checkedKeys` (upstream `use-check.ts`) — the DISPLAY
+keys: `multiple = False` slices the source to its first key (no treemate
+pass, order preserved — a bogus head key survives here until a click
+replaces the list); otherwise the flat-data treemate `getCheckedKeys`
+derivation — every data row, in data order, whose key is a member of the
+source list (the tree-walk collection drops unknown keys and reorders).
+The indeterminate half is always `[]` on flat data (every row a leaf).
+-}
+mergedCheckedRowKeys : Options row msg -> List String
+mergedCheckedRowKeys opts =
+    if multipleOf opts then
+        List.filter (\row -> List.member (opts.rowKey row) opts.checkedRowKeys) opts.data
+            |> List.map opts.rowKey
+
+    else
+        List.take 1 opts.checkedRowKeys
+
+
+{-| `countOfCurrentPageCheckedRowsRef` — current-page rows (over the
+paginated data) that are neither `disabled` nor outside the display set.
+-}
+countCurrentPageChecked : Options row msg -> Int
+countCurrentPageChecked opts =
+    List.filter
+        (\row -> not (rowDisabled opts row) && List.member (opts.rowKey row) (mergedCheckedRowKeys opts))
+        (paginatedData opts)
+        |> List.length
+
+
+{-| `countOfCurrentPageDisabledRowsRef` — current-page rows failing the
+selection column's `disabled`.
+-}
+countCurrentPageDisabled : Options row msg -> Int
+countCurrentPageDisabled opts =
+    List.filter (rowDisabled opts) (paginatedData opts)
+        |> List.length
+
+
+{-| `someRowsCheckedRef` — the header checkbox's indeterminate state: some
+but not all of the current page's enabled rows checked, or any current-
+page key in the indeterminate set (never, on flat data).
+-}
+someRowsChecked : Options row msg -> Bool
+someRowsChecked opts =
+    let
+        rows =
+            paginatedData opts
+
+        checked =
+            countCurrentPageChecked opts
+
+        enabled =
+            List.length rows - countCurrentPageDisabled opts
+    in
+    -- the second disjunct — any current-page key in the indeterminate
+    -- set — never fires on flat data (the set is always [])
+    checked > 0 && checked < enabled
+
+
+{-| `allRowsCheckedRef` — the header checkbox's checked state: at least one
+current-page enabled row checked, and all of them.
+-}
+allRowsChecked : Options row msg -> Bool
+allRowsChecked opts =
+    let
+        checked =
+            countCurrentPageChecked opts
+
+        enabled =
+            List.length (paginatedData opts) - countCurrentPageDisabled opts
+    in
+    checked /= 0 && checked == enabled
+
+
+{-| `headerCheckboxDisabledRef` — no current-page rows.
+-}
+headerCheckboxDisabled : Options row msg -> Bool
+headerCheckboxDisabled opts =
+    paginatedData opts == []
+
+
+{-| The flat-data treemate `check` derivation — the emit base is the
+DISPLAY state; the new keys append (in the given order) when not already
+present: merged order, then appended new keys.
+-}
+checkUnion : List String -> List String -> List String
+checkUnion current new =
+    current ++ List.filter (\key -> not (List.member key current)) new
+
+
+{-| The flat-data treemate `uncheck` derivation — the display state minus
+the removed keys, order preserved.
+-}
+uncheckDiff : List String -> List String -> List String
+uncheckDiff current remove =
+    List.filter (\key -> not (List.member key remove)) current
+
+
+{-| `doCheck(rowKey)` — the non-single branch: `treemate.check` over the
+display state (the `loading` early return is the loading batch).
+-}
+checkedKeysAfterCheck : Options row msg -> List String -> List String
+checkedKeysAfterCheck opts keys =
+    checkUnion (mergedCheckedRowKeys opts) keys
+
+
+{-| `doUncheck(rowKey)` — `treemate.uncheck` over the display state.
+-}
+checkedKeysAfterUncheck : Options row msg -> List String -> List String
+checkedKeysAfterUncheck opts keys =
+    uncheckDiff (mergedCheckedRowKeys opts) keys
+
+
+{-| `doCheckAll(checkWholeTable)` — the selection-column gate then the
+not-disabled keys of the whole table or the current page (`treeNodes` /
+`paginatedData`), unioned into the display state (`cascade` is forced
+upstream "to emit correct row keys" — flat, the plain union reads the
+same). No selection column returns the display state unchanged.
+-}
+checkedKeysAfterCheckAll : Options row msg -> Bool -> List String
+checkedKeysAfterCheckAll opts wholeTable =
+    if selectionColumn opts == Nothing then
+        mergedCheckedRowKeys opts
+
+    else
+        let
+            keys =
+                (if wholeTable then
+                    opts.data
+
+                 else
+                    paginatedData opts
+                )
+                    |> List.filter (not << rowDisabled opts)
+                    |> List.map opts.rowKey
+        in
+        checkUnion (mergedCheckedRowKeys opts) keys
+
+
+{-| `doUncheckAll(checkWholeTable)` — the symmetric diff.
+-}
+checkedKeysAfterUncheckAll : Options row msg -> Bool -> List String
+checkedKeysAfterUncheckAll opts wholeTable =
+    if selectionColumn opts == Nothing then
+        mergedCheckedRowKeys opts
+
+    else
+        let
+            keys =
+                (if wholeTable then
+                    opts.data
+
+                 else
+                    paginatedData opts
+                )
+                    |> List.filter (not << rowDisabled opts)
+                    |> List.map opts.rowKey
+        in
+        uncheckDiff (mergedCheckedRowKeys opts) keys
+
+
+{-| `handleCheckboxUpdateChecked` (upstream `Body.tsx`) — the body
+checkbox's click transform over the display state: with `shiftKey` and a
+`lastSelectedKey` that resolves on the current page, the range
+`[min(last, cur) .. max(last, cur)]` of paginated rows (`disabled`
+filtered) checked or unchecked together; else the single key. `checked`
+is the checkbox's NEXT state (the port's `onCheckEvent` first arg).
+-}
+checkedKeysAfterRowClick : Options row msg -> String -> Bool -> Bool -> List String
+checkedKeysAfterRowClick opts rowKey checked shiftKey =
+    let
+        rows =
+            paginatedData opts
+
+        rangeKeys start end =
+            rows
+                |> List.drop start
+                |> List.take (end - start + 1)
+                |> List.filter (not << rowDisabled opts)
+                |> List.map opts.rowKey
+
+        apply keys =
+            if checked then
+                checkUnion (mergedCheckedRowKeys opts) keys
+
+            else
+                uncheckDiff (mergedCheckedRowKeys opts) keys
+    in
+    case ( shiftKey, indexOf (\row -> opts.rowKey row == rowKey) rows, indexOf (\row -> opts.rowKey row == opts.lastSelectedKey) rows ) of
+        ( True, Just current, Just last ) ->
+            apply (rangeKeys (min last current) (max last current))
+
+        _ ->
+            apply [ rowKey ]
+
+
+indexOf : (a -> Bool) -> List a -> Maybe Int
+indexOf pred xs =
+    List.indexedMap Tuple.pair xs
+        |> List.filter (\( _, x ) -> pred x)
+        |> List.head
+        |> Maybe.map Tuple.first
+
+
+{-| The emit payload's `rows` — `keys.map(getNode.rawNode)` over ALL the
+data; keys that resolve to no row drop their entry where upstream pushes
+an `undefined` hole (caller-authored bogus keys only — see the
+divergence notes).
+-}
+emitRows : Options row msg -> List String -> List row
+emitRows opts keys =
+    List.filterMap
+        (\key ->
+            List.filter (\row -> opts.rowKey row == key) opts.data
+                |> List.head
+        )
+        keys
+
+
+
+-- EXPAND -------------------------------------------------------------------------
+
+
+{-| `renderExpandRef` / `expandableRef` (upstream `use-expand.ts`) — read
+off the FIRST expand column (the caller DECLARES the `{type: 'expand'}`
+column; there is no auto-insert).
+-}
+expandColumn : Options row msg -> Maybe (Column row msg)
+expandColumn opts =
+    List.filter (\col -> col.kind == KindExpand) opts.columns
+        |> List.head
+
+
+renderExpandOf : Options row msg -> Maybe (row -> Int -> Element msg)
+renderExpandOf opts =
+    expandColumn opts
+        |> Maybe.andThen .renderExpand
+
+
+expandableOf : Options row msg -> Maybe (row -> Bool)
+expandableOf opts =
+    expandColumn opts
+        |> Maybe.andThen .expandable
+
+
+{-| `handleUpdateExpanded`'s key splice (upstream `Body.tsx`, flat data):
+the key out at its index, else appended — order preserved.
+-}
+toggleExpandedRowKey : String -> List String -> List String
+toggleExpandedRowKey key keys =
+    if List.member key keys then
+        List.filter (\k -> k /= key) keys
+
+    else
+        keys ++ [ key ]
+
+
+{-| The `defaultExpandAll` seed (upstream `use-expand.ts`) — flat-data
+reading: with a `renderExpand` present, the keys of the data rows passing
+the first expand column's `expandable` (an absent `expandable` fails the
+optional chain and seeds NOTHING — an upstream truthiness quirk kept
+byte-faithful); without one, `getNonLeafKeys` — `[]` on flat data.
+-}
+defaultExpandAllKeys : Maybe (row -> Bool) -> List row -> (row -> String) -> List String
+defaultExpandAllKeys expandable data rowKey =
+    case expandable of
+        Just f ->
+            List.filter f data
+                |> List.map rowKey
+
+        Nothing ->
+            []
 
 
 

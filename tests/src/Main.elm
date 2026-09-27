@@ -4765,6 +4765,12 @@ dtNameCol =
     , sorter = Nothing
     , defaultSortOrder = DataTable.NoSort
     , sortOrder = Nothing
+    , kind = DataTable.KindNormal
+    , multiple = True
+    , disabled = Nothing
+    , options = []
+    , renderExpand = Nothing
+    , expandable = Nothing
     }
 
 
@@ -4782,6 +4788,12 @@ dtAgeCol =
     , sorter = Nothing
     , defaultSortOrder = DataTable.NoSort
     , sortOrder = Nothing
+    , kind = DataTable.KindNormal
+    , multiple = True
+    , disabled = Nothing
+    , options = []
+    , renderExpand = Nothing
+    , expandable = Nothing
     }
 
 
@@ -4799,6 +4811,12 @@ dtAddressCol =
     , sorter = Nothing
     , defaultSortOrder = DataTable.NoSort
     , sortOrder = Nothing
+    , kind = DataTable.KindNormal
+    , multiple = True
+    , disabled = Nothing
+    , options = []
+    , renderExpand = Nothing
+    , expandable = Nothing
     }
 
 
@@ -4852,6 +4870,12 @@ msScoreCol key title priority accessor =
     , sorter = Just (DataTable.SorterMultiple priority (Just (DataTable.CompareBy (\a b -> compare (accessor a) (accessor b)))))
     , defaultSortOrder = DataTable.NoSort
     , sortOrder = Nothing
+    , kind = DataTable.KindNormal
+    , multiple = True
+    , disabled = Nothing
+    , options = []
+    , renderExpand = Nothing
+    , expandable = Nothing
     }
 
 
@@ -4869,6 +4893,12 @@ dtMsNameCol =
     , sorter = Nothing
     , defaultSortOrder = DataTable.NoSort
     , sortOrder = Nothing
+    , kind = DataTable.KindNormal
+    , multiple = True
+    , disabled = Nothing
+    , options = []
+    , renderExpand = Nothing
+    , expandable = Nothing
     }
 
 
@@ -4886,6 +4916,12 @@ dtMsAgeCol =
     , sorter = Just (DataTable.SorterBy (\a b -> compare a.age b.age))
     , defaultSortOrder = DataTable.NoSort
     , sortOrder = Nothing
+    , kind = DataTable.KindNormal
+    , multiple = True
+    , disabled = Nothing
+    , options = []
+    , renderExpand = Nothing
+    , expandable = Nothing
     }
 
 
@@ -4903,6 +4939,12 @@ dtMsAddressCol =
     , sorter = Nothing
     , defaultSortOrder = DataTable.NoSort
     , sortOrder = Nothing
+    , kind = DataTable.KindNormal
+    , multiple = True
+    , disabled = Nothing
+    , options = []
+    , renderExpand = Nothing
+    , expandable = Nothing
     }
 
 
