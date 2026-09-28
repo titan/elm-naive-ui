@@ -1,0 +1,102 @@
+{
+  "light": {
+    "itemFontSize": "12px",
+    "itemHeight": "36px",
+    "itemWidth": "52px",
+    "panelActionPadding": "8px 0",
+    "panelColor": "#fff",
+    "panelBoxShadow": "0 3px 6px -4px rgba(0, 0, 0, .12), 0 6px 16px 0 rgba(0, 0, 0, .08), 0 9px 28px 8px rgba(0, 0, 0, .05)",
+    "panelDividerColor": "rgb(239, 239, 245)",
+    "itemTextColor": "rgb(51, 54, 57)",
+    "itemTextColorActive": "#18a058",
+    "itemColorHover": "rgb(243, 243, 245)",
+    "itemOpacityDisabled": "0.5",
+    "itemBorderRadius": "3px",
+    "borderRadius": "3px",
+    "iconColor": "rgba(194, 194, 194, 1)",
+    "iconColorDisabled": "rgba(209, 209, 209, 1)"
+  },
+  "dark": {
+    "itemFontSize": "12px",
+    "itemHeight": "36px",
+    "itemWidth": "52px",
+    "panelActionPadding": "8px 0",
+    "panelColor": "rgb(72, 72, 78)",
+    "panelBoxShadow": "0 3px 6px -4px rgba(0, 0, 0, .24), 0 6px 12px 0 rgba(0, 0, 0, .16), 0 9px 18px 8px rgba(0, 0, 0, .10)",
+    "panelDividerColor": "rgba(255, 255, 255, 0.09)",
+    "itemTextColor": "rgba(255, 255, 255, 0.82)",
+    "itemTextColorActive": "#63e2b7",
+    "itemColorHover": "rgba(255, 255, 255, 0.09)",
+    "itemOpacityDisabled": "0.38",
+    "itemBorderRadius": "3px",
+    "borderRadius": "3px",
+    "iconColor": "rgba(255, 255, 255, 0.38)",
+    "iconColorDisabled": "rgba(255, 255, 255, 0.28)"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "panelColor": "popoverColor",
+        "panelBoxShadow": "boxShadow2",
+        "panelDividerColor": "dividerColor",
+        "itemTextColor": "textColor2",
+        "itemTextColorActive": "primaryColor",
+        "itemColorHover": "hoverColor",
+        "itemOpacityDisabled": "opacityDisabled",
+        "itemBorderRadius": "borderRadius",
+        "borderRadius": "borderRadius",
+        "iconColor": "iconColor",
+        "iconColorDisabled": "iconColorDisabled"
+      },
+      "seen": [
+        "panelColor",
+        "panelBoxShadow",
+        "panelDividerColor",
+        "itemTextColor",
+        "itemTextColorActive",
+        "itemColorHover",
+        "itemOpacityDisabled",
+        "itemBorderRadius",
+        "borderRadius",
+        "iconColor",
+        "iconColorDisabled",
+        "itemFontSize",
+        "itemHeight",
+        "itemWidth",
+        "panelActionPadding"
+      ]
+    },
+    "dark": {
+      "refs": {
+        "panelColor": "popoverColor",
+        "panelBoxShadow": "boxShadow2",
+        "panelDividerColor": "dividerColor",
+        "itemTextColor": "textColor2",
+        "itemTextColorActive": "primaryColor",
+        "itemColorHover": "hoverColor",
+        "itemOpacityDisabled": "opacityDisabled",
+        "itemBorderRadius": "borderRadius",
+        "borderRadius": "borderRadius",
+        "iconColor": "iconColor",
+        "iconColorDisabled": "iconColorDisabled"
+      },
+      "seen": [
+        "itemFontSize",
+        "itemHeight",
+        "itemWidth",
+        "panelActionPadding",
+        "panelColor",
+        "panelBoxShadow",
+        "panelDividerColor",
+        "itemTextColor",
+        "itemTextColorActive",
+        "itemColorHover",
+        "itemOpacityDisabled",
+        "itemBorderRadius",
+        "borderRadius",
+        "iconColor",
+        "iconColorDisabled"
+      ]
+    }
+  }
+}

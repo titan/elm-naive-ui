@@ -538,5 +538,38 @@ export const components = {
     // to extract there.
     cssr: ['tree-select/src/styles/index.cssr.ts'],
     theme: 'tree-select/styles/light.ts'
+  },
+  'time-picker': {
+    // Whole .n-time-picker family in one cssr: the bare .n-time-picker wrapper
+    // (z-index auto, position relative + the .n-time-picker-icon colour
+    // overrides for trigger/--disabled) + .n-time-picker-panel (margin 4px 0,
+    // min-width 104px, overflow hidden, radius/shadow/colour panel vars,
+    // fade-in-scale-up transition family, __actions space-evenly row) +
+    // .n-time-picker-cols (height item-height×6 flex row with divider) +
+    // .n-time-picker-col (grow 1, --transition-disabled/--invalid modifiers,
+    // __padding height×5) + __item rows (absolute ::before hover/active pill,
+    // --active/--disabled states, line-through on invalid+active). The
+    // trigger input rides the `input` chunk; cols/actions ride
+    // scrollbar/button peers. No rtl.cssr upstream.
+    cssr: ['time-picker/src/styles/index.cssr.ts'],
+    theme: 'time-picker/styles/light.ts'
+  },
+  'date-picker': {
+    // Whole .n-date-picker + .n-date-panel family in one cssr: the bare
+    // .n-date-picker wrapper (position relative + icon colour overrides) and
+    // the 550-L .n-date-panel grid (fit-content, grid-template-areas per
+    // --date/--week/--daterange/--datetime/--datetimerange/--month modifier,
+    // --shadow variant) — calendar blocks with per-type paddings, month
+    // header (title text + arrow cells), month-calendar picker-cols (the
+    // scroll-item mirror of time-picker cols), weekdays/dates 7×6 grid with
+    // the full date-cell state set (current/selected/excluded/disabled/
+    // covered/start/end/week-hovered/week-selected, ::before span bands +
+    // ::after selection pill + 7n±1 radii), __vertical-divider, header/footer
+    // /actions rows, and the `[data-n-date].transition-disabled` kill rule.
+    // The trigger input (single + pair) rides the `input` chunk; embedded
+    // time pickers ride the `time-picker` chunk; actions ride button; the
+    // month/year picker-cols ride scrollbar. No rtl.cssr upstream.
+    cssr: ['date-picker/src/styles/index.cssr.ts'],
+    theme: 'date-picker/styles/light.ts'
   }
 }
