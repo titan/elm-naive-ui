@@ -79,11 +79,18 @@ clicks, label clicks and checkbox clicks all converge:
     `displayedCheckedKeysRef`. multiple + plain: `Tree.toggleSelect` (rows
     toggle in and out — the checkbox renders states only; a wired checkbox
     would double-fire with the row click, the `NUI.Cascader` note).
+    A NON-leaf is dead under the merged `child` strategy without the
+    cascade multiple mode (`TreeNode.tsx:111-121` under
+    `internalTreeSelect` — no `--selectable`, the click never selects);
+    leaves and every non-`child` node click through.
   - `deleteOption opts value key` — the tag close: base =
     `Tree.getCheckedKeys` with cascade + allowNotLoaded but NO strategy
     (upstream `TreeSelect.tsx:623-629` — treemate's default `all`); a key
     outside the base is a no-op; checkable runs `Tree.uncheck` under the
-    merged strategy, plain splices the single index.
+    RAW `checkStrategy` (upstream `:643` passes `props.checkStrategy`
+    unmerged — the deprecated `leafOnly` folds everywhere EXCEPT this
+    delete path, upstream's own inconsistency), plain splices the single
+    index.
   - `clearValue value` — `Multiple []` / `Single Nothing`.
   - `initialPendingKey opts` — the `--pending` seed: `Nothing` under
     `checkable`, else the LAST key of an initial list value (a single value
@@ -330,7 +337,12 @@ initialPendingKey opts =
 `internalUnifySelectCheck` is always on: a checkbox click in single mode
 REDIRECTS to select; a row click in checkable multiple mode becomes the
 cascade check / uncheck flip). Disabled or missing nodes are no-ops
-(`Tree.tsx:1032-1035`; the per-node gate).
+(`Tree.tsx:1032-1035`; the per-node gate), and so is a non-leaf under the
+merged `child` strategy without the cascade multiple mode — upstream's
+per-node selectable gate under `internalTreeSelect` (`TreeNode.tsx
+:111-121`: the row renders without `--selectable` and `_handleClick`
+returns before `handleSelect` — with `expandOnClick` / `checkOnClick` off,
+the tree-select default, the click does nothing at all).
 -}
 handleNodeClick : Options msg -> SelectMenu.Value -> String -> SelectMenu.Value
 handleNodeClick opts value key =
@@ -339,7 +351,7 @@ handleNodeClick opts value key =
             value
 
         Just (TreeOption node) ->
-            if node.disabled then
+            if node.disabled || not (nodeSelectable opts node.isLeaf) then
                 value
 
             else if not opts.multiple then
@@ -376,11 +388,28 @@ handleNodeClick opts value key =
                 SelectMenu.Multiple (Tree.toggleSelect True True key (keysOf value))
 
 
+{-| The per-node selectable gate upstream evaluates inside the tree under
+`internalTreeSelect` (`TreeNode.tsx:111-121`): a node is selectable when
+the merged strategy is not `child`, or the tree's `multiple && cascade`
+both hold (`multiple` raw; `cascade` is already the merged cascade
+upstream passes down), or the node is a leaf. The same predicate drives
+the row's `--selectable` / `--clickable` classes in `NUI.Tree`.
+-}
+nodeSelectable : Options msg -> Bool -> Bool
+nodeSelectable opts isLeaf =
+    checkStrategyOf opts
+        /= Tree.Child
+        || (opts.multiple && mergedCascade opts)
+        || isLeaf
+
+
 {-| The tag close (`handleDeleteOption`, :617-661; multiple mode only).
 The base normalizes with cascade + `allowCheckingNotLoaded` but NO
 check strategy — treemate's default `all` — then the checkable path
-unchecks under the MERGED strategy while the plain path splices exactly
-the found index. A key outside the base leaves the value untouched.
+unchecks under the RAW `checkStrategy` (upstream `:643` passes
+`props.checkStrategy` unmerged — `leafOnly` does NOT fold on the delete
+path) while the plain path splices exactly the found index. A key
+outside the base leaves the value untouched.
 -}
 deleteOption : Options msg -> SelectMenu.Value -> String -> SelectMenu.Value
 deleteOption opts value key =
@@ -405,7 +434,7 @@ deleteOption opts value key =
                         SelectMenu.Multiple
                             (Tree.uncheck
                                 cascade
-                                (checkStrategyOf opts)
+                                opts.checkStrategy
                                 opts.allowCheckingNotLoaded
                                 key
                                 base.checkedKeys
@@ -768,8 +797,9 @@ actionNode opts =
 upstream's `NTree` invocation (`TreeSelect.tsx:1020-1095`): `blockLine`,
 no irrelevant nodes under a pattern, `cancelable` only in multiple,
 checked / selected keys from the value, the MERGED cascade + strategy,
-the internal flags off (focus / checkbox focusability), `menuPadding` as
-the scrollbar content padding, and the whole-render empty override. Row
+the `internalTreeSelect` host flag (the per-node selectable gate), the
+internal flags off (focus / checkbox focusability), `menuPadding` as the
+scrollbar content padding, and the whole-render empty override. Row
 clicks ride `nodeProps` (the `NUI.Cascader` note: the checkbox renders
 states only — a wired checkbox would double-fire with the row).
 -}
@@ -836,6 +866,7 @@ treeOptions theme opts =
         , renderSwitcherIcon = opts.renderSwitcherIcon
         , nodeProps = rowProps
         , renderEmpty = Just (menuEmptyNode theme opts)
+        , internalTreeSelect = True
         , internalScrollable = True
         , internalScrollablePadding = Just v.menuPadding
         , internalFocusable = False

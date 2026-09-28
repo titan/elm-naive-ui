@@ -10741,6 +10741,50 @@ checks =
             (SelectMenu.Multiple [ "o1-1", "o2" ])
             "o1-1"
         )
+    , eq "ts deleteOption under leafOnly unchecks with the RAW checkStrategy (:643 passes props.checkStrategy unmerged — the All-strategy parent + descendants survive the delete; the merged child view would be [])"
+        (SelectMenu.Multiple [ "o1", "o1-1", "o1-3", "o1-2" ])
+        (TreeSelect.deleteOption
+            { tsMultiCheckOpts | leafOnly = True }
+            (SelectMenu.Multiple [ "o1", "o2" ])
+            "o2"
+        )
+    , eq "ts deleteOption under leafOnly delegates to Tree.uncheck with the RAW strategy over the All-normalized base (upstream's leafOnly-not-folded delete inconsistency)"
+        (SelectMenu.Multiple
+            (Tree.uncheck
+                True
+                Tree.All
+                False
+                "o2"
+                [ "o1", "o2" ]
+                treeSelectOptions
+            )
+        )
+        (TreeSelect.deleteOption
+            { tsMultiCheckOpts | leafOnly = True }
+            (SelectMenu.Multiple [ "o1", "o2" ])
+            "o2"
+        )
+    , eq "ts child strategy without cascade-multiple: a NON-leaf click is a no-op (TreeNode.tsx :111-121 — internalTreeSelect gates selectable to leaves unless the strategy ≠ child or multiple && cascade)"
+        (SelectMenu.Multiple [])
+        (TreeSelect.handleNodeClick
+            { tsMultiCheckOpts | checkStrategy = Tree.Child, cascade = False }
+            (SelectMenu.Multiple [])
+            "o1"
+        )
+    , eq "ts child strategy without cascade-multiple: a LEAF still checks (the gate passes on isLeaf)"
+        (SelectMenu.Multiple [ "o1-2" ])
+        (TreeSelect.handleNodeClick
+            { tsMultiCheckOpts | checkStrategy = Tree.Child, cascade = False }
+            (SelectMenu.Multiple [])
+            "o1-2"
+        )
+    , eq "ts single + checkable + child: the non-leaf row is dead too — the selectable gate, not just the checkbox gate"
+        (SelectMenu.Single Nothing)
+        (TreeSelect.handleNodeClick
+            { tsSingleCheckOpts | checkStrategy = Tree.Child }
+            (SelectMenu.Single Nothing)
+            "o1"
+        )
     , eq "ts deleteOption on a key outside the base is a no-op (findIndex -1, :630-631)"
         (SelectMenu.Multiple [ "o1" ])
         (TreeSelect.deleteOption tsMultiCheckOpts (SelectMenu.Multiple [ "o1" ]) "o2")
@@ -11985,6 +12029,15 @@ liveNodes =
                             | options = treeSelectOptions
                             , status = Just BaseSelection.Error
                             , value = SelectMenu.Single (Just "o2")
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-tree-select-childstrategy") ]
+                    (TreeSelect.menu Theme.default
+                        { treeSelectLiveOpts
+                            | options = treeSelectOptions
+                            , checkable = True
+                            , checkStrategy = Tree.Child
+                            , expandedKeys = [ "o1", "o1-1" ]
                         }
                     )
                 , Element.el [ Element.htmlAttribute (HA.id "live-countdown") ]

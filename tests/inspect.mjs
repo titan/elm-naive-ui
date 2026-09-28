@@ -10604,6 +10604,47 @@ dTrue(
   !!tsTrigger('live-tree-select-status').querySelector('.n-base-selection--error-status'),
   'error status'
 )
+dEq(
+  'DOM: TreeSelect internalScrollable rows carry data-key="s-<key>" (TreeNode.tsx :422,453 — createDataKey prefixes STRING keys with s-)',
+  's-o1|s-o1-1|s-o1-3',
+  Array.from(tsMenu('live-tree-select').querySelectorAll('.n-tree-node'))
+    .slice(0, 3)
+    .map((n) => n.getAttribute('data-key'))
+    .join('|')
+)
+dTrue(
+  'DOM: TreeSelect child strategy without cascade — non-leaf rows lose --checkable/--selectable/--clickable, leaves keep all three (TreeNode.tsx :111-129 under internalTreeSelect)',
+  (() => {
+    const rows = tsMenu('live-tree-select-childstrategy').querySelectorAll('.n-tree-node')
+    const cls = (i) => rows[i].className
+    return (
+      rows.length === 6 &&
+      !cls(0).includes('--checkable') &&
+      !cls(0).includes('--selectable') &&
+      !cls(0).includes('--clickable') &&
+      !cls(1).includes('--checkable') &&
+      !cls(1).includes('--selectable') &&
+      cls(2).includes('--checkable') &&
+      cls(2).includes('--selectable') &&
+      cls(2).includes('--clickable') &&
+      cls(4).includes('--selectable') &&
+      !cls(5).includes('--selectable')
+    )
+  })(),
+  'child strategy row gates'
+)
+dTrue(
+  'DOM: standalone Tree back-compat — NO data-key and --selectable stays on (the internalTreeSelect/data-key seams default off)',
+  (() => {
+    const rows = doc.querySelectorAll('#live-tree-basic .n-tree-node')
+    return (
+      rows.length > 0 &&
+      Array.from(rows).every((n) => n.getAttribute('data-key') === null) &&
+      rows[0].className.includes('--selectable')
+    )
+  })(),
+  'standalone tree unchanged'
+)
 
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]

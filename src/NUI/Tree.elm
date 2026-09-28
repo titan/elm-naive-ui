@@ -201,6 +201,7 @@ type alias Options msg =
     , spinRadius : Maybe Float
     , empty : Maybe (Element.Element msg)
     , attributes : List (Element.Attribute msg)
+    , internalTreeSelect : Bool
     , internalScrollable : Bool
     , internalScrollablePadding : Maybe String
     , internalFocusable : Bool
@@ -211,10 +212,10 @@ type alias Options msg =
 
 {-| Upstream prop defaults (`treeSharedProps` + `treeProps`): no state keys,
 checkable off, cascade off, `All` strategy, checkboxes on the left,
-selectable single with cancel, indent 24, LTR. The four internal seams carry
+selectable single with cancel, indent 24, LTR. The five internal seams carry
 upstream's defaults (`internalFocusable` / `internalCheckboxFocusable` true,
-no scrollbar wrap, no whole-render empty override) — only a `tree-select`
-menu host flips them.
+no scrollbar wrap, no whole-render empty override, not a tree-select host)
+— only a `tree-select` menu host flips them.
 -}
 defaults : Options msg
 defaults =
@@ -258,6 +259,7 @@ defaults =
     , spinRadius = Nothing
     , empty = Nothing
     , attributes = []
+    , internalTreeSelect = False
     , internalScrollable = False
     , internalScrollablePadding = Nothing
     , internalFocusable = True
@@ -482,9 +484,14 @@ the `.n-tree-node` flex row with the state classes (`TreeNode.tsx:435-447`,
 declaration order): `--selected`, `--checkable` (the per-node gate
 `TreeNode.tsx:122-129`: under `cascade` or a non-`Child` strategy every
 node, otherwise leaves only), `--highlight`, `--pending`, `--disabled`,
-`--selectable` (`TreeNode.tsx:111-121`, non-tree-select branch: the node's
-own enabled state plus the tree switch), `--clickable` (`selectable ||
-expandOnClick || checkOnClick`). Children order (`TreeNode.tsx:461-499`):
+`--selectable` (`TreeNode.tsx:111-121` — the node's own enabled state, the
+tree switch, and under the `internalTreeSelect` seam the tree-select gate:
+non-leaves only when the merged strategy is not `child` or the cascade
+multiple mode is on, the tree's `multiple && cascade` values verbatim),
+`--clickable` (`selectable || expandOnClick || checkOnClick`). The node div
+carries `data-key="s-<key>"` under the `internalScrollable` seam
+(`TreeNode.tsx:422,453` — `createDataKey` prefixes string keys with `s-`).
+Children order (`TreeNode.tsx:461-499`):
 indent chain, switcher (or the `showLine` leaf indent), left checkbox,
 content, drop mark, right checkbox.
 -}
@@ -506,7 +513,15 @@ rowNode theme opts state flat =
                    )
 
         selectable =
-            not flat.disabled && opts.selectable
+            not flat.disabled
+                && opts.selectable
+                && (not opts.internalTreeSelect
+                        || (opts.checkStrategy
+                                /= Child
+                                || (opts.multiple && opts.cascade)
+                                || flat.isLeaf
+                           )
+                   )
 
         checkOnClick =
             checkable && opts.checkOnClick && not flat.disabled
@@ -542,6 +557,12 @@ rowNode theme opts state flat =
                     ++ I.classIf clickable "n-tree-node--clickable"
                 )
              ]
+                ++ (if opts.internalScrollable then
+                        [ Element.htmlAttribute (HA.attribute "data-key" ("s-" ++ key)) ]
+
+                    else
+                        []
+                   )
                 ++ (if opts.blockLine then
                         nodePropsAttrs
 
