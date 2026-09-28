@@ -110,6 +110,7 @@
     "NUI.Theme.Color",
     "NUI.Theme.Common",
     "NUI.Theme.DataTable",
+    "NUI.Theme.Transfer",
     "NUI.Theme.Descriptions",
     "NUI.Theme.Dialog",
     "NUI.Theme.Divider",

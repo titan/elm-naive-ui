@@ -512,5 +512,17 @@ export const components = {
     // No rtl.cssr upstream.
     cssr: ['anchor/src/styles/index.cssr.ts'],
     theme: 'anchor/styles/light.ts'
+  },
+  transfer: {
+    // Whole .n-transfer family in one cssr: root (flex 300px word-break) +
+    // --disabled header color overrides, list flex-column bg-clip + --source
+    // left / --target right border-radius with __border absolute overlay,
+    // header min-height flex row + `> *:not(:first-child)` 8px margin +
+    // __title/__button/__extra, body flex-column + transfer-filter padding +
+    // flex-container absolute scrollbar/empty + list-content item flex row
+    // with __background/__checkbox/__close (hover reveal)/__label +
+    // --source cursor + --disabled. No rtl.cssr upstream.
+    cssr: ['transfer/src/styles/index.cssr.ts'],
+    theme: 'transfer/styles/light.ts'
   }
 }

@@ -147,7 +147,9 @@ const targets = {
   // DataTable: all 47 vars sit on the root (size only swaps values, not class).
   '.n-data-table': true,
   // Anchor: all 12 vars sit on the root (block/rail only swaps classes).
-  '.n-anchor': true
+  '.n-anchor': true,
+  // Transfer: all 25 vars sit on the root (size only swaps values, not class).
+  '.n-transfer': true
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {
