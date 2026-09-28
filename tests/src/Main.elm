@@ -126,6 +126,7 @@ import NUI.Timeline as Timeline
 import NUI.Tooltip as Tooltip
 import NUI.Transfer as Transfer
 import NUI.Tree as Tree
+import NUI.TreeSelect as TreeSelect
 import NUI.Types as T
 import NUI.Watermark as Watermark
 import Time
@@ -1211,6 +1212,116 @@ transferOptions =
 transferLiveOpts : Transfer.Options msg
 transferLiveOpts =
     Transfer.defaults
+
+
+
+-- TREE-SELECT FIXTURES — pin derivation: TreeSelect.tsx (render :911-1129,
+-- cssVars :816-845, derivations :195-475, click algebra :529-661) +
+-- Tree.tsx (:1032-1130 unify, :1774-1778 classes, :1855-1885 the
+-- internalScrollable branch, :1749-1753 the renderEmpty replace) +
+-- tree-select styles/light.ts. Expectations in
+-- tasks/recon/tree-select-pins.md.
+
+
+tsNode : String -> String -> Bool -> Maybe (List (Tree.TreeOption msg)) -> Tree.TreeOption msg
+tsNode key label disabled kids =
+    Tree.TreeOption
+        { key = key
+        , label = label
+        , disabled = disabled
+        , checkboxDisabled = False
+        , isLeaf = kids == Nothing
+        , children = kids
+        , prefix = []
+        , suffix = []
+        }
+
+
+{-| The P9 fixture — o1{o1-1{o1-3}, o1-2}, o2 leaf, o3 disabled leaf.
+-}
+treeSelectOptions : List (Tree.TreeOption msg)
+treeSelectOptions =
+    [ tsNode "o1"
+        "Outfield"
+        False
+        (Just
+            [ tsNode "o1-1" "Left" False (Just [ tsNode "o1-3" "Bench" False Nothing ])
+            , tsNode "o1-2" "Right" False Nothing
+            ]
+        )
+    , tsNode "o2" "Pitcher" False Nothing
+    , tsNode "o3" "Disabled" True Nothing
+    ]
+
+
+treeSelectLiveOpts : TreeSelect.Options msg
+treeSelectLiveOpts =
+    TreeSelect.defaults
+
+
+tsSingleOpts : TreeSelect.Options msg
+tsSingleOpts =
+    { treeSelectLiveOpts | options = treeSelectOptions }
+
+
+tsSingleCheckOpts : TreeSelect.Options msg
+tsSingleCheckOpts =
+    { tsSingleOpts | checkable = True, cascade = True }
+
+
+tsMultiCheckOpts : TreeSelect.Options msg
+tsMultiCheckOpts =
+    { tsSingleOpts | multiple = True, checkable = True, cascade = True }
+
+
+tsMultiPlainOpts : TreeSelect.Options msg
+tsMultiPlainOpts =
+    { tsSingleOpts | multiple = True }
+
+
+tsLeafOnlyOpts : TreeSelect.Options msg
+tsLeafOnlyOpts =
+    { treeSelectLiveOpts | leafOnly = True }
+
+
+tsParentOpts : TreeSelect.Options msg
+tsParentOpts =
+    { treeSelectLiveOpts | checkStrategy = Tree.Parent }
+
+
+tsCascadeNoMultipleOpts : TreeSelect.Options msg
+tsCascadeNoMultipleOpts =
+    { treeSelectLiveOpts | options = treeSelectOptions, cascade = True, checkable = True }
+
+
+tsCascadeNoCheckableOpts : TreeSelect.Options msg
+tsCascadeNoCheckableOpts =
+    { treeSelectLiveOpts | options = treeSelectOptions, multiple = True, cascade = True, checkable = False }
+
+
+tsCascadeFullOpts : TreeSelect.Options msg
+tsCascadeFullOpts =
+    { treeSelectLiveOpts | options = treeSelectOptions, multiple = True, cascade = True, checkable = True }
+
+
+{-| An unloaded branch (isLeaf False, children Nothing) under
+-- `allowCheckingNotLoaded = False` — upstream treemate throws
+-- SubtreeNotLoadedError; the port stays total (the b3 rule).
+-}
+treeSelectUnloadOptions : List (Tree.TreeOption msg)
+treeSelectUnloadOptions =
+    [ Tree.TreeOption
+        { key = "o4"
+        , label = "Unloaded"
+        , disabled = False
+        , checkboxDisabled = False
+        , isLeaf = False
+        , children = Nothing
+        , prefix = []
+        , suffix = []
+        }
+    , tsNode "o2" "Pitcher" False Nothing
+    ]
 
 
 countdownLiveOpts : Countdown.Options msg
@@ -10513,6 +10624,212 @@ checks =
             "False"
         ]
 
+    -- TREE-SELECT — pin derivation: TreeSelect.tsx :816-845 (menuVars),
+    -- :195-475 (derivations), :529-661 (click algebra + delete/clear) +
+    -- Tree.tsx :1032-1130 (the unify click flow) + tree/src/utils.ts :8-13
+    -- (mergedCheckStrategy). Expectations in tasks/recon/tree-select-pins.md.
+    , eq "ts menuVars: the full 11-pair light set in cssVarsRef byte order (:816-845; menuPadding is NOT among them — it feeds the tree's scrollbar content)"
+        [ ( "--n-menu-box-shadow", "0 3px 6px -4px rgba(0, 0, 0, .12), 0 6px 16px 0 rgba(0, 0, 0, .08), 0 9px 28px 8px rgba(0, 0, 0, .05)" )
+        , ( "--n-menu-border-radius", "3px" )
+        , ( "--n-menu-color", "#fff" )
+        , ( "--n-menu-height", "calc(34px * 7.6)" )
+        , ( "--n-bezier", "cubic-bezier(.4, 0, .2, 1)" )
+        , ( "--n-action-padding", "8px 12px" )
+        , ( "--n-action-text-color", "rgb(51, 54, 57)" )
+        , ( "--n-action-divider-color", "rgb(239, 239, 245)" )
+        , ( "--n-header-padding", "8px 12px" )
+        , ( "--n-header-text-color", "rgb(51, 54, 57)" )
+        , ( "--n-header-divider-color", "rgb(239, 239, 245)" )
+        ]
+        (TreeSelect.menuVars Theme.default)
+    , eq "ts defaults: Single Nothing, All strategy, ' / ' separator, indent 24, 'Please Select' placeholder, leafOnly off (treeSelectProps + enUS locale)"
+        [ "SingleNothing", "All", " / ", "24", "Please Select", "False" ]
+        [ case TreeSelect.defaults.value of
+            SelectMenu.Single Nothing ->
+                "SingleNothing"
+
+            _ ->
+                "other"
+        , case TreeSelect.defaults.checkStrategy of
+            Tree.All ->
+                "All"
+
+            Tree.Parent ->
+                "Parent"
+
+            Tree.Child ->
+                "Child"
+        , TreeSelect.defaults.separator
+        , String.fromInt TreeSelect.defaults.indent
+        , TreeSelect.defaults.placeholder
+        , if TreeSelect.defaults.leafOnly then
+            "True"
+
+          else
+            "False"
+        ]
+    , eq "ts single click selects the key — unify routes EVERY click (line/label/checkbox) through handleSelect → doUpdateCheckedKeys([key]) (:1039-1041, :681-691)"
+        (SelectMenu.Single (Just "o1-1"))
+        (TreeSelect.handleNodeClick tsSingleOpts (SelectMenu.Single Nothing) "o1-1")
+    , eq "ts single click on a disabled node is a no-op (Tree.tsx :1032-1035 per-node gate)"
+        (SelectMenu.Single Nothing)
+        (TreeSelect.handleNodeClick tsSingleOpts (SelectMenu.Single Nothing) "o3")
+    , eq "ts single click on a MISSING key is a no-op (getNode miss)"
+        (SelectMenu.Single (Just "o2"))
+        (TreeSelect.handleNodeClick tsSingleOpts (SelectMenu.Single (Just "o2")) "nope")
+    , eq "ts single + checkable checkbox click o1-1 → still Single (Just o1-1) — unify REDIRECTS the check to select, no cascade check (:1039-1041)"
+        (SelectMenu.Single (Just "o1-1"))
+        (TreeSelect.handleNodeClick tsSingleCheckOpts (SelectMenu.Single Nothing) "o1-1")
+    , eq "ts multiple + checkable + cascade check o1 extends the whole subtree in document order (treemate check; o1 → o1-1 → o1-3 → o1-2)"
+        (SelectMenu.Multiple [ "o1", "o1-1", "o1-3", "o1-2" ])
+        (TreeSelect.handleNodeClick tsMultiCheckOpts (SelectMenu.Multiple []) "o1")
+    , eq "ts the cascade check delegates to Tree.check over the same inputs (algebra == treemate port)"
+        (SelectMenu.Multiple (Tree.check True Tree.All False "o1" [] treeSelectOptions))
+        (TreeSelect.handleNodeClick tsMultiCheckOpts (SelectMenu.Multiple []) "o1")
+    , eq "ts clicking an on-node unchecks: o1-1 off the full subtree leaves o1-2 (o1 indeterminate — never in the value)"
+        (SelectMenu.Multiple (Tree.uncheck True Tree.All False "o1-1" [ "o1", "o1-1", "o1-3", "o1-2" ] treeSelectOptions))
+        (TreeSelect.handleNodeClick tsMultiCheckOpts (SelectMenu.Multiple [ "o1", "o1-1", "o1-3", "o1-2" ]) "o1-1")
+    , eq "ts select-click on a checked-or-indeterminate parent flips it OFF under child strategy (:1114-1126 — !(checked ∪ indeterminate))"
+        (SelectMenu.Multiple (Tree.uncheck True Tree.Child False "o1" [ "o1-1", "o1-3", "o2" ] treeSelectOptions))
+        (TreeSelect.handleNodeClick
+            { tsMultiCheckOpts | checkStrategy = Tree.Child }
+            (SelectMenu.Multiple [ "o1-1", "o2" ])
+            "o1"
+        )
+    , eq "ts NON-cascade check touches only the clicked key (mergedCascade false — the extension never runs)"
+        (SelectMenu.Multiple [ "o1" ])
+        (TreeSelect.handleNodeClick { tsMultiCheckOpts | cascade = False } (SelectMenu.Multiple []) "o1")
+    , eq "ts multiple plain toggleSelect: in, in, out (:1109-1159 — cancelable is multiple)"
+        [ "[o1-1]", "[o1-1,o2]", "[o2]" ]
+        [ case TreeSelect.handleNodeClick tsMultiPlainOpts (SelectMenu.Multiple []) "o1-1" of
+            SelectMenu.Multiple ks ->
+                "[" ++ String.join "," ks ++ "]"
+
+            _ ->
+                "other"
+        , case TreeSelect.handleNodeClick tsMultiPlainOpts (SelectMenu.Multiple [ "o1-1" ]) "o2" of
+            SelectMenu.Multiple ks ->
+                "[" ++ String.join "," ks ++ "]"
+
+            _ ->
+                "other"
+        , case TreeSelect.handleNodeClick tsMultiPlainOpts (SelectMenu.Multiple [ "o1-1", "o2" ]) "o1-1" of
+            SelectMenu.Multiple ks ->
+                "[" ++ String.join "," ks ++ "]"
+
+            _ ->
+                "other"
+        ]
+    , eq "ts deleteOption plain: base = strategy-less normalize (raw keys, no cascade), splice the ONE index (:623-657)"
+        (SelectMenu.Multiple [ "o1-1", "o1-3" ])
+        (TreeSelect.deleteOption tsMultiPlainOpts (SelectMenu.Multiple [ "o1-1", "o1-2", "o1-3" ]) "o1-2")
+    , eq "ts deleteOption checkable: All-normalized base, then uncheck under the MERGED strategy (:637-649)"
+        (SelectMenu.Multiple
+            (Tree.uncheck
+                True
+                Tree.Child
+                False
+                "o1-1"
+                (Tree.getCheckedKeys True Tree.All False [ "o1-1", "o2" ] treeSelectOptions
+                    |> .checkedKeys
+                )
+                treeSelectOptions
+            )
+        )
+        (TreeSelect.deleteOption
+            { tsMultiCheckOpts | checkStrategy = Tree.Child }
+            (SelectMenu.Multiple [ "o1-1", "o2" ])
+            "o1-1"
+        )
+    , eq "ts deleteOption on a key outside the base is a no-op (findIndex -1, :630-631)"
+        (SelectMenu.Multiple [ "o1" ])
+        (TreeSelect.deleteOption tsMultiCheckOpts (SelectMenu.Multiple [ "o1" ]) "o2")
+    , eq "ts deleteOption single-mode value is untouched (the guard only works for arrays, :620)"
+        (SelectMenu.Single (Just "o2"))
+        (TreeSelect.deleteOption tsSingleOpts (SelectMenu.Single (Just "o2")) "o2")
+    , eq "ts clearValue: Multiple → [], Single → null (:604-616)"
+        [ "Multiple0", "SingleNothing" ]
+        [ case TreeSelect.clearValue (SelectMenu.Multiple [ "a", "b" ]) of
+            SelectMenu.Multiple ks ->
+                "Multiple" ++ String.fromInt (List.length ks)
+
+            _ ->
+                "other"
+        , case TreeSelect.clearValue (SelectMenu.Single (Just "a")) of
+            SelectMenu.Single Nothing ->
+                "SingleNothing"
+
+            _ ->
+                "other"
+        ]
+    , eq "ts checkStrategyOf: deprecated leafOnly folds to child, else passthrough (tree/src/utils.ts :8-13)"
+        [ "Child", "Child", "Parent" ]
+        [ case TreeSelect.checkStrategyOf tsLeafOnlyOpts of
+            Tree.Child ->
+                "Child"
+
+            _ ->
+                "other"
+        , case TreeSelect.checkStrategyOf { tsMultiCheckOpts | checkStrategy = Tree.Child, leafOnly = False } of
+            Tree.Child ->
+                "Child"
+
+            _ ->
+                "other"
+        , case TreeSelect.checkStrategyOf tsParentOpts of
+            Tree.Parent ->
+                "Parent"
+
+            _ ->
+                "other"
+        ]
+    , eq "ts initialPendingKey: Nothing under checkable, else the LAST list key — a single value seeds nothing (:274-281)"
+        [ "Nothing", "Just b", "Nothing" ]
+        [ case TreeSelect.initialPendingKey tsMultiCheckOpts of
+            Just k ->
+                "Just " ++ k
+
+            Nothing ->
+                "Nothing"
+        , case TreeSelect.initialPendingKey { tsMultiPlainOpts | value = SelectMenu.Multiple [ "a", "b" ] } of
+            Just k ->
+                "Just " ++ k
+
+            Nothing ->
+                "Nothing"
+        , case TreeSelect.initialPendingKey { tsSingleOpts | value = SelectMenu.Single (Just "x") } of
+            Just k ->
+                "Just " ++ k
+
+            Nothing ->
+                "Nothing"
+        ]
+    , eq "ts mergedCascade gates: multiple && cascade && checkable — each leg alone fails (:282-284)"
+        [ "False", "False", "True" ]
+        [ if TreeSelect.mergedCascade tsCascadeNoMultipleOpts then
+            "True"
+
+          else
+            "False"
+        , if TreeSelect.mergedCascade tsCascadeNoCheckableOpts then
+            "True"
+
+          else
+            "False"
+        , if TreeSelect.mergedCascade tsCascadeFullOpts then
+            "True"
+
+          else
+            "False"
+        ]
+    , eq "ts unloaded subtree stays TOTAL where treemate throws SubtreeNotLoadedError (allowNotLoaded=false keeps the allowNotLoaded-true set — the b3 rule)"
+        (SelectMenu.Multiple [ "o4" ])
+        (TreeSelect.handleNodeClick
+            { tsMultiCheckOpts | options = treeSelectUnloadOptions, allowCheckingNotLoaded = False }
+            (SelectMenu.Multiple [])
+            "o4"
+        )
+
     -- The spec `multiple sorter` walk (DataTable.spec.tsx:379-646) —
     -- every expected array re-derived from the spec's checkScoreIsMatched
     -- bytes (ties fall through by multiple priority 3 > 2 > 1; JS sort is
@@ -11529,6 +11846,145 @@ liveNodes =
                             , targetPattern = "Option 3"
                             , selectAllText = Just "Pick all"
                             , clearText = Just "Drop all"
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-tree-select") ]
+                    (Element.column [ Element.spacing 8 ]
+                        [ TreeSelect.view Theme.default
+                            { treeSelectLiveOpts
+                                | options = treeSelectOptions
+                                , value = SelectMenu.Single (Just "o1-1")
+                                , pendingKey = Just "o1-1"
+                                , expandedKeys = [ "o1", "o1-1" ]
+                            }
+                        , TreeSelect.menu Theme.default
+                            { treeSelectLiveOpts
+                                | options = treeSelectOptions
+                                , value = SelectMenu.Single (Just "o1-1")
+                                , pendingKey = Just "o1-1"
+                                , expandedKeys = [ "o1", "o1-1" ]
+                            }
+                        ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-tree-select-multiple") ]
+                    (Element.column [ Element.spacing 8 ]
+                        [ TreeSelect.view Theme.default
+                            { treeSelectLiveOpts
+                                | options = treeSelectOptions
+                                , multiple = True
+                                , checkable = True
+                                , cascade = True
+                                , value = SelectMenu.Multiple [ "o1-1", "o2" ]
+                            }
+                        , TreeSelect.menu Theme.default
+                            { treeSelectLiveOpts
+                                | options = treeSelectOptions
+                                , multiple = True
+                                , checkable = True
+                                , cascade = True
+                                , value = SelectMenu.Multiple [ "o1-1", "o2" ]
+                                , expandedKeys = [ "o1" ]
+                            }
+                        ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-tree-select-filterable") ]
+                    (Element.column [ Element.spacing 8 ]
+                        [ TreeSelect.view Theme.default
+                            { treeSelectLiveOpts
+                                | options = treeSelectOptions
+                                , filterable = True
+                                , pattern = "eft"
+                                , expandedKeys = [ "o1" ]
+                            }
+                        , TreeSelect.menu Theme.default
+                            { treeSelectLiveOpts
+                                | options = treeSelectOptions
+                                , filterable = True
+                                , pattern = "eft"
+                                , expandedKeys = [ "o1" ]
+                            }
+                        ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-tree-select-showpath") ]
+                    (Element.column [ Element.spacing 8 ]
+                        [ TreeSelect.view Theme.default
+                            { treeSelectLiveOpts
+                                | options = treeSelectOptions
+                                , showPath = True
+                                , value = SelectMenu.Single (Just "o1-3")
+                                , expandedKeys = [ "o1", "o1-1" ]
+                            }
+                        , TreeSelect.menu Theme.default
+                            { treeSelectLiveOpts
+                                | options = treeSelectOptions
+                                , showPath = True
+                                , value = SelectMenu.Single (Just "o1-3")
+                                , expandedKeys = [ "o1", "o1-1" ]
+                            }
+                        ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-tree-select-slots") ]
+                    (Element.column [ Element.spacing 8 ]
+                        [ TreeSelect.view Theme.default
+                            { treeSelectLiveOpts
+                                | options = treeSelectOptions
+                                , header = Just (Element.text "Header slot")
+                                , action = Just (Element.text "Action slot")
+                                , empty = Just (Element.text "No data")
+                            }
+                        , TreeSelect.menu Theme.default
+                            { treeSelectLiveOpts
+                                | options = []
+                                , header = Just (Element.text "Header slot")
+                                , action = Just (Element.text "Action slot")
+                                , empty = Just (Element.text "No data")
+                            }
+                        ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-tree-select-empty-filter") ]
+                    (Element.column [ Element.spacing 8 ]
+                        [ TreeSelect.view Theme.default
+                            { treeSelectLiveOpts
+                                | options = treeSelectOptions
+                                , filterable = True
+                                , pattern = "zzz"
+                            }
+                        , TreeSelect.menu Theme.default
+                            { treeSelectLiveOpts
+                                | options = treeSelectOptions
+                                , filterable = True
+                                , pattern = "zzz"
+                                , expandedKeys = [ "o1" ]
+                            }
+                        ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-tree-select-maxtagcount") ]
+                    (TreeSelect.view Theme.default
+                        { treeSelectLiveOpts
+                            | options = treeSelectOptions
+                            , multiple = True
+                            , checkable = True
+                            , cascade = True
+                            , value = SelectMenu.Multiple [ "o1", "o2" ]
+                            , maxTagCount = Just 2
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-tree-select-disabled") ]
+                    (TreeSelect.view Theme.default
+                        { treeSelectLiveOpts
+                            | options = treeSelectOptions
+                            , disabled = True
+                            , clearable = True
+                            , hover = True
+                            , value = SelectMenu.Single (Just "o2")
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-tree-select-status") ]
+                    (TreeSelect.view Theme.default
+                        { treeSelectLiveOpts
+                            | options = treeSelectOptions
+                            , status = Just BaseSelection.Error
+                            , value = SelectMenu.Single (Just "o2")
                         }
                     )
                 , Element.el [ Element.htmlAttribute (HA.id "live-countdown") ]

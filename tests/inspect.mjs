@@ -10425,6 +10425,186 @@ dEq(
   ].join('|')
 )
 
+// --- TreeSelect ------------------------------------------------------------------
+// Pins derive from TreeSelect.tsx (:816-845 cssVars, :911-1129 render,
+// :195-475 derivations, :529-661 algebra) + Tree.tsx (:1774-1778 classes,
+// :1855-1885 the internalScrollable branch, :1749-1753 the renderEmpty
+// replace). Expectations: tasks/recon/tree-select-pins.md.
+const tsMenu = (id) => doc.querySelector('#' + id + ' .n-tree-select-menu')
+const tsTrigger = (id) => doc.querySelector('#' + id + ' .n-tree-select')
+const tsKidClass = (el) => Array.from(el.children).map((c) => c.className)
+
+dTrue(
+  'DOM: TreeSelect trigger root is BARE — .n-tree-select, no style attr, exactly one .n-base-selection child (:914)',
+  (() => {
+    const t = tsTrigger('live-tree-select')
+    return (
+      !!t &&
+      !t.hasAttribute('style') &&
+      t.children.length === 1 &&
+      tsKidClass(t)[0].includes('n-base-selection')
+    )
+  })(),
+  'bare trigger wrapper'
+)
+dEq(
+  'DOM: TreeSelect menu vars — the full 11-var cssVarsRef byte order (:816-845; menuPadding absent — it feeds the tree scrollbar)',
+  '--n-menu-box-shadow:0 3px 6px -4px rgba(0, 0, 0, .12), 0 6px 16px 0 rgba(0, 0, 0, .08), 0 9px 28px 8px rgba(0, 0, 0, .05);--n-menu-border-radius:3px;--n-menu-color:#fff;--n-menu-height:calc(34px * 7.6);--n-bezier:cubic-bezier(.4, 0, .2, 1);--n-action-padding:8px 12px;--n-action-text-color:rgb(51, 54, 57);--n-action-divider-color:rgb(239, 239, 245);--n-header-padding:8px 12px;--n-header-text-color:rgb(51, 54, 57);--n-header-divider-color:rgb(239, 239, 245)',
+  tsMenu('live-tree-select').getAttribute('style')
+)
+dEq(
+  'DOM: TreeSelect menu — tabindex=0 hardcoded, n-tree-select-menu the first n-* class (:1004; elm-ui helpers prepend)',
+  '0|n-tree-select-menu',
+  [tsMenu('live-tree-select').getAttribute('tabindex'), nClassesStr(tsMenu('live-tree-select')).split(' ')[0]].join('|')
+)
+dEq(
+  'DOM: TreeSelect slots — data-header/data-action serialize "true" (bare JSX attrs; NOT "" — the transfer S2 rule)',
+  'true|true',
+  [
+    tsMenu('live-tree-select-slots').querySelector('.n-tree-select-menu__header').getAttribute('data-header'),
+    tsMenu('live-tree-select-slots').querySelector('.n-tree-select-menu__action').getAttribute('data-action')
+  ].join('|')
+)
+dEq(
+  'DOM: TreeSelect slots menu child order — header, empty, action, detector (:1010-1106)',
+  'header|empty|action|detector',
+  tsKidClass(tsMenu('live-tree-select-slots'))
+    .map((c) =>
+      c.includes('__header')
+        ? 'header'
+        : c.includes('__empty')
+          ? 'empty'
+          : c.includes('__action')
+            ? 'action'
+            : 'detector'
+    )
+    .join('|')
+)
+dEq(
+  'DOM: TreeSelect empty options → __empty replaces the WHOLE tree — no .n-tree, no .n-scrollbar (Tree.tsx :1749-1753)',
+  'true|true|false|false',
+  [
+    !!tsMenu('live-tree-select-slots').querySelector('.n-tree-select-menu__empty'),
+    !!(tsMenu('live-tree-select-slots').querySelector('.n-tree-select-menu__empty').textContent.includes('No data')),
+    !!tsMenu('live-tree-select-slots').querySelector('.n-tree'),
+    !!tsMenu('live-tree-select-slots').querySelector('.n-scrollbar')
+  ].join('|')
+)
+dTrue(
+  'DOM: TreeSelect filtered-empty (pattern matches nothing) ALSO takes the __empty whole-render path',
+  !!tsMenu('live-tree-select-empty-filter').querySelector('.n-tree-select-menu__empty') &&
+    !tsMenu('live-tree-select-empty-filter').querySelector('.n-tree'),
+  'filter-empty'
+)
+dEq(
+  'DOM: TreeSelect embedded tree — scrollbar root carries the tree classes AFTER n-scrollbar, NO tabindex (:1855-1875 + :1774-1778)',
+  'n-scrollbar|n-tree|true|true|false|absent',
+  (() => {
+    const sb = tsMenu('live-tree-select').querySelector('.n-scrollbar')
+    const cls = nClassesStr(sb).split(' ')
+    return [
+      cls[0],
+      cls[1],
+      cls.includes('n-tree--block-node'),
+      cls.includes('n-tree--block-line'),
+      cls.includes('n-tree--checkable'),
+      sb.getAttribute('tabindex') === null ? 'absent' : 'present'
+    ].join('|')
+  })()
+)
+dTrue(
+  'DOM: TreeSelect checkable menu adds n-tree--checkable to the scrollbar root',
+  tsMenu('live-tree-select-multiple')
+    .querySelector('.n-scrollbar')
+    .classList.contains('n-tree--checkable'),
+  'checkable class'
+)
+dEq(
+  'DOM: TreeSelect scrollbar content — padding:4px (menuPadding), vars merged after the scrollbar set (fallthrough last)',
+  'padding:4px|true',
+  [
+    tsMenu('live-tree-select').querySelector('.n-scrollbar-content').getAttribute('style'),
+    (() => {
+      const s = tsMenu('live-tree-select').querySelector('.n-scrollbar').getAttribute('style') || ''
+      return s.indexOf('--n-arrow-color') > s.indexOf('--n-scrollbar-color') && s.includes('--n-arrow-color')
+    })()
+  ].join('|')
+)
+dEq(
+  'DOM: TreeSelect rows sit under ONE inner div inside the content — rows only under it, never direct content children (:1871-1879 selfElRef wrap)',
+  'DIV|rows|true',
+  (() => {
+    const content = tsMenu('live-tree-select').querySelector('.n-scrollbar-content')
+    const inner = content.firstElementChild
+    return [
+      inner.tagName,
+      inner.querySelectorAll('.n-tree-node-wrapper').length > 0 ? 'rows' : 'none',
+      content.querySelectorAll('.n-tree-node-wrapper').length > 0 &&
+        Array.from(content.children).every((c) => c.querySelectorAll('.n-tree-node-wrapper').length > 0)
+        ? 'true'
+        : 'false'
+    ].join('|')
+  })()
+)
+dTrue(
+  'DOM: TreeSelect per-node checkbox is NOT focusable (internalCheckboxFocusable=false — no tabindex anywhere in the cell; TreeNode.tsx :428)',
+  tsMenu('live-tree-select-multiple').querySelectorAll('.n-tree-node-checkbox [tabindex]').length === 0,
+  'checkbox focusable'
+)
+dEq(
+  'DOM: TreeSelect focus detector — the menu last child, width:0;height:0, tabindex 0, no class (:1106)',
+  'width:0;height:0|0|true',
+  (() => {
+    const det = tsMenu('live-tree-select').lastElementChild
+    return [det.getAttribute('style'), det.getAttribute('tabindex'), det.className === ''].join('|')
+  })()
+)
+dTrue(
+  'DOM: TreeSelect filterable menu prunes to the match tree — pattern "eft" keeps the ancestor (2 rows: Outfield + Left), highlight on the MATCH only (filterTree keeps branches)',
+  (() => {
+    const rows = tsMenu('live-tree-select-filterable').querySelectorAll('.n-tree-node-wrapper')
+    return (
+      rows.length === 2 &&
+      (rows[0].textContent || '').includes('Outfield') &&
+      !rows[0].querySelector('.n-tree-node--highlight') &&
+      (rows[1].textContent || '').includes('Left') &&
+      !!rows[1].querySelector('.n-tree-node--highlight')
+    )
+  })(),
+  'filtered tree'
+)
+dTrue(
+  'DOM: TreeSelect showPath label — the root-to-node path joined by " / " (:331-337)',
+  (tsTrigger('live-tree-select-showpath').textContent || '').includes('Outfield / Left / Bench'),
+  tsTrigger('live-tree-select-showpath').textContent.slice(0, 60)
+)
+dTrue(
+  'DOM: TreeSelect multiple cascade tags — Left, Bench, Pitcher (the value extends down o1-1 to o1-3; order preserved, no max)',
+  (() => {
+    const t = (tsTrigger('live-tree-select-multiple').textContent || '')
+    return t.includes('Left') && t.includes('Bench') && t.includes('Pitcher')
+  })(),
+  'multiple tags'
+)
+dTrue(
+  'DOM: TreeSelect maxTagCount numeric — 2 of 5 tags shown + the +3 counter (checked order = value keys then appended descendants: Outfield, Pitcher; the subtree tags hide)',
+  (() => {
+    const t = (tsTrigger('live-tree-select-maxtagcount').textContent || '')
+    return t.includes('+3') && t.includes('Outfield') && t.includes('Pitcher') && !t.includes('Left') && !t.includes('Bench')
+  })(),
+  'max tag count'
+)
+dTrue(
+  'DOM: TreeSelect disabled — the n-base-selection--disabled class rides the trigger',
+  !!tsTrigger('live-tree-select-disabled').querySelector('.n-base-selection--disabled'),
+  'disabled trigger'
+)
+dTrue(
+  'DOM: TreeSelect status error — the n-base-selection--error-status class rides the trigger',
+  !!tsTrigger('live-tree-select-status').querySelector('.n-base-selection--error-status'),
+  'error status'
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
