@@ -1,6 +1,7 @@
 module NUI.Transfer exposing
     ( Filter
     , Option
+    , Options
     , RenderListProps
     , Side(..)
     , cssVarsFor

@@ -124,6 +124,7 @@ import NUI.Theme.Watermark as WatermarkTheme
 import NUI.Thing as Thing
 import NUI.Timeline as Timeline
 import NUI.Tooltip as Tooltip
+import NUI.Transfer as Transfer
 import NUI.Tree as Tree
 import NUI.Types as T
 import NUI.Watermark as Watermark
@@ -1189,6 +1190,27 @@ anchorEdgeLinks =
         , attributes = []
         }
     ]
+
+
+
+-- TRANSFER FIXTURES — pin derivation: Transfer.tsx render (:294-406) +
+-- use-transfer-data.ts (pure data) + TransferHeader/TransferFilter/
+-- TransferList/TransferListItem.tsx + styles/light.ts + _common.ts +
+-- enUS.ts Transfer locale block. Expectations in tasks/recon/transfer-pins.md.
+
+
+transferOptions : List Transfer.Option
+transferOptions =
+    [ { label = "Option 1", value = "1", disabled = False }
+    , { label = "Option 2", value = "2", disabled = False }
+    , { label = "Option 3", value = "3", disabled = False }
+    , { label = "Disabled", value = "4", disabled = True }
+    ]
+
+
+transferLiveOpts : Transfer.Options msg
+transferLiveOpts =
+    Transfer.defaults
 
 
 countdownLiveOpts : Countdown.Options msg
@@ -10359,6 +10381,138 @@ checks =
                 "Nothing"
         ]
 
+    -- Transfer — single batch. Pins derive from Transfer.tsx cssVarsRef
+    -- (:233-291) + styles/light.ts self / _common.ts literals + the
+    -- generated common mappings + transferProps defaults (:30-84).
+    -- Expectations: tasks/recon/transfer-pins.md.
+    -- =====================================================================
+    , eq "transfer cssVars: the full 25-pair light set in cssVarsRef byte order"
+        [ ( "--n-bezier", "cubic-bezier(.4, 0, .2, 1)" )
+        , ( "--n-border-color", "rgb(224, 224, 230)" )
+        , ( "--n-border-radius", "3px" )
+        , ( "--n-extra-font-size", "12px" )
+        , ( "--n-font-size", "14px" )
+        , ( "--n-header-font-size", "16px" )
+        , ( "--n-header-extra-text-color", "rgb(118, 124, 130)" )
+        , ( "--n-header-extra-text-color-disabled", "rgba(194, 194, 194, 1)" )
+        , ( "--n-header-font-weight", "400" )
+        , ( "--n-header-text-color", "rgb(31, 34, 37)" )
+        , ( "--n-header-text-color-disabled", "rgba(194, 194, 194, 1)" )
+        , ( "--n-item-color-pending", "rgb(243, 243, 245)" )
+        , ( "--n-item-height", "34px" )
+        , ( "--n-item-text-color", "rgb(51, 54, 57)" )
+        , ( "--n-item-text-color-disabled", "rgba(194, 194, 194, 1)" )
+        , ( "--n-list-color", "#fff" )
+        , ( "--n-header-height", "44px" )
+        , ( "--n-close-size", "20px" )
+        , ( "--n-close-icon-size", "16px" )
+        , ( "--n-close-color-hover", "rgba(0, 0, 0, .09)" )
+        , ( "--n-close-color-pressed", "rgba(0, 0, 0, .13)" )
+        , ( "--n-close-icon-color", "rgba(102, 102, 102, 1)" )
+        , ( "--n-close-icon-color-hover", "rgba(102, 102, 102, 1)" )
+        , ( "--n-close-icon-color-pressed", "rgba(102, 102, 102, 1)" )
+        , ( "--n-divider-color", "rgb(224, 224, 230)" )
+        ]
+        (Transfer.cssVarsFor Theme.default T.Medium)
+    , eq "transfer cssVars dark: dark.ts self literals over commonDark (borderColor '#0000', dividerColor/listColor/itemHeight/fontSize)"
+        [ ( "--n-border-color", "#0000" )
+        , ( "--n-font-size", "14px" )
+        , ( "--n-item-height", "34px" )
+        , ( "--n-list-color", "rgba(255, 255, 255, 0.1)" )
+        , ( "--n-divider-color", "rgba(255, 255, 255, 0.09)" )
+        ]
+        (Transfer.cssVarsFor Theme.dark T.Medium
+            |> List.filter
+                (\( k, _ ) ->
+                    List.member k
+                        [ "--n-border-color"
+                        , "--n-divider-color"
+                        , "--n-list-color"
+                        , "--n-item-height"
+                        , "--n-font-size"
+                        ]
+                )
+        )
+    , eq "transfer cssVars setPrimary: self() reads no primary-family var — all 25 pairs identical to the default theme"
+        (Transfer.cssVarsFor Theme.default T.Medium)
+        (Transfer.cssVarsFor (Theme.setPrimary "#ff0000" Theme.default) T.Medium)
+    , eq "transfer cssVars Small: the five size-keyed vars (createKey extraFontSize/fontSize/titleFontSize/itemHeight/headerHeight)"
+        [ ( "--n-extra-font-size", "12px" )
+        , ( "--n-font-size", "14px" )
+        , ( "--n-header-font-size", "14px" )
+        , ( "--n-item-height", "34px" )
+        , ( "--n-header-height", "44px" )
+        ]
+        (Transfer.cssVarsFor Theme.default T.Small
+            |> List.filter
+                (\( k, _ ) ->
+                    List.member k
+                        [ "--n-extra-font-size"
+                        , "--n-font-size"
+                        , "--n-header-font-size"
+                        , "--n-item-height"
+                        , "--n-header-height"
+                        ]
+                )
+        )
+    , eq "transfer cssVars Large: the five size-keyed vars (itemHeightLarge = heightLarge 40px, headerHeightLarge 50px)"
+        [ ( "--n-extra-font-size", "14px" )
+        , ( "--n-font-size", "15px" )
+        , ( "--n-header-font-size", "16px" )
+        , ( "--n-item-height", "40px" )
+        , ( "--n-header-height", "50px" )
+        ]
+        (Transfer.cssVarsFor Theme.default T.Large
+            |> List.filter
+                (\( k, _ ) ->
+                    List.member k
+                        [ "--n-extra-font-size"
+                        , "--n-font-size"
+                        , "--n-header-font-size"
+                        , "--n-item-height"
+                        , "--n-header-height"
+                        ]
+                )
+        )
+    , eq "transfer defaults: size Medium, showSelected True, patterns empty, filters off (transferProps defaults + use-transfer-data pattern refs)"
+        [ "Medium", "True", "", "", "Nothing", "False", "False" ]
+        [ case Transfer.defaults.size of
+            T.Tiny ->
+                "Tiny"
+
+            T.Small ->
+                "Small"
+
+            T.Medium ->
+                "Medium"
+
+            T.Large ->
+                "Large"
+        , if Transfer.defaults.showSelected then
+            "True"
+
+          else
+            "False"
+        , Transfer.defaults.sourcePattern
+        , Transfer.defaults.targetPattern
+        , case Transfer.defaults.filter of
+            Just _ ->
+                "Just"
+
+            Nothing ->
+                "Nothing"
+        , if Transfer.defaults.sourceFilterable then
+            "True"
+
+          else
+            "False"
+        , if Transfer.defaults.targetFilterable then
+            "True"
+
+          else
+            "False"
+        ]
+
     -- The spec `multiple sorter` walk (DataTable.spec.tsx:379-646) —
     -- every expected array re-derived from the spec's checkScoreIsMatched
     -- bytes (ties fall through by multiple priority 3 > 2 > 1; JS sort is
@@ -11307,6 +11461,65 @@ liveNodes =
                     (Anchor.view Theme.default
                         { anchorLiveOpts | internalScrollable = True }
                         anchorLiveLinks
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-transfer") ]
+                    (Transfer.view Theme.default
+                        { transferLiveOpts
+                            | options = transferOptions
+                            , value = [ "2" ]
+                            , sourceTitle = Just "Source"
+                            , targetTitle = Just "Target"
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-transfer-large") ]
+                    (Transfer.view Theme.default
+                        { transferLiveOpts
+                            | options = transferOptions
+                            , value = [ "1", "4" ]
+                            , size = T.Large
+                            , sourceFilterable = True
+                            , targetFilterable = True
+                            , sourceFilterPlaceholder = Just "Search"
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-transfer-disabled") ]
+                    (Transfer.view Theme.default
+                        { transferLiveOpts | options = transferOptions, value = [ "2" ], disabled = True }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-transfer-empty") ]
+                    (Transfer.view Theme.default { transferLiveOpts | options = [], value = [] })
+                , Element.el [ Element.htmlAttribute (HA.id "live-transfer-allchecked") ]
+                    (Transfer.view Theme.default
+                        { transferLiveOpts | options = transferOptions, value = [ "1", "2", "3", "4" ] }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-transfer-missing") ]
+                    (Transfer.view Theme.default
+                        { transferLiveOpts | options = transferOptions, value = [ "2", "999" ] }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-transfer-nolabel") ]
+                    (Transfer.view Theme.default
+                        { transferLiveOpts
+                            | options = [ { label = "", value = "e1", disabled = False } ]
+                            , value = []
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-transfer-edge") ]
+                    (Transfer.view Theme.default
+                        { transferLiveOpts
+                            | options =
+                                [ { label = "", value = "e1", disabled = False }
+                                , { label = "Option 2", value = "e2", disabled = False }
+                                , { label = "Option 3", value = "e3", disabled = False }
+                                ]
+                            , value = [ "e2", "999" ]
+                            , showSelected = False
+                            , sourceFilterable = True
+                            , targetFilterable = True
+                            , sourcePattern = "Option 2"
+                            , targetPattern = "Option 3"
+                            , selectAllText = Just "Pick all"
+                            , clearText = Just "Drop all"
+                        }
                     )
                 , Element.el [ Element.htmlAttribute (HA.id "live-countdown") ]
                     (Countdown.view Theme.default countdownLiveOpts [])

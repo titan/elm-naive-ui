@@ -10182,6 +10182,223 @@ dTrue(
   anchorStyle
 )
 
+// Transfer --------------------------------------------------------------------
+// Pins derive from Transfer.tsx render (:294-406) + use-transfer-data.ts +
+// TransferHeader/TransferFilter/TransferList/TransferListItem.tsx + enUS.ts
+// Transfer locale. Expectations: tasks/recon/transfer-pins.md.
+const trRoot = (id) => doc.querySelector('#' + id + ' .n-transfer')
+const trList = (id, side) => doc.querySelector('#' + id + ' .n-transfer-list--' + side)
+const trHeaderBtn = (id, side) =>
+  doc.querySelector('#' + id + ' .n-transfer-list--' + side + ' .n-transfer-list-header__button')
+const trExtra = (id, side) =>
+  doc.querySelector('#' + id + ' .n-transfer-list--' + side + ' .n-transfer-list-header__extra')
+const trItems = (id, side) =>
+  [...doc.querySelectorAll('#' + id + ' .n-transfer-list--' + side + ' .n-transfer-list-item')]
+
+dEq(
+  'DOM: Transfer root class order (Transfer.tsx :296-299 class array)',
+  'n-transfer',
+  nClassesStr(trRoot('live-transfer'))
+)
+dEq(
+  'DOM: Transfer disabled root gains --disabled after the base class',
+  'n-transfer n-transfer--disabled',
+  nClassesStr(trRoot('live-transfer-disabled'))
+)
+const trStyle = trRoot('live-transfer').getAttribute('style') || ''
+dTrue(
+  'DOM: Transfer root style carries --n-font-size:14px / --n-item-height:34px / --n-header-height:44px (cssVarsRef medium set)',
+  trStyle.includes('--n-font-size:14px') &&
+    trStyle.includes('--n-item-height:34px') &&
+    trStyle.includes('--n-header-height:44px'),
+  trStyle
+)
+dTrue(
+  'DOM: Transfer root style --n-divider-color is the light borderColor literal (light.ts dividerColor = borderColor)',
+  trStyle.includes('--n-divider-color:rgb(224, 224, 230)'),
+  trStyle
+)
+dEq(
+  'DOM: Transfer source list classes (Transfer.tsx :304-305)',
+  'n-transfer-list n-transfer-list--source',
+  nClassesStr(trList('live-transfer', 'source'))
+)
+dEq(
+  'DOM: Transfer target list classes (Transfer.tsx :364-365)',
+  'n-transfer-list n-transfer-list--target',
+  nClassesStr(trList('live-transfer', 'target'))
+)
+dTrue(
+  'DOM: Transfer __border div renders on both lists (Transfer.tsx :360/:399)',
+  !!doc.querySelector('#live-transfer .n-transfer-list--source .n-transfer-list__border') &&
+    !!doc.querySelector('#live-transfer .n-transfer-list--target .n-transfer-list__border'),
+  'missing'
+)
+dEq(
+  'DOM: Transfer header __title renders the source title text (TransferHeader.tsx :44-46)',
+  'Source',
+  doc.querySelector('#live-transfer .n-transfer-list--source .n-transfer-list-header__title').textContent
+)
+dEq(
+  'DOM: Transfer source __extra counts ALL options — Total 4 items (enUS total, srcOptionsLengthRef)',
+  'Total 4 items',
+  trExtra('live-transfer', 'source').textContent
+)
+dEq(
+  'DOM: Transfer target __extra — 1 items selected (enUS selected, targetOptions length)',
+  '1 items selected',
+  trExtra('live-transfer', 'target').textContent
+)
+dEq(
+  'DOM: Transfer header button: tertiary tiny, fallthrough __button class LAST (TransferHeader.tsx :50-52)',
+  'n-button n-button--default-type n-button--tiny-type n-transfer-list-header__button',
+  nClassesStr(trHeaderBtn('live-transfer', 'source'))
+)
+dEq(
+  'DOM: Transfer header button label defaults to locale selectAll (enUS :65)',
+  'Select all',
+  (trHeaderBtn('live-transfer', 'source').textContent || '').trim()
+)
+dEq(
+  'DOM: Transfer allChecked flips the label to clearText default Unselect all (TransferHeader.tsx :55-59)',
+  'Unselect all',
+  (trHeaderBtn('live-transfer-allchecked', 'source').textContent || '').trim()
+)
+dEq(
+  'DOM: Transfer custom selectAllText overrides the locale default',
+  'Pick all',
+  (trHeaderBtn('live-transfer-edge', 'source').textContent || '').trim()
+)
+dEq(
+  'DOM: Transfer size Large → header button small (buttonSize = large ? small : tiny)',
+  'n-button n-button--default-type n-button--small-type n-transfer-list-header__button',
+  nClassesStr(trHeaderBtn('live-transfer-large', 'source'))
+)
+dTrue(
+  'DOM: Transfer target header button (Clear) renders iff canBeCleared',
+  !!trHeaderBtn('live-transfer', 'target') &&
+    (trHeaderBtn('live-transfer', 'target').textContent || '').trim() === 'Clear' &&
+    !trHeaderBtn('live-transfer-empty', 'target'),
+  (trHeaderBtn('live-transfer', 'target') || { textContent: 'missing' }).textContent
+)
+const trSrcItems = trItems('live-transfer', 'source')
+const trTgtItems = trItems('live-transfer', 'target')
+dEq(
+  'DOM: Transfer source items: 4 (all options incl. disabled), target: 1 (value ["2"])',
+  '4|1',
+  [trSrcItems.length, trTgtItems.length].join('|')
+)
+dEq(
+  'DOM: Transfer item class order — base, --disabled between base and side (TransferListItem.tsx :78-84)',
+  'n-transfer-list-item n-transfer-list-item--disabled n-transfer-list-item--source',
+  nClassesStr(trSrcItems[3])
+)
+dEq(
+  'DOM: Transfer target item class order (base then side)',
+  'n-transfer-list-item n-transfer-list-item--target',
+  nClassesStr(trTgtItems[0])
+)
+const trFirstItem = trSrcItems[0]
+dEq(
+  'DOM: Transfer item children order — __background first (TransferListItem.tsx :89)',
+  'n-transfer-list-item__background',
+  nClassesStr(trFirstItem.firstElementChild)
+)
+dTrue(
+  'DOM: Transfer source item __checkbox > .n-checkbox (showSelected default true)',
+  !!trFirstItem.querySelector('.n-transfer-list-item__checkbox > .n-checkbox'),
+  'missing'
+)
+dTrue(
+  'DOM: Transfer showSelected=False drops the __checkbox entirely',
+  !doc.querySelector('#live-transfer-edge .n-transfer-list-item__checkbox'),
+  'present'
+)
+dEq(
+  'DOM: Transfer __label title attr carries the label (getTitleAttribute)',
+  'Option 1',
+  trFirstItem.querySelector('.n-transfer-list-item__label').getAttribute('title')
+)
+dEq(
+  'DOM: Transfer empty label omits the title attribute (getTitleAttribute "" → undefined)',
+  null,
+  doc.querySelector('#live-transfer-nolabel .n-transfer-list--source .n-transfer-list-item__label').getAttribute('title')
+)
+dEq(
+  'DOM: Transfer empty label still renders the empty content',
+  '',
+  doc.querySelector('#live-transfer-nolabel .n-transfer-list--source .n-transfer-list-item__label').textContent
+)
+const trClose = trTgtItems[0].querySelector('.n-transfer-list-item__close')
+dEq(
+  'DOM: Transfer target __close is a real BUTTON type=button tabindex=-1 aria-label=close (NBaseClose isButtonTag)',
+  'BUTTON|button|-1|close',
+  [trClose.tagName, trClose.getAttribute('type'), trClose.getAttribute('tabindex'), trClose.getAttribute('aria-label')].join('|')
+)
+dEq(
+  'DOM: Transfer __close fallthrough class lands after n-base-close (NBaseClose class merge)',
+  'n-base-close n-transfer-list-item__close',
+  nClassesStr(trClose)
+)
+dTrue(
+  'DOM: Transfer __close inner icon: i.n-base-icon > svg (generic CloseIcon)',
+  !!trClose.querySelector('i.n-base-icon > svg'),
+  'missing'
+)
+dTrue(
+  'DOM: Transfer disabled items carry no __close (TransferListItem.tsx :106 !source && !disabled)',
+  !doc.querySelector('#live-transfer-disabled .n-transfer-list-item--disabled .n-transfer-list-item__close'),
+  'present'
+)
+dEq(
+  'DOM: Transfer filter: .n-transfer-filter > .n-input small-size (TransferFilter.tsx :36-44 size="small")',
+  'n-input n-input--small-size n-input--stateful|n-input n-input--small-size n-input--stateful',
+  [nClassesStr(doc.querySelector('#live-transfer-large .n-transfer-list--source .n-transfer-filter .n-input')),
+   nClassesStr(doc.querySelector('#live-transfer-large .n-transfer-list--target .n-transfer-filter .n-input'))].join('|')
+)
+dEq(
+  'DOM: Transfer filter placeholder text lands on both inputs',
+  'Search|Search',
+  [doc.querySelector('#live-transfer-large .n-transfer-list--source .n-input__placeholder').textContent,
+   doc.querySelector('#live-transfer-large .n-transfer-list--target .n-input__placeholder').textContent].join('|')
+)
+dTrue(
+  'DOM: Transfer filter search icon: i.n-base-icon inside .n-base-clear__placeholder (clear-icon-placeholder slot)',
+  !!doc.querySelector('#live-transfer-large .n-transfer-filter .n-base-clear__placeholder i.n-base-icon'),
+  'missing'
+)
+dTrue(
+  'DOM: Transfer empty options → flex-container > .n-empty with NO .n-scrollbar (TransferList.tsx :64-72)',
+  !!doc.querySelector('#live-transfer-empty .n-transfer-list-flex-container > .n-empty') &&
+    !doc.querySelector('#live-transfer-empty .n-scrollbar'),
+  'missing'
+)
+dTrue(
+  'DOM: Transfer non-empty → .n-scrollbar > container > content > .n-transfer-list-content (TransferList.tsx :80-137)',
+  !!doc.querySelector(
+    '#live-transfer .n-transfer-list-flex-container .n-scrollbar .n-scrollbar-container .n-scrollbar-content .n-transfer-list-content'
+  ),
+  'missing'
+)
+dEq(
+  'DOM: Transfer filtered source (sourcePattern "Option 2") leaves one item; target pattern filters the target list (nolabel fixture is unfiltered)',
+  '0|0|1|0',
+  [trItems('live-transfer-edge', 'source').length,
+   trItems('live-transfer-edge', 'target').length,
+   trItems('live-transfer-nolabel', 'source').length,
+   trItems('live-transfer-nolabel', 'target').length].join('|')
+)
+dEq(
+  'DOM: Transfer value "999" with no option is dropped (optionMap.get miss) — 1 items selected (the miss never counts), one target item',
+  '1 items selected|1',
+  [trExtra('live-transfer-missing', 'target').textContent, trItems('live-transfer-missing', 'target').length].join('|')
+)
+dEq(
+  'DOM: Transfer allChecked value ["1".."4"] — target list holds all four, source keeps all options',
+  '4|4',
+  [trItems('live-transfer-allchecked', 'source').length, trItems('live-transfer-allchecked', 'target').length].join('|')
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
