@@ -1,0 +1,78 @@
+{
+  "light": {
+    "menuPadding": "4px",
+    "menuColor": "#fff",
+    "menuBoxShadow": "0 3px 6px -4px rgba(0, 0, 0, .12), 0 6px 16px 0 rgba(0, 0, 0, .08), 0 9px 28px 8px rgba(0, 0, 0, .05)",
+    "menuBorderRadius": "3px",
+    "menuHeight": "calc(34px * 7.6)",
+    "actionDividerColor": "rgb(239, 239, 245)",
+    "actionTextColor": "rgb(51, 54, 57)",
+    "actionPadding": "8px 12px",
+    "headerDividerColor": "rgb(239, 239, 245)",
+    "headerTextColor": "rgb(51, 54, 57)",
+    "headerPadding": "8px 12px"
+  },
+  "dark": {
+    "menuPadding": "4px",
+    "menuColor": "rgb(72, 72, 78)",
+    "menuBoxShadow": "0 3px 6px -4px rgba(0, 0, 0, .24), 0 6px 12px 0 rgba(0, 0, 0, .16), 0 9px 18px 8px rgba(0, 0, 0, .10)",
+    "menuBorderRadius": "3px",
+    "menuHeight": "calc(34px * 7.6)",
+    "actionDividerColor": "rgba(255, 255, 255, 0.09)",
+    "actionTextColor": "rgba(255, 255, 255, 0.82)",
+    "actionPadding": "8px 12px",
+    "headerDividerColor": "rgba(255, 255, 255, 0.09)",
+    "headerTextColor": "rgba(255, 255, 255, 0.82)",
+    "headerPadding": "8px 12px"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "menuColor": "popoverColor",
+        "menuBoxShadow": "boxShadow2",
+        "menuBorderRadius": "borderRadius",
+        "actionDividerColor": "dividerColor",
+        "actionTextColor": "textColor2",
+        "headerDividerColor": "dividerColor",
+        "headerTextColor": "textColor2"
+      },
+      "seen": [
+        "menuPadding",
+        "menuColor",
+        "menuBoxShadow",
+        "menuBorderRadius",
+        "menuHeight",
+        "actionDividerColor",
+        "actionTextColor",
+        "actionPadding",
+        "headerDividerColor",
+        "headerTextColor",
+        "headerPadding"
+      ]
+    },
+    "dark": {
+      "refs": {
+        "menuColor": "popoverColor",
+        "menuBoxShadow": "boxShadow2",
+        "menuBorderRadius": "borderRadius",
+        "actionDividerColor": "dividerColor",
+        "actionTextColor": "textColor2",
+        "headerDividerColor": "dividerColor",
+        "headerTextColor": "textColor2"
+      },
+      "seen": [
+        "menuPadding",
+        "menuColor",
+        "menuBoxShadow",
+        "menuBorderRadius",
+        "menuHeight",
+        "actionDividerColor",
+        "actionTextColor",
+        "actionPadding",
+        "headerDividerColor",
+        "headerTextColor",
+        "headerPadding"
+      ]
+    }
+  }
+}

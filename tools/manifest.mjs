@@ -524,5 +524,19 @@ export const components = {
     // --source cursor + --disabled. No rtl.cssr upstream.
     cssr: ['transfer/src/styles/index.cssr.ts'],
     theme: 'transfer/styles/light.ts'
+  },
+  'tree-select': {
+    // Whole .n-tree-select family in one cssr: the bare .n-tree-select wrapper
+    // (z-index auto, outline none, width 100%, position relative) +
+    // .n-tree-select-menu (relative overflow hidden margin 4px 0 + the
+    // radius/shadow/color menu vars, `cB('tree')` max-height menu-height
+    // rule for the embedded scrollbar-tree, __empty flex-center padding,
+    // __header/__action padding + divider + color vars, fade-in-scale-up
+    // transition family). The trigger rides the `internal` selection chunk;
+    // the tree body rides the `tree` chunk (+ its scrollbar wrap).
+    // styles/rtl.ts is a peer-only RtlItem (c([]), zero own rules) — nothing
+    // to extract there.
+    cssr: ['tree-select/src/styles/index.cssr.ts'],
+    theme: 'tree-select/styles/light.ts'
   }
 }

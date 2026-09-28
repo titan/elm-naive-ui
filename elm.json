@@ -165,6 +165,7 @@
     "NUI.Theme.Table",
     "NUI.Theme.Thing",
     "NUI.Theme.Tree",
+    "NUI.Theme.TreeSelect",
     "NUI.Theme.Timeline",
     "NUI.Theme.Transfer",
     "NUI.Theme.Tooltip",

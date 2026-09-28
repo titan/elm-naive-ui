@@ -8265,6 +8265,53 @@ background-color: var(--n-item-color-pending);}.nui-root.nui-root .n-transfer .n
                   opacity: 1;
                   pointer-events: all;}
 
+/* ===== naive-ui: tree-select ===== */
+.nui-root.nui-root .n-tree-select {
+
+    z-index: auto;
+    outline: none;
+    width: 100%;
+    position: relative;}.nui-root.nui-root .n-tree-select-menu {
+
+    position: relative;
+    overflow: hidden;
+    margin: 4px 0;
+    transition: box-shadow .3s var(--n-bezier), background-color .3s var(--n-bezier);
+    border-radius: var(--n-menu-border-radius);
+    box-shadow: var(--n-menu-box-shadow);
+    background-color: var(--n-menu-color);
+    outline: none;}.nui-root.nui-root .n-tree-select-menu .n-tree {
+max-height: var(--n-menu-height);}.nui-root.nui-root .n-tree-select-menu .n-tree-select-menu__empty {
+
+      display: flex;
+      padding: 12px 32px;
+      flex: 1;
+      justify-content: center;}.nui-root.nui-root .n-tree-select-menu .n-tree-select-menu__header {
+
+      padding: var(--n-header-padding);
+      transition: 
+        color .3s var(--n-bezier);
+        border-color .3s var(--n-bezier);
+      border-bottom: 1px solid var(--n-header-divider-color);
+      color: var(--n-header-text-color);}.nui-root.nui-root .n-tree-select-menu .n-tree-select-menu__action {
+
+      padding: var(--n-action-padding);
+      transition: 
+        color .3s var(--n-bezier);
+        border-color .3s var(--n-bezier);
+      border-top: 1px solid var(--n-action-divider-color);
+      color: var(--n-action-text-color);}.nui-root.nui-root .n-tree-select-menu.fade-in-scale-up-transition-leave-active {
+  transform-origin: inherit;
+  transition: opacity .2s cubic-bezier(.4, 0, 1, 1), transform .2s cubic-bezier(.4, 0, 1, 1) ;}.nui-root.nui-root .n-tree-select-menu.fade-in-scale-up-transition-enter-active {
+  transform-origin: inherit;
+  transition: opacity .2s cubic-bezier(0, 0, .2, 1), transform .2s cubic-bezier(0, 0, .2, 1) ;}.nui-root.nui-root .n-tree-select-menu.fade-in-scale-up-transition-enter-from,
+.nui-root.nui-root .n-tree-select-menu.fade-in-scale-up-transition-leave-to {
+  opacity: 0;
+  transform:  scale(.9);}.nui-root.nui-root .n-tree-select-menu.fade-in-scale-up-transition-leave-from,
+.nui-root.nui-root .n-tree-select-menu.fade-in-scale-up-transition-enter-to {
+  opacity: 1;
+  transform:  scale(1);}
+
 /* ===== elm-ui bridge =====
  *
  * Components are built from elm-ui elements, and elm-ui styles its own helper classes
