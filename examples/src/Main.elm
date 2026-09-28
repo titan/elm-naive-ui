@@ -10,6 +10,7 @@ import Html
 import Html.Attributes as HA
 import NUI.Affix as Affix
 import NUI.Alert as Alert
+import NUI.Anchor as Anchor
 import NUI.AutoComplete as AutoComplete
 import NUI.Avatar as Avatar
 import NUI.AvatarGroup as AvatarGroup
@@ -758,6 +759,7 @@ body =
     , drawerSection
     , dialogSection
     , dataTableSection
+    , anchorSection
     , rtlSection
     , themeSection
     ]
@@ -4876,6 +4878,65 @@ dataTableSection =
                     , data = people
                     , rowKey = .name
                 }
+            ]
+        ]
+
+
+anchorSection : Element msg
+anchorSection =
+    let
+        anchorD =
+            Anchor.defaults
+
+        aLink title href children =
+            Anchor.Link
+                { title = Just title
+                , titleSlot = Nothing
+                , href = Just href
+                , children = children
+                , onClick = Nothing
+                , attributes = []
+                }
+
+        demoLinks =
+            [ aLink "Demos"
+                "#anchor-demos"
+                [ aLink "Basic" "#anchor-basic" []
+                , aLink "Block" "#anchor-block" []
+                , aLink "Affix" "#anchor-affix" []
+                ]
+            , aLink "API" "#anchor-api" []
+            ]
+    in
+    section "Anchor"
+        "In-page navigation — the active link is caller-owned scroll state."
+        [ demoRow "Rail (default)"
+            [ Anchor.view theme
+                { anchorD | activeHref = Just "#anchor-basic" }
+                demoLinks
+            ]
+        , demoRow "Block"
+            [ Anchor.view theme
+                { anchorD | type_ = Anchor.Block, activeHref = Just "#anchor-block" }
+                demoLinks
+            ]
+        , demoRow "No rail / no background"
+            [ Anchor.view theme
+                { anchorD | showRail = False }
+                demoLinks
+            , Anchor.view theme
+                { anchorD | showBackground = False, activeHref = Just "#anchor-api" }
+                demoLinks
+            ]
+        , demoRow "Affix wrap"
+            [ Element.el [ Element.height (Element.px 120), Element.width (Element.px 200) ]
+                (Anchor.view theme
+                    { anchorD
+                        | affix = Just { affixD | affixed = True, top = Just 88 }
+                        , activeHref = Just "#anchor-affix"
+                    }
+                    demoLinks
+                )
             ]
         ]
 
