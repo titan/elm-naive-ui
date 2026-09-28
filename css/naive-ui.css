@@ -8037,6 +8037,85 @@ transition: none;}.nui-root.nui-root .n-data-table.n-data-table--bottom-bordered
 
       direction: rtl;}
 
+/* ===== naive-ui: anchor ===== */
+.nui-root.nui-root .n-anchor {
+
+  position: relative;}.nui-root.nui-root .n-anchor:not(.n-anchor--block) {
+
+    padding-left: var(--n-rail-width);}.nui-root.nui-root .n-anchor:not(.n-anchor--block) .n-anchor-link + .n-anchor-link,
+.nui-root.nui-root .n-anchor:not(.n-anchor--block) .n-anchor-link > .n-anchor-link {
+
+          margin-top: .5em;}.nui-root.nui-root .n-anchor:not(.n-anchor--block) .n-anchor-link-background {
+
+      max-width: 0;
+      border-top-right-radius: 10.5px;
+      border-bottom-right-radius: 10.5px;}.nui-root.nui-root .n-anchor:not(.n-anchor--block):not(.n-anchor--show-rail) > .n-anchor-link {
+padding-left: 0;}.nui-root.nui-root .n-anchor.n-anchor--block .n-anchor-link {
+
+      margin-bottom: 4px;
+      padding: 2px 8px;
+      transition: background-color .3s var(--n-bezier);
+      background-color: transparent;
+      border-radius: var(--n-link-border-radius);}.nui-root.nui-root .n-anchor.n-anchor--block .n-anchor-link.n-anchor-link--active {
+
+        background-color: var(--n-link-color);}.nui-root.nui-root .n-anchor .n-anchor-link-background {
+
+    position: absolute;
+    left: calc(var(--n-rail-width) / 2);
+    width: 100%;
+    background-color: var(--n-link-color);
+    transition:
+      top .15s var(--n-bezier),
+      max-width .15s var(--n-bezier),
+      background-color .3s var(--n-bezier);}.nui-root.nui-root .n-anchor .n-anchor-rail {
+
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: var(--n-rail-width);
+    border-radius: calc(var(--n-rail-width) / 2);
+    overflow: hidden;
+    transition: background-color .3s var(--n-bezier);
+    background-color: var(--n-rail-color);}.nui-root.nui-root .n-anchor .n-anchor-rail .n-anchor-rail__bar {
+
+      position: absolute;
+      left: 0;
+      width: var(--n-rail-width);
+      height: 21px;
+      background-color: #0000;
+      transition: 
+        top .15s var(--n-bezier),
+        background-color .3s var(--n-bezier);}.nui-root.nui-root .n-anchor .n-anchor-rail .n-anchor-rail__bar.n-anchor-rail__bar--active {
+  background-color: var(--n-rail-color-active);}.nui-root.nui-root .n-anchor .n-anchor-link {
+
+    padding: var(--n-link-padding);
+    position: relative;
+    line-height: 1.5;
+    font-size: var(--n-link-font-size);
+    min-height: 1.5em;
+    display: flex;
+    flex-direction: column;}.nui-root.nui-root .n-anchor .n-anchor-link.n-anchor-link--active > .n-anchor-link__title {
+
+          color: var(--n-link-text-color-active);}.nui-root.nui-root .n-anchor .n-anchor-link .n-anchor-link__title {
+
+      outline: none;
+      max-width: 100%;
+      text-decoration: none;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      cursor: pointer;
+      display: inline-block;
+      padding-right: 16px;
+      transition: color .3s var(--n-bezier);
+      color: var(--n-link-text-color);}.nui-root.nui-root .n-anchor .n-anchor-link .n-anchor-link__title:hover,
+.nui-root.nui-root .n-anchor .n-anchor-link .n-anchor-link__title:focus {
+
+        color: var(--n-link-text-color-hover);}.nui-root.nui-root .n-anchor .n-anchor-link .n-anchor-link__title:active {
+
+        color: var(--n-link-text-color-pressed);}
+
 /* ===== elm-ui bridge =====
  *
  * Components are built from elm-ui elements, and elm-ui styles its own helper classes

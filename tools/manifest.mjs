@@ -502,5 +502,15 @@ export const components = {
       'data-table/src/styles/rtl.cssr.ts'
     ],
     theme: 'data-table/styles/light.ts'
+  },
+  anchor: {
+    // Whole .n-anchor family in one cssr: root (position relative + :not(--block)
+    // padding-left rail-width + sibling `+`/`>` link margin + link-background
+    // max-width-0 block + :not(--show-rail) link padding-left 0), --block link
+    // chip rules, absolute link-background / rail (+__bar 21px transparent,
+    // --active rail-color-active), link flex column + __title ellipsis colors.
+    // No rtl.cssr upstream.
+    cssr: ['anchor/src/styles/index.cssr.ts'],
+    theme: 'anchor/styles/light.ts'
   }
 }

@@ -145,7 +145,9 @@ const targets = {
   // The preview container carries the five preview vars (bezier + 4 toolbar).
   '.n-image-preview-container': true,
   // DataTable: all 47 vars sit on the root (size only swaps values, not class).
-  '.n-data-table': true
+  '.n-data-table': true,
+  // Anchor: all 12 vars sit on the root (block/rail only swaps classes).
+  '.n-anchor': true
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {

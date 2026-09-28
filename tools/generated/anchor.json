@@ -1,0 +1,78 @@
+{
+  "light": {
+    "linkFontSize": "13px",
+    "linkPadding": "0 0 0 16px",
+    "railWidth": "4px",
+    "borderRadius": "3px",
+    "railColor": "rgb(219, 219, 223)",
+    "railColorActive": "#18a058",
+    "linkColor": "rgba(24, 160, 88, 0.15)",
+    "linkTextColor": "rgb(51, 54, 57)",
+    "linkTextColorHover": "#36ad6a",
+    "linkTextColorPressed": "#0c7a43",
+    "linkTextColorActive": "#18a058"
+  },
+  "dark": {
+    "linkFontSize": "13px",
+    "linkPadding": "0 0 0 16px",
+    "railWidth": "4px",
+    "borderRadius": "3px",
+    "railColor": "rgba(255, 255, 255, 0.2)",
+    "railColorActive": "#63e2b7",
+    "linkColor": "rgba(99, 226, 183, 0.15)",
+    "linkTextColor": "rgba(255, 255, 255, 0.82)",
+    "linkTextColorHover": "#7fe7c4",
+    "linkTextColorPressed": "#5acea7",
+    "linkTextColorActive": "#63e2b7"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "railColorActive": "primaryColor",
+        "linkTextColor": "textColor2",
+        "linkTextColorHover": "primaryColorHover",
+        "linkTextColorPressed": "primaryColorPressed",
+        "linkTextColorActive": "primaryColor",
+        "borderRadius": "borderRadius",
+        "railColor": "railColor"
+      },
+      "seen": [
+        "railColorActive",
+        "linkColor",
+        "linkTextColor",
+        "linkTextColorHover",
+        "linkTextColorPressed",
+        "linkTextColorActive",
+        "borderRadius",
+        "railColor",
+        "linkFontSize",
+        "linkPadding",
+        "railWidth"
+      ]
+    },
+    "dark": {
+      "refs": {
+        "borderRadius": "borderRadius",
+        "railColor": "railColor",
+        "railColorActive": "primaryColor",
+        "linkTextColor": "textColor2",
+        "linkTextColorHover": "primaryColorHover",
+        "linkTextColorPressed": "primaryColorPressed",
+        "linkTextColorActive": "primaryColor"
+      },
+      "seen": [
+        "linkFontSize",
+        "linkPadding",
+        "railWidth",
+        "borderRadius",
+        "railColor",
+        "railColorActive",
+        "linkColor",
+        "linkTextColor",
+        "linkTextColorHover",
+        "linkTextColorPressed",
+        "linkTextColorActive"
+      ]
+    }
+  }
+}
