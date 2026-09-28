@@ -149,7 +149,11 @@ const targets = {
   // Anchor: all 12 vars sit on the root (block/rail only swaps classes).
   '.n-anchor': true,
   // Transfer: all 25 vars sit on the root (size only swaps values, not class).
-  '.n-transfer': true
+  '.n-transfer': true,
+  // TreeSelect: trigger root is BARE (no vars — everything rides the menu
+  // root and the embedded tree's scrollbar); the menu carries the 11 vars.
+  '.n-tree-select': false,
+  '.n-tree-select-menu': true
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {

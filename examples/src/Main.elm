@@ -98,6 +98,7 @@ import NUI.Timeline as Timeline
 import NUI.Tooltip as Tooltip
 import NUI.Transfer as Transfer
 import NUI.Tree as Tree
+import NUI.TreeSelect as TreeSelect
 import NUI.Types as T
 import NUI.Typography as Typo
 import NUI.Watermark as Watermark
@@ -762,6 +763,7 @@ body =
     , dataTableSection
     , anchorSection
     , transferSection
+    , treeSelectSection
     , rtlSection
     , themeSection
     ]
@@ -4939,6 +4941,131 @@ transferSection =
                     , selectAllText = Just "Pick everything"
                     , clearText = Just "Drop everything"
                 }
+            ]
+        ]
+
+
+treeSelectSection : Element msg
+treeSelectSection =
+    let
+        node key label disabled kids =
+            Tree.TreeOption
+                { key = key
+                , label = label
+                , disabled = disabled
+                , checkboxDisabled = False
+                , isLeaf = kids == Nothing
+                , children = kids
+                , prefix = []
+                , suffix = []
+                }
+
+        data =
+            [ node "o1"
+                "Outfield"
+                False
+                (Just
+                    [ node "o1-1" "Left" False (Just [ node "o1-3" "Bench" False Nothing ])
+                    , node "o1-2" "Right" False Nothing
+                    ]
+                )
+            , node "o2" "Pitcher" False Nothing
+            , node "o3" "Disabled" True Nothing
+            ]
+
+        tsD =
+            TreeSelect.defaults
+
+        menuBox =
+            Element.width (Element.px 260)
+    in
+    section "TreeSelect"
+        "A selection trigger over a tree menu — show, positioning and the pattern/expand state are caller-owned."
+        [ demoRow "Basic single"
+            [ Element.column [ Element.spacing 8 ]
+                [ TreeSelect.view theme
+                    { tsD
+                        | options = data
+                        , value = SelectMenu.Single (Just "o1-1")
+                        , pendingKey = Just "o1-1"
+                        , expandedKeys = [ "o1" ]
+                    }
+                , Element.el [ menuBox ]
+                    (TreeSelect.menu theme
+                        { tsD
+                            | options = data
+                            , value = SelectMenu.Single (Just "o1-1")
+                            , pendingKey = Just "o1-1"
+                            , expandedKeys = [ "o1", "o1-1" ]
+                        }
+                    )
+                ]
+            ]
+        , demoRow "Multiple + cascade + checkable"
+            [ Element.column [ Element.spacing 8 ]
+                [ TreeSelect.view theme
+                    { tsD
+                        | options = data
+                        , multiple = True
+                        , checkable = True
+                        , cascade = True
+                        , value = SelectMenu.Multiple [ "o1-1", "o2" ]
+                        , maxTagCount = Just 2
+                    }
+                , Element.el [ menuBox ]
+                    (TreeSelect.menu theme
+                        { tsD
+                            | options = data
+                            , multiple = True
+                            , checkable = True
+                            , cascade = True
+                            , value = SelectMenu.Multiple [ "o1-1", "o2" ]
+                            , expandedKeys = [ "o1" ]
+                        }
+                    )
+                ]
+            ]
+        , demoRow "Filterable + showPath"
+            [ Element.column [ Element.spacing 8 ]
+                [ TreeSelect.view theme
+                    { tsD
+                        | options = data
+                        , filterable = True
+                        , showPath = True
+                        , value = SelectMenu.Single (Just "o1-3")
+                        , expandedKeys = [ "o1", "o1-1" ]
+                    }
+                , Element.el [ menuBox ]
+                    (TreeSelect.menu theme
+                        { tsD
+                            | options = data
+                            , filterable = True
+                            , pattern = "eft"
+                            , expandedKeys = [ "o1" ]
+                        }
+                    )
+                ]
+            ]
+        , demoRow "Slots + empty"
+            [ Element.column [ Element.spacing 8 ]
+                [ TreeSelect.view theme
+                    { tsD
+                        | options = data
+                        , status = Just BaseSelection.Error
+                        , clearable = True
+                        , hover = True
+                        , value = SelectMenu.Single (Just "o2")
+                    }
+                , Element.el [ menuBox ]
+                    (TreeSelect.menu theme
+                        { tsD
+                            | header = Just (Element.text "Header slot")
+                            , action = Just (Element.text "Action slot")
+                            , empty = Just (Element.text "No data")
+                            , options = []
+                        }
+                    )
+                ]
             ]
         ]
 

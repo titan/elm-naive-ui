@@ -56,6 +56,7 @@ import NUI.Checkbox
 import NUI.Empty
 import NUI.Internal as I
 import NUI.Internal.Loading as Loading
+import NUI.Scrollbar
 import NUI.Theme as Theme
 import NUI.Theme.Tree as TreeTheme
 import Svg
@@ -200,12 +201,20 @@ type alias Options msg =
     , spinRadius : Maybe Float
     , empty : Maybe (Element.Element msg)
     , attributes : List (Element.Attribute msg)
+    , internalScrollable : Bool
+    , internalScrollablePadding : Maybe String
+    , internalFocusable : Bool
+    , internalCheckboxFocusable : Bool
+    , renderEmpty : Maybe (Element.Element msg)
     }
 
 
 {-| Upstream prop defaults (`treeSharedProps` + `treeProps`): no state keys,
 checkable off, cascade off, `All` strategy, checkboxes on the left,
-selectable single with cancel, indent 24, LTR.
+selectable single with cancel, indent 24, LTR. The four internal seams carry
+upstream's defaults (`internalFocusable` / `internalCheckboxFocusable` true,
+no scrollbar wrap, no whole-render empty override) — only a `tree-select`
+menu host flips them.
 -}
 defaults : Options msg
 defaults =
@@ -249,6 +258,11 @@ defaults =
     , spinRadius = Nothing
     , empty = Nothing
     , attributes = []
+    , internalScrollable = False
+    , internalScrollablePadding = Nothing
+    , internalFocusable = True
+    , internalCheckboxFocusable = True
+    , renderEmpty = Nothing
     }
 
 
@@ -316,43 +330,94 @@ view theme opts =
 
         visible =
             flatten opts.expandedKeys filterInfo.displayTree
-    in
-    Element.column
-        (rootAttributes theme opts)
-        (if visible == [] then
-            [ emptyNode theme opts ]
 
-         else
+        rows =
             List.map (rowNode theme opts state) visible
-        )
+    in
+    if visible == [] && opts.renderEmpty /= Nothing then
+        -- upstream `internalRenderEmpty` replaces the WHOLE render — no
+        -- `.n-scrollbar`, no `.n-tree` root (`Tree.tsx:1750-1753`)
+        Maybe.withDefault Element.none opts.renderEmpty
+
+    else if opts.internalScrollable then
+        scrollableRoot theme opts state visible
+
+    else
+        Element.column
+            (rootAttributes theme opts)
+            (if visible == [] then
+                [ emptyNode theme opts ]
+
+             else
+                rows
+            )
+
+
+{-| The `internalScrollable` branch (`Tree.tsx:1860-1880`): the whole tree
+root — classes, tabindex, inline vars — moves ONTO the scrollbar's root via
+fallthrough (upstream `<NxScrollbar class={treeClass} tabindex={tabindex}
+style={cssVars}>`), the nodes wrap in one attribute-less `div` (the
+`selfElRef` drag-leave host) inside the content, and the content carries
+`padding: <internalScrollablePadding>`. Vue merges the scrollbar's own
+vars with the fallthrough style (fallthrough last) — `rootStyle` carries
+the tree's vars after the scrollbar's own set, the exact merge order. The
+inner `div` rides the scrollbar's `embedChild` display-contents seam (the
+`NUI.Transfer` list-content precedent).
+-}
+scrollableRoot : Theme.Theme -> Options msg -> RowState -> List (FlatNode msg) -> Element.Element msg
+scrollableRoot theme opts state visible =
+    let
+        d =
+            NUI.Scrollbar.defaults
+    in
+    NUI.Scrollbar.view theme
+        { d
+            | extraClasses = treeClasses opts
+            , contentStyle = Maybe.map (\padding -> "padding:" ++ padding) opts.internalScrollablePadding
+            , rootStyle = Just (I.renderVars (cssVars theme))
+            , attributes =
+                (if opts.internalFocusable && not opts.disabled then
+                    [ Element.htmlAttribute (HA.tabindex 0) ]
+
+                 else
+                    []
+                )
+                    ++ opts.attributes
+        }
+        [ Element.column [] (List.map (rowNode theme opts state) visible) ]
 
 
 {-| The root's class / `tabindex` / var attribute list (`Tree.tsx:1774-1778,
 1886-1891`): the five modifiers — `--block-node` fires on `blockLine` too,
 exactly upstream's `(blockLine || blockNode) &&` — the `tabindex 0` focus
 seam (upstream `mergedFocusable = internalFocusable && !disabled`), and the
-inline vars.
+inline vars. `treeClasses` is shared with the `internalScrollable` branch,
+where the same list rides the scrollbar root instead.
 -}
 rootAttributes : Theme.Theme -> Options msg -> List (Element.Attribute msg)
 rootAttributes theme opts =
-    [ I.classes
-        ([ "n-tree"
-         ]
-            ++ I.classIf opts.rtl "n-tree--rtl"
-            ++ I.classIf opts.checkable "n-tree--checkable"
-            ++ I.classIf (opts.blockLine || opts.blockNode) "n-tree--block-node"
-            ++ I.classIf opts.blockLine "n-tree--block-line"
-            ++ I.classIf opts.ellipsis "n-tree--ellipsis"
-        )
-    ]
-        ++ (if opts.disabled then
-                []
+    [ I.classes (treeClasses opts) ]
+        ++ (if opts.internalFocusable && not opts.disabled then
+                [ Element.htmlAttribute (HA.tabindex 0) ]
 
             else
-                [ Element.htmlAttribute (HA.tabindex 0) ]
+                []
            )
         ++ [ I.cssVars (cssVars theme) ]
         ++ opts.attributes
+
+
+{-| The `.n-tree` class list with its four state modifiers, in upstream
+declaration order (`Tree.tsx:1774-1778`).
+-}
+treeClasses : Options msg -> List String
+treeClasses opts =
+    [ "n-tree" ]
+        ++ I.classIf opts.rtl "n-tree--rtl"
+        ++ I.classIf opts.checkable "n-tree--checkable"
+        ++ I.classIf (opts.blockLine || opts.blockNode) "n-tree--block-node"
+        ++ I.classIf opts.blockLine "n-tree--block-line"
+        ++ I.classIf opts.ellipsis "n-tree--ellipsis"
 
 
 {-| The root's inline `--n-*` set — upstream `cssVarsRef` (`Tree.tsx:1676`):
@@ -638,7 +703,9 @@ loadingIconNode opts =
 (`width: indent`, `--right` on the right) around an `NUI.Checkbox` —
 `disabled` merges tree, node and `checkboxDisabled`
 (`TreeNode.tsx:489-491`), checked / indeterminate come from the normalized
-state, focusable on (upstream `internalCheckboxFocusable` default).
+state, `focusable` from the `internalCheckboxFocusable` seam
+(`TreeNode.tsx:428`; on by default — a `tree-select` menu host turns it
+off).
 -}
 checkboxNode : Theme.Theme -> Options msg -> RowState -> FlatNode msg -> Bool -> Bool -> Element.Element msg
 checkboxNode theme opts state flat checkable disabled =
@@ -667,7 +734,7 @@ checkboxNode theme opts state flat checkable disabled =
                     | checked = List.member key state.checked
                     , indeterminate = List.member key state.indeterminate
                     , disabled = disabled || raw.checkboxDisabled
-                    , focusable = True
+                    , focusable = opts.internalCheckboxFocusable
                 }
                 []
             )

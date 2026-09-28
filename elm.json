@@ -92,6 +92,7 @@
     "NUI.Tag",
     "NUI.Transfer",
     "NUI.Tree",
+    "NUI.TreeSelect",
     "NUI.Watermark",
     "NUI.Theme",
     "NUI.Theme.Alert",

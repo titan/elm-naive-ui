@@ -89,6 +89,7 @@ bridge, tests).
 | `NUI.Cascader`    | ✅ |
 | `NUI.Tree`        | ✅ |
 | `NUI.Transfer`    | ✅ |
+| `NUI.TreeSelect` | ✅ |
 | `NUI.Table`       | ✅ |
 | `NUI.Watermark`   | ✅ |
 | `NUI.Menu`        | ✅ |
