@@ -42,6 +42,9 @@ const ALLOW = new Set([
   // --horizontal/--collapsed/--responsive have rules; --inverted is
   // vars-only upstream — no class exists to emit).
   'n-menu--vertical',
+  // TransferListItem.tsx :70-72 emits the side modifier on every item, but only
+  // --source has a rule (cursor: pointer); --target carries none.
+  'n-transfer-list-item--target',
   // Tree.tsx emits --checkable on the root; no rule targets it (checkable
   // gates whether the checkbox column renders at all).
   'n-tree--checkable',

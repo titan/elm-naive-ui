@@ -96,6 +96,7 @@ import NUI.Theme as Theme exposing (Theme)
 import NUI.Thing as Thing
 import NUI.Timeline as Timeline
 import NUI.Tooltip as Tooltip
+import NUI.Transfer as Transfer
 import NUI.Tree as Tree
 import NUI.Types as T
 import NUI.Typography as Typo
@@ -760,6 +761,7 @@ body =
     , dialogSection
     , dataTableSection
     , anchorSection
+    , transferSection
     , rtlSection
     , themeSection
     ]
@@ -4877,6 +4879,65 @@ dataTableSection =
                         ]
                     , data = people
                     , rowKey = .name
+                }
+            ]
+        ]
+
+
+transferSection : Element msg
+transferSection =
+    let
+        trD =
+            Transfer.defaults
+
+        opts =
+            [ { label = "Option 1", value = "1", disabled = False }
+            , { label = "Option 2", value = "2", disabled = False }
+            , { label = "Option 3", value = "3", disabled = False }
+            , { label = "Disabled", value = "4", disabled = True }
+            ]
+    in
+    section "Transfer"
+        "Two lists with select-all / clear — value and patterns are caller-owned."
+        [ demoRow "Basic"
+            [ Transfer.view theme
+                { trD
+                    | options = opts
+                    , value = [ "2" ]
+                    , sourceTitle = Just "Source"
+                    , targetTitle = Just "Target"
+                }
+            ]
+        , demoRow "Filterable + large"
+            [ Transfer.view theme
+                { trD
+                    | options = opts
+                    , value = [ "1", "4" ]
+                    , size = T.Large
+                    , sourceFilterable = True
+                    , targetFilterable = True
+                    , sourceFilterPlaceholder = Just "Search"
+                }
+            ]
+        , demoRow "Disabled + empty target"
+            [ Transfer.view theme
+                { trD
+                    | options = opts
+                    , disabled = True
+                    , sourceTitle = Just "Source"
+                }
+            ]
+        , demoRow "Empty options"
+            [ Transfer.view theme
+                { trD | sourceTitle = Just "Source", targetTitle = Just "Target" }
+            ]
+        , demoRow "All checked + custom texts"
+            [ Transfer.view theme
+                { trD
+                    | options = opts
+                    , value = [ "1", "2", "3", "4" ]
+                    , selectAllText = Just "Pick everything"
+                    , clearText = Just "Drop everything"
                 }
             ]
         ]

@@ -81,6 +81,7 @@ type alias Options msg =
     , iconPlacement : IconPlacement
     , onPress : Maybe msg
     , rtl : Bool
+    , attributes : List (Element.Attribute msg)
     }
 
 
@@ -108,6 +109,7 @@ defaults =
     , iconPlacement = IconLeft
     , onPress = Nothing
     , rtl = False
+    , attributes = []
     }
 
 
@@ -209,6 +211,7 @@ view theme opts children =
         (I.classes classes
             :: I.cssVars (cssVars theme opts v)
             :: interactive
+            ++ opts.attributes
         )
         (body ++ borderEls)
 

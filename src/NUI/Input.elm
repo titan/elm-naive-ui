@@ -135,6 +135,7 @@ type alias Options msg =
     , minlength : Maybe Int
     , prefix : Maybe (Element msg)
     , suffix : Maybe (Element msg)
+    , clearPlaceholder : Maybe (Html.Html msg)
     , rtl : Bool
     , loading : Bool
     , inputAttributes : List (Html.Attribute msg)
@@ -162,6 +163,7 @@ defaults =
     , minlength = Nothing
     , prefix = Nothing
     , suffix = Nothing
+    , clearPlaceholder = Nothing
     , rtl = False
     , loading = False
     , inputAttributes = []
@@ -386,7 +388,7 @@ clearArea opts =
                     clearButton opts
 
                   else
-                    clearPlaceholder
+                    clearPlaceholder opts
                 ]
         ]
 
@@ -431,15 +433,21 @@ clearClick opts =
             []
 
 
-clearPlaceholder : Html msg
-clearPlaceholder =
+clearPlaceholder : Options msg -> Html msg
+clearPlaceholder opts =
     Html.div
         ([ HA.class "n-base-clear__placeholder"
          , HA.style "display" "flex"
          ]
             ++ centeredStyle
         )
-        []
+        (case opts.clearPlaceholder of
+            Just icon ->
+                [ icon ]
+
+            Nothing ->
+                []
+        )
 
 
 centeredStyle : List (Html.Attribute msg)
