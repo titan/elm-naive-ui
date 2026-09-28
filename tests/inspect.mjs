@@ -10051,6 +10051,137 @@ dEq(
   })()
 )
 
+// Anchor ----------------------------------------------------------------------
+// Pins derive from BaseAnchor.tsx render (class order, mergedShowRail =
+// !isBlockType && showRail, background = mergedShowRail && showBackground,
+// style-less bar/background) + Link.tsx (real <a>, title attr via
+// getTitleAttribute, activeRef truthy-href equality) + Anchor.spec.ts.
+const anchorRoot = (id) => doc.querySelector('#' + id + ' .n-anchor')
+dEq(
+  'DOM: Anchor default root carries --show-rail (mergedShowRail = !block && showRail)',
+  'n-anchor n-anchor--show-rail',
+  nClassesStr(anchorRoot('live-anchor'))
+)
+dTrue(
+  'DOM: Anchor rail + bar + background all render (spec :14/:20)',
+  !!doc.querySelector('#live-anchor .n-anchor-rail') &&
+    !!doc.querySelector('#live-anchor .n-anchor-rail__bar') &&
+    !!doc.querySelector('#live-anchor .n-anchor-link-background'),
+  nClassesStr(anchorRoot('live-anchor'))
+)
+dTrue(
+  'DOM: Anchor bar has NO --active without activeHref (activeHrefRef starts null)',
+  !!doc.querySelector('#live-anchor .n-anchor-rail__bar') &&
+    !doc.querySelector('#live-anchor .n-anchor-rail__bar').classList.contains('n-anchor-rail__bar--active'),
+  doc.querySelector('#live-anchor .n-anchor-rail__bar').getAttribute('class')
+)
+dTrue(
+  'DOM: Anchor bar and background render style-less (upstream writes their geometry imperatively)',
+  doc.querySelector('#live-anchor .n-anchor-rail__bar').hasAttribute('style') === false &&
+    doc.querySelector('#live-anchor .n-anchor-link-background').hasAttribute('style') === false,
+  [
+    doc.querySelector('#live-anchor .n-anchor-rail__bar').getAttribute('style'),
+    doc.querySelector('#live-anchor .n-anchor-link-background').getAttribute('style')
+  ].join('|')
+)
+const anchorTitle = doc.querySelector('#live-anchor .n-anchor-link__title')
+dEq('DOM: Anchor title <a> href attr (spec :60)', '#demos', anchorTitle.getAttribute('href'))
+dEq('DOM: Anchor title <a> title attr (spec :62)', 'Demos', anchorTitle.getAttribute('title'))
+dEq('DOM: Anchor title renders a real <a> element (Link.tsx)', 'A', anchorTitle.tagName)
+dTrue(
+  'DOM: Anchor nested links are direct children of their link (cssr `>` margin rule)',
+  !!doc.querySelector('#live-anchor .n-anchor-link > .n-anchor-link'),
+  'missing'
+)
+dEq(
+  'DOM: Anchor activeHref="#basic" lights exactly one link',
+  1,
+  doc.querySelectorAll('#live-anchor-active .n-anchor-link--active').length
+)
+dTrue(
+  'DOM: Anchor activeHref !== null lights the bar too (rail __bar--active)',
+  doc.querySelector('#live-anchor-active .n-anchor-rail__bar').classList.contains('n-anchor-rail__bar--active'),
+  doc.querySelector('#live-anchor-active .n-anchor-rail__bar').getAttribute('class')
+)
+dEq(
+  'DOM: Anchor the active link is the href match (#basic, not its #demos parent)',
+  '#basic',
+  doc.querySelector('#live-anchor-active .n-anchor-link--active .n-anchor-link__title').getAttribute('href')
+)
+dEq(
+  'DOM: Anchor block type — --block and NO --show-rail (spec :42)',
+  'n-anchor n-anchor--block',
+  nClassesStr(anchorRoot('live-anchor-block'))
+)
+dTrue(
+  'DOM: Anchor block renders neither rail nor background (mergedShowRail false)',
+  !doc.querySelector('#live-anchor-block .n-anchor-rail') &&
+    !doc.querySelector('#live-anchor-block .n-anchor-link-background'),
+  'none'
+)
+dEq(
+  'DOM: Anchor showRail=false → bare n-anchor (spec :38 rail default true)',
+  'n-anchor',
+  nClassesStr(anchorRoot('live-anchor-norail'))
+)
+dTrue(
+  'DOM: Anchor showRail=false drops rail AND background (background rides mergedShowRail)',
+  !doc.querySelector('#live-anchor-norail .n-anchor-rail') &&
+    !doc.querySelector('#live-anchor-norail .n-anchor-link-background'),
+  'none'
+)
+dTrue(
+  'DOM: Anchor showBackground=false keeps the rail, drops only the background',
+  !!doc.querySelector('#live-anchor-nobg .n-anchor-rail') &&
+    !doc.querySelector('#live-anchor-nobg .n-anchor-link-background'),
+  'none'
+)
+const edgeTitles = [...doc.querySelectorAll('#live-anchor-edge .n-anchor-link__title')]
+dEq(
+  'DOM: Anchor title="" omits the title attribute (getTitleAttribute "" → undefined)',
+  null,
+  edgeTitles[0].getAttribute('title')
+)
+dEq('DOM: Anchor title="" still renders the empty content', '', edgeTitles[0].textContent)
+dTrue(
+  'DOM: Anchor hrefless link renders a non-<a> title (Breadcrumb precedent)',
+  edgeTitles[1].tagName !== 'A' && edgeTitles[1].hasAttribute('href') === false,
+  edgeTitles[1].tagName + '|' + edgeTitles[1].getAttribute('href')
+)
+dEq(
+  'DOM: Anchor href="" renders the literal empty href attr (Vue href={""})',
+  '',
+  edgeTitles[2].getAttribute('href')
+)
+dTrue(
+  'DOM: Anchor activeHref=Just "" lights the bar (!== null) but NO link ("" is falsy in activeRef)',
+  doc.querySelector('#live-anchor-edge .n-anchor-rail__bar').classList.contains('n-anchor-rail__bar--active') &&
+    doc.querySelectorAll('#live-anchor-edge .n-anchor-link--active').length === 0,
+  doc.querySelector('#live-anchor-edge .n-anchor-rail__bar').getAttribute('class')
+)
+dEq(
+  'DOM: Anchor titleSlot overrides the content; the title attr stays from the prop',
+  'Custom Title|Slotted',
+  [edgeTitles[3].textContent, edgeTitles[3].getAttribute('title')].join('|')
+)
+dTrue(
+  'DOM: Anchor affix wraps .n-affix > .n-anchor (spec :32)',
+  !!doc.querySelector('#live-anchor-affix .n-affix .n-anchor'),
+  'missing'
+)
+dTrue(
+  'DOM: Anchor internalScrollable wraps .n-scrollbar > .n-anchor (BaseAnchor render)',
+  !!doc.querySelector('#live-anchor-scrollable .n-scrollbar .n-anchor'),
+  'missing'
+)
+const anchorStyle = anchorRoot('live-anchor') ? anchorRoot('live-anchor').getAttribute('style') || '' : ''
+dTrue(
+  'DOM: Anchor root style carries rail-width 4px + the changeColor linkColor literal (cssVarsRef)',
+  anchorStyle.includes('--n-rail-width:4px') &&
+    anchorStyle.includes('--n-link-color:rgba(24, 160, 88, 0.15)'),
+  anchorStyle
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

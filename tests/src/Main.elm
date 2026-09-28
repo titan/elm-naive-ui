@@ -19,6 +19,7 @@ import Html exposing (Html)
 import Html.Attributes as HA
 import NUI.Affix as Affix
 import NUI.Alert as Alert
+import NUI.Anchor as Anchor
 import NUI.AutoComplete as AutoComplete
 import NUI.Avatar as Avatar
 import NUI.AvatarGroup as AvatarGroup
@@ -1116,6 +1117,78 @@ affixLiveOpts =
             Affix.defaults
     in
     { d | affixed = True, top = Just 12, position = Affix.Absolute }
+
+
+
+-- ANCHOR FIXTURES — pin derivation: BaseAnchor.tsx render (class order,
+-- mergedShowRail = !isBlockType && showRail, background = mergedShowRail &&
+-- showBackground) + Link.tsx (activeRef truthy-href equality, title attr via
+-- getTitleAttribute "" → undefined) + AnchorAdapter.tsx cssVarsRef order.
+
+
+anchorLink : String -> String -> List (Anchor.Link msg) -> Anchor.Link msg
+anchorLink title href children =
+    Anchor.Link
+        { title = Just title
+        , titleSlot = Nothing
+        , href = Just href
+        , children = children
+        , onClick = Nothing
+        , attributes = []
+        }
+
+
+anchorLiveOpts : Anchor.Options msg
+anchorLiveOpts =
+    Anchor.defaults
+
+
+anchorLiveLinks : List (Anchor.Link msg)
+anchorLiveLinks =
+    [ anchorLink "Demos"
+        "#demos"
+        [ anchorLink "Basic" "#basic" []
+        , anchorLink "Affix" "#affix" []
+        ]
+    , anchorLink "API" "#api" []
+    ]
+
+
+anchorEdgeLinks : List (Anchor.Link msg)
+anchorEdgeLinks =
+    [ Anchor.Link
+        { title = Just ""
+        , titleSlot = Nothing
+        , href = Just "#empty-title"
+        , children = []
+        , onClick = Nothing
+        , attributes = []
+        }
+    , Anchor.Link
+        { title = Just "Hrefless"
+        , titleSlot = Nothing
+        , href = Nothing
+        , children = []
+        , onClick = Nothing
+        , attributes = []
+        }
+    , Anchor.Link
+        { title = Just "EmptyHref"
+        , titleSlot = Nothing
+        , href = Just ""
+        , children = []
+        , onClick = Nothing
+        , attributes = []
+        }
+    , Anchor.Link
+        { title = Just "Slotted"
+        , titleSlot = Just (Element.text "Custom Title")
+        , href = Just "#slotted"
+        , children = []
+        , onClick = Nothing
+        , attributes = []
+        }
+    ]
 
 
 countdownLiveOpts : Countdown.Options msg
@@ -10207,6 +10280,85 @@ checks =
             |> List.map (\state -> ( state.columnKey, state.order ))
         )
 
+    -- Anchor — single batch. Pins derive from AnchorAdapter.tsx's cssVarsRef
+    -- (order + light.ts self / _common.ts literals + the generated common
+    -- mappings), baseAnchorProps/anchorProps defaults, and the changeColor
+    -- materialization the extractor bakes into the generated theme.
+    -- =====================================================================
+    , eq "anchor cssVars: the full 12-pair light set in cssVarsRef byte order"
+        [ ( "--n-link-border-radius", "3px" )
+        , ( "--n-link-color", "rgba(24, 160, 88, 0.15)" )
+        , ( "--n-link-font-size", "13px" )
+        , ( "--n-link-text-color", "rgb(51, 54, 57)" )
+        , ( "--n-link-text-color-hover", "#36ad6a" )
+        , ( "--n-link-text-color-active", "#18a058" )
+        , ( "--n-link-text-color-pressed", "#0c7a43" )
+        , ( "--n-link-padding", "0 0 0 16px" )
+        , ( "--n-bezier", "cubic-bezier(.4, 0, .2, 1)" )
+        , ( "--n-rail-color", "rgb(219, 219, 223)" )
+        , ( "--n-rail-color-active", "#18a058" )
+        , ( "--n-rail-width", "4px" )
+        ]
+        (Anchor.cssVarsFor Theme.default)
+    , eq "anchor cssVars dark: linkColor dark literal + common-mapped peers (light.ts self over commonDark)"
+        [ ( "--n-link-color", "rgba(99, 226, 183, 0.15)" )
+        , ( "--n-link-text-color", "rgba(255, 255, 255, 0.82)" )
+        , ( "--n-rail-color", "rgba(255, 255, 255, 0.2)" )
+        , ( "--n-rail-color-active", "#63e2b7" )
+        ]
+        (Anchor.cssVarsFor Theme.dark
+            |> List.filter
+                (\( k, _ ) ->
+                    List.member k
+                        [ "--n-link-color"
+                        , "--n-link-text-color"
+                        , "--n-rail-color"
+                        , "--n-rail-color-active"
+                        ]
+                )
+        )
+    , eq "anchor cssVars setPrimary: railColorActive follows common.primaryColor; linkColor stays the baked changeColor literal"
+        [ Just "#ff0000", Just "rgba(24, 160, 88, 0.15)" ]
+        [ lookup "--n-rail-color-active" (Anchor.cssVarsFor (Theme.setPrimary "#ff0000" Theme.default))
+        , lookup "--n-link-color" (Anchor.cssVarsFor (Theme.setPrimary "#ff0000" Theme.default))
+        ]
+    , eq "anchor defaults: type rail, showRail/showBackground true, activeHref/internalScrollable/affix off (baseAnchorProps + anchorProps affix Boolean)"
+        [ "Rail", "True", "True", "Nothing", "False", "Nothing" ]
+        [ case Anchor.defaults.type_ of
+            Anchor.Rail ->
+                "Rail"
+
+            Anchor.Block ->
+                "Block"
+        , if Anchor.defaults.showRail then
+            "True"
+
+          else
+            "False"
+        , if Anchor.defaults.showBackground then
+            "True"
+
+          else
+            "False"
+        , case Anchor.defaults.activeHref of
+            Just _ ->
+                "Just"
+
+            Nothing ->
+                "Nothing"
+        , if Anchor.defaults.internalScrollable then
+            "True"
+
+          else
+            "False"
+        , case Anchor.defaults.affix of
+            Just _ ->
+                "Just"
+
+            Nothing ->
+                "Nothing"
+        ]
+
     -- The spec `multiple sorter` walk (DataTable.spec.tsx:379-646) —
     -- every expected array re-derived from the spec's checkScoreIsMatched
     -- bytes (ties fall through by multiple priority 3 > 2 > 1; JS sort is
@@ -11117,6 +11269,45 @@ liveNodes =
                     (PageHeader.view Theme.default pageHeaderLiveOpts [ Element.text "Body" ])
                 , Element.el [ Element.htmlAttribute (HA.id "live-affix") ]
                     (Affix.view Theme.default affixLiveOpts [ Element.text "Sticky" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-anchor") ]
+                    (Anchor.view Theme.default Anchor.defaults anchorLiveLinks)
+                , Element.el [ Element.htmlAttribute (HA.id "live-anchor-active") ]
+                    (Anchor.view Theme.default
+                        { anchorLiveOpts | activeHref = Just "#basic" }
+                        anchorLiveLinks
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-anchor-block") ]
+                    (Anchor.view Theme.default
+                        { anchorLiveOpts | type_ = Anchor.Block }
+                        anchorLiveLinks
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-anchor-norail") ]
+                    (Anchor.view Theme.default
+                        { anchorLiveOpts | showRail = False }
+                        anchorLiveLinks
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-anchor-nobg") ]
+                    (Anchor.view Theme.default
+                        { anchorLiveOpts | showBackground = False, activeHref = Just "#demos" }
+                        anchorLiveLinks
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-anchor-edge") ]
+                    (Anchor.view Theme.default
+                        { anchorLiveOpts | activeHref = Just "" }
+                        anchorEdgeLinks
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-anchor-affix") ]
+                    (Anchor.view Theme.default
+                        { anchorLiveOpts
+                            | affix = Just { affixLiveOpts | position = Affix.Fixed, top = Just 88 }
+                        }
+                        anchorLiveLinks
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-anchor-scrollable") ]
+                    (Anchor.view Theme.default
+                        { anchorLiveOpts | internalScrollable = True }
+                        anchorLiveLinks
+                    )
                 , Element.el [ Element.htmlAttribute (HA.id "live-countdown") ]
                     (Countdown.view Theme.default countdownLiveOpts [])
                 , Element.el [ Element.htmlAttribute (HA.id "live-countdown-3") ]

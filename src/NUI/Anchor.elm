@@ -2,6 +2,7 @@ module NUI.Anchor exposing
     ( Link(..)
     , Options
     , Type(..)
+    , cssVarsFor
     , defaults
     , view
     )
