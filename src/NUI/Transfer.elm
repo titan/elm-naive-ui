@@ -44,7 +44,9 @@ input, and the item list (`__background` / `__checkbox` / `__label` /
     `size === 'large' ? 'small' : 'tiny'`). Upstream has no `tiny` transfer;
     the port's wider `Size` clamps `Tiny` to the small var set.
   - **Titles.** An empty-string title renders NO `__title` div (upstream's
-    `title &&` guard — `''` is falsy).
+    `title &&` guard — `''` is falsy). Function-valued titles
+    (`[String, Function]` upstream) are not modelled — `Maybe String`
+    only; a custom node is the caller's `renderSourceLabel`.
   - **Locale bytes are the defaults.** The header button labels default to
     the enUS `'Select all'` / `'Unselect all'` / `'Clear'` and `__extra` to
     `'Total {n} items'` / `'{n} items selected'` (upstream injects locale
@@ -62,12 +64,21 @@ input, and the item list (`__background` / `__checkbox` / `__label` /
   - **The default filter** matches upstream's: an empty pattern passes
     everything; otherwise a lowercase `contains` over the label. A custom
     `filter` receives the side (`Source` / `Target`).
-  - **Duplicate option values** resolve first-wins (upstream's
-    `Map.set`-then-lookup); `value` entries without an option are dropped
+  - **Duplicate option values** resolve last-wins (upstream's forEach +
+    `Map.set` overwrite); `value` entries without an option are dropped
     from the target list, exactly upstream's `optionMap.get(v)` miss.
+    Duplicate `value` ENTRIES are not deduped (upstream's three header ops
+    start from `new Set(value)`; the port's list ops keep the raw order —
+    degenerate-input divergence, same observable for duplicate-free input).
   - **`headerColor`** is generated in `NUI.Theme.Transfer` (the extractor
     executes upstream's `composite(cardColor, tableHeaderColor)`) but no
     css var consumes it — unused upstream too.
+  - **Icon bytes.** The close icon is the generic `CloseIcon` `d` verbatim;
+    the search icon's `d` is whitespace-normalized (upstream wraps the path
+    data across lines — SVG-path-grammar identical, not byte-identical).
+    The close button omits `NBaseClose`'s `onMousedown` preventDefault
+    (a focus-steal guard for `focusable=false` — no serialized-DOM
+    difference; `addEventListener` only).
 
 -}
 
@@ -209,16 +220,8 @@ derive : Options msg -> Derived
 derive opts =
     let
         optionMap =
-            List.foldl
-                (\o m ->
-                    if Dict.member o.value m then
-                        m
-
-                    else
-                        Dict.insert o.value o m
-                )
-                Dict.empty
-                opts.options
+            -- Upstream forEach+Map.set: a duplicate value resolves LAST-wins.
+            List.foldl (\o m -> Dict.insert o.value o m) Dict.empty opts.options
 
         targetValueSet =
             Set.fromList opts.value
@@ -720,7 +723,7 @@ closeIcon =
             [ HA.attribute "viewBox" "0 0 12 12"
             , HA.attribute "version" "1.1"
             , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
-            , HA.attribute "aria-hidden" ""
+            , HA.attribute "aria-hidden" "true"
             ]
             [ Svg.node "g"
                 [ HA.attribute "stroke" "none"
@@ -740,7 +743,7 @@ closeIcon =
 
 closePath : String
 closePath =
-    "M2.08859116,2.2156945 L2.14644661,2.14644661 C2.32001296,1.97288026 2.58943736,1.95359511 2.7843055,2.08859116 L2.85355339,2.14644661 L6,5.293 L9.14644661,2.14644661 C9.34170876,1.95118476 9.65829124,1.95118476 9.85355339,2.14644661 C10.0488155,2.34170876 10.0488155,2.65829124 9.85355339,2.85355339 L6.707,6 L9.85355339,9.14644661 C10.0271197,9.32001296 10.0464049,9.58943736 9.91140884,9.7843055 L9.85355339,9.85355339 C9.67998704,10.0271197 9.41056264,10.0464049 9.2156945,9.91140884 L9.14644661,9.85355339 L6,6.707 L2.85355339,9.85355339 C2.65829124,10.0488155 2.34170876,10.0488155 2.14644661,9.85355339 C1.95118476,9.65829124 1.95118476,9.34170876 2.14644661,9.14644661 L5.293,6 L2.14644661,2.85355339 C1.97288026,2.67998704 1.95359511,2.41056264 2.08859116,2.2156945 L2.14644661,2.14644661 L2.08859116,2.2156945 Z"
+    "M2.08859116,2.2156945 L2.14644661,2.14644661 C2.32001296,1.97288026 2.58943736,1.95359511 2.7843055,2.08859116 L2.85355339,2.14644661 L6,5.293 L9.14644661,2.14644661 C9.34170876,1.95118446 9.65829124,1.95118446 9.85355339,2.14644661 C10.0488155,2.34170876 10.0488155,2.65829124 9.85355339,2.85355339 L6.707,6 L9.85355339,9.14644661 C10.0271197,9.32001296 10.0464049,9.58943736 9.91140884,9.7843055 L9.85355339,9.85355339 C9.67998704,10.0271197 9.41056264,10.0464049 9.2156945,9.91140884 L9.14644661,9.85355339 L6,6.707 L2.85355339,9.85355339 C2.65829124,10.0488155 2.34170876,10.0488155 2.14644661,9.85355339 C1.95118446,9.65829124 1.95118446,9.34170876 2.14644661,9.14644661 L5.293,6 L2.14644661,2.85355339 C1.97288026,2.67998704 1.95359511,2.41056264 2.08859116,2.2156945 L2.14644661,2.14644661 L2.08859116,2.2156945 Z"
 
 
 {-| The filter's search icon (upstream `SearchIcon`, 512 viewBox) in the

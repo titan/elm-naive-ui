@@ -11496,6 +11496,16 @@ liveNodes =
                     (Transfer.view Theme.default
                         { transferLiveOpts | options = transferOptions, value = [ "2", "999" ] }
                     )
+                , Element.el [ Element.htmlAttribute (HA.id "live-transfer-dup") ]
+                    (Transfer.view Theme.default
+                        { transferLiveOpts
+                            | options =
+                                [ { label = "First", value = "d1", disabled = False }
+                                , { label = "Last", value = "d1", disabled = False }
+                                ]
+                            , value = [ "d1" ]
+                        }
+                    )
                 , Element.el [ Element.htmlAttribute (HA.id "live-transfer-nolabel") ]
                     (Transfer.view Theme.default
                         { transferLiveOpts

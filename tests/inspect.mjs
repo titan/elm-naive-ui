@@ -10345,6 +10345,24 @@ dTrue(
   !!trClose.querySelector('i.n-base-icon > svg'),
   'missing'
 )
+const trCloseSvg = trClose.querySelector('i.n-base-icon > svg')
+dEq(
+  'DOM: Transfer __close svg viewBox + aria-hidden=true (Close.tsx bytes)',
+  '0 0 12 12|true',
+  [trCloseSvg.getAttribute('viewBox'), trCloseSvg.getAttribute('aria-hidden')].join('|')
+)
+dTrue(
+  'DOM: Transfer __close svg path d carries the upstream 1.95118446 literals (Close.tsx digit-check)',
+  (trCloseSvg.querySelector('path').getAttribute('d').match(/1\.95118(446|476)/g) || []).join(',') ===
+    '1.95118446,1.95118446,1.95118446,1.95118446',
+  (trCloseSvg.querySelector('path').getAttribute('d').match(/1\.95118\d+/g) || []).join(',')
+)
+const trSearchSvg = doc.querySelector('#live-transfer-large .n-transfer-filter .n-base-clear__placeholder i.n-base-icon > svg')
+dEq(
+  'DOM: Transfer filter search svg viewBox (Search.tsx bytes)',
+  '0 0 512 512',
+  trSearchSvg ? trSearchSvg.getAttribute('viewBox') : 'missing'
+)
 dTrue(
   'DOM: Transfer disabled items carry no __close (TransferListItem.tsx :106 !source && !disabled)',
   !doc.querySelector('#live-transfer-disabled .n-transfer-list-item--disabled .n-transfer-list-item__close'),
@@ -10397,6 +10415,14 @@ dEq(
   'DOM: Transfer allChecked value ["1".."4"] — target list holds all four, source keeps all options',
   '4|4',
   [trItems('live-transfer-allchecked', 'source').length, trItems('live-transfer-allchecked', 'target').length].join('|')
+)
+dEq(
+  'DOM: Transfer duplicate option values resolve LAST-wins (use-transfer-data.ts Map.set overwrite)',
+  '1|Last',
+  [
+    trItems('live-transfer-dup', 'target').length,
+    (trItems('live-transfer-dup', 'target')[0].querySelector('.n-transfer-list-item__label').textContent || '')
+  ].join('|')
 )
 
 // --- report -----------------------------------------------------------------
