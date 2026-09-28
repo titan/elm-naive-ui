@@ -65,6 +65,9 @@ options to compose `NUI.Affix.view` around the anchor root — the pinned state
   - The `title` tooltip attribute follows `getTitleAttribute`: an empty string
     omits the attribute (upstream also accepts numbers; the port's title is a
     string). A `titleSlot` replaces the title content but never the attribute.
+  - Derived colours (`linkColor` = `changeColor(primary, α .15)`) are pinned
+    literals in `NUI.Theme.Anchor` (toolchain convention, cf. Tag) — a `common`
+    override re-derives `railColorActive` but not `linkColor`.
 
 -}
 
