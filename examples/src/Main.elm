@@ -25,6 +25,7 @@ import NUI.Card as Card
 import NUI.Cascader as Cascader
 import NUI.Checkbox as Checkbox
 import NUI.Collapse as Collapse
+import NUI.ColorPicker as ColorPicker
 import NUI.Countdown as Countdown
 import NUI.Css as Css
 import NUI.DataTable as DataTable
@@ -768,6 +769,7 @@ body =
     , treeSelectSection
     , timePickerSection
     , datePickerSection
+    , colorPickerSection
     , rtlSection
     , themeSection
     ]
@@ -5208,6 +5210,65 @@ datePickerSection =
                             ]
                     }
                 )
+            ]
+        ]
+
+
+colorPickerSection : Element msg
+colorPickerSection =
+    let
+        cpd =
+            ColorPicker.defaultOptions
+
+        pair opts =
+            Element.column [ Element.spacing 8, Element.width Element.fill ]
+                [ ColorPicker.view theme opts
+                , Element.el [ Element.width (Element.px 240) ] (ColorPicker.panel theme opts)
+                ]
+
+        red =
+            "#d03050"
+    in
+    section "ColorPicker"
+        "A colour trigger over a caller-mounted palette panel — show state, positioning, drag and the value are caller-owned."
+        [ demoRow "Basic"
+            [ pair { cpd | value = Just red } ]
+        , demoRow "Alpha off + confirm"
+            [ pair { cpd | value = Just red, showAlpha = False, actions = Just [ ColorPicker.ConfirmAction ] } ]
+        , demoRow "Sizes"
+            [ pair { cpd | value = Just red, size = T.Small }
+            , pair { cpd | value = Just red }
+            , pair { cpd | value = Just red, size = T.Large }
+            ]
+        , demoRow "Disabled"
+            [ pair { cpd | value = Just red, disabled = True } ]
+        , demoRow "Single mode (hex)"
+            [ pair { cpd | value = Just red, modes = [ ColorPicker.Hex ], displayedMode = ColorPicker.Hex } ]
+        , demoRow "Swatches"
+            [ pair
+                { cpd
+                    | value = Just red
+                    , swatches = [ "#000000", "#ffffff", red, "rgba(208, 48, 80, 1)", "#0f0" ]
+                }
+            ]
+        , demoRow "Actions clear"
+            [ pair { cpd | value = Just red, actions = Just [ ColorPicker.ClearAction ] } ]
+        , demoRow "Preview (native input)"
+            [ pair { cpd | value = Just red, showPreview = True } ]
+        , demoRow "Custom trigger"
+            [ ColorPicker.view theme
+                { cpd
+                    | value = Just red
+                    , customTrigger = Just (Button.view theme { btn | kind = T.Primary } [ Element.text "Pick a colour" ])
+                }
+            ]
+        , demoRow "Undo / redo actions"
+            [ pair
+                { cpd
+                    | value = Just red
+                    , internalActions = Just [ ColorPicker.UndoAction, ColorPicker.RedoAction ]
+                    , undoable = True
+                }
             ]
         ]
 

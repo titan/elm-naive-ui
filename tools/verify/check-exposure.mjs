@@ -18,7 +18,8 @@ const INTERNAL = new Set([
   'NUI.Css.Generated', // GENERATED stylesheet, reached via NUI.Css
   'NUI.Qrcodegen', // vendored QR encoder, reached via NUI.QrCode
   'NUI.Internal.Loading', // shared NBaseLoading spinner svg, reached via the components
-  'NUI.Internal.DateTime' // the pure date/time engine, reached via NUI.DatePicker / NUI.TimePicker
+  'NUI.Internal.DateTime', // the pure date/time engine, reached via NUI.DatePicker / NUI.TimePicker
+  'NUI.Internal.Color' // the pure colour engine, reached via NUI.ColorPicker
 ])
 
 const modules = new Set()

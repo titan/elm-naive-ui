@@ -163,7 +163,12 @@ const targets = {
   // as inline style; the single/pair NInput and its icons live underneath); the
   // panel carries the 43 vars.
   '.n-date-picker': false,
-  '.n-date-panel': true
+  '.n-date-panel': true,
+  // ColorPicker: unlike DatePicker, BOTH roots carry the full 10-var set — the
+  // trigger div.n-color-picker and the div.n-color-picker-panel each get the
+  // cssVarsRef inline style upstream.
+  '.n-color-picker': true,
+  '.n-color-picker-panel': true
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {
