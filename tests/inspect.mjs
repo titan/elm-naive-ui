@@ -11196,6 +11196,269 @@ dEq(
   })()
 )
 
+// Upload ---------------------------------------------------------------------
+// Pins: tasks/recon/upload-pins.md (derived from upload/src/Upload.tsx render
+// :563-680 + UploadFile/UploadFileList/UploadTrigger/UploadDragger.tsx +
+// styles/index.cssr.ts). Port: src/NUI/Upload.elm.
+const upRoot = (id) => doc.querySelector('#' + id + ' .n-upload')
+const upInput = (id) => doc.querySelector('#' + id + ' input.n-upload-file-input')
+const upTrigger = (id) => doc.querySelector('#' + id + ' .n-upload-trigger')
+const upFileList = (id) => doc.querySelector('#' + id + ' .n-upload-file-list')
+const upRows = (id) => [...doc.querySelectorAll('#' + id + ' .n-upload-file')]
+const upRow = (id, i) => upRows(id)[i]
+const upActionBtns = (id, i) => [...upRow(id, i).querySelectorAll('.n-upload-file-info__action .n-button')]
+const upBtnViewBoxes = (id, i) => upActionBtns(id, i).map((b) => b.querySelector('svg').getAttribute('viewBox'))
+const upBtnD = (id, i) => upActionBtns(id, i).map((b) => (b.querySelector('svg path').getAttribute('d') || '').slice(0, 14))
+const upThumbSvg = (id, i) => upRow(id, i).querySelector('.n-upload-file-info__thumbnail i.n-base-icon > svg')
+
+// §H1 — root class + the 16 cssVars (cssVarsRef order)
+dEq('DOM: Upload root class order = n-upload only (no modifiers)', 'n-upload', nClassesStr(upRoot('live-upload')))
+dEq(
+  'DOM: Upload root 16 --n-* vars in cssVarsRef order (§A)',
+  '--n-bezier|--n-border-radius|--n-dragger-border|--n-dragger-border-hover|--n-dragger-color|--n-font-size|--n-item-color-hover|--n-item-color-hover-error|--n-item-disabled-opacity|--n-item-icon-color|--n-item-text-color|--n-item-text-color-error|--n-item-text-color-success|--n-line-height|--n-item-border-image-card-error|--n-item-border-image-card',
+  varOrder(upRoot('live-upload'))
+)
+dEq('DOM: Upload root carries exactly 16 --n-* vars', 16, countVars(upRoot('live-upload')))
+dTrue(
+  'DOM: Upload root style is renderVars form (no "; " and no trailing ";") and pins itemColorHoverError alpha .06',
+  !/;\s/.test(styleAt(upRoot('live-upload')) || '') &&
+    !(styleAt(upRoot('live-upload')) || '').endsWith(';') &&
+    (styleAt(upRoot('live-upload')) || '').includes('--n-item-color-hover-error:rgba(208, 48, 80, 0.06)'),
+  styleAt(upRoot('live-upload'))
+)
+dEq(
+  'DOM: Upload root children order = input, trigger, file-list',
+  'input|trigger|file-list',
+  [...upRoot('live-upload').children]
+    .map((c) =>
+      c.matches('input.n-upload-file-input')
+        ? 'input'
+        : c.classList.contains('n-upload-trigger')
+          ? 'trigger'
+          : c.classList.contains('n-upload-file-list')
+            ? 'file-list'
+            : '?'
+    )
+    .join('|')
+)
+
+// §H2 — the file input
+dEq(
+  'DOM: Upload input type=file + n-upload-file-input class; no accept/multiple/directory by default',
+  'file|n-upload-file-input|false|false',
+  [
+    upInput('live-upload').getAttribute('type'),
+    upInput('live-upload').getAttribute('class'),
+    upInput('live-upload').hasAttribute('accept'),
+    upInput('live-upload').hasAttribute('multiple')
+  ].join('|')
+)
+dEq('DOM: Upload input display:none from css (Upload cssr :332)', 'none', window.getComputedStyle(upInput('live-upload')).display)
+dTrue(
+  'DOM: Upload multiple=true → the input carries multiple (no directory)',
+  upInput('live-upload-multiple').hasAttribute('multiple') && !upInput('live-upload-multiple').hasAttribute('webkitdirectory'),
+  [...upInput('live-upload-multiple').attributes].map((a) => a.name).join(',')
+)
+dTrue(
+  'DOM: Upload directory=true → webkitdirectory+directory+multiple attrs and accept reflected',
+  ['webkitdirectory', 'directory', 'multiple'].every((a) => upInput('live-upload-directory').hasAttribute(a)) &&
+    upInput('live-upload-directory').getAttribute('accept') === 'image/*',
+  [...upInput('live-upload-directory').attributes].map((a) => a.name).join(',')
+)
+
+// §H3/§H9 — trigger
+dEq('DOM: Upload trigger = div.n-upload-trigger, NO --disabled by default', 'n-upload-trigger', nClassesStr(upTrigger('live-upload')))
+dTrue('DOM: Upload trigger text-default has no element children (no slot)', upTrigger('live-upload').children.length === 0, 'children ' + upTrigger('live-upload').children.length)
+
+// §H4 — image-card trigger is the file-list LAST child (trigger inside the list)
+dTrue(
+  'DOM: Upload image-card trigger is the file-list LAST child > .n-upload-dragger > AddIcon(512)',
+  (() => {
+    const last = upFileList('live-upload-image-card').lastElementChild
+    const svg = last.querySelector('.n-upload-dragger i.n-base-icon > svg')
+    return (
+      last.classList.contains('n-upload-trigger--image-card') &&
+      !!svg &&
+      svg.getAttribute('viewBox') === '0 0 512 512' &&
+      svg.querySelector('path').getAttribute('d') === 'M256 112V400M400 256H112'
+    )
+  })(),
+  'image-card trigger'
+)
+dTrue(
+  'DOM: Upload image-card file-list rows are DIRECT children (NImageGroup adds no in-flow node) — CORRECTED §H12',
+  (() => {
+    const list = upFileList('live-upload-image-card')
+    return (
+      list.children[0].classList.contains('n-upload-file') &&
+      list.querySelectorAll('.n-image-group').length === 0 &&
+      list.getAttribute('class').includes('n-upload-file-list--grid')
+    )
+  })(),
+  'file-list--grid'
+)
+
+// §H5 — dragger standalone
+dEq(
+  'DOM: Upload viewDragger = .n-upload-dragger[--disabled]',
+  'n-upload-dragger n-upload-dragger--disabled',
+  nClassesStr(doc.querySelector('#live-upload-dragger .n-upload-dragger'))
+)
+
+// §H6 — root modifiers
+dEq(
+  'DOM: Upload draggerInside + dragOver → --dragger-inside then --drag-over',
+  'n-upload n-upload--dragger-inside n-upload--drag-over',
+  nClassesStr(upRoot('live-upload-drag'))
+)
+
+// §H7 — pending text row (no url)
+dEq('DOM: Upload pending text row classes = --info-status --text-type (no --with-url)', 'n-upload-file n-upload-file--info-status n-upload-file--text-type', nClassesStr(upRow('live-upload', 0)))
+dEq('DOM: Upload pending text thumb = span > i.n-base-icon > Attach(16)', 'SPAN|0 0 16 16|M3.25735931,8.', [upRow('live-upload', 0).querySelector('.n-upload-file-info__thumbnail').tagName, upThumbSvg('live-upload', 0).getAttribute('viewBox'), upThumbSvg('live-upload', 0).querySelector('path').getAttribute('d').slice(0, 14)].join('|'))
+dEq('DOM: Upload pending text name = span (no url)', 'SPAN|f1.png', [upRow('live-upload', 0).querySelector('.n-upload-file-info__name > *').tagName, upRow('live-upload', 0).querySelector('.n-upload-file-info__name > *').textContent].join('|'))
+dEq('DOM: Upload pending text action = __action --text-type with ONE button', 'n-upload-file-info__action n-upload-file-info__action--text-type|1', [nClassesStr(upRow('live-upload', 0).querySelector('.n-upload-file-info__action')), upActionBtns('live-upload', 0).length].join('|'))
+dTrue('DOM: Upload pending text has NO progress (not uploading)', upRow('live-upload', 0).querySelectorAll('.n-progress').length === 0, 'pending')
+
+// §H8 — uploading text row: progress a SIBLING after __info
+dEq('DOM: Upload uploading row keeps --info-status --text-type', 'n-upload-file n-upload-file--info-status n-upload-file--text-type', nClassesStr(upRow('live-upload', 1)))
+dTrue(
+  'DOM: Upload uploading progress = sibling AFTER .n-upload-file-info, line no indicator, aria-valuenow 42',
+  (() => {
+    const kids = [...upRow('live-upload', 1).children]
+    const bar = kids[1]
+    return (
+      kids[0].classList.contains('n-upload-file-info') &&
+      bar.classList.contains('n-progress') &&
+      bar.classList.contains('n-progress--line') &&
+      !bar.className.includes('--circle') &&
+      bar.getAttribute('aria-valuenow') === '42'
+    )
+  })(),
+  'progress placement'
+)
+
+// §H9 — finished text row (with url)
+dEq('DOM: Upload finished row classes = --success-status --text-type --with-url', 'n-upload-file n-upload-file--success-status n-upload-file--text-type n-upload-file--with-url', nClassesStr(upRow('live-upload', 2)))
+dTrue(
+  'DOM: Upload finished name = a[href] rel=noopener noreferer target=_blank',
+  (() => {
+    const a = upRow('live-upload', 2).querySelector('.n-upload-file-info__name > a')
+    return (
+      !!a &&
+      a.getAttribute('href') === 'http://example.com/f3.pdf' &&
+      a.getAttribute('rel') === 'noopener noreferer' &&
+      a.getAttribute('target') === '_blank'
+    )
+  })(),
+  'a[href]'
+)
+dEq('DOM: Upload finished cancel-slot = Trash (512)', '0 0 512 512', upBtnViewBoxes('live-upload', 2).join('|'))
+
+// §H10 — error row
+dEq('DOM: Upload error row classes = --error-status --text-type (no --with-url even with url)', 'n-upload-file n-upload-file--error-status n-upload-file--text-type', nClassesStr(upRow('live-upload', 3)))
+dEq('DOM: Upload error name = span (never a, even with url)', 'SPAN', upRow('live-upload', 3).querySelector('.n-upload-file-info__name > *').tagName)
+dEq('DOM: Upload error buttons = Cancel(16) then Retry(512), both error-kind', '0 0 16 16|0 0 512 512|n-button--error-type|n-button--error-type', upBtnViewBoxes('live-upload', 3).concat(upActionBtns('live-upload', 3).map((b) => [...b.classList].find((c) => c.endsWith('-type')))).join('|'))
+
+// §H11 — image-type row: progress INSIDE __name
+dEq('DOM: Upload image-type row classes = --info-status --image-type', 'n-upload-file n-upload-file--info-status n-upload-file--image-type', nClassesStr(upRow('live-upload-image', 0)))
+dTrue(
+  'DOM: Upload image-type progress is INSIDE __name (last child, after the name span)',
+  (() => {
+    const kids = [...upRow('live-upload-image', 0).querySelector('.n-upload-file-info__name').children]
+    return kids[0].tagName === 'SPAN' && kids[kids.length - 1].classList.contains('n-progress')
+  })(),
+  'image progress'
+)
+dEq('DOM: Upload image-type action = __action --image-type', 'n-upload-file-info__action n-upload-file-info__action--image-type', nClassesStr(upRow('live-upload-image', 0).querySelector('.n-upload-file-info__action')))
+
+// §H12 — image-card finished + thumbnail
+dEq('DOM: Upload image-card finished+thumbnail = --success-status --image-card-type (NO --with-url)', 'n-upload-file n-upload-file--success-status n-upload-file--image-card-type', nClassesStr(upRow('live-upload-card-thumb', 0)))
+dTrue(
+  'DOM: Upload image-card thumb = a.__thumbnail > .n-image > img[src=thumbnailUrl]',
+  (() => {
+    const a = upRow('live-upload-card-thumb', 0).querySelector('a.n-upload-file-info__thumbnail')
+    const img = a && a.querySelector('.n-image > img')
+    return !!a && a.getAttribute('href') === 'http://example.com/t1.png' && !!img && img.getAttribute('src') === 'http://example.com/t1-thumb.png'
+  })(),
+  'n-image'
+)
+dEq('DOM: Upload image-card actions = preview(Eye,512) trash(Trash,512) download(16; prop on)', '0 0 512 512|0 0 512 512|0 0 16 16', upBtnViewBoxes('live-upload-card-thumb', 0).join('|'))
+
+// §H13 — image-card no thumbnail: image icon vs document icon
+dEq(
+  'DOM: Upload image-card no-thumb thumb icons = image(28) then document(28)',
+  '0 0 28 28|0 0 28 28|M21.75 3A3.25 |M6.4 2A2.4 2',
+  [
+    upThumbSvg('live-upload-image-card', 0).getAttribute('viewBox'),
+    upThumbSvg('live-upload-image-card', 1).getAttribute('viewBox'),
+    upThumbSvg('live-upload-image-card', 0).querySelector('path').getAttribute('d').slice(0, 14),
+    upThumbSvg('live-upload-image-card', 1).querySelector('path').getAttribute('d').slice(0, 12)
+  ].join('|')
+)
+
+// §H14 — alwaysShowActions
+dEq('DOM: Upload alwaysShowActions → row --always-show-actions', 'n-upload-file n-upload-file--error-status n-upload-file--text-type n-upload-file--always-show-actions', nClassesStr(upRow('live-upload-always-show', 0)))
+dEq('DOM: Upload action --always-show appended after --text-type', 'n-upload-file-info__action n-upload-file-info__action--text-type n-upload-file-info__action--always-show', nClassesStr(upRow('live-upload-always-show', 0).querySelector('.n-upload-file-info__action')))
+
+// §H15 — showTrigger / showFileList / maxReached
+dTrue('DOM: Upload showTrigger=false text → NO root trigger, file-list present', !upTrigger('live-upload-notrigger') && !!upFileList('live-upload-notrigger'), 'notrigger')
+dTrue('DOM: Upload showFileList=false → NO file-list, trigger present', !upFileList('live-upload-nolist') && !!upTrigger('live-upload-nolist'), 'nolist')
+dEq('DOM: Upload maxReached (max 1, 1 file) → trigger --disabled', 'n-upload-trigger n-upload-trigger--disabled', nClassesStr(upTrigger('live-upload-max')))
+
+// §H16 — icon d-byte pins
+dEq('DOM: Upload Cancel button icon d (Cancel.tsx, 16)', 'M2.58859116,2.', upBtnD('live-upload', 0).join('|'))
+dEq('DOM: Upload Retry button icon d (Retry.tsx, 512) + polyline points', 'M320,146s24.36', (upActionBtns('live-upload', 3)[1].querySelector('svg path').getAttribute('d') || '').slice(0, 14))
+dEq('DOM: Upload Trash button icon d (Trash.tsx, 512)', 'M432,144,403.3', upBtnD('live-upload', 2).join('|'))
+dEq('DOM: Upload Download button icon d (Download.tsx, 16)', 'M3.5,13 L12.5,', upBtnD('live-upload-card-thumb', 1).slice(-1)[0])
+dEq('DOM: Upload Eye (preview) button d (Eye.tsx, 512)', 'M255.66 112c-7', upBtnD('live-upload-card-thumb', 0)[0])
+
+// §H17 — renderIcon replaces the thumb content
+dTrue(
+  'DOM: Upload renderIcon=Just replaces the thumb children (no i.n-base-icon)',
+  (() => {
+    const t = upRow('live-upload-rendericon', 0).querySelector('.n-upload-file-info__thumbnail')
+    return t.querySelector('#up-render-icon') !== null && t.querySelector('i.n-base-icon') === null
+  })(),
+  'renderIcon'
+)
+
+// §H18 — abstract
+dTrue(
+  'DOM: Upload abstract → NO div.n-upload; output = input node + slot content',
+  doc.querySelectorAll('#live-upload-abstract .n-upload').length === 0 &&
+    !!doc.querySelector('#live-upload-abstract input.n-upload-file-input') &&
+    doc.getElementById('live-upload-abstract').textContent.includes('SLOT'),
+  'abstract'
+)
+dTrue(
+  'DOM: Upload viewFileList abstract carries the 16 --n-* vars itself (themeClass + cssVars)',
+  countVars(upFileList('live-upload-abstract-list')) === 16 && (varOrder(upFileList('live-upload-abstract-list')).split('|')[0] === '--n-bezier'),
+  styleAt(upFileList('live-upload-abstract-list'))
+)
+
+// §H19 — disabled
+dEq('DOM: Upload disabled → trigger --disabled', 'n-upload-trigger n-upload-trigger--disabled', nClassesStr(upTrigger('live-upload-disabled')))
+dEq('DOM: Upload disabled image-card → dragger --disabled', 'n-upload-dragger n-upload-dragger--disabled', nClassesStr(doc.querySelector('#live-upload-disabled-card .n-upload-dragger')))
+dTrue(
+  'DOM: Upload disabled rows lose cancel/trash/retry (text: none) but keep preview+download (image-card: Eye 512 + Download 16)',
+  (() => {
+    const textBtns = upRows('live-upload-disabled').reduce((n, r) => n + r.querySelectorAll('.n-upload-file-info__action .n-button').length, 0)
+    const card = upBtnViewBoxes('live-upload-disabled-card', 0)
+    return textBtns === 0 && card.length === 2 && card[0] === '0 0 512 512' && card[1] === '0 0 16 16'
+  })(),
+  'disabled gates'
+)
+
+// §H20 — inputAttributes spread before type
+dTrue(
+  'DOM: Upload inputAttributes spread BEFORE type (marker attr present, precedes type)',
+  (() => {
+    const names = [...upInput('live-upload-directory').attributes].map((a) => a.name)
+    return names.includes('data-marker') && names.indexOf('data-marker') < names.indexOf('type')
+  })(),
+  [...upInput('live-upload-directory').attributes].map((a) => a.name).join(',')
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

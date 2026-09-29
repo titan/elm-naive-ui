@@ -132,6 +132,7 @@ import NUI.Transfer as Transfer
 import NUI.Tree as Tree
 import NUI.TreeSelect as TreeSelect
 import NUI.Types as T
+import NUI.Upload as Upload
 import NUI.Watermark as Watermark
 import Time
 
@@ -1216,6 +1217,212 @@ transferOptions =
 transferLiveOpts : Transfer.Options msg
 transferLiveOpts =
     Transfer.defaults
+
+
+
+-- UPLOAD FIXTURES — pin derivation: upload/src/Upload.tsx (render :563-680,
+-- cssVars :507-561, doChange :331-366, handleFileAddition :367-433, submit
+-- :434-480) + UploadTrigger/UploadFileList/UploadFile/UploadProgress/
+-- UploadDragger.tsx + utils.ts + icons.tsx + styles/light.ts + styles/dark.ts.
+-- Expectations in tasks/recon/upload-pins.md (derived from those bytes BEFORE
+-- the port existed).
+
+
+{-| The plain defaults binding (`{ Upload.defaults | … }` is a parse error).
+-}
+uploadOptions : Upload.Options msg
+uploadOptions =
+    Upload.defaults
+
+
+uploadLiveOpts : Upload.Options msg
+uploadLiveOpts =
+    Upload.defaults
+
+
+{-| A `FileInfo` from an explicit field record (batchId/fullPath default to
+`Nothing`). Elm forbids `{ fn … | … }`, so every overlay goes through here.
+-}
+upFile :
+    { id : String
+    , name : String
+    , status : Upload.Status
+    , percentage : Maybe Int
+    , url : Maybe String
+    , thumbnailUrl : Maybe String
+    , type_ : Maybe String
+    }
+    -> Upload.FileInfo
+upFile r =
+    { id = r.id
+    , batchId = Nothing
+    , name = r.name
+    , percentage = r.percentage
+    , status = r.status
+    , url = r.url
+    , thumbnailUrl = r.thumbnailUrl
+    , type_ = r.type_
+    , fullPath = Nothing
+    }
+
+
+{-| `upInfo id name status` — every optional at the upstream `?? null` default.
+-}
+upInfo : String -> String -> Upload.Status -> Upload.FileInfo
+upInfo id name status =
+    upFile { id = id, name = name, status = status, percentage = Nothing, url = Nothing, thumbnailUrl = Nothing, type_ = Nothing }
+
+
+{-| `upBase name` — a type-less, url-less pending file whose id and name are
+both `name`.
+-}
+upBase : String -> Upload.FileInfo
+upBase name =
+    upInfo name name Upload.Pending
+
+
+{-| `upId i` — a pending file whose id and name are both `i`.
+-}
+upId : String -> Upload.FileInfo
+upId i =
+    upInfo i i Upload.Pending
+
+
+{-| `upType name t` — a pending file with `type_ = Just t`.
+-}
+upType : String -> String -> Upload.FileInfo
+upType name t =
+    upFile { id = "x", name = name, status = Upload.Pending, percentage = Nothing, url = Nothing, thumbnailUrl = Nothing, type_ = Just t }
+
+
+{-| `upUrl name u` — a pending file with `url = Just u`.
+-}
+upUrl : String -> String -> Upload.FileInfo
+upUrl name u =
+    upFile { id = "x", name = name, status = Upload.Pending, percentage = Nothing, url = Just u, thumbnailUrl = Nothing, type_ = Nothing }
+
+
+{-| `upThumb name t` — a pending file with `thumbnailUrl = Just t`.
+-}
+upThumb : String -> String -> Upload.FileInfo
+upThumb name t =
+    upFile { id = "x", name = name, status = Upload.Pending, percentage = Nothing, url = Nothing, thumbnailUrl = Just t, type_ = Nothing }
+
+
+{-| The 5-status list (§D/§F/§H): pending `f1.png` (no url → attach icon),
+uploading `f2.txt` at 42%, finished `f3.pdf` (with url → `a[href]`), error
+`f4.doc` (with url — still a span, no `--with-url`), removed `f5.log`.
+-}
+uploadFiles : List Upload.FileInfo
+uploadFiles =
+    [ upInfo "f1" "f1.png" Upload.Pending
+    , upFile { id = "f2", name = "f2.txt", status = Upload.Uploading, percentage = Just 42, url = Nothing, thumbnailUrl = Nothing, type_ = Nothing }
+    , upFile { id = "f3", name = "f3.pdf", status = Upload.Finished, percentage = Nothing, url = Just "http://example.com/f3.pdf", thumbnailUrl = Nothing, type_ = Nothing }
+    , upFile { id = "f4", name = "f4.doc", status = Upload.Error, percentage = Nothing, url = Just "http://example.com/f4.doc", thumbnailUrl = Nothing, type_ = Nothing }
+    , upInfo "f5" "f5.log" Upload.Removed
+    ]
+
+
+{-| One uploading file (§H8): progress AFTER `__info` for text rows.
+-}
+uploadUploadingFiles : List Upload.FileInfo
+uploadUploadingFiles =
+    [ upFile { id = "u1", name = "u1.txt", status = Upload.Uploading, percentage = Just 42, url = Nothing, thumbnailUrl = Nothing, type_ = Nothing } ]
+
+
+{-| One error file with a url (§H10): `--error-status`, a span name, retry.
+-}
+uploadErrorFiles : List Upload.FileInfo
+uploadErrorFiles =
+    [ upFile { id = "e1", name = "e1.doc", status = Upload.Error, percentage = Nothing, url = Just "http://example.com/e1.doc", thumbnailUrl = Nothing, type_ = Nothing } ]
+
+
+{-| A single uploading image file (§H11): progress INSIDE `__name`.
+-}
+uploadImageUploading : List Upload.FileInfo
+uploadImageUploading =
+    [ upFile { id = "i1", name = "i1.png", status = Upload.Uploading, percentage = Just 42, url = Nothing, thumbnailUrl = Nothing, type_ = Just "image/png" } ]
+
+
+{-| image-card rows with NO thumbnail (§H13): one image (image icon) + one
+document (document icon).
+-}
+uploadCardNoThumb : List Upload.FileInfo
+uploadCardNoThumb =
+    [ upFile { id = "c1", name = "c1.png", status = Upload.Finished, percentage = Nothing, url = Nothing, thumbnailUrl = Nothing, type_ = Just "image/png" }
+    , upInfo "c2" "c2.txt" Upload.Finished
+    ]
+
+
+{-| A finished image-card file WITH a thumbnail (§H12) → `a.__thumbnail > .n-image`.
+-}
+uploadCardThumb : List Upload.FileInfo
+uploadCardThumb =
+    [ upFile { id = "t1", name = "t1.png", status = Upload.Finished, percentage = Nothing, url = Just "http://example.com/t1.png", thumbnailUrl = Just "http://example.com/t1-thumb.png", type_ = Just "image/png" }
+    , upFile { id = "t2", name = "t2.pdf", status = Upload.Finished, percentage = Nothing, url = Just "http://example.com/t2.pdf", thumbnailUrl = Nothing, type_ = Nothing }
+    ]
+
+
+{-| The `filesToSubmit` fixture (§D): two pendings, one error, one finished, one
+removed.
+-}
+uploadSubmitFiles : List Upload.FileInfo
+uploadSubmitFiles =
+    [ upInfo "p1" "p1" Upload.Pending
+    , upInfo "p2" "p2" Upload.Pending
+    , upInfo "e1" "e1" Upload.Error
+    , upInfo "f1" "f1" Upload.Finished
+    , upInfo "r1" "r1" Upload.Removed
+    ]
+
+
+{-| The 16 `--n-*` vars `Upload.cssVarsFor` emits against `Theme.default`
+(light) in `cssVarsRef` order (§A): 14 derive from the light common, the other 4
+are the theme's own literals.
+-}
+uploadLightVars : List ( String, String )
+uploadLightVars =
+    [ ( "--n-bezier", "cubic-bezier(.4, 0, .2, 1)" )
+    , ( "--n-border-radius", "3px" )
+    , ( "--n-dragger-border", "1px dashed rgb(224, 224, 230)" )
+    , ( "--n-dragger-border-hover", "1px dashed #18a058" )
+    , ( "--n-dragger-color", "rgb(250, 250, 252)" )
+    , ( "--n-font-size", "14px" )
+    , ( "--n-item-color-hover", "rgb(243, 243, 245)" )
+    , ( "--n-item-color-hover-error", "rgba(208, 48, 80, 0.06)" )
+    , ( "--n-item-disabled-opacity", "0.5" )
+    , ( "--n-item-icon-color", "rgba(194, 194, 194, 1)" )
+    , ( "--n-item-text-color", "rgb(51, 54, 57)" )
+    , ( "--n-item-text-color-error", "#d03050" )
+    , ( "--n-item-text-color-success", "#18a058" )
+    , ( "--n-line-height", "1.6" )
+    , ( "--n-item-border-image-card-error", "1px solid #d03050" )
+    , ( "--n-item-border-image-card", "1px solid rgb(224, 224, 230)" )
+    ]
+
+
+{-| The same 16 keys against `Theme.dark`; the self literals swap to the dark
+palette (`--n-item-color-hover-error` alpha .09 = the `dark.ts` self override).
+-}
+uploadDarkVars : List ( String, String )
+uploadDarkVars =
+    [ ( "--n-bezier", "cubic-bezier(.4, 0, .2, 1)" )
+    , ( "--n-border-radius", "3px" )
+    , ( "--n-dragger-border", "1px dashed rgba(255, 255, 255, 0.24)" )
+    , ( "--n-dragger-border-hover", "1px dashed #63e2b7" )
+    , ( "--n-dragger-color", "rgba(255, 255, 255, 0.06)" )
+    , ( "--n-font-size", "14px" )
+    , ( "--n-item-color-hover", "rgba(255, 255, 255, 0.09)" )
+    , ( "--n-item-color-hover-error", "rgba(232, 128, 128, 0.09)" )
+    , ( "--n-item-disabled-opacity", "0.38" )
+    , ( "--n-item-icon-color", "rgba(255, 255, 255, 0.38)" )
+    , ( "--n-item-text-color", "rgba(255, 255, 255, 0.82)" )
+    , ( "--n-item-text-color-error", "#e88080" )
+    , ( "--n-item-text-color-success", "#63e2b7" )
+    , ( "--n-line-height", "1.6" )
+    , ( "--n-item-border-image-card-error", "1px solid #e88080" )
+    , ( "--n-item-border-image-card", "1px solid rgba(255, 255, 255, 0.24)" )
+    ]
 
 
 
@@ -12269,6 +12476,116 @@ checks =
            , eq "cp convertColor '#ABCD' Rgb (short hexa expand)" (Just "rgba(170, 187, 204, 0.87)") (ColorPicker.convertColor "#ABCD" ColorPicker.Rgb Nothing)
            , eq "cp convertColor 'hsl( 30 , 50% , 50% )' Rgb (token spaces)" (Just "rgba(191, 128, 64, 1)") (ColorPicker.convertColor "hsl( 30 , 50% , 50% )" ColorPicker.Rgb Nothing)
            , eq "cp convertColor 'hsva(210, 50%, 50%, 0.5)' Hex" (Just "#40608080") (ColorPicker.convertColor "hsva(210, 50%, 50%, 0.5)" ColorPicker.Hex Nothing)
+
+           -- UPLOAD — pins derived from upload/src/Upload.tsx (render :563-680,
+           -- cssVars :507-561, doChange :331-366, handleFileAddition :367-433,
+           -- submit :434-480) + UploadFile.tsx (:15-25 buttonThemeOverrides) +
+           -- utils.ts. Expectations: tasks/recon/upload-pins.md (from those bytes
+           -- BEFORE the port). eq surface = NUI.Upload.* only.
+           -- =====================================================================
+           -- §A cssVarsFor — the exact 16 pairs in cssVarsRef order
+           , eq "up cssVarsFor light == the 16-pair upstream list (§A)" uploadLightVars (Upload.cssVarsFor light)
+           , eq "up cssVarsFor dark == the 16-pair dark list (§A; itemColorHoverError alpha .09)" uploadDarkVars (Upload.cssVarsFor dark)
+
+           -- §B matchType (name, mime, accept) — name toLowerCase, mime/accept
+           -- toLocaleLowerCase (ASCII here); .atom → endsWith; a/b → wildcarded
+           -- type+subtype; any other atom → true; some() over the atoms.
+           , eq "up matchType a.PNG/.png -> true (name lowercased first)" True (Upload.matchType "a.PNG" "image/png" ".png")
+           , eq "up matchType a.txt/.png -> false" False (Upload.matchType "a.txt" "text/plain" ".png")
+           , eq "up matchType video.mp4 video/* -> true (wildcard subtype)" True (Upload.matchType "video.mp4" "video/mp4" "video/*")
+           , eq "up matchType x.csv text/* -> true (wildcard subtype)" True (Upload.matchType "x.csv" "text/csv" "text/*")
+           , eq "up matchType x.csv text/csv -> true (exact mime)" True (Upload.matchType "x.csv" "text/csv" "text/csv")
+           , eq "up matchType x.csv application/csv vs text/csv -> false (the type must match too) — CORRECTED §B row (pin said true)" False (Upload.matchType "x.csv" "application/csv" "text/csv")
+           , eq "up matchType x.csv text/plain -> false (subtype mismatch)" False (Upload.matchType "x.csv" "text/csv" "text/plain")
+           , eq "up matchType application/x vs application/*+json -> false (no +json suffix support)" False (Upload.matchType "x" "application/x" "application/*+json")
+           , eq "up matchType y.bin .BIN -> true (accept lowercased)" True (Upload.matchType "y.bin" "application/octet-stream" ".BIN")
+           , eq "up matchType invalid atom 'weird' (no . no /) -> true" True (Upload.matchType "z" "anything/else" "weird")
+           , eq "up matchType '.jpg, weird' some() -> true" True (Upload.matchType "z" "anything/else" ".jpg, weird")
+           , eq "up matchType empty accept -> false (acceptAtoms empty)" False (Upload.matchType "z" "text/x" "")
+           , eq "up matchType Z.TXT/.txt -> true (name lowercased)" True (Upload.matchType "Z.TXT" "text/plain" ".txt")
+           , eq "up matchType a.b/c.png .png -> true (name.endsWith('.png'))" True (Upload.matchType "a.b/c.png" "image/png" ".png")
+           , eq "up matchType ', ,' -> false (every atom filtered)" False (Upload.matchType "z" "text/html" ", ,")
+
+           -- §C isImageFile — type short-circuit, else name ext, else
+           -- thumbnailUrl||url (data:image/ prefix or matching ext); getExtname
+           -- strips at the last '/' then '#'/'?'.
+           , eq "up isImageFile type=Just image/png -> true" True (Upload.isImageFile (upType "a" "image/png"))
+           , eq "up isImageFile type=Just video/mp4 -> false" False (Upload.isImageFile (upType "a" "video/mp4"))
+           , eq "up isImageFile type=Nothing a.webp -> true (ext regex)" True (Upload.isImageFile (upBase "a.webp"))
+           , eq "up isImageFile a.WEBP -> true (/i regex)" True (Upload.isImageFile (upBase "a.WEBP"))
+           , eq "up isImageFile photo.jpeg -> true" True (Upload.isImageFile (upBase "photo.jpeg"))
+           , eq "up isImageFile x.jfif -> true" True (Upload.isImageFile (upBase "x.jfif"))
+           , eq "up isImageFile x.dpg -> true" True (Upload.isImageFile (upBase "x.dpg"))
+           , eq "up isImageFile x.ico -> true" True (Upload.isImageFile (upBase "x.ico"))
+           , eq "up isImageFile x.txt -> false" False (Upload.isImageFile (upBase "x.txt"))
+           , eq "up isImageFile a.png.svg -> true (extname .svg)" True (Upload.isImageFile (upBase "a.png.svg"))
+           , eq "up isImageFile archive.tar.gz -> false (extname .gz)" False (Upload.isImageFile (upBase "archive.tar.gz"))
+           , eq "up isImageFile no ext + data:image/ thumbnail -> true" True (Upload.isImageFile (upThumb "noext" "data:image/png;base64,AAA"))
+           , eq "up isImageFile url z.JPG?w=1 -> true (extname strips ?)" True (Upload.isImageFile (upUrl "noext" "http://x/y/z.JPG?w=1"))
+           , eq "up isImageFile url z#frag -> false (extname empty)" False (Upload.isImageFile (upUrl "noext" "http://x/y/z#frag"))
+           , eq "up isImageFile thumbnailUrl Nothing url http://x/v2 -> false" False (Upload.isImageFile (upUrl "noext" "http://x/v2"))
+           , eq "up shouldUseThumbnailUrlDefault == isImageFile (envSupportFile ≡ true)" True (Upload.shouldUseThumbnailUrlDefault (upBase "a.png") == Upload.isImageFile (upBase "a.png"))
+
+           -- §D settle / pendingFile / doChange algebra / submit / max
+           , eq "up settle: all-Nothing → the same 9-field record (optionals stay Nothing)" (upBase "n") (Upload.settle (upBase "n"))
+           , eq "up settle keeps explicit values (percentage=Just 42 survives)" (upFile { id = "n", name = "n", status = Upload.Pending, percentage = Just 42, url = Nothing, thumbnailUrl = Nothing, type_ = Nothing }) (Upload.settle (upFile { id = "n", name = "n", status = Upload.Pending, percentage = Just 42, url = Nothing, thumbnailUrl = Nothing, type_ = Nothing }))
+           , eq "up pendingFile stamps percentage=Just 0 / Pending / url+thumbnailUrl Nothing"
+                { id = "p", batchId = Just "b", name = "p.png", percentage = Just 0, status = Upload.Pending, url = Nothing, thumbnailUrl = Nothing, type_ = Just "image/png", fullPath = Just "/p.png" }
+                (Upload.pendingFile { id = "p", name = "p.png", type_ = Just "image/png", fullPath = Just "/p.png", batchId = Just "b" })
+           , eq "up updateFileList replace: [a,b,c] change b -> its name swaps in place"
+                [ "a", "B2", "c" ]
+                (Upload.updateFileList (upInfo "b" "B2" Upload.Pending) [ upId "a", upId "b", upId "c" ] |> List.map .name)
+           , eq "up updateFileList id-miss -> unchanged" [ "a", "b", "c" ] (Upload.updateFileList (upInfo "zz" "Z" Upload.Pending) [ upId "a", upId "b", upId "c" ] |> List.map .name)
+           , eq "up appendFile pushes at the END" [ "a", "b", "c" ] (Upload.appendFile (upId "c") [ upId "a", upId "b" ] |> List.map .id)
+           , eq "up removeFileById 'b' -> [a,c]" [ "a", "c" ] (Upload.removeFileById "b" [ upId "a", upId "b", upId "c" ] |> List.map .id)
+           , eq "up removeFileById miss -> unchanged" [ "a", "b", "c" ] (Upload.removeFileById "zz" [ upId "a", upId "b", upId "c" ] |> List.map .id)
+           , eq "up markUploading 37 -> Uploading / percentage Just 37"
+                ( Upload.Uploading, Just 37 )
+                (let
+                    f =
+                        Upload.markUploading 37 (upId "f")
+                 in
+                 ( f.status, f.percentage )
+                )
+           , eq "up markFinished LATCHES the percentage (Just 37 survives)"
+                ( Upload.Finished, Just 37 )
+                (let
+                    f =
+                        Upload.markFinished (upFile { id = "f", name = "f", status = Upload.Pending, percentage = Just 37, url = Nothing, thumbnailUrl = Nothing, type_ = Nothing })
+                 in
+                 ( f.status, f.percentage )
+                )
+           , eq "up markError -> Error, percentage untouched"
+                ( Upload.Error, Just 37 )
+                (let
+                    f =
+                        Upload.markError (upFile { id = "f", name = "f", status = Upload.Pending, percentage = Just 37, url = Nothing, thumbnailUrl = Nothing, type_ = Nothing })
+                 in
+                 ( f.status, f.percentage )
+                )
+           , eq "up markRemoved -> Removed" Upload.Removed (Upload.markRemoved (upId "f")).status
+           , eq "up filesToSubmit {fileId=Nothing,retry=False} -> pendings only [p1,p2]" [ "p1", "p2" ] (Upload.filesToSubmit { fileId = Nothing, retry = False } uploadSubmitFiles |> List.map .id)
+           , eq "up filesToSubmit {fileId=Nothing,retry=True} -> pendings + errors [p1,p2,e1]" [ "p1", "p2", "e1" ] (Upload.filesToSubmit { fileId = Nothing, retry = True } uploadSubmitFiles |> List.map .id)
+           , eq "up filesToSubmit {fileId=Just \"e1\",retry=False} -> [e1]" [ "e1" ] (Upload.filesToSubmit { fileId = Just "e1", retry = False } uploadSubmitFiles |> List.map .id)
+           , eq "up filesToSubmit {fileId=Just \"f1\"} -> [] (finished never submits)" [] (Upload.filesToSubmit { fileId = Just "f1", retry = False } uploadSubmitFiles |> List.map .id)
+           , eq "up maxReached max=Just 2 len 2 -> True" True (Upload.maxReached { uploadOptions | max = Just 2, fileList = List.take 2 uploadFiles })
+           , eq "up maxReached max=Just 2 len 1 -> False" False (Upload.maxReached { uploadOptions | max = Just 2, fileList = List.take 1 uploadFiles })
+           , eq "up maxReached max=Nothing -> False" False (Upload.maxReached { uploadOptions | max = Nothing, fileList = uploadFiles })
+           , eq "up sliceForMax (Just 3) current 5 -> [] (negative cap)" [] (Upload.sliceForMax (Just 3) 5 [ 1, 2, 3, 4, 5 ])
+           , eq "up sliceForMax (Just 3) current 1 -> first 2" [ 1, 2 ] (Upload.sliceForMax (Just 3) 1 [ 1, 2, 3, 4, 5 ])
+           , eq "up sliceForMax Nothing -> all" [ 1, 2, 3, 4, 5 ] (Upload.sliceForMax Nothing 5 [ 1, 2, 3, 4, 5 ])
+
+           -- §E progressStatusOf / buttonKindOf
+           , eq "up progressStatusOf Pending -> Info" Progress.Info (Upload.progressStatusOf Upload.Pending)
+           , eq "up progressStatusOf Uploading -> Info" Progress.Info (Upload.progressStatusOf Upload.Uploading)
+           , eq "up progressStatusOf Removed -> Info" Progress.Info (Upload.progressStatusOf Upload.Removed)
+           , eq "up progressStatusOf Finished -> Success" Progress.Success (Upload.progressStatusOf Upload.Finished)
+           , eq "up progressStatusOf Error -> Error" Progress.Error (Upload.progressStatusOf Upload.Error)
+           , eq "up buttonKindOf Pending -> Nothing" Nothing (Upload.buttonKindOf Upload.Pending)
+           , eq "up buttonKindOf Uploading -> Nothing" Nothing (Upload.buttonKindOf Upload.Uploading)
+           , eq "up buttonKindOf Finished -> Nothing" Nothing (Upload.buttonKindOf Upload.Finished)
+           , eq "up buttonKindOf Removed -> Nothing" Nothing (Upload.buttonKindOf Upload.Removed)
+           , eq "up buttonKindOf Error -> Just Error" (Just T.Error) (Upload.buttonKindOf Upload.Error)
            ]
 
 
@@ -14885,6 +15202,76 @@ liveNodes =
                          }
                         )
                     )
+                , Element.el [ Element.htmlAttribute (HA.id "live-upload") ]
+                    (Upload.view Theme.default { uploadLiveOpts | fileList = uploadFiles })
+                , Element.el [ Element.htmlAttribute (HA.id "live-upload-uploading") ]
+                    (Upload.view Theme.default { uploadLiveOpts | fileList = uploadUploadingFiles })
+                , Element.el [ Element.htmlAttribute (HA.id "live-upload-error") ]
+                    (Upload.view Theme.default { uploadLiveOpts | fileList = uploadErrorFiles })
+                , Element.el [ Element.htmlAttribute (HA.id "live-upload-image") ]
+                    (Upload.view Theme.default { uploadLiveOpts | listType = Upload.Image, fileList = uploadImageUploading })
+                , Element.el [ Element.htmlAttribute (HA.id "live-upload-image-card") ]
+                    (Upload.view Theme.default { uploadLiveOpts | listType = Upload.ImageCard, fileList = uploadCardNoThumb })
+                , Element.el [ Element.htmlAttribute (HA.id "live-upload-card-thumb") ]
+                    (Upload.view Theme.default
+                        { uploadLiveOpts
+                            | listType = Upload.ImageCard
+                            , showDownloadButton = True
+                            , fileList = uploadCardThumb
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-upload-disabled") ]
+                    (Upload.view Theme.default { uploadLiveOpts | disabled = True, fileList = uploadFiles })
+                , Element.el [ Element.htmlAttribute (HA.id "live-upload-disabled-card") ]
+                    (Upload.view Theme.default
+                        { uploadLiveOpts
+                            | listType = Upload.ImageCard
+                            , disabled = True
+                            , showDownloadButton = True
+                            , fileList = uploadCardThumb
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-upload-max") ]
+                    (Upload.view Theme.default { uploadLiveOpts | max = Just 1, fileList = List.take 1 uploadFiles })
+                , Element.el [ Element.htmlAttribute (HA.id "live-upload-notrigger") ]
+                    (Upload.view Theme.default { uploadLiveOpts | showTrigger = False, fileList = uploadFiles })
+                , Element.el [ Element.htmlAttribute (HA.id "live-upload-nolist") ]
+                    (Upload.view Theme.default { uploadLiveOpts | showFileList = False, fileList = uploadFiles })
+                , Element.el [ Element.htmlAttribute (HA.id "live-upload-multiple") ]
+                    (Upload.view Theme.default { uploadLiveOpts | multiple = True, fileList = [] })
+                , Element.el [ Element.htmlAttribute (HA.id "live-upload-directory") ]
+                    (Upload.view Theme.default
+                        { uploadLiveOpts
+                            | directory = True
+                            , accept = Just "image/*"
+                            , inputAttributes = [ HA.attribute "data-marker" "MARK" ]
+                            , fileList = []
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-upload-drag") ]
+                    (Upload.view Theme.default { uploadLiveOpts | dragOver = True, draggerInside = True, fileList = [] })
+                , Element.el [ Element.htmlAttribute (HA.id "live-upload-dragger") ]
+                    (Upload.viewDragger { uploadLiveOpts | disabled = True } [ Element.text "D" ])
+                , Element.el [ Element.htmlAttribute (HA.id "live-upload-always-show") ]
+                    (Upload.view Theme.default { uploadLiveOpts | alwaysShowActions = True, fileList = uploadErrorFiles })
+                , Element.el [ Element.htmlAttribute (HA.id "live-upload-rendericon") ]
+                    (Upload.view Theme.default
+                        { uploadLiveOpts
+                            | fileList = [ upBase "r1.png" ]
+                            , renderIcon =
+                                Just
+                                    (\_ ->
+                                        Element.el [ Element.htmlAttribute (HA.id "up-render-icon") ]
+                                            (Element.text "ICON")
+                                    )
+                        }
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-upload-abstract") ]
+                    (Element.column []
+                        (Upload.viewAbstract Theme.default { uploadLiveOpts | abstract = True } (Element.text "SLOT"))
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-upload-abstract-list") ]
+                    (Upload.viewFileList Theme.default { uploadLiveOpts | abstract = True, fileList = uploadFiles })
                 ]
             )
         ]
