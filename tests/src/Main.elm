@@ -34,6 +34,7 @@ import NUI.Card as Card
 import NUI.Cascader as Cascader
 import NUI.Checkbox as Checkbox
 import NUI.Collapse as Collapse
+import NUI.ColorPicker as ColorPicker
 import NUI.Countdown as Countdown
 import NUI.Css as Css
 import NUI.DataTable as DataTable
@@ -12133,6 +12134,141 @@ checks =
                 [ DatePicker.colItemClick DatePicker.Daterange (DatePicker.Range (Just ( dpMayAnchor, dpRangeEnd ))) dpMay20 DatePicker.RangeStart
                 , DatePicker.colItemClick DatePicker.Daterange (DatePicker.Range (Just ( dpMayAnchor, dpRangeEnd ))) dpApr01 DatePicker.RangeEnd
                 ]
+
+           -- COLOR-PICKER — pins derived from color-picker/src/utils.ts, ColorInputUnit.tsx,
+           -- Pallete/HueSlider/AlphaSlider and seemly@0.3.10
+           -- (tools/node_modules/seemly/lib/color/* run through `node -e`). Expectations:
+           -- tasks/recon/color-picker-pins.md. eq surface = NUI.ColorPicker.* only;
+           -- the engine NUI.Internal.Color is exercised transitively through convertColor.
+           -- =====================================================================
+           -- deriveDefaultValue (utils.ts:23) — modes[0] seeds the string
+           , eq "cp deriveDefaultValue [Hex] True" "#000000FF" (ColorPicker.deriveDefaultValue [ ColorPicker.Hex ] True)
+           , eq "cp deriveDefaultValue [Hex] False" "#000000" (ColorPicker.deriveDefaultValue [ ColorPicker.Hex ] False)
+           , eq "cp deriveDefaultValue [Rgb] True" "rgba(0, 0, 0, 1)" (ColorPicker.deriveDefaultValue [ ColorPicker.Rgb ] True)
+           , eq "cp deriveDefaultValue [Rgb] False" "rgb(0, 0, 0)" (ColorPicker.deriveDefaultValue [ ColorPicker.Rgb ] False)
+           , eq "cp deriveDefaultValue [Hsl] True" "hsla(0, 0%, 0%, 1)" (ColorPicker.deriveDefaultValue [ ColorPicker.Hsl ] True)
+           , eq "cp deriveDefaultValue [Hsl] False" "hsl(0, 0%, 0%)" (ColorPicker.deriveDefaultValue [ ColorPicker.Hsl ] False)
+           , eq "cp deriveDefaultValue [Hsv] True" "hsva(0, 0%, 0%, 1)" (ColorPicker.deriveDefaultValue [ ColorPicker.Hsv ] True)
+           , eq "cp deriveDefaultValue [Hsv] False" "hsv(0, 0%, 0%)" (ColorPicker.deriveDefaultValue [ ColorPicker.Hsv ] False)
+           , eq "cp deriveDefaultValue [] -> '#000000' fallback (showAlpha ignored)" "#000000" (ColorPicker.deriveDefaultValue [] True)
+           , eq "cp deriveDefaultValue [Hex,Rgb] uses the head only" "#000000FF" (ColorPicker.deriveDefaultValue [ ColorPicker.Hex, ColorPicker.Rgb ] True)
+
+           -- getModeFromValue (utils.ts:44)
+           , eq "cp getModeFromValue Nothing -> Nothing" Nothing (ColorPicker.getModeFromValue Nothing)
+           , eq "cp getModeFromValue '#abc' -> Hex" (Just ColorPicker.Hex) (ColorPicker.getModeFromValue (Just "#abc"))
+           , eq "cp getModeFromValue '  #abc' (leading space) -> Hex" (Just ColorPicker.Hex) (ColorPicker.getModeFromValue (Just "  #abc"))
+           , eq "cp getModeFromValue '#abc ' (trailing space still Hex)" (Just ColorPicker.Hex) (ColorPicker.getModeFromValue (Just "#abc "))
+           , eq "cp getModeFromValue 'rgba(...)' -> Rgb" (Just ColorPicker.Rgb) (ColorPicker.getModeFromValue (Just "rgba(1,2,3,1)"))
+           , eq "cp getModeFromValue 'hsla(...)' -> Hsl" (Just ColorPicker.Hsl) (ColorPicker.getModeFromValue (Just "hsla(1, 2%, 3%, 1)"))
+           , eq "cp getModeFromValue 'hsva(...)' -> Hsv" (Just ColorPicker.Hsv) (ColorPicker.getModeFromValue (Just "hsva(1, 2%, 3%, 1)"))
+           , eq "cp getModeFromValue 'red' -> Nothing (no mode keyword)" Nothing (ColorPicker.getModeFromValue (Just "red"))
+           , eq "cp getModeFromValue 'xrgbx' -> Rgb (substring, not anchored)" (Just ColorPicker.Rgb) (ColorPicker.getModeFromValue (Just "xrgbx"))
+
+           -- normalizeHue (utils.ts:99) — clamps 360 -> 359 (NOT roundDeg)
+           , eq "cp normalizeHue 360 -> 359" 359 (ColorPicker.normalizeHue 360)
+           , eq "cp normalizeHue 359.5 -> 359" 359 (ColorPicker.normalizeHue 359.5)
+           , eq "cp normalizeHue 361 -> 359" 359 (ColorPicker.normalizeHue 361)
+           , eq "cp normalizeHue -5 -> 0" 0 (ColorPicker.normalizeHue -5)
+           , eq "cp normalizeHue 180 -> 180" 180 (ColorPicker.normalizeHue 180)
+
+           -- normalizeAlpha (utils.ts:104)
+           , eq "cp normalizeAlpha 1.5 -> 1" 1 (ColorPicker.normalizeAlpha 1.5)
+           , eq "cp normalizeAlpha 0.333 -> 0.33 (2dp)" 0.33 (ColorPicker.normalizeAlpha 0.333)
+           , eq "cp normalizeAlpha 0.999 -> 1" 1 (ColorPicker.normalizeAlpha 0.999)
+           , eq "cp normalizeAlpha -0.5 -> 0" 0 (ColorPicker.normalizeAlpha -0.5)
+
+           -- getWCAGContrast (utils.ts:58)
+           , eq "cp getWCAGContrast white bg -> False (black text)" False (ColorPicker.getWCAGContrast { h = 0, s = 0, l = 100, a = 1 })
+           , eq "cp getWCAGContrast black bg -> True (white text)" True (ColorPicker.getWCAGContrast { h = 0, s = 0, l = 0, a = 1 })
+           , eq "cp getWCAGContrast mid gray -> False" False (ColorPicker.getWCAGContrast { h = 0, s = 0, l = 50, a = 1 })
+           , eq "cp getWCAGContrast dark gray -> True" True (ColorPicker.getWCAGContrast { h = 0, s = 0, l = 25, a = 1 })
+           , eq "cp getWCAGContrast red a=1 -> False (contrast < 4.5)" False (ColorPicker.getWCAGContrast { h = 0, s = 100, l = 50, a = 1 })
+           , eq "cp getWCAGContrast navy -> True" True (ColorPicker.getWCAGContrast { h = 240, s = 100, l = 25, a = 1 })
+           , eq "cp getWCAGContrast a=0 -> False" False (ColorPicker.getWCAGContrast { h = 0, s = 0, l = 0, a = 0 })
+           , eq "cp getWCAGContrast blended alpha .8 -> True" True (ColorPicker.getWCAGContrast { h = 0, s = 0, l = 0, a = 0.8 })
+           , eq "cp getWCAGContrast blended alpha .5 -> False" False (ColorPicker.getWCAGContrast { h = 0, s = 0, l = 0, a = 0.5 })
+
+           -- unit normalizers (ColorInputUnit.tsx:6-45)
+           , eq "cp normalizeRgbUnit '255.9' -> Just 255" (Just 255) (ColorPicker.normalizeRgbUnit "255.9")
+           , eq "cp normalizeRgbUnit ' 7 ' -> Just 7" (Just 7) (ColorPicker.normalizeRgbUnit " 7 ")
+           , eq "cp normalizeRgbUnit '-3' -> Nothing (minus fails regex)" Nothing (ColorPicker.normalizeRgbUnit "-3")
+           , eq "cp normalizeRgbUnit '1e2' -> Nothing" Nothing (ColorPicker.normalizeRgbUnit "1e2")
+           , eq "cp normalizeRgbUnit '999' -> Just 255 (clamp)" (Just 255) (ColorPicker.normalizeRgbUnit "999")
+           , eq "cp normalizeHueUnit '360' -> Just 360 (inclusive)" (Just 360) (ColorPicker.normalizeHueUnit "360")
+           , eq "cp normalizeHueUnit '361' -> Just 360 (clamp)" (Just 360) (ColorPicker.normalizeHueUnit "361")
+           , eq "cp normalizeHueUnit '359.9' -> Just 359" (Just 359) (ColorPicker.normalizeHueUnit "359.9")
+           , eq "cp normalizeHueUnit '-1' -> Nothing" Nothing (ColorPicker.normalizeHueUnit "-1")
+           , eq "cp normalizeSlvUnit '100' -> Just 100" (Just 100) (ColorPicker.normalizeSlvUnit "100")
+           , eq "cp normalizeSlvUnit '101' -> Just 100" (Just 100) (ColorPicker.normalizeSlvUnit "101")
+           , eq "cp normalizeSlvUnit '50.5' -> Just 50" (Just 50) (ColorPicker.normalizeSlvUnit "50.5")
+           , eq "cp normalizeHexaUnit '#ABC' -> True" True (ColorPicker.normalizeHexaUnit "#ABC")
+           , eq "cp normalizeHexaUnit '#ABCD' -> True" True (ColorPicker.normalizeHexaUnit "#ABCD")
+           , eq "cp normalizeHexaUnit '#AABBCC' -> True" True (ColorPicker.normalizeHexaUnit "#AABBCC")
+           , eq "cp normalizeHexaUnit '#AABBCCDD' -> True" True (ColorPicker.normalizeHexaUnit "#AABBCCDD")
+           , eq "cp normalizeHexaUnit '#AB' -> False" False (ColorPicker.normalizeHexaUnit "#AB")
+           , eq "cp normalizeHexaUnit '#ABCDE' -> False" False (ColorPicker.normalizeHexaUnit "#ABCDE")
+           , eq "cp normalizeHexaUnit '#GGG' -> False" False (ColorPicker.normalizeHexaUnit "#GGG")
+           , eq "cp normalizeHexaUnit ' #ABC ' -> True (trim)" True (ColorPicker.normalizeHexaUnit " #ABC ")
+           , eq "cp normalizeAlphaUnit '100%' -> Just 1" (Just 1) (ColorPicker.normalizeAlphaUnit "100%")
+           , eq "cp normalizeAlphaUnit '200%' -> Just 2 (clamp 100 kept)" (Just 2) (ColorPicker.normalizeAlphaUnit "200%")
+           , eq "cp normalizeAlphaUnit '50.5%' -> Just 0.5" (Just 0.5) (ColorPicker.normalizeAlphaUnit "50.5%")
+           , eq "cp normalizeAlphaUnit '0%' -> Just 0" (Just 0) (ColorPicker.normalizeAlphaUnit "0%")
+           , eq "cp normalizeAlphaUnit '-1%' -> Nothing" Nothing (ColorPicker.normalizeAlphaUnit "-1%")
+           , eq "cp normalizeAlphaUnit '50' (no %) -> Nothing" Nothing (ColorPicker.normalizeAlphaUnit "50")
+           , eq "cp normalizeAlphaUnit '1000%' -> Just 10" (Just 10) (ColorPicker.normalizeAlphaUnit "1000%")
+
+           -- slider geometry (Pallete/HueSlider/AlphaSlider)
+           , eq "cp svFromPoint top-left -> {0,100}" { s = 0, v = 100 } (ColorPicker.svFromPoint { width = 200, height = 180, left = 0, bottom = 180 } { x = 0, y = 0 })
+           , eq "cp svFromPoint bottom-right -> {100,0}" { s = 100, v = 0 } (ColorPicker.svFromPoint { width = 200, height = 180, left = 0, bottom = 180 } { x = 200, y = 180 })
+           , eq "cp svFromPoint mid (offset rect) -> {50,50}" { s = 50, v = 50 } (ColorPicker.svFromPoint { width = 200, height = 180, left = 10, bottom = 190 } { x = 110, y = 100 })
+           , eq "cp svFromPoint beyond -> {100,100} (clamp)" { s = 100, v = 100 } (ColorPicker.svFromPoint { width = 200, height = 180, left = 0, bottom = 180 } { x = 999, y = -999 })
+           , eq "cp svFromPoint before -> {0,0} (clamp)" { s = 0, v = 0 } (ColorPicker.svFromPoint { width = 200, height = 180, left = 0, bottom = 180 } { x = -5, y = 999 })
+           , eq "cp hueFromPoint left edge -> 0" 0 (ColorPicker.hueFromPoint { width = 200, left = 0 } 0)
+           , eq "cp hueFromPoint beyond -> 359" 359 (ColorPicker.hueFromPoint { width = 200, left = 0 } 999)
+           , eq "cp hueFromPoint mid -> 180" 180 (ColorPicker.hueFromPoint { width = 200, left = 0 } 100)
+           , eq "cp hueFromPoint exactly right -> 359" 359 (ColorPicker.hueFromPoint { width = 200, left = 0 } 200)
+           , eq "cp hueFromPoint left+6 (RADIUS) -> 0" 0 (ColorPicker.hueFromPoint { width = 200, left = 0 } 6)
+           , eq "cp alphaFromPoint left -> 0" 0 (ColorPicker.alphaFromPoint { width = 200, left = 0 } 0)
+           , eq "cp alphaFromPoint beyond -> 1 (clamp)" 1 (ColorPicker.alphaFromPoint { width = 200, left = 0 } 999)
+           , eq "cp alphaFromPoint mid -> 0.52 (2dp)" 0.52 (ColorPicker.alphaFromPoint { width = 200, left = 0 } 97)
+
+           -- nextDisplayedMode (handleUpdateDisplayedMode, ColorPicker.tsx:238-250)
+           , eq "cp nextDisplayedMode [Rgb,Hex,Hsl] Rgb -> Hex" ColorPicker.Hex (ColorPicker.nextDisplayedMode [ ColorPicker.Rgb, ColorPicker.Hex, ColorPicker.Hsl ] ColorPicker.Rgb)
+           , eq "cp nextDisplayedMode [Rgb,Hex,Hsl] Hex -> Hsl" ColorPicker.Hsl (ColorPicker.nextDisplayedMode [ ColorPicker.Rgb, ColorPicker.Hex, ColorPicker.Hsl ] ColorPicker.Hex)
+           , eq "cp nextDisplayedMode [Rgb,Hex,Hsl] Hsl -> Rgb (wrap)" ColorPicker.Rgb (ColorPicker.nextDisplayedMode [ ColorPicker.Rgb, ColorPicker.Hex, ColorPicker.Hsl ] ColorPicker.Hsl)
+           , eq "cp nextDisplayedMode [Rgb,Hex,Hsl] Hsv (not listed) -> Rgb" ColorPicker.Rgb (ColorPicker.nextDisplayedMode [ ColorPicker.Rgb, ColorPicker.Hex, ColorPicker.Hsl ] ColorPicker.Hsv)
+           , eq "cp nextDisplayedMode [Hex] Hex -> Hex (single)" ColorPicker.Hex (ColorPicker.nextDisplayedMode [ ColorPicker.Hex ] ColorPicker.Hex)
+           , eq "cp nextDisplayedMode [] Rgb -> Rgb" ColorPicker.Rgb (ColorPicker.nextDisplayedMode [] ColorPicker.Rgb)
+
+           -- convertColor (utils.ts:172-199) — the 4-mode convert table + parsers
+           , eq "cp convertColor '#FF000080' Hsv -> hsva(0, 100%, 100%, 0.5)" (Just "hsva(0, 100%, 100%, 0.5)") (ColorPicker.convertColor "#FF000080" ColorPicker.Hsv Nothing)
+           , eq "cp convertColor '#FF000080' Rgb" (Just "rgba(255, 0, 0, 0.5)") (ColorPicker.convertColor "#FF000080" ColorPicker.Rgb Nothing)
+           , eq "cp convertColor '#FF000080' Hsl" (Just "hsla(0, 100%, 50%, 0.5)") (ColorPicker.convertColor "#FF000080" ColorPicker.Hsl Nothing)
+           , eq "cp convertColor 'hsv(210, 50%, 50%)' Hex (hsv2rgb + toHexa)" (Just "#406080FF") (ColorPicker.convertColor "hsv(210, 50%, 50%)" ColorPicker.Hex Nothing)
+           , eq "cp convertColor 'rgba(208, 48, 80, 1)' Hsv" (Just "hsva(348, 77%, 82%, 1)") (ColorPicker.convertColor "rgba(208, 48, 80, 1)" ColorPicker.Hsv Nothing)
+           , eq "cp convertColor 'rgba(208, 48, 80, 1)' Hex" (Just "#D03050FF") (ColorPicker.convertColor "rgba(208, 48, 80, 1)" ColorPicker.Hex Nothing)
+           , eq "cp convertColor 'hsl(0, 100%, 50%)' Rgb (hsl2rgb)" (Just "rgba(255, 0, 0, 1)") (ColorPicker.convertColor "hsl(0, 100%, 50%)" ColorPicker.Rgb Nothing)
+           , eq "cp convertColor 'hsl(210, 50%, 50%)' Hsv (hsl2hsv)" (Just "hsva(210, 67%, 75%, 1)") (ColorPicker.convertColor "hsl(210, 50%, 50%)" ColorPicker.Hsv Nothing)
+           , eq "cp convertColor 'hsv(210, 50%, 50%)' Hsl (hsv2hsl)" (Just "hsla(210, 33%, 38%, 1)") (ColorPicker.convertColor "hsv(210, 50%, 50%)" ColorPicker.Hsl Nothing)
+           , eq "cp convertColor same-mode '#abc' Hex -> verbatim" (Just "#abc") (ColorPicker.convertColor "#abc" ColorPicker.Hex Nothing)
+           , eq "cp convertColor same-mode 'rgb(1, 2, 3)' Rgb -> verbatim" (Just "rgb(1, 2, 3)") (ColorPicker.convertColor "rgb(1, 2, 3)" ColorPicker.Rgb Nothing)
+           , eq "cp convertColor 'red' Hex -> Nothing (mode-less)" Nothing (ColorPicker.convertColor "red" ColorPicker.Hex Nothing)
+           , eq "cp convertColor '#abc' Rgb (Just Hex)" (Just "rgba(170, 187, 204, 1)") (ColorPicker.convertColor "#abc" ColorPicker.Rgb (Just ColorPicker.Hex))
+           , eq "cp convertColor 'rgb(1,2)' Hex (Just Rgb) -> Nothing (unparseable)" Nothing (ColorPicker.convertColor "rgb(1,2)" ColorPicker.Hex (Just ColorPicker.Rgb))
+           , eq "cp convertColor 'hsl(1,2)' Rgb (Just Hsl) -> Nothing" Nothing (ColorPicker.convertColor "hsl(1,2)" ColorPicker.Rgb (Just ColorPicker.Hsl))
+           , eq "cp convertColor '#GGG' Hex (Just Hex) -> verbatim (same-mode, not parsed)" (Just "#GGG") (ColorPicker.convertColor "#GGG" ColorPicker.Hex (Just ColorPicker.Hex))
+           , eq "cp convertColor '#GGG' Rgb (Just Hex) -> Nothing" Nothing (ColorPicker.convertColor "#GGG" ColorPicker.Rgb (Just ColorPicker.Hex))
+           , eq "cp convertColor 'hsl(360, 100%, 50%)' Rgb (roundDeg 360->0)" (Just "rgba(255, 0, 0, 1)") (ColorPicker.convertColor "hsl(360, 100%, 50%)" ColorPicker.Rgb Nothing)
+           , eq "cp convertColor 'rgb( 1 , 2 , 3 )' Hex (inner spaces)" (Just "#010203FF") (ColorPicker.convertColor "rgb( 1 , 2 , 3 )" ColorPicker.Hex Nothing)
+           , eq "cp convertColor 'rgb(1.9, 2.9, 3.9)' Hex (roundChannel)" (Just "#020304FF") (ColorPicker.convertColor "rgb(1.9, 2.9, 3.9)" ColorPicker.Hex Nothing)
+           , eq "cp convertColor 'rgb(300,0,0)' Hex (clamp 255)" (Just "#FF0000FF") (ColorPicker.convertColor "rgb(300,0,0)" ColorPicker.Hex Nothing)
+           , eq "cp convertColor 'rgba(255, 255, 255, 0.333)' Hex (roundAlpha 2dp)" (Just "#FFFFFF54") (ColorPicker.convertColor "rgba(255, 255, 255, 0.333)" ColorPicker.Hex Nothing)
+           , eq "cp convertColor 'red' Hsv (Just Rgb) -> named lookup parses" (Just "hsva(0, 100%, 100%, 1)") (ColorPicker.convertColor "red" ColorPicker.Hsv (Just ColorPicker.Rgb))
+           , eq "cp convertColor 'transparent' Hex (Just Rgb) -> #00000000" (Just "#00000000") (ColorPicker.convertColor "transparent" ColorPicker.Hex (Just ColorPicker.Rgb))
+           , eq "cp convertColor '#AABBCCDD' Hsv (alpha 0.87)" (Just "hsva(210, 17%, 80%, 0.87)") (ColorPicker.convertColor "#AABBCCDD" ColorPicker.Hsv Nothing)
+           , eq "cp convertColor '#ABCD' Rgb (short hexa expand)" (Just "rgba(170, 187, 204, 0.87)") (ColorPicker.convertColor "#ABCD" ColorPicker.Rgb Nothing)
+           , eq "cp convertColor 'hsl( 30 , 50% , 50% )' Rgb (token spaces)" (Just "rgba(191, 128, 64, 1)") (ColorPicker.convertColor "hsl( 30 , 50% , 50% )" ColorPicker.Rgb Nothing)
+           , eq "cp convertColor 'hsva(210, 50%, 50%, 0.5)' Hex" (Just "#40608080") (ColorPicker.convertColor "hsva(210, 50%, 50%, 0.5)" ColorPicker.Hex Nothing)
            ]
 
 
@@ -14642,6 +14778,95 @@ liveNodes =
                             , clearable = True
                             , internalForceFocus = True
                         }
+                    )
+
+                -- color-picker live fixtures — pins in
+                -- tasks/recon/color-picker-pins.md
+                , Element.el [ Element.htmlAttribute (HA.id "live-color-picker") ]
+                    (ColorPicker.view Theme.default
+                        (let
+                            d =
+                                ColorPicker.defaultOptions
+                         in
+                         { d | value = Just "#ff0000" }
+                        )
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-color-picker-dark") ]
+                    (ColorPicker.view Theme.default
+                        (let
+                            d =
+                                ColorPicker.defaultOptions
+                         in
+                         { d | value = Just "#000000" }
+                        )
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-color-picker-disabled") ]
+                    (ColorPicker.view Theme.default
+                        (let
+                            d =
+                                ColorPicker.defaultOptions
+                         in
+                         { d | value = Just "#ff0000", disabled = True }
+                        )
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-color-picker-small") ]
+                    (ColorPicker.view Theme.default
+                        (let
+                            d =
+                                ColorPicker.defaultOptions
+                         in
+                         { d | value = Just "#ff0000", size = T.Small }
+                        )
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-color-picker-large") ]
+                    (ColorPicker.view Theme.default
+                        (let
+                            d =
+                                ColorPicker.defaultOptions
+                         in
+                         { d | value = Just "#ff0000", size = T.Large }
+                        )
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-color-picker-panel") ]
+                    (ColorPicker.panel Theme.default
+                        (let
+                            d =
+                                ColorPicker.defaultOptions
+                         in
+                         { d
+                            | value = Just "#ff0000"
+                            , showAlpha = True
+                            , showPreview = True
+                            , actions = Just [ ColorPicker.ConfirmAction, ColorPicker.ClearAction ]
+                            , internalActions = Just [ ColorPicker.UndoAction, ColorPicker.RedoAction ]
+                            , swatches = [ "#ff0000", "rgba(208, 48, 80, 1)", "black" ]
+                         }
+                        )
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-color-picker-panel-noalpha") ]
+                    (ColorPicker.panel Theme.default
+                        (let
+                            d =
+                                ColorPicker.defaultOptions
+                         in
+                         { d
+                            | value = Just "#ff0000"
+                            , displayedMode = ColorPicker.Hex
+                            , showAlpha = False
+                         }
+                        )
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-color-picker-panel-transition") ]
+                    (ColorPicker.panel Theme.default
+                        (let
+                            d =
+                                ColorPicker.defaultOptions
+                         in
+                         { d
+                            | value = Just "#ff0000"
+                            , transition = Just Internal.EnterActive
+                         }
+                        )
                     )
                 ]
             )

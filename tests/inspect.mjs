@@ -10909,6 +10909,268 @@ dEq(
   })()
 )
 
+// color-picker ---------------------------------------------------------------
+// Pins: tasks/recon/color-picker-pins.md. elm-ui structure classes coexist with
+// the n-* ones, so class assertions normalise to the n-* subset (nClassesStr).
+const cpTrigger = (id) => doc.querySelector('#' + id + ' .n-color-picker')
+const cpPanel = (id) => doc.querySelector('#' + id + ' .n-color-picker-panel')
+const cpRoot = (id) => doc.querySelector('#' + id)
+
+// trigger
+dEq(
+  'DOM: color-picker trigger classes (basic = bare n-color-picker)',
+  'n-color-picker',
+  nClassesStr(cpTrigger('live-color-picker'))
+)
+dEq(
+  'DOM: color-picker trigger disabled adds --disabled after the base',
+  'n-color-picker n-color-picker--disabled',
+  nClassesStr(cpTrigger('live-color-picker-disabled'))
+)
+dEq(
+  'DOM: color-picker trigger 10 vars in upstream order (bezier, text-color, color, panel-font-size, font-size, box-shadow, border, border-radius, height, divider-color)',
+  '--n-bezier|--n-text-color|--n-color|--n-panel-font-size|--n-font-size|--n-box-shadow|--n-border|--n-border-radius|--n-height|--n-divider-color',
+  varOrder(cpTrigger('live-color-picker'))
+)
+dEq(
+  'DOM: color-picker trigger carries exactly 10 --n-* vars',
+  10,
+  countVars(cpTrigger('live-color-picker'))
+)
+dEq(
+  'DOM: color-picker trigger __fill = checkboard, colour layer (no class), value label',
+  'n-color-picker-checkboard||n-color-picker__value',
+  Array.from(cpRoot('live-color-picker').querySelector('.n-color-picker__fill').children)
+    .map((c) => nClassesStr(c))
+    .join('|')
+)
+const cpLayer = cpRoot('live-color-picker').querySelector('.n-color-picker__fill > div:nth-child(2)')
+dTrue(
+  'DOM: color-picker trigger colour layer background = toHslaString(value)',
+  (styleAt(cpLayer) || '').includes('background-color:hsla(0, 100%, 50%, 1)'),
+  styleAt(cpLayer)
+)
+dEq(
+  'DOM: color-picker trigger value label = black on #ff0000 (getWCAGContrast false)',
+  'color: black;',
+  styleAt(cpRoot('live-color-picker').querySelector('.n-color-picker__value'))
+)
+dEq(
+  'DOM: color-picker trigger value label = white on #000000 (getWCAGContrast true)',
+  'color: white;',
+  styleAt(cpRoot('live-color-picker-dark').querySelector('.n-color-picker__value'))
+)
+dEq(
+  'DOM: color-picker trigger value text = the raw value',
+  '#ff0000',
+  cpRoot('live-color-picker').querySelector('.n-color-picker__value').textContent
+)
+dTrue(
+  'DOM: color-picker size small -> --n-height:28px + --n-font-size:14px',
+  (styleAt(cpTrigger('live-color-picker-small')) || '').includes('--n-height:28px') &&
+    (styleAt(cpTrigger('live-color-picker-small')) || '').includes('--n-font-size:14px'),
+  styleAt(cpTrigger('live-color-picker-small'))
+)
+dTrue(
+  'DOM: color-picker size large -> --n-height:40px + --n-font-size:15px',
+  (styleAt(cpTrigger('live-color-picker-large')) || '').includes('--n-height:40px') &&
+    (styleAt(cpTrigger('live-color-picker-large')) || '').includes('--n-font-size:15px'),
+  styleAt(cpTrigger('live-color-picker-large'))
+)
+
+// panel
+dEq(
+  'DOM: color-picker panel classes (bare)',
+  'n-color-picker-panel',
+  nClassesStr(cpPanel('live-color-picker-panel'))
+)
+dEq(
+  'DOM: color-picker panel transition adds fade-in-scale-up-transition-enter-active (not an n- class)',
+  'n-color-picker-panel fade-in-scale-up-transition-enter-active',
+  fullClasses(cpPanel('live-color-picker-panel-transition')).join(' ')
+)
+dEq(
+  'DOM: color-picker panel 10 vars in upstream order',
+  '--n-bezier|--n-text-color|--n-color|--n-panel-font-size|--n-font-size|--n-box-shadow|--n-border|--n-border-radius|--n-height|--n-divider-color',
+  varOrder(cpPanel('live-color-picker-panel'))
+)
+dEq(
+  'DOM: color-picker panel carries exactly 10 --n-* vars',
+  10,
+  countVars(cpPanel('live-color-picker-panel'))
+)
+dEq(
+  'DOM: color-picker control children order = pallete, preview, input, swatches',
+  'n-color-picker-pallete|n-color-picker-preview|n-color-picker-input|n-color-picker-swatches',
+  Array.from(cpRoot('live-color-picker-panel').querySelector('.n-color-picker-control').children)
+    .map((c) => nClassesStr(c))
+    .join('|')
+)
+dEq(
+  'DOM: color-picker pallete = two __layer divs, the 2nd --shadowed',
+  'n-color-picker-pallete__layer|n-color-picker-pallete__layer n-color-picker-pallete__layer--shadowed',
+  Array.from(cpRoot('live-color-picker-panel').querySelectorAll('.n-color-picker-pallete__layer'))
+    .map((c) => nClassesStr(c))
+    .join('|')
+)
+dTrue(
+  'DOM: color-picker pallete hue layer gradient uses hsl(0, 100%, 50%)',
+  (styleAt(cpRoot('live-color-picker-panel').querySelector('.n-color-picker-pallete__layer')) || '').includes(
+    'background-image:linear-gradient(90deg, white, hsl(0, 100%, 50%))'
+  ),
+  styleAt(cpRoot('live-color-picker-panel').querySelector('.n-color-picker-pallete__layer'))
+)
+dTrue(
+  'DOM: color-picker pallete handle left/bottom = calc(S% - 6px) / calc(V% - 6px)',
+  (() => {
+    const s =
+      styleAt(cpRoot('live-color-picker-panel').querySelector('.n-color-picker-pallete .n-color-picker-handle')) || ''
+    return s.includes('left: calc(100% - 6px)') && s.includes('bottom: calc(100% - 6px)')
+  })(),
+  styleAt(cpRoot('live-color-picker-panel').querySelector('.n-color-picker-pallete .n-color-picker-handle'))
+)
+dTrue(
+  'DOM: color-picker pallete handle fill = rgb(R, G, B)',
+  (styleAt(
+    cpRoot('live-color-picker-panel').querySelector('.n-color-picker-pallete .n-color-picker-handle__fill')
+  ) || '').includes('background-color:rgb(255, 0, 0)'),
+  styleAt(cpRoot('live-color-picker-panel').querySelector('.n-color-picker-pallete .n-color-picker-handle__fill'))
+)
+
+// sliders
+dEq(
+  'DOM: color-picker preview sliders = hue + alpha rails (showAlpha on)',
+  '2|1',
+  [
+    cpRoot('live-color-picker-panel').querySelectorAll('.n-color-picker-preview__sliders > .n-color-picker-slider').length,
+    cpRoot('live-color-picker-panel').querySelectorAll('.n-color-picker-slider__image').length
+  ].join('|')
+)
+dTrue(
+  'DOM: color-picker hue slider handle left = calc(hue / 359 * 100 - 6px) — jsdom normalises it to the -6px + (100/359)*hue% form',
+  (() => {
+    const s = styleAt(cpRoot('live-color-picker-panel').querySelectorAll('.n-color-picker-handle')[1]) || ''
+    return s.includes('calc(') && s.includes('-6px') && s.includes('0.2785515320334262') && s.includes('0%')
+  })(),
+  styleAt(cpRoot('live-color-picker-panel').querySelectorAll('.n-color-picker-handle')[1])
+)
+dTrue(
+  'DOM: color-picker alpha slider handle left = calc(alpha*100% - 6px)',
+  (styleAt(cpRoot('live-color-picker-panel').querySelectorAll('.n-color-picker-handle')[2]) || '').includes(
+    'left: calc(100% - 6px)'
+  ),
+  styleAt(cpRoot('live-color-picker-panel').querySelectorAll('.n-color-picker-handle')[2])
+)
+dTrue(
+  'DOM: color-picker alpha slider __image gradient = rgba(R,G,B,0) -> rgba(R,G,B,1)',
+  (styleAt(cpRoot('live-color-picker-panel').querySelector('.n-color-picker-slider__image')) || '').includes(
+    'background-image:linear-gradient(to right, rgba(255, 0, 0, 0) 0%, rgba(255, 0, 0, 1) 100%)'
+  ),
+  styleAt(cpRoot('live-color-picker-panel').querySelector('.n-color-picker-slider__image'))
+)
+dEq(
+  'DOM: color-picker showAlpha=false -> only the hue rail (no alpha, no __image)',
+  '1|0',
+  [
+    cpRoot('live-color-picker-panel-noalpha').querySelectorAll('.n-color-picker-slider').length,
+    cpRoot('live-color-picker-panel-noalpha').querySelectorAll('.n-color-picker-slider__image').length
+  ].join('|')
+)
+
+// preview
+dTrue(
+  'DOM: color-picker showPreview -> fill background + native input type=color (value #ff0000)',
+  (() => {
+    const root = cpRoot('live-color-picker-panel')
+    const fill = root.querySelector('.n-color-picker-preview__fill')
+    const input = root.querySelector('.n-color-picker-preview__input')
+    return (
+      !!fill &&
+      (styleAt(fill) || '').includes('background: rgb(255, 0, 0)') &&
+      !!input &&
+      input.getAttribute('type') === 'color' &&
+      (input.value || '').toLowerCase() === '#ff0000'
+    )
+  })(),
+  'preview'
+)
+dEq(
+  'DOM: color-picker showPreview=false -> no preview block',
+  '0',
+  String(cpRoot('live-color-picker-panel-noalpha').querySelectorAll('.n-color-picker-preview__preview').length)
+)
+
+// input group + mode label
+dEq(
+  'DOM: color-picker mode label = MODE.upper + (showAlpha ? "A")',
+  'RGBA|HEX',
+  [
+    cpRoot('live-color-picker-panel').querySelector('.n-color-picker-input__mode').textContent,
+    cpRoot('live-color-picker-panel-noalpha').querySelector('.n-color-picker-input__mode').textContent
+  ].join('|')
+)
+dEq(
+  'DOM: color-picker unit inputs = NInputGroup of small NInputs with placeholders R,G,B,A',
+  'R|G|B|A',
+  Array.from(cpRoot('live-color-picker-panel').querySelectorAll('.n-input-group input'))
+    .map((i) => i.getAttribute('placeholder'))
+    .join('|')
+)
+dEq(
+  'DOM: color-picker unit inputs ride the small input size class',
+  'n-input n-input--small-size n-input--stateful',
+  nClassesStr(cpRoot('live-color-picker-panel').querySelector('.n-input-group .n-input'))
+)
+
+// swatches
+dEq(
+  'DOM: color-picker swatch grid = one swatch per preset, each with a __fill',
+  '3|3',
+  [
+    cpRoot('live-color-picker-panel').querySelectorAll('.n-color-picker-swatch').length,
+    cpRoot('live-color-picker-panel').querySelectorAll('.n-color-picker-swatch__fill').length
+  ].join('|')
+)
+dEq(
+  'DOM: color-picker swatch fills verbatim (CSS colours kept; named colour stays a name)',
+  'rgb(255, 0, 0)|rgb(208, 48, 80)|black',
+  Array.from(cpRoot('live-color-picker-panel').querySelectorAll('.n-color-picker-swatch__fill'))
+    .map((f) => (styleAt(f) || '').replace('background: ', '').replace(';', ''))
+    .join('|')
+)
+
+// actions
+dEq(
+  'DOM: color-picker renders two action rows (actions + internalActions) with Confirm/Clear then Undo/Redo',
+  '2|Confirm|Clear|Undo|Redo',
+  [
+    cpRoot('live-color-picker-panel').querySelectorAll('.n-color-picker-action').length
+  ]
+    .concat(
+      Array.from(cpRoot('live-color-picker-panel').querySelectorAll('.n-color-picker-action .n-button')).map(
+        (b) => b.textContent
+      )
+    )
+    .join('|')
+)
+dEq(
+  'DOM: color-picker confirm/clear enabled, undo/redo disabled (caller flags false)',
+  'false|false|true|true',
+  Array.from(cpRoot('live-color-picker-panel').querySelectorAll('.n-color-picker-action .n-button'))
+    .map((b) => b.className.includes('n-button--disabled').toString())
+    .join('|')
+)
+
+// focus detector
+dEq(
+  'DOM: color-picker panel focus detector — the last child, width:0;height:0, tabindex 0, no class',
+  'width:0;height:0|0|true',
+  (() => {
+    const det = cpPanel('live-color-picker-panel').lastElementChild
+    return [det.getAttribute('style'), det.getAttribute('tabindex'), det.className === ''].join('|')
+  })()
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
