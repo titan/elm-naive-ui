@@ -10789,6 +10789,22 @@ dEq(
 )
 
 dEq(
+  'DOM: non-UTC date panel (UTC+8) — grid highlights the caller local civil day (15) + current (21), not the UTC days (14/20) [oracle S1]',
+  '15|21|1|1',
+  (() => {
+    const root = doc.querySelector('#live-date-panel-zone')
+    const sel = root && root.querySelector('.n-date-panel-date--selected')
+    const cur = root && root.querySelector('.n-date-panel-date--current')
+    return [
+      sel ? sel.textContent.trim() : 'none',
+      cur ? cur.textContent.trim() : 'none',
+      String(root ? root.querySelectorAll('.n-date-panel-date--selected').length : -1),
+      String(root ? root.querySelectorAll('.n-date-panel-date--current').length : -1)
+    ].join('|')
+  })()
+)
+
+dEq(
   'DOM: daterange cell class ORDER (excluded, current, selected, covered, start, end, disabled) — start cell=current+selected+start, end cell=selected+end, band=covered, prev-month=excluded',
   'n-date-panel-date n-date-panel-date--current n-date-panel-date--selected n-date-panel-date--start|n-date-panel-date n-date-panel-date--selected n-date-panel-date--end|n-date-panel-date n-date-panel-date--covered|n-date-panel-date n-date-panel-date--excluded',
   (() => {

@@ -92,10 +92,11 @@ is always explicit: the zone-taking functions (`toCivil`, `toPosix`, `startOf*`,
     two literal `'HH:mm:ss'` strings (one per range side) instead of upstream's
     `(timestamp, position, value)` extractor callback. A blank string means
     "no default time".
-  - **Week numbering is `firstWeekContainsDate = 4`** everywhere (`weekNumber`,
-    `weekYear`, and the `w` / `YYYY` format tokens), with `weekStartsOn = 0` for
-    the two format tokens. `dateArray`'s week-span matching uses its own
-    `startDay` as `weekStartsOn`.
+  - **Week numbering is `firstWeekContainsDate = 1`** everywhere
+    (`weekNumber`, `weekYear`, and the `w` / `YYYY` format tokens), matching the
+    en-US date-fns locale default (`{ weekStartsOn: 0, firstWeekContainsDate: 1
+    }`), with `weekStartsOn = 0` for the two format tokens `[oracle S2]`.
+    `dateArray`'s week-span matching uses its own `startDay` as `weekStartsOn`.
 
 -}
 
@@ -753,7 +754,7 @@ startOfWeekDay weekStartsOn dayNumber =
 
 startOfWeekYearDay : Int -> Int -> Int
 startOfWeekYearDay weekStartsOn year =
-    startOfWeekDay weekStartsOn (daysFromCivil { year = year, month = 1, day = 4 })
+    startOfWeekDay weekStartsOn (daysFromCivil { year = year, month = 1, day = 1 })
 
 
 isSameWeekWith : Int -> Int -> Int -> Bool
@@ -761,7 +762,7 @@ isSameWeekWith weekStartsOn a b =
     startOfWeekOn weekStartsOn Time.utc a == startOfWeekOn weekStartsOn Time.utc b
 
 
-{-| date-fns `getWeekYear` with `firstWeekContainsDate = 4`.
+{-| date-fns `getWeekYear` with `firstWeekContainsDate = 1`.
 -}
 weekYear : Int -> Time.Zone -> Int -> Int
 weekYear weekStartsOn zone ts =
@@ -782,7 +783,7 @@ weekYear weekStartsOn zone ts =
         year - 1
 
 
-{-| date-fns `getWeek` with `firstWeekContainsDate = 4`.
+{-| date-fns `getWeek` with `firstWeekContainsDate = 1`.
 -}
 weekNumber : Int -> Time.Zone -> Int -> Int
 weekNumber weekStartsOn zone ts =
@@ -1100,7 +1101,7 @@ pluckValueFromRange valueTs index =
 
 
 {-| date-fns `format` for the pinned token subset (see the module docs). Week
-tokens use `weekStartsOn = 0` / `firstWeekContainsDate = 4`.
+tokens use `weekStartsOn = 0` / `firstWeekContainsDate = 1`.
 -}
 format : String -> Time.Zone -> Int -> String
 format pattern zone ts =
@@ -2040,7 +2041,7 @@ applyWeekYear ( value, twoDigit ) local =
                 value
 
         base =
-            { year = year, month = 1, day = 4, hours = 0, minutes = 0, seconds = 0, ms = 0 }
+            { year = year, month = 1, day = 1, hours = 0, minutes = 0, seconds = 0, ms = 0 }
 
         startDn =
             startOfWeekDay 0 (daysFromCivil (civilOfLocal base))

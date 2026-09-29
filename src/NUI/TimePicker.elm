@@ -83,6 +83,10 @@ Visible units follow the format string exactly as upstream
     Elm message cannot carry both — use `onUpdateValue` (format with
     `formatValue` when you need the string) and `onUpdateFormattedValue`
     separately.
+  - `[oracle D]` **actions order.** The port renders `opts.actions` in the
+    caller's list order; upstream renders a fixed `clear, now, confirm` gated by
+    membership (`Panel.tsx:328-360`). Identical for the default
+    `[Now, Confirm]`; only a non-canonical caller list reorders.
 
 `formatValue` implements the date-fns token subset `H HH h hh K k m mm s ss a`
 plus `'...'` literals (`''` → `'`); everything else passes through verbatim.

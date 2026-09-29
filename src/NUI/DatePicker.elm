@@ -112,6 +112,15 @@ caller when closing is due (`singleDateClick`, `dualDateClick`).
   - Multi-effect interactions emit ONE message: the panel's `clear` button
     emits `onClear` when set (else a committed empty value); cell clicks emit
     the value and the caller closes when the pure helper's `close` says so.
+  - `[oracle D]` **R3 — date-input envelope.** The embedded date `NInput`s
+    hardcode `"yyyy-MM-dd"`; upstream uses `props.dateFormat ||
+    locale.dateFormat`. Matches the en-US default; no `dateFormat` option
+    surface — punted.
+  - `[oracle D]` **R4 — `timePickerProps` passthrough.** The embedded time
+    pickers use fixed props (`embeddedTimeOptions`); upstream spreads
+    `timePickerProps` (object) / `[0]`/`[1]` (array) per slot
+    (`datetime.tsx:63-76`, `datetimerange.tsx:74-122`). Needs a per-slot
+    options override surface — punted.
 
 **Upstream-faithful oddities kept on purpose.**
 
@@ -131,6 +140,23 @@ caller when closing is due (`singleDateClick`, `dualDateClick`).
     `n-date-panel-date-input`,
     `n-date-panel-month-calendar__picker-col-item--current`,
     `n-date-panel-quarter-calendar__padding`.
+  - `[oracle D]` **R1 — week format tokens.** `w` / `YYYY` use
+    `weekStartsOn = 0`, correct: upstream never threads `firstDayOfWeek` into
+    `format` (v2.45.3, date-fns v4 en-US = `{ weekStartsOn: 0,
+    firstWeekContainsDate: 1 }`). The real week defect is S2 (fwcd 4→1).
+  - `[oracle D]` **R2 — pair date-icon slot.** The pair suffix honors the
+    caller's `iconNode` (`dateGlyphNode`), whereas upstream pair mode renders a
+    fixed `DateIcon` and ignores the `date-icon` slot (`DatePicker.tsx`
+    :1124-1135) — an upstream bug the port supersets; DOM-identical when the
+    slot is unset.
+  - `[oracle D]` **R5 — quick-jump routing.** `onQuickMonthSelect` (side-less)
+    is an additive channel that wins when set; when unset the panel emits
+    `onUpdateCalendarValue side anchor`, matching upstream's per-side
+    `onUpdateValue` routing — faithful when unused.
+  - `[oracle D]` **R8-minor — textDecoration asymmetry.** The single trigger
+    binds `textDecoration = Nothing` when the value is valid, whereas upstream
+    always binds it (`''` / `line-through`), so a valid single input may omit an
+    empty inline `style`. Zero visual impact.
 
 -}
 
@@ -1813,9 +1839,9 @@ type alias PickerCell =
 
 dateItems : Options msg -> CalendarSide -> List DT.DateItem
 dateItems opts side =
-    DT.dateArray (calendarAnchor opts side)
-        (toValueTs opts.value)
-        (Time.posixToMillis opts.now)
+    DT.dateArray (gridTs opts.zone (calendarAnchor opts side))
+        (gridValueTs opts.zone (toValueTs opts.value))
+        (gridTs opts.zone (Time.posixToMillis opts.now))
         (Maybe.withDefault 6 opts.firstDayOfWeek)
         False
         (opts.type_ == Week)
@@ -1823,8 +1849,8 @@ dateItems opts side =
 
 yearItems : Options msg -> CalendarSide -> List PickerCell
 yearItems opts side =
-    DT.yearArray (sideValueTs opts side)
-        (Time.posixToMillis opts.now)
+    DT.yearArray (gridValueTs opts.zone (sideValueTs opts side))
+        (gridTs opts.zone (Time.posixToMillis opts.now))
         { yearFormat = opts.yearFormat }
         opts.yearRange
         |> List.map
@@ -1843,9 +1869,9 @@ yearItems opts side =
 monthOrQuarterItems : Options msg -> CalendarSide -> List PickerCell
 monthOrQuarterItems opts side =
     if opts.type_ == Quarter || opts.type_ == Quarterrange then
-        DT.quarterArray (calendarAnchor opts side)
-            (sideValueTs opts side)
-            (Time.posixToMillis opts.now)
+        DT.quarterArray (gridTs opts.zone (calendarAnchor opts side))
+            (gridValueTs opts.zone (sideValueTs opts side))
+            (gridTs opts.zone (Time.posixToMillis opts.now))
             { quarterFormat = opts.quarterFormat }
             |> List.map
                 (\item ->
@@ -1860,9 +1886,9 @@ monthOrQuarterItems opts side =
                 )
 
     else
-        DT.monthArray (calendarAnchor opts side)
-            (sideValueTs opts side)
-            (Time.posixToMillis opts.now)
+        DT.monthArray (gridTs opts.zone (calendarAnchor opts side))
+            (gridValueTs opts.zone (sideValueTs opts side))
+            (gridTs opts.zone (Time.posixToMillis opts.now))
             { monthFormat = opts.monthFormat }
             |> List.map
                 (\item ->
@@ -1930,11 +1956,37 @@ sideValueTs opts side =
                     DT.NoValue
 
 
+{-| The grid builders (`dateArray` / `monthArray` / …) read their timestamps in
+`Time.utc` (see `NUI.Internal.DateTime`), but clicks, sanitize and the display
+formatters work in `opts.zone`. Map a caller instant onto the UTC midnight of
+the same **civil** day in `opts.zone`, so the grid's civil days equal the
+caller's local civil days while the builders stay internally UTC `[oracle S1]`.
+-}
+gridTs : Time.Zone -> Int -> Int
+gridTs zone raw =
+    DT.toPosix Time.utc (DT.toCivil zone raw) zeroTime
+
+
+{-| `gridTs` lifted over a `DT.ValueTs` (single or range).
+-}
+gridValueTs : Time.Zone -> DT.ValueTs -> DT.ValueTs
+gridValueTs zone v =
+    case v of
+        DT.NoValue ->
+            DT.NoValue
+
+        DT.SingleTs ts ->
+            DT.SingleTs (gridTs zone ts)
+
+        DT.RangeTs a b ->
+            DT.RangeTs (gridTs zone a) (gridTs zone b)
+
+
 weekdayLabels : Options msg -> CalendarSide -> List String
 weekdayLabels opts side =
-    DT.dateArray (calendarAnchor opts side)
-        (toValueTs opts.value)
-        (Time.posixToMillis opts.now)
+    DT.dateArray (gridTs opts.zone (calendarAnchor opts side))
+        (gridValueTs opts.zone (toValueTs opts.value))
+        (gridTs opts.zone (Time.posixToMillis opts.now))
         (Maybe.withDefault 6 opts.firstDayOfWeek)
         False
         (opts.type_ == Week)

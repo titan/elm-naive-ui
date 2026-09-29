@@ -1339,6 +1339,43 @@ dpD2004 =
     1104451200000
 
 
+dpJan2004 : Int
+dpJan2004 =
+    1072915200000
+
+
+dpJan2005 : Int
+dpJan2005 =
+    1104537600000
+
+
+dpJan2005b : Int
+dpJan2005b =
+    1104624000000
+
+
+
+-- S1 zone fixtures: a UTC+8 caller (`Time.customZone 480`) whose local civil
+-- day differs from the UTC day for these instants (oracle report §S1).
+
+
+dpZone : Time.Zone
+dpZone =
+    Time.customZone 480 []
+
+
+dpZoneValue : Int
+dpZoneValue =
+    -- local 2024-03-15 00:00 @ UTC+8 = 2024-03-14T16:00Z
+    1710432000000
+
+
+dpZoneNow : Int
+dpZoneNow =
+    -- local 2024-03-21 00:30 @ UTC+8 = 2024-03-20T16:30Z (UTC civil day 20)
+    1710952200000
+
+
 dpNoFields :
     { year : Maybe Int
     , month : Maybe Int
@@ -1396,6 +1433,58 @@ dpWeekItems =
 dpRangeItems : List DT.DateItem
 dpRangeItems =
     DT.dateArray dpMayAnchor (DT.RangeTs dpMayAnchor dpRangeEnd) dpMayAnchor 6 False False
+
+
+{-| The panel's grid transform: map a caller instant onto the UTC midnight of
+the same civil day in `zone` (the port's private `DatePicker.gridTs`,
+[oracle S1]). Used to reproduce `DatePicker.dateItems` in the eq pins.
+-}
+dpGridTs : Time.Zone -> Int -> Int
+dpGridTs zone raw =
+    DT.toPosix Time.utc
+        (DT.toCivil zone raw)
+        { hours = 0, minutes = 0, seconds = 0, ms = 0 }
+
+
+{-| `dateArray` exactly as `DatePicker.dateItems` builds it for a single value
+with a non-UTC zone: anchor, value and now all through `gridTs` ([oracle S1]).
+-}
+dpZoneItems : List DT.DateItem
+dpZoneItems =
+    DT.dateArray (dpGridTs dpZone dpZoneValue)
+        (DT.SingleTs (dpGridTs dpZone dpZoneValue))
+        (dpGridTs dpZone dpZoneNow)
+        6
+        False
+        False
+
+
+{-| The local civil day a click on the grid's 2024-03-15 cell emits ([oracle
+S1] round-trip).
+-}
+dpZoneClickCivil : Maybe ( Int, Int, Int )
+dpZoneClickCivil =
+    case
+        DatePicker.singleDateClick
+            { type_ = DatePicker.Date
+            , value = DatePicker.Single (Just dpZoneValue)
+            , target = { ts = 1710460800000, year = 2024, month = 3, day = 15, quarter = 1 }
+            , isDisabled = False
+            , defaultTime = Nothing
+            , now = dpZoneNow
+            , zone = dpZone
+            }
+            |> .value
+    of
+        DatePicker.Single (Just ts) ->
+            let
+                c =
+                    DT.toCivil dpZone ts
+            in
+            Just ( c.year, c.month, c.day )
+
+        _ ->
+            Nothing
 
 
 dpClickTarget : DatePicker.ClickTarget
@@ -11757,13 +11846,40 @@ checks =
            , eq "dp P1.14 H @ TS_B (unpadded zero)" "0" (DT.format "H" Time.utc dpTSB)
            , eq "dp P1.15 HH @ TS_B (padded zero)" "00" (DT.format "HH" Time.utc dpTSB)
            , eq "dp P1.16 yyyy-qqq @ TS_B" "2024-Q1" (DT.format "yyyy-qqq" Time.utc dpTSB)
-           , eq "dp P1.17 YYYY-w @ TS_B (ISO week 1 of 2024)" "2024-1" (DT.format "YYYY-w" Time.utc dpTSB)
-           , eq "dp P1.18 YYYY-w @ 2004-12-31 (port contract fcwd=4/wso=0 → 2004-52; pin re-derivation in the doc)"
-                "2004-52"
-                (DT.format "YYYY-w" Time.utc dpD2004)
-           , eq "dp P6.4a ISO weekNumber(2024-01-01) = 1" 1 (DT.weekNumber 1 Time.utc dpTSB)
-           , eq "dp P6.4b ISO weekNumber(2004-12-31) = 53 (the documented getWeek 2004/53 edge)" 53 (DT.weekNumber 1 Time.utc dpD2004)
-           , eq "dp P6.4c ISO weekYear(2004-12-31) = 2004" 2004 (DT.weekYear 1 Time.utc dpD2004)
+           , eq "dp P1.17 YYYY-w @ TS_B (fwcd=1/wso=0)" "2024-1" (DT.format "YYYY-w" Time.utc dpTSB)
+           , eq "dp P1.18 YYYY-w near the year boundary (fwcd=1/wso=0, date-fns enUS ground truth): 2004-12-31→2005-1, 2005-01-01→2005-1, 2005-01-02→2005-2, 2004-01-01→2004-1 [oracle S2]"
+                [ "2005-1", "2005-1", "2005-2", "2004-1" ]
+                [ DT.format "YYYY-w" Time.utc dpD2004
+                , DT.format "YYYY-w" Time.utc dpJan2005
+                , DT.format "YYYY-w" Time.utc dpJan2005b
+                , DT.format "YYYY-w" Time.utc dpJan2004
+                ]
+           , eq "dp P6.4a weekNumber(2024-01-01) = 1 (ws=1)" 1 (DT.weekNumber 1 Time.utc dpTSB)
+           , eq "dp P6.4b weekNumber(2004-01-01) = 1 (ws=1, fwcd=1) [oracle S2]" 1 (DT.weekNumber 1 Time.utc dpJan2004)
+           , eq "dp P6.4c weekYear(2004-01-01) = 2004 (ws=1, fwcd=1) [oracle S2]" 2004 (DT.weekYear 1 Time.utc dpJan2004)
+           , eq "dp P6.4d fwcd=1 rollover: weekNumber(2004-12-31) = 1 / weekYear = 2005 [oracle S2]"
+                [ 1, 2005 ]
+                [ DT.weekNumber 1 Time.utc dpD2004
+                , DT.weekYear 1 Time.utc dpD2004
+                ]
+
+           -- S1 zone-consistent grid (oracle report §S1) — a UTC+8 caller
+           , eq "dp S1.1 zone UTC+8: the 15th cell (caller's local civil day) is selected, the 14th is not"
+                [ True, False ]
+                [ dpCellSelected 1710460800000 dpZoneItems
+                , dpCellSelected 1710374400000 dpZoneItems
+                ]
+           , eq "dp S1.2 zone UTC+8: exactly one selected cell, the local 2024-03-15 cell"
+                [ 1710460800000 ]
+                (List.filter .selected dpZoneItems |> List.map .ts)
+           , eq "dp S1.3 zone UTC+8: isCurrentDate follows the caller's local civil day (local 2024-03-21 00:30 → the 21st, not the UTC 20th)"
+                [ "True", "1" ]
+                [ dpBool (dpCellFlag .isCurrentDate 1710979200000 dpZoneItems)
+                , String.fromInt (List.filter .isCurrentDate dpZoneItems |> List.length)
+                ]
+           , eq "dp S1.4 zone UTC+8: clicking the 15th cell emits a ts whose local civil day is the 15th"
+                (Just ( 2024, 3, 15 ))
+                dpZoneClickCivil
 
            -- P2 strictParse
            , eq "dp P2.1 strictParse accepts '2024-05-09' @ yyyy-MM-dd"
@@ -14485,6 +14601,14 @@ liveNodes =
                     (DatePicker.panel Theme.default { dpBaseOpts | type_ = DatePicker.Quarter, value = DatePicker.Single (Just dpMayAnchor) })
                 , Element.el [ Element.htmlAttribute (HA.id "live-date-panel-monthrange") ]
                     (DatePicker.panel Theme.default { dpBaseOpts | type_ = DatePicker.Monthrange, value = DatePicker.Range (Just ( dpMayAnchor, dpRangeEnd )) })
+                , Element.el [ Element.htmlAttribute (HA.id "live-date-panel-zone") ]
+                    (DatePicker.panel Theme.default
+                        { dpBaseOpts
+                            | zone = Time.customZone 480 []
+                            , now = Time.millisToPosix dpZoneNow
+                            , value = DatePicker.Single (Just dpZoneValue)
+                        }
+                    )
                 , Element.el [ Element.htmlAttribute (HA.id "live-input-pair") ]
                     (let
                         d =
