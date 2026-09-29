@@ -571,5 +571,22 @@ export const components = {
     // month/year picker-cols ride scrollbar. No rtl.cssr upstream.
     cssr: ['date-picker/src/styles/index.cssr.ts'],
     theme: 'date-picker/styles/light.ts'
+  },
+  'color-picker': {
+    // Whole .n-color-picker family in one cssr: the trigger surface
+    // (.n-color-picker + --disabled modifier, __fill with the checkboard
+    // ::after 12px grid + --n-block-size trigger sizing, __value label) and
+    // the .n-color-picker-panel (240px popover surface with fade-in-scale-up
+    // transition + nested n-input text-align:center) + control padding +
+    // pallete (180px crosshair square, two gradient __layer children, handle
+    // + handle__fill) + preview (__sliders rails with ::after inset shadow,
+    // 30×30 circular __preview + __fill, hidden native input[type=color]) +
+    // input (__mode 72px label + the n-input-group units) + swatches
+    // (auto-fill 18px grid) + action row (border-top divider, flex-end).
+    // No prop-keyed rules — size variance rides the height/fontSize theme
+    // vars. The numeric units ride the `input` chunk; actions ride button.
+    // No rtl.cssr upstream.
+    cssr: ['color-picker/src/styles/index.cssr.ts'],
+    theme: 'color-picker/styles/light.ts'
   }
 }

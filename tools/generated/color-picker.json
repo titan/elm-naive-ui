@@ -1,0 +1,96 @@
+{
+  "light": {
+    "panelFontSize": "14px",
+    "boxShadow": "0 3px 6px -4px rgba(0, 0, 0, .12), 0 6px 16px 0 rgba(0, 0, 0, .08), 0 9px 28px 8px rgba(0, 0, 0, .05)",
+    "color": "#fff",
+    "textColor": "rgb(51, 54, 57)",
+    "borderRadius": "3px",
+    "border": "1px solid rgb(224, 224, 230)",
+    "heightSmall": "28px",
+    "heightMedium": "34px",
+    "heightLarge": "40px",
+    "fontSizeSmall": "14px",
+    "fontSizeMedium": "14px",
+    "fontSizeLarge": "15px",
+    "dividerColor": "rgb(239, 239, 245)"
+  },
+  "dark": {
+    "panelFontSize": "14px",
+    "boxShadow": "0 3px 6px -4px rgba(0, 0, 0, .24), 0 6px 12px 0 rgba(0, 0, 0, .16), 0 9px 18px 8px rgba(0, 0, 0, .10)",
+    "color": "rgb(72, 72, 78)",
+    "textColor": "rgba(255, 255, 255, 0.82)",
+    "borderRadius": "3px",
+    "border": "1px solid rgba(255, 255, 255, 0.24)",
+    "heightSmall": "28px",
+    "heightMedium": "34px",
+    "heightLarge": "40px",
+    "fontSizeSmall": "14px",
+    "fontSizeMedium": "14px",
+    "fontSizeLarge": "15px",
+    "dividerColor": "rgba(255, 255, 255, 0.09)"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "panelFontSize": "fontSize",
+        "boxShadow": "boxShadow2",
+        "color": "popoverColor",
+        "textColor": "textColor2",
+        "borderRadius": "borderRadius",
+        "heightSmall": "heightSmall",
+        "heightMedium": "heightMedium",
+        "heightLarge": "heightLarge",
+        "fontSizeSmall": "fontSizeSmall",
+        "fontSizeMedium": "fontSizeMedium",
+        "fontSizeLarge": "fontSizeLarge",
+        "dividerColor": "dividerColor"
+      },
+      "seen": [
+        "panelFontSize",
+        "boxShadow",
+        "color",
+        "textColor",
+        "border",
+        "borderRadius",
+        "heightSmall",
+        "heightMedium",
+        "heightLarge",
+        "fontSizeSmall",
+        "fontSizeMedium",
+        "fontSizeLarge",
+        "dividerColor"
+      ]
+    },
+    "dark": {
+      "refs": {
+        "panelFontSize": "fontSize",
+        "boxShadow": "boxShadow2",
+        "color": "popoverColor",
+        "textColor": "textColor2",
+        "borderRadius": "borderRadius",
+        "heightSmall": "heightSmall",
+        "heightMedium": "heightMedium",
+        "heightLarge": "heightLarge",
+        "fontSizeSmall": "fontSizeSmall",
+        "fontSizeMedium": "fontSizeMedium",
+        "fontSizeLarge": "fontSizeLarge",
+        "dividerColor": "dividerColor"
+      },
+      "seen": [
+        "panelFontSize",
+        "boxShadow",
+        "color",
+        "textColor",
+        "borderRadius",
+        "border",
+        "heightSmall",
+        "heightMedium",
+        "heightLarge",
+        "fontSizeSmall",
+        "fontSizeMedium",
+        "fontSizeLarge",
+        "dividerColor"
+      ]
+    }
+  }
+}
