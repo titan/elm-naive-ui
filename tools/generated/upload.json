@@ -1,0 +1,100 @@
+{
+  "light": {
+    "fontSize": "14px",
+    "lineHeight": "1.6",
+    "borderRadius": "3px",
+    "draggerColor": "rgb(250, 250, 252)",
+    "draggerBorder": "1px dashed rgb(224, 224, 230)",
+    "draggerBorderHover": "1px dashed #18a058",
+    "itemColorHover": "rgb(243, 243, 245)",
+    "itemColorHoverError": "rgba(208, 48, 80, 0.06)",
+    "itemTextColor": "rgb(51, 54, 57)",
+    "itemTextColorError": "#d03050",
+    "itemTextColorSuccess": "#18a058",
+    "itemIconColor": "rgba(194, 194, 194, 1)",
+    "itemDisabledOpacity": "0.5",
+    "itemBorderImageCardError": "1px solid #d03050",
+    "itemBorderImageCard": "1px solid rgb(224, 224, 230)"
+  },
+  "dark": {
+    "fontSize": "14px",
+    "lineHeight": "1.6",
+    "borderRadius": "3px",
+    "draggerColor": "rgba(255, 255, 255, 0.06)",
+    "draggerBorder": "1px dashed rgba(255, 255, 255, 0.24)",
+    "draggerBorderHover": "1px dashed #63e2b7",
+    "itemColorHover": "rgba(255, 255, 255, 0.09)",
+    "itemColorHoverError": "rgba(232, 128, 128, 0.09)",
+    "itemTextColor": "rgba(255, 255, 255, 0.82)",
+    "itemTextColorError": "#e88080",
+    "itemTextColorSuccess": "#63e2b7",
+    "itemIconColor": "rgba(255, 255, 255, 0.38)",
+    "itemDisabledOpacity": "0.38",
+    "itemBorderImageCardError": "1px solid #e88080",
+    "itemBorderImageCard": "1px solid rgba(255, 255, 255, 0.24)"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "draggerColor": "actionColor",
+        "itemColorHover": "hoverColor",
+        "itemTextColor": "textColor2",
+        "itemTextColorError": "errorColor",
+        "itemTextColorSuccess": "successColor",
+        "itemIconColor": "iconColor",
+        "itemDisabledOpacity": "opacityDisabled",
+        "lineHeight": "lineHeight",
+        "borderRadius": "borderRadius",
+        "fontSize": "fontSize"
+      },
+      "seen": [
+        "draggerColor",
+        "draggerBorder",
+        "draggerBorderHover",
+        "itemColorHover",
+        "itemColorHoverError",
+        "itemTextColor",
+        "itemTextColorError",
+        "itemTextColorSuccess",
+        "itemIconColor",
+        "itemDisabledOpacity",
+        "itemBorderImageCardError",
+        "itemBorderImageCard",
+        "lineHeight",
+        "borderRadius",
+        "fontSize"
+      ]
+    },
+    "dark": {
+      "refs": {
+        "fontSize": "fontSize",
+        "lineHeight": "lineHeight",
+        "borderRadius": "borderRadius",
+        "draggerColor": "actionColor",
+        "itemColorHover": "hoverColor",
+        "itemTextColor": "textColor2",
+        "itemTextColorError": "errorColor",
+        "itemTextColorSuccess": "successColor",
+        "itemIconColor": "iconColor",
+        "itemDisabledOpacity": "opacityDisabled"
+      },
+      "seen": [
+        "fontSize",
+        "lineHeight",
+        "borderRadius",
+        "draggerColor",
+        "draggerBorder",
+        "draggerBorderHover",
+        "itemColorHover",
+        "itemColorHoverError",
+        "itemTextColor",
+        "itemTextColorError",
+        "itemTextColorSuccess",
+        "itemIconColor",
+        "itemDisabledOpacity",
+        "itemBorderImageCardError",
+        "itemBorderImageCard"
+      ]
+    }
+  }
+}

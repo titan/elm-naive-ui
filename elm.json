@@ -113,6 +113,7 @@
     "NUI.Theme.Collapse",
     "NUI.Theme.Color",
     "NUI.Theme.ColorPicker",
+    "NUI.Theme.Upload",
     "NUI.Theme.Common",
     "NUI.Theme.DatePicker",
     "NUI.Theme.DataTable",

@@ -588,5 +588,18 @@ export const components = {
     // No rtl.cssr upstream.
     cssr: ['color-picker/src/styles/index.cssr.ts'],
     theme: 'color-picker/styles/light.ts'
+  },
+  upload: {
+    // Whole .n-upload family: dragger (dashed border + hover/drag-over swap),
+    // trigger (inline-block; --image-card 96px square wrapping a full-bleed
+    // dragger with centered base-icon 24px; + sibling margin-top 8px on the
+    // file list), file list (--grid auto-fill 96px 8px gap), file rows
+    // (per-status color/error hover, --with-url success name, image/image-card
+    // thumb layouts, always-show-actions mask via ::before) + file-info
+    // (thumbnail icon 18px, absolute 80px action rail w/ icon-switch svg
+    // transition, name flex column ellipsis) and the hidden file input.
+    // Fade-height transitions on rows + progress (foldPadding).
+    cssr: ['upload/src/styles/index.cssr.ts', 'upload/src/styles/rtl.cssr.ts'],
+    theme: 'upload/styles/light.ts'
   }
 }
