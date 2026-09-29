@@ -11160,6 +11160,31 @@ dEq(
     .map((b) => b.className.includes('n-button--disabled').toString())
     .join('|')
 )
+dEq(
+  'DOM: color-picker actionSlot renders one custom action row and suppresses the undo/redo row (ColorPicker.tsx:695-701)',
+  '1|SLOT|0',
+  [
+    cpRoot('live-color-picker-panel-slot').querySelectorAll('.n-color-picker-action').length,
+    (cpRoot('live-color-picker-panel-slot').querySelector('.n-color-picker-action #custom-action-slot') || {
+      textContent: ''
+    }).textContent,
+    cpRoot('live-color-picker-panel-slot').querySelectorAll('.n-button').length
+  ].join('|')
+)
+dTrue(
+  'DOM: color-picker A unit input carries upstream flex-grow 1.25 (ColorInputUnit.tsx:162), other units carry none',
+  (() => {
+    const inputs = Array.from(cpRoot('live-color-picker-panel').querySelectorAll('.n-input-group input'))
+    const styles = inputs.map((i) => i.getAttribute('style') || '')
+    return (
+      inputs.length === 4 &&
+      inputs[3].getAttribute('placeholder') === 'A' &&
+      styles[3].includes('flex-grow: 1.25') &&
+      styles.slice(0, 3).every((s) => !s.includes('flex-grow'))
+    )
+  })(),
+  'A unit flex-grow: 1.25, R/G/B units unstyled'
+)
 
 // focus detector
 dEq(

@@ -62,7 +62,8 @@ Panel (`panel`) DOM:
       │   ├─ div.n-color-picker-input (__mode label + NInputGroup of units)
       │   └─ div.n-color-picker-swatches (optional)
       ├─ div.n-color-picker-action (actions confirm/clear, optional)
-      ├─ div.n-color-picker-action (internalActions undo/redo, optional)
+      ├─ div.n-color-picker-action (actionSlot's custom row — or, when no
+      │   slot is given, the internalActions undo/redo row; the slot wins)
       └─ the inert focus detector (last child)
 
 `show`, closing and positioning stay caller-owned (the `NUI.DatePicker`
@@ -116,6 +117,30 @@ when set, else the committed value on `onUpdateValue`) and the caller closes.
     geometry helpers, input commits via `onUnitInput`), so the caller fires its
     own complete — an option the panel could never trigger would be dead
     config.
+13. **Displayed H/α/S/V are value-derived per render.** Upstream keeps
+    `displayedHueRef`/`displayedAlphaRef`/`displayedSvRef` resynced to the
+    parsed value on change (`ColorPicker.tsx:322-324, 531-545`); the port
+    derives them from `value` each render (identical steady state; during a
+    drag the caller owns it, see 7). Consequence: `defaultOptions.displayedMode
+    = Rgb` matches upstream's computed default only while `value` is unset —
+    with a `value`, upstream derives the mode from it (`ColorPicker.tsx:
+    234-236`), so set `displayedMode` alongside `value`.
+14. **Peer theme overrides are not plumbed.** Upstream threads
+    `mergedTheme.peers.Input`/`peers.Button` into the embedded unit inputs and
+    action buttons (`ColorInputUnit.tsx:155-156`); the port reads
+    `NUI.Theme.Input`/`NUI.Theme.Button` directly (the `NUI.DatePicker`
+    precedent).
+15. **The panel root carries `tabindex 0`** (house overlay convention,
+    `DatePicker.elm:1145`, pairing with 1); upstream `renderPanel` has none.
+16. **The trigger colour layer omits the empty `background-color`** upstream
+    always emits when the value is mode-less (`backgroundColor: hsla ? … : ''`,
+    `ColorPickerTrigger.tsx:47-55`) — visual no-op, the attribute string
+    differs.
+17. **`getWCAGContrast` exposes only the default-args form**
+    (`contrastColor = [255, 255, 255]`, `level = 'AA'`; `utils.ts:58-61`) —
+    the only call site (the trigger label) uses the defaults.
+18. **`deriveDefaultValue`'s `__DEV__` warn is dropped** (`utils.ts:38-39`) —
+    a dev-only `console.warn`, no-op in production.
 
 -}
 
@@ -228,6 +253,7 @@ type alias Options msg =
     , transition : Maybe I.TransitionPhase
     , renderLabel : Maybe (String -> Element msg)
     , customTrigger : Maybe (Element msg)
+    , actionSlot : Maybe (Element msg)
     , onUpdateValue : Maybe (Maybe String -> msg)
     , onConfirm : Maybe (Maybe String -> msg)
     , onClear : Maybe msg
@@ -260,6 +286,7 @@ defaultOptions =
     , transition = Nothing
     , renderLabel = Nothing
     , customTrigger = Nothing
+    , actionSlot = Nothing
     , onUpdateValue = Nothing
     , onConfirm = Nothing
     , onClear = Nothing
@@ -520,7 +547,7 @@ panel theme opts =
                 (palette opts ++ preview opts ++ colorInput theme opts ++ swatches opts)
              ]
                 ++ actionsRow theme opts
-                ++ internalActionsRow theme opts
+                ++ secondActionsRow theme opts
                 ++ [ focusDetectorNode ]
             )
 
@@ -838,6 +865,14 @@ unitInputs theme opts =
                     , placeholder = Just label
                     , value = valueStr
                     , onInput = onInputMsg
+                    , inputAttributes =
+                        -- upstream styles the A unit `flex-grow: 1.25`
+                        -- (ColorInputUnit.tsx:162)
+                        if label == "A" then
+                            [ HA.style "flex-grow" "1.25" ]
+
+                        else
+                            []
                 }
 
         d =
@@ -1079,6 +1114,19 @@ clearMsg opts =
 
         Nothing ->
             Maybe.map (\f -> f Nothing) opts.onUpdateValue
+
+
+secondActionsRow : Theme -> Options msg -> List (Html msg)
+secondActionsRow theme opts =
+    -- upstream: `slots.action ? <div .n-color-picker-action>{slot()}</div>
+    --            : internalActions ? <div …>undo/redo</div> : null`
+    -- (ColorPicker.tsx:695-701) — the slot row SUPPRESSES the undo/redo row.
+    case opts.actionSlot of
+        Just node ->
+            [ Html.div [ HA.class "n-color-picker-action" ] [ embedHtml node ] ]
+
+        Nothing ->
+            internalActionsRow theme opts
 
 
 internalActionsRow : Theme -> Options msg -> List (Html msg)

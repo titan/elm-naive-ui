@@ -14868,6 +14868,23 @@ liveNodes =
                          }
                         )
                     )
+                , Element.el [ Element.htmlAttribute (HA.id "live-color-picker-panel-slot") ]
+                    (ColorPicker.panel Theme.default
+                        (let
+                            d =
+                                ColorPicker.defaultOptions
+                         in
+                         { d
+                            | value = Just "#ff0000"
+                            , actionSlot =
+                                Just
+                                    (Element.el [ Element.htmlAttribute (HA.id "custom-action-slot") ]
+                                        (Element.text "SLOT")
+                                    )
+                            , internalActions = Just [ ColorPicker.UndoAction, ColorPicker.RedoAction ]
+                         }
+                        )
+                    )
                 ]
             )
         ]
