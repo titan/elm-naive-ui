@@ -106,6 +106,29 @@ const ALLOW = new Set([
   // button, but the time-picker cssr styles only `.n-time-picker-actions`
   // (space-evenly) — no rule targets the marker upstream. Kept faithful.
   'n-time-picker-actions__confirm',
+  // DatePicker.tsx:1091 emits --range on the trigger root; the date-picker cssr
+  // only defines cM('disabled') and the icon colours — no --range rule exists
+  // upstream (styles/index.cssr.ts:55-75).
+  'n-date-picker--range',
+  // daterange.tsx:62 / datetimerange.tsx:136 / monthrange.tsx:90 emit
+  // --start on the left calendar; the cssr defines only cM('end')
+  // (styles/index.cssr.ts:95-105).
+  'n-date-panel-calendar--start',
+  // daterange.tsx:96 / datetimerange.tsx:170 render a horizontal divider with
+  // this class; no cssr rule targets it (the separator look comes from
+  // .n-date-panel-weekdays' border-bottom and .n-date-panel__vertical-divider).
+  'n-date-panel__divider',
+  // datetime.tsx:54 / datetimerange.tsx:68 pass this class to NInput; the
+  // date-picker cssr has no rule for it (the header's own layout styles land on
+  // .n-date-panel-header > *).
+  'n-date-panel-date-input',
+  // month.tsx:68 emits --current on a picker-col item; the cssr defines only
+  // __picker-col-item--selected / --disabled (styles/index.cssr.ts:122-160).
+  'n-date-panel-month-calendar__picker-col-item--current',
+  // month.tsx:205 builds `n-date-panel-${type}-calendar__padding`; the cssr
+  // defines cE('padding') under the month-calendar only, so the quarter variant
+  // has no rule upstream.
+  'n-date-panel-quarter-calendar__padding',
 ])
 
 const srcDir = path.join(root, 'src', 'NUI')

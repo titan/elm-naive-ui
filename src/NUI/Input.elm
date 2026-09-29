@@ -1,6 +1,7 @@
 module NUI.Input exposing
     ( InputType(..)
     , Options
+    , PairSource(..)
     , Status(..)
     , defaults
     , group
@@ -96,18 +97,38 @@ components' `NInput` invocations):
     (`handleWrapperKeydownEnter` / `...Esc`) and programmatic focus
     (`focus()` / `activate()`) are caller-owned runtime — no ports in house
     style; flip `activated` yourself.
+
   - `internalForceFocus` — upstream's visual-only focus seam (`mergedFocus`,
     `Input.tsx:283-285`): adds `n-input--focus` to the root. Upstream has NO
     `--active` / `--hover` classes at all (hover is pure CSS `:hover`,
     activation is state-only).
+
   - `textDecoration` — inline `text-decoration` on the input / textarea
     element (upstream `:1208` / `:1269`; the pickers pass `'line-through'`
     while the value is invalid).
+
   - `attrSize` — the native `size` attribute on the `<input>` only (upstream
     `:1288`; the default 20 equals the HTML default, so it is emitted only
     when set — TimePicker passes `format.length + 4`). Never the textarea.
+
   - `onFocus` / `onBlur` — raw focus / blur events on the input / textarea
     element.
+
+  - pair mode — upstream `Input.tsx:1395-1465`. Set `pairValue = Just (
+    start, end )` and the root gains `n-input--pair` and the body becomes
+    `div.n-input-wrapper` (input 1, NO suffix) → `span.n-input__separator`
+    (`separatorNode`) → `div.n-input-wrapper` (input 2 + the pair-only
+    `div.n-input__suffix`). Input 1 carries the `attrSize` `size` attribute and
+    `pairTextDecoration`'s first half; input 2 carries neither (`Input.tsx:1434`
+    — no `inputProps` spread, no `size`). Typing emits through `onPairInput`
+    with the whole pair and a `PairSource` tag (`PairFirst` / `PairSecond`; the
+    clear control emits `("", "")` + `PairClear`, upstream's `0 | 1 | 'clear'`).
+    Standalone single-input bytes are unchanged — every field defaults off.
+
+  - `extraRootClasses` — upstream's fallthrough `class` merge onto the
+    `.n-input` root (the pickers pass their own marker here, e.g.
+    `n-date-panel-date-input`); appended after the component classes.
+
   - `clearIconPlaceholder` — upstream's `clear-icon-placeholder` slot: the
     content shown inside `NBaseClear`'s placeholder while the clear button
     is hidden. `NBaseClear` renders iff `clearable` OR this is set (upstream
@@ -152,6 +173,14 @@ type Status
     | Error
 
 
+{-| Which side of a pair input changed (upstream's `source: 0 | 1 | 'clear'`).
+-}
+type PairSource
+    = PairFirst
+    | PairSecond
+    | PairClear
+
+
 type alias Options msg =
     { value : String
     , onInput : Maybe (String -> msg)
@@ -184,6 +213,12 @@ type alias Options msg =
     , onFocus : Maybe msg
     , onBlur : Maybe msg
     , clearIconPlaceholder : Maybe (Element msg)
+    , pairValue : Maybe ( String, String )
+    , pairPlaceholder : Maybe ( String, String )
+    , pairTextDecoration : Maybe ( String, String )
+    , separatorNode : Maybe (Element msg)
+    , onPairInput : Maybe (( String, String ) -> PairSource -> msg)
+    , extraRootClasses : List String
     }
 
 
@@ -220,6 +255,12 @@ defaults =
     , onFocus = Nothing
     , onBlur = Nothing
     , clearIconPlaceholder = Nothing
+    , pairValue = Nothing
+    , pairPlaceholder = Nothing
+    , pairTextDecoration = Nothing
+    , separatorNode = Nothing
+    , onPairInput = Nothing
+    , extraRootClasses = []
     }
 
 
@@ -238,18 +279,13 @@ view theme opts =
             else
                 []
 
-        wrapper =
-            Element.row [ I.classes [ "n-input-wrapper" ] ] <|
-                List.concat
-                    [ case opts.prefix of
-                        Just p ->
-                            [ prefixEl p ]
+        children =
+            case opts.pairValue of
+                Just _ ->
+                    pairBody opts
 
-                        Nothing ->
-                            []
-                    , [ inputArea opts ]
-                    , suffixArea opts
-                    ]
+                Nothing ->
+                    [ singleWrapper opts ]
     in
     Element.row
         ([ I.classes (rootClasses opts isTextarea)
@@ -257,7 +293,25 @@ view theme opts =
          ]
             ++ passiveRootTabindex opts
         )
-        (wrapper :: borderEls)
+        (children ++ borderEls)
+
+
+{-| The single (non-pair) body: the one wrapper with the input area and the
+suffix block.
+-}
+singleWrapper : Options msg -> Element msg
+singleWrapper opts =
+    Element.row [ I.classes [ "n-input-wrapper" ] ] <|
+        List.concat
+            [ case opts.prefix of
+                Just p ->
+                    [ prefixEl p ]
+
+                Nothing ->
+                    []
+            , [ inputArea opts ]
+            , suffixArea opts
+            ]
 
 
 {-| The wrapper's `tabindex 0` under manual activation (upstream
@@ -461,6 +515,250 @@ attrSizeAttrs opts =
 
         Nothing ->
             []
+
+
+
+-- pair mode (upstream `Input.tsx:1395-1465`) ------------------------------------
+
+
+{-| The pair body — wrapper 1 (no suffix) / separator / wrapper 2 (+ suffix).
+-}
+pairBody : Options msg -> List (Element msg)
+pairBody opts =
+    [ Element.row [ I.classes [ "n-input-wrapper" ] ] <|
+        List.concat
+            [ case opts.prefix of
+                Just p ->
+                    [ prefixEl p ]
+
+                Nothing ->
+                    []
+            , [ pairInputArea opts 0 ]
+            ]
+    , Element.html <|
+        Html.span [ HA.class "n-input__separator" ]
+            (case opts.separatorNode of
+                Just node ->
+                    [ embedEl node ]
+
+                Nothing ->
+                    []
+            )
+    , Element.row [ I.classes [ "n-input-wrapper" ] ]
+        (pairInputArea opts 1 :: pairSuffixArea opts)
+    ]
+
+
+{-| One side of the pair — the plain `.n-input__input` block (raw `Html`, the
+`inputArea` idiom). Input 1 carries the `size` attribute and input properties;
+input 2 carries neither (`Input.tsx:1406-1438`).
+-}
+pairInputArea : Options msg -> Int -> Element msg
+pairInputArea opts index =
+    let
+        ( value, placeholder, decoration ) =
+            pairParts opts index
+
+        inputEl =
+            Html.input
+                ([ HA.class "n-input__input-el"
+                 , HA.type_ "text"
+                 , HA.value value
+                 , HA.disabled opts.disabled
+                 , HA.readonly opts.readonly
+                 ]
+                    ++ (placeholder
+                            |> Maybe.map (\p -> [ HA.placeholder p ])
+                            |> Maybe.withDefault []
+                       )
+                    ++ pairTriggerAttrs opts index decoration
+                )
+                []
+
+        placeholderEl =
+            if String.isEmpty value then
+                case placeholder of
+                    Just p ->
+                        [ Html.div [ HA.class "n-input__placeholder" ]
+                            [ Html.span [] [ Html.text p ] ]
+                        ]
+
+                    Nothing ->
+                        []
+
+            else
+                []
+    in
+    Element.html (Html.div [ HA.class "n-input__input" ] (inputEl :: placeholderEl))
+
+
+{-| The pair's per-side value / placeholder / text-decoration. An empty
+placeholder string renders no native attribute / placeholder layer (mirrors
+`nonEmptyPlaceholder`).
+-}
+pairParts : Options msg -> Int -> ( String, Maybe String, Maybe String )
+pairParts opts index =
+    let
+        ( value, holder, decoration ) =
+            case opts.pairValue of
+                Just ( a, b ) ->
+                    if index == 0 then
+                        ( a, Maybe.map Tuple.first opts.pairPlaceholder, Maybe.map Tuple.first opts.pairTextDecoration )
+
+                    else
+                        ( b, Maybe.map Tuple.second opts.pairPlaceholder, Maybe.map Tuple.second opts.pairTextDecoration )
+
+                Nothing ->
+                    ( "", Nothing, Nothing )
+
+        nonEmpty p =
+            if String.isEmpty p then
+                Nothing
+
+            else
+                Just p
+    in
+    ( value, Maybe.andThen nonEmpty holder, Maybe.andThen nonEmpty decoration )
+
+
+{-| The picker-trigger attributes for one side of the pair: the manual-activation
+`tabindex -1` (`Input.tsx:1410`), the inline `text-decoration`
+(`Input.tsx:1434`), the `size` attribute on input 1 only (`Input.tsx:1288`),
+and the `onInput` event tagged with the pair source.
+-}
+pairTriggerAttrs : Options msg -> Int -> Maybe String -> List (Html.Attribute msg)
+pairTriggerAttrs opts index decoration =
+    (if opts.passivelyActivated && not opts.activated then
+        [ HA.tabindex -1 ]
+
+     else
+        []
+    )
+        ++ (case decoration of
+                Just d ->
+                    [ HA.style "text-decoration" d ]
+
+                Nothing ->
+                    []
+           )
+        ++ (if index == 0 then
+                attrSizeAttrs opts
+
+            else
+                []
+           )
+        ++ pairEvents opts index
+
+
+pairEvents : Options msg -> Int -> List (Html.Attribute msg)
+pairEvents opts index =
+    case opts.onPairInput of
+        Just toMsg ->
+            let
+                ( a, b ) =
+                    case opts.pairValue of
+                        Just pair ->
+                            pair
+
+                        Nothing ->
+                            ( "", "" )
+            in
+            [ HE.onInput
+                (\v ->
+                    if index == 0 then
+                        toMsg ( v, b ) PairFirst
+
+                    else
+                        toMsg ( a, v ) PairSecond
+                )
+            ]
+
+        Nothing ->
+            []
+
+
+{-| The pair-only suffix — `div.n-input__suffix` renders iff `clearable` OR a
+suffix slot is set (`Input.tsx:1441-1463`); no loading / count / eye participate
+in the pair suffix.
+-}
+pairSuffixArea : Options msg -> List (Element msg)
+pairSuffixArea opts =
+    if opts.clearable || opts.suffix /= Nothing then
+        [ Element.row [ I.classes [ "n-input__suffix" ] ] <|
+            List.concat
+                [ pairClearArea opts
+                , case opts.suffix of
+                    Just s ->
+                        [ s ]
+
+                    Nothing ->
+                        []
+                ]
+        ]
+
+    else
+        []
+
+
+pairClearArea : Options msg -> List (Element msg)
+pairClearArea opts =
+    if not opts.clearable then
+        []
+
+    else
+        [ Element.html <|
+            Html.div
+                [ HA.class "n-base-clear"
+                , HA.style "flex-shrink" "0"
+                , HA.style "height" "1em"
+                , HA.style "width" "1em"
+                , HA.style "position" "relative"
+                ]
+                [ if pairShowClear opts then
+                    pairClearButton opts
+
+                  else
+                    clearPlaceholder opts
+                ]
+        ]
+
+
+pairShowClear : Options msg -> Bool
+pairShowClear opts =
+    not opts.disabled
+        && not opts.readonly
+        && (case opts.pairValue of
+                Just ( a, b ) ->
+                    not (String.isEmpty a && String.isEmpty b)
+
+                Nothing ->
+                    False
+           )
+
+
+pairClearButton : Options msg -> Html msg
+pairClearButton opts =
+    Html.div
+        ([ HA.class "n-base-clear__clear"
+         , HA.attribute "data-clear" ""
+         , HA.style "font-size" "var(--n-clear-size)"
+         , HA.style "height" "1em"
+         , HA.style "width" "1em"
+         , HA.style "cursor" "pointer"
+         , HA.style "color" "var(--n-clear-color)"
+         , HA.style "transition" "color .3s var(--n-bezier)"
+         , HA.style "display" "flex"
+         ]
+            ++ centeredStyle
+            ++ (case opts.onPairInput of
+                    Just toMsg ->
+                        [ HE.onClick (toMsg ( "", "" ) PairClear) ]
+
+                    Nothing ->
+                        []
+               )
+        )
+        [ baseIcon clearIcon ]
 
 
 
@@ -764,9 +1062,11 @@ rootClasses opts isTextarea =
         , I.classIf (isTextarea && opts.resizable && not opts.autosize) "n-input--resizable"
         , I.classIf opts.autosize "n-input--autosize"
         , I.classIf (opts.round && not isTextarea) "n-input--round"
+        , I.classIf (opts.pairValue /= Nothing) "n-input--pair"
         , I.classIf opts.internalForceFocus "n-input--focus"
         , I.classIf opts.stateful "n-input--stateful"
         ]
+        ++ opts.extraRootClasses
 
 
 statusClass : Status -> String

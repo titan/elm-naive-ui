@@ -28,6 +28,7 @@ import NUI.Collapse as Collapse
 import NUI.Countdown as Countdown
 import NUI.Css as Css
 import NUI.DataTable as DataTable
+import NUI.DatePicker as DatePicker
 import NUI.Descriptions as Descriptions
 import NUI.Dialog as Dialog
 import NUI.DialogProvider as DialogProvider
@@ -766,6 +767,7 @@ body =
     , transferSection
     , treeSelectSection
     , timePickerSection
+    , datePickerSection
     , rtlSection
     , themeSection
     ]
@@ -5120,6 +5122,92 @@ timePickerSection =
             , TimePicker.view theme { tpD | size = T.Large, placeholder = "Pick" }
             , TimePicker.view theme { tpD | value = Just tenToEleven, disabled = True }
             , TimePicker.view theme { tpD | value = Just tenToEleven, status = Just Input.Error }
+            ]
+        ]
+
+
+datePickerSection : Element msg
+datePickerSection =
+    let
+        dpD =
+            DatePicker.defaultOptions
+
+        now =
+            Time.millisToPosix 1715731200000
+
+        may10 =
+            1715299200000
+
+        may15 =
+            1715731200000
+
+        may20 =
+            1716163200000
+
+        dt =
+            1715770440000
+
+        base =
+            { dpD | now = now }
+
+        pair opts =
+            Element.column [ Element.spacing 12, Element.width Element.fill ]
+                [ DatePicker.view theme opts
+                , DatePicker.panel theme opts
+                ]
+
+        rangeOpts opts =
+            { opts
+                | value = DatePicker.Range (Just ( may10, may20 ))
+                , startCalendarValue = Just may10
+                , endCalendarValue = Just may20
+            }
+    in
+    section "DatePicker"
+        "An input trigger over a caller-mounted calendar panel — every upstream panel type, with show state, positioning and the value caller-owned."
+        [ demoRow "Date"
+            [ pair { base | value = DatePicker.Single (Just may15) } ]
+        , demoRow "Datetime"
+            [ pair { base | type_ = DatePicker.Datetime, value = DatePicker.Single (Just dt) } ]
+        , demoRow "Date range (pair input)"
+            [ pair (rangeOpts { base | type_ = DatePicker.Daterange }) ]
+        , demoRow "Datetime range"
+            [ pair (rangeOpts { base | type_ = DatePicker.Datetimerange }) ]
+        , demoRow "Month"
+            [ pair { base | type_ = DatePicker.Month, value = DatePicker.Single (Just may15) } ]
+        , demoRow "Year"
+            [ pair
+                { base
+                    | type_ = DatePicker.Year
+                    , value = DatePicker.Single (Just may15)
+                    , yearRange = ( 2015, 2035 )
+                }
+            ]
+        , demoRow "Quarter"
+            [ pair { base | type_ = DatePicker.Quarter, value = DatePicker.Single (Just may15) } ]
+        , demoRow "Month range"
+            [ pair (rangeOpts { base | type_ = DatePicker.Monthrange }) ]
+        , demoRow "Week"
+            [ pair { base | type_ = DatePicker.Week, value = DatePicker.Single (Just may15) } ]
+        , demoRow "Sizes / clearable / status / disabled"
+            [ DatePicker.view theme { base | size = T.Small, value = DatePicker.Single (Just may15) }
+            , DatePicker.view theme { base | value = DatePicker.Single (Just may15), clearable = True }
+            , DatePicker.view theme { base | size = T.Large, placeholder = Just "Pick a date" }
+            , DatePicker.view theme { base | value = DatePicker.Single (Just may15), status = Just Input.Error }
+            , DatePicker.view theme { base | value = DatePicker.Single (Just may15), disabled = True }
+            ]
+        , demoRow "Range clearable + shortcuts"
+            [ pair
+                (rangeOpts
+                    { base
+                        | type_ = DatePicker.Daterange
+                        , clearable = True
+                        , shortcuts =
+                            [ ( "This week", DatePicker.ShortcutRange ( may10, may20 ) )
+                            , ( "Today", DatePicker.ShortcutSingle may15 )
+                            ]
+                    }
+                )
             ]
         ]
 

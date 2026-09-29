@@ -25,6 +25,7 @@
     "NUI.Countdown",
     "NUI.Css",
     "NUI.DataTable",
+    "NUI.DatePicker",
     "NUI.Descriptions",
     "NUI.Dialog",
     "NUI.DialogProvider",

@@ -158,7 +158,12 @@ const targets = {
   // as inline style; everything else lives on the panel and the embedded
   // scrollbar); the panel carries the 14 vars.
   '.n-time-picker': false,
-  '.n-time-picker-panel': true
+  '.n-time-picker-panel': true,
+  // DatePicker: the trigger root is BARE (no vars — the 3 trigger vars ride it
+  // as inline style; the single/pair NInput and its icons live underneath); the
+  // panel carries the 43 vars.
+  '.n-date-picker': false,
+  '.n-date-panel': true
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {

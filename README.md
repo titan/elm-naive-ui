@@ -87,6 +87,7 @@ bridge, tests).
 | `NUI.Calendar`    | ✅ |
 | `NUI.Card`        | ✅ |
 | `NUI.Cascader`    | ✅ |
+| `NUI.DatePicker`  | ✅ |
 | `NUI.Tree`        | ✅ |
 | `NUI.Transfer`    | ✅ |
 | `NUI.TreeSelect` | ✅ |
