@@ -100,6 +100,7 @@ bridge, tests).
 | `NUI.ImagePreview` | ✅ |
 | `NUI.Message` | ✅ |
 | `NUI.Notification` | ✅ |
+| `NUI.NumberAnimation` | ✅ |
 | `NUI.Checkbox`    | ✅ |
 | `NUI.Collapse`    | ✅ |
 | `NUI.Countdown`   | ✅ |
@@ -107,15 +108,22 @@ bridge, tests).
 | `NUI.Dialog`      | ✅ |
 | `NUI.DialogProvider` | ✅ |
 | `NUI.DataTable`   | ✅ |
+| `NUI.Descriptions` | ✅ |
 | `NUI.Drawer`      | ✅ |
 | `NUI.Dropdown`    | ✅ |
+| `NUI.DynamicInput` | ✅ |
 | `NUI.DynamicTags` | ✅ |
 | `NUI.Ellipsis`    | ✅ |
 | `NUI.Empty`       | ✅ |
 | `NUI.Flex`        | ✅ |
 | `NUI.FloatButton` | ✅ |
+| `NUI.FloatButtonGroup` | ✅ |
+| `NUI.Form`        | ✅ |
 | `NUI.GradientText`| ✅ |
 | `NUI.Grid`        | ✅ |
+| `NUI.Heatmap`     | ✅ |
+| `NUI.Highlight`   | ✅ |
+| `NUI.IconWrapper` | ✅ |
 | `NUI.Input`       | ✅ |
 | `NUI.InputNumber` | ✅ |
 | `NUI.InputOtp`    | ✅ |
@@ -124,6 +132,7 @@ bridge, tests).
 | `NUI.LayoutHeader`| ✅ |
 | `NUI.LayoutSider` | ✅ |
 | `NUI.List`        | ✅ |
+| `NUI.LoadingBar`  | ✅ |
 | `NUI.Marquee`     | ✅ |
 | `NUI.Mention`     | ✅ |
 | `NUI.Modal`       | ✅ |
@@ -146,6 +155,7 @@ bridge, tests).
 | `NUI.Steps`       | ✅ |
 | `NUI.Switch`      | ✅ |
 | `NUI.Tag`         | ✅ |
+| `NUI.Tabs`        | ✅ |
 | `NUI.Thing`       | ✅ |
 | `NUI.TimePicker`  | ✅ |
 | `NUI.Timeline`    | ✅ |
