@@ -125,6 +125,7 @@ import Element exposing (Element)
 import Html exposing (Html)
 import Html.Attributes as HA
 import NUI.Internal as I
+import NUI.Internal.DateTime as DT
 import NUI.Theme exposing (Theme)
 import NUI.Theme.Heatmap as HeatmapTheme
 import Time
@@ -1037,12 +1038,12 @@ monthName labels month =
 -}
 weekStartOn : Int -> Int
 weekStartOn firstDayOfWeek =
-    (firstDayOfWeek + 1) |> modBy 7
+    DT.firstDayOfWeekToDateFns firstDayOfWeek
 
 
 
--- DATE MATH (internal, no dependencies: proleptic-Gregorian civil-day
--- arithmetic in the caller's zone — same approach as NUI.Calendar)
+-- DATE MATH (delegates to the shared engine, NUI.Internal.DateTime; the
+-- zone-local civil day is the unit every heatmap computation works in)
 
 
 type alias Civil =
@@ -1052,82 +1053,19 @@ type alias Civil =
     }
 
 
+{-| The civil date of an instant in `zone` (engine:
+`NUI.Internal.DateTime.toCivil`).
+-}
 toCivil : Time.Zone -> Time.Posix -> Civil
 toCivil zone ts =
-    { year = Time.toYear zone ts
-    , month = monthToInt (Time.toMonth zone ts)
-    , day = Time.toDay zone ts
-    }
+    DT.toCivil zone (Time.posixToMillis ts)
 
 
-monthToInt : Time.Month -> Int
-monthToInt month =
-    case month of
-        Time.Jan ->
-            1
-
-        Time.Feb ->
-            2
-
-        Time.Mar ->
-            3
-
-        Time.Apr ->
-            4
-
-        Time.May ->
-            5
-
-        Time.Jun ->
-            6
-
-        Time.Jul ->
-            7
-
-        Time.Aug ->
-            8
-
-        Time.Sep ->
-            9
-
-        Time.Oct ->
-            10
-
-        Time.Nov ->
-            11
-
-        Time.Dec ->
-            12
-
-
-{-| Days since 1970-01-01 (Howard Hinnant's `days_from_civil`).
+{-| Days since 1970-01-01 (engine: `NUI.Internal.DateTime.daysFromCivil`).
 -}
 daysFromCivil : Civil -> Int
 daysFromCivil d =
-    let
-        y =
-            if d.month <= 2 then
-                d.year - 1
-
-            else
-                d.year
-
-        era =
-            y // 400
-
-        yearOfEra =
-            y - era * 400
-
-        monthPrime =
-            modBy 12 (d.month + 9)
-
-        dayOfYear =
-            (153 * monthPrime + 2) // 5 + d.day - 1
-
-        dayOfEra =
-            yearOfEra * 365 + yearOfEra // 4 - yearOfEra // 100 + dayOfYear
-    in
-    era * 146097 + dayOfEra - 719468
+    DT.daysFromCivil d
 
 
 {-| The local calendar day of an instant — date-fns `startOfDay` /
@@ -1136,7 +1074,7 @@ computation works in.
 -}
 dayNumber : Time.Zone -> Time.Posix -> Int
 dayNumber zone ts =
-    daysFromCivil (toCivil zone ts)
+    DT.daysFromCivil (DT.toCivil zone (Time.posixToMillis ts))
 
 
 {-| Weekday of a calendar day in date-fns `getDay` numbering (0 = Sunday …
@@ -1144,28 +1082,16 @@ dayNumber zone ts =
 -}
 weekdayOfDay : Int -> Int
 weekdayOfDay day =
-    (day + 4) |> modBy 7
+    DT.weekday (DT.civilFromDays day)
 
 
 {-| Some instant inside local midnight of a calendar day — the timestamp
 gap-filled items carry (upstream `eachDayOfInterval`'s local midnights). Only
 the civil day it lands on is ever read back, so any instant of the day is
-faithful; the fixed-point iteration finds one for any real zone offset
-(including `Time.customZone` and DST zones), starting from UTC midnight.
+faithful; the engine's `toPosix` runs the same fixed-point iteration
+(`localToTs`) for any real zone offset (including `Time.customZone` and DST
+zones), starting from UTC midnight.
 -}
 posixOfDay : Time.Zone -> Int -> Time.Posix
 posixOfDay zone targetDay =
-    Time.millisToPosix (converge zone targetDay (targetDay * 86400000) 3)
-
-
-converge : Time.Zone -> Int -> Int -> Int -> Int
-converge zone targetDay guess fuel =
-    let
-        error =
-            dayNumber zone (Time.millisToPosix guess) - targetDay
-    in
-    if error == 0 || fuel <= 0 then
-        guess
-
-    else
-        converge zone targetDay (guess - error * 86400000) (fuel - 1)
+    Time.millisToPosix (DT.toPosix zone (DT.civilFromDays targetDay) { hours = 0, minutes = 0, seconds = 0, ms = 0 })

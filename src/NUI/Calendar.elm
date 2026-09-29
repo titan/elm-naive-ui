@@ -73,6 +73,7 @@ import Html.Attributes as HA
 import NUI.Button as Button
 import NUI.ButtonGroup as ButtonGroup
 import NUI.Internal as I
+import NUI.Internal.DateTime as DT
 import NUI.Theme exposing (Theme)
 import NUI.Theme.Calendar as CalendarTheme
 import NUI.Types as T
@@ -434,111 +435,39 @@ nextMonthDays iterator count =
 
 
 
--- DATE MATH (internal, no dependencies: proleptic-Gregorian civil-day arithmetic)
+-- DATE MATH (delegates to the shared engine, NUI.Internal.DateTime)
 
 
-{-| Days since 1970-01-01 (Howard Hinnant's `days_from_civil`).
+{-| Days since 1970-01-01 (engine: `NUI.Internal.DateTime.daysFromCivil`).
 -}
 daysFromCivil : Date -> Int
 daysFromCivil d =
-    let
-        y =
-            if d.month <= 2 then
-                d.year - 1
-
-            else
-                d.year
-
-        era =
-            y // 400
-
-        yearOfEra =
-            y - era * 400
-
-        monthPrime =
-            modBy 12 (d.month + 9)
-
-        dayOfYear =
-            (153 * monthPrime + 2) // 5 + d.day - 1
-
-        dayOfEra =
-            yearOfEra * 365 + yearOfEra // 4 - yearOfEra // 100 + dayOfYear
-    in
-    era * 146097 + dayOfEra - 719468
+    DT.daysFromCivil d
 
 
-{-| Inverse of `daysFromCivil` (`civil_from_days`).
+{-| Inverse of `daysFromCivil` (engine: `NUI.Internal.DateTime.civilFromDays`).
 -}
 civilFromDays : Int -> Date
 civilFromDays z =
-    let
-        days =
-            z + 719468
-
-        era =
-            days // 146097
-
-        dayOfEra =
-            days - era * 146097
-
-        yearOfEra =
-            (dayOfEra - dayOfEra // 1460 + dayOfEra // 36524 - dayOfEra // 146096)
-                // 365
-
-        year =
-            yearOfEra + era * 400
-
-        dayOfYear =
-            dayOfEra - (365 * yearOfEra + yearOfEra // 4 - yearOfEra // 100)
-
-        monthPrime =
-            (5 * dayOfYear + 2) // 153
-
-        day =
-            dayOfYear - (153 * monthPrime + 2) // 5 + 1
-
-        month =
-            monthPrime
-                + (if monthPrime < 10 then
-                    3
-
-                   else
-                    -9
-                  )
-    in
-    { year =
-        year
-            + (if month <= 2 then
-                1
-
-               else
-                0
-              )
-    , month = month
-    , day = day
-    }
+    DT.civilFromDays z
 
 
 addDays : Date -> Int -> Date
 addDays date n =
-    civilFromDays (daysFromCivil date + n)
+    DT.civilFromDays (DT.addDays n (DT.daysFromCivil date))
 
 
-{-| Weekday in date-fns `getDay` numbering: 0 is Sunday … 6 is Saturday.
+{-| Weekday in date-fns `getDay` numbering: 0 is Sunday … 6 is Saturday
+(engine: `NUI.Internal.DateTime.weekday`).
 -}
 weekday : Date -> Int
 weekday date =
-    modBy 7 (daysFromCivil date + 4)
+    DT.weekday date
 
 
 daysInMonth : Date -> Int
 daysInMonth date =
-    let
-        next =
-            addMonthsPanel (panelOf date) 1
-    in
-    daysFromCivil { year = next.year, month = next.month, day = 1 }
-        - daysFromCivil { year = date.year, month = date.month, day = 1 }
+    DT.daysInMonth date.year date.month
 
 
 panelOf : Date -> Panel
