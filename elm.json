@@ -109,6 +109,7 @@
     "NUI.Theme.Button",
     "NUI.Theme.Calendar",
     "NUI.Theme.Card",
+    "NUI.Theme.Carousel",
     "NUI.Theme.Cascader",
     "NUI.Theme.Checkbox",
     "NUI.Theme.Collapse",

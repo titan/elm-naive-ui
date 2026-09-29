@@ -1,0 +1,46 @@
+{
+  "light": {
+    "dotSize": "8px",
+    "dotColor": "rgba(255, 255, 255, .3)",
+    "dotColorActive": "rgba(255, 255, 255, 1)",
+    "dotColorFocus": "rgba(255, 255, 255, .5)",
+    "dotLineWidth": "16px",
+    "dotLineWidthActive": "24px",
+    "arrowColor": "#eee"
+  },
+  "dark": {
+    "dotSize": "8px",
+    "dotColor": "rgba(255, 255, 255, .3)",
+    "dotColorActive": "rgba(255, 255, 255, 1)",
+    "dotColorFocus": "rgba(255, 255, 255, .5)",
+    "dotLineWidth": "16px",
+    "dotLineWidthActive": "24px",
+    "arrowColor": "#eee"
+  },
+  "refs": {
+    "light": {
+      "refs": {},
+      "seen": [
+        "dotSize",
+        "dotColor",
+        "dotColorActive",
+        "dotColorFocus",
+        "dotLineWidth",
+        "dotLineWidthActive",
+        "arrowColor"
+      ]
+    },
+    "dark": {
+      "refs": {},
+      "seen": [
+        "dotSize",
+        "dotColor",
+        "dotColorActive",
+        "dotColorFocus",
+        "dotLineWidth",
+        "dotLineWidthActive",
+        "arrowColor"
+      ]
+    }
+  }
+}

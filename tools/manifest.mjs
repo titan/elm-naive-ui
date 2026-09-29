@@ -601,5 +601,19 @@ export const components = {
     // Fade-height transitions on rows + progress (foldPadding).
     cssr: ['upload/src/styles/index.cssr.ts', 'upload/src/styles/rtl.cssr.ts'],
     theme: 'upload/styles/light.ts'
+  },
+  carousel: {
+    // Whole .n-carousel family in one cssr: root (relative, touch-action pan-y,
+    // overflow hidden) + __slides (flex, transform transition) + __slide
+    // (flex-shrink 0, 100%, img block) + dots/--dot (8px circles w/ focus +
+    // --active colour) + dots/--line (16→24px pills, 4px tall) + __arrow
+    // (28px round rgba(255,255,255,.2) w/ hover, svg 1em) + __arrow-group +
+    // --vertical (pan-x, column slides, rotate arrows 90deg) + fade/card
+    // per-slide absolute overlays (translateZ stacks, --current/--prev/--next
+    // transforms) + --usercontrol plain-wrapper centering + per-placement dot
+    // and arrow-group positioning (--left/--right columns, --top/--bottom rows,
+    // --show-arrow dot offsets). No rtl.cssr upstream.
+    cssr: ['carousel/src/styles/index.cssr.ts'],
+    theme: 'carousel/styles/light.ts'
   }
 }
