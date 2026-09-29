@@ -15204,6 +15204,8 @@ liveNodes =
                     )
                 , Element.el [ Element.htmlAttribute (HA.id "live-upload") ]
                     (Upload.view Theme.default { uploadLiveOpts | fileList = uploadFiles })
+                , Element.el [ Element.htmlAttribute (HA.id "live-upload-empty-url") ]
+                    (Upload.view Theme.default { uploadLiveOpts | fileList = [ upFile { id = "eu1", name = "eu1.txt", status = Upload.Finished, percentage = Nothing, url = Just "", thumbnailUrl = Nothing, type_ = Nothing } ] })
                 , Element.el [ Element.htmlAttribute (HA.id "live-upload-uploading") ]
                     (Upload.view Theme.default { uploadLiveOpts | fileList = uploadUploadingFiles })
                 , Element.el [ Element.htmlAttribute (HA.id "live-upload-error") ]

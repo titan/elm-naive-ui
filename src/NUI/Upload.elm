@@ -116,6 +116,9 @@ are emitted upstream with no cssr rule (only `--error-status` has one), as is
 `varOverrides = { paddingMedium, heightMedium, iconSizeMedium }`
 (`UploadFile.tsx:21-25`); they always render an empty `n-button__content`
 (the `NUI.Button` content-span behaviour, shared with `NUI.InputNumber`).
+[oracle D13] The root and (abstract) file-list class arrays omit Naive UI's
+inline-theme `themeClass` (house-wide: the inline-theme-optimisation class
+never lands in this port; no-op under the default theme).
 
 Upstream refs: `upload/src/Upload.tsx` (render :655-680, cssVars :507-561,
 `doChange` :331-366, `handleFileAddition` :367-433, `submit` :434-480),
@@ -415,8 +418,13 @@ maxReached opts =
 
 
 {-| Upstream's `max` slice in `handleFileAddition`: keep the first
-`max - currentLen` incoming files (JS `slice` → none when the cap is exceeded).
-No `max` keeps every incoming file.
+`max - currentLen` incoming files. No `max` keeps every incoming file.
+
+Accepted edge (oracle R1): when `max - currentLen` is negative, JS
+`arr.slice(0, negative)` counts from the END (a from-end prefix) while this
+port returns `[]` (List.take semantics) — unreachable inside the component,
+because `handleFileAddition` only runs while `!maxReached`, so the cap is
+always ≥ 1 there.
 
 (Design surface named this `sliceForMax`; the port returns the sliced list —
 the operation upstream actually performs — rather than the bare count, so the
@@ -976,13 +984,28 @@ fileRowClasses opts file status =
     List.concat
         [ [ "n-upload-file"
           , statusClass status
-          , listTypeSuffix opts.listType |> (\s -> "n-upload-file--" ++ s ++ "-type")
           ]
         , I.classIf
-            (file.url /= Nothing && file.status /= Error && opts.listType /= ImageCard)
+            (fileUrlTruthy file && file.status /= Error && opts.listType /= ImageCard)
             "n-upload-file--with-url"
+        , [ listTypeSuffix opts.listType |> (\s -> "n-upload-file--" ++ s ++ "-type")
+          ]
         , I.classIf opts.alwaysShowActions "n-upload-file--always-show-actions"
         ]
+
+
+{-| JS truthiness of `file.url` (`UploadFile.tsx:326/:339`): `null` AND the
+empty string are both falsy — `url = Just ""` suppresses `--with-url` and
+keeps the name a `span` (oracle S2).
+-}
+fileUrlTruthy : FileInfo -> Bool
+fileUrlTruthy file =
+    case file.url of
+        Just u ->
+            u /= ""
+
+        Nothing ->
+            False
 
 
 statusClass : Progress.Status -> String
@@ -1039,7 +1062,7 @@ nameHtml opts file =
         textNode =
             Html.text file.name
     in
-    if file.url /= Nothing && file.status /= Error then
+    if fileUrlTruthy file && file.status /= Error then
         Html.a
             ([ HA.attribute "rel" "noopener noreferer"
              , HA.attribute "target" "_blank"

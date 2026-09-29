@@ -11338,7 +11338,11 @@ dTrue(
 )
 
 // §H9 — finished text row (with url)
-dEq('DOM: Upload finished row classes = --success-status --text-type --with-url', 'n-upload-file n-upload-file--success-status n-upload-file--text-type n-upload-file--with-url', nClassesStr(upRow('live-upload', 2)))
+dEq('DOM: Upload finished row classes = --success-status --with-url --text-type (oracle S1: with-url precedes the type modifier, UploadFile.tsx:324-332)', 'n-upload-file n-upload-file--success-status n-upload-file--with-url n-upload-file--text-type', nClassesStr(upRow('live-upload', 2)))
+// oracle S2: JS truthiness — url = "" is falsy: NO --with-url, name stays a span
+// (UploadFile.tsx:326 file.url && … / :339 name branch)
+dEq('DOM: Upload url = Just "" (finished, text) → NO --with-url (JS truthiness, oracle S2)', 'n-upload-file n-upload-file--success-status n-upload-file--text-type', nClassesStr(upRow('live-upload-empty-url', 0)))
+dEq('DOM: Upload url = Just "" → name renders a span, not an anchor (oracle S2)', 'SPAN|eu1.txt', [upRow('live-upload-empty-url', 0).querySelector('.n-upload-file-info__name > *').tagName, upRow('live-upload-empty-url', 0).querySelector('.n-upload-file-info__name > *').textContent].join('|'))
 dTrue(
   'DOM: Upload finished name = a[href] rel=noopener noreferer target=_blank',
   (() => {
