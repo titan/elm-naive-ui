@@ -32,6 +32,11 @@ module NUI.Button exposing
 The visual result is Naive UI's own: the element carries the `.n-button` BEM classes
 and Naive UI's `--n-*` custom properties, and `NUI.Css` ships Naive UI's exact CSS.
 
+`varOverrides` ports upstream's per-instance `builtinThemeOverrides` (a
+key/value patch over the resolved vars): a key that already exists is swapped
+in place, an unknown key is appended at the end — `NUI.Upload`'s action
+buttons use it for `{ paddingMedium, heightMedium, iconSizeMedium }`.
+
 -}
 
 import Element exposing (Element)
@@ -81,6 +86,7 @@ type alias Options msg =
     , iconPlacement : IconPlacement
     , onPress : Maybe msg
     , rtl : Bool
+    , varOverrides : List ( String, String )
     , attributes : List (Element.Attribute msg)
     }
 
@@ -109,6 +115,7 @@ defaults =
     , iconPlacement = IconLeft
     , onPress = Nothing
     , rtl = False
+    , varOverrides = []
     , attributes = []
     }
 
@@ -519,16 +526,44 @@ cssVars theme opts v =
               )
             ]
     in
-    [ ( "--n-bezier", common.cubicBezierEaseInOut )
-    , ( "--n-bezier-ease-out", common.cubicBezierEaseOut )
-    , ( "--n-ripple-duration", v.rippleDuration )
-    , ( "--n-opacity-disabled", v.opacityDisabled )
-    , ( "--n-wave-opacity", v.waveOpacity )
-    ]
-        ++ fontVars
-        ++ colorVars
-        ++ borderVars
-        ++ sizeVars
+    applyVarOverrides opts.varOverrides
+        ([ ( "--n-bezier", common.cubicBezierEaseInOut )
+         , ( "--n-bezier-ease-out", common.cubicBezierEaseOut )
+         , ( "--n-ripple-duration", v.rippleDuration )
+         , ( "--n-opacity-disabled", v.opacityDisabled )
+         , ( "--n-wave-opacity", v.waveOpacity )
+         ]
+            ++ fontVars
+            ++ colorVars
+            ++ borderVars
+            ++ sizeVars
+        )
+
+
+{-| Naive UI's per-instance `builtinThemeOverrides`: an override whose key is
+already a button var is swapped IN PLACE (position/order kept); an unknown key
+is appended at the END. `[]` leaves the variable list untouched.
+-}
+applyVarOverrides : List ( String, String ) -> List ( String, String ) -> List ( String, String )
+applyVarOverrides overrides base =
+    List.foldl
+        (\( key, value ) acc ->
+            if List.any (\( existingKey, _ ) -> existingKey == key) acc then
+                List.map
+                    (\( existingKey, existingValue ) ->
+                        if existingKey == key then
+                            ( key, value )
+
+                        else
+                            ( existingKey, existingValue )
+                    )
+                    acc
+
+            else
+                acc ++ [ ( key, value ) ]
+        )
+        base
+        overrides
 
 
 customColorVars : Maybe String -> List ( String, String )

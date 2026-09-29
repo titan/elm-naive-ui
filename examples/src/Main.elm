@@ -104,6 +104,7 @@ import NUI.Tree as Tree
 import NUI.TreeSelect as TreeSelect
 import NUI.Types as T
 import NUI.Typography as Typo
+import NUI.Upload as Upload
 import NUI.Watermark as Watermark
 import Time
 
@@ -770,6 +771,7 @@ body =
     , timePickerSection
     , datePickerSection
     , colorPickerSection
+    , uploadSection
     , rtlSection
     , themeSection
     ]
@@ -5270,6 +5272,144 @@ colorPickerSection =
                     , undoable = True
                 }
             ]
+        ]
+
+
+uploadSection : Element msg
+uploadSection =
+    let
+        upD =
+            Upload.defaults
+
+        file id name status pct url thumb mime =
+            { id = id
+            , batchId = Nothing
+            , name = name
+            , percentage = pct
+            , status = status
+            , url = url
+            , thumbnailUrl = thumb
+            , type_ = mime
+            , fullPath = Nothing
+            }
+
+        withId id opts =
+            { opts | attributes = [ Element.htmlAttribute (HA.id id) ] }
+    in
+    section "Upload"
+        "A file trigger over a caller-owned file list — pick/drag, upload state and thumbnails are the caller's to own."
+        [ demoRow "Text list (all statuses)"
+            [ Upload.view theme
+                (withId "live-upload"
+                    { upD
+                        | fileList =
+                            [ file "a" "a.png" Upload.Pending (Just 0) Nothing Nothing Nothing
+                            , file "b" "b.png" Upload.Uploading (Just 42) Nothing Nothing Nothing
+                            , file "c" "c.png" Upload.Finished (Just 100) (Just "https://example.com/c.png") Nothing Nothing
+                            , file "d" "d.png" Upload.Error (Just 88) Nothing Nothing Nothing
+                            , file "e" "e.png" Upload.Removed (Just 10) Nothing Nothing Nothing
+                            ]
+                    }
+                )
+            ]
+        , demoRow "Uploading (line progress + cancel)"
+            [ Upload.view theme
+                (withId "live-upload-uploading"
+                    { upD
+                        | fileList = [ file "u" "video.mp4" Upload.Uploading (Just 42) Nothing Nothing Nothing ]
+                    }
+                )
+            ]
+        , demoRow "Error (error kind + retry)"
+            [ Upload.view theme
+                (withId "live-upload-error"
+                    { upD
+                        | fileList = [ file "e" "broken.zip" Upload.Error (Just 73) Nothing Nothing Nothing ]
+                    }
+                )
+            ]
+        , demoRow "Image type"
+            [ Upload.view theme
+                (withId "live-upload-image"
+                    { upD
+                        | listType = Upload.Image
+                        , fileList =
+                            [ file "i" "photo.jpg" Upload.Uploading (Just 30) Nothing Nothing (Just "image/jpeg") ]
+                    }
+                )
+            ]
+        , demoRow "Image card (thumbnail anchor / icon)"
+            [ Upload.view theme
+                (withId "live-upload-image-card"
+                    { upD
+                        | listType = Upload.ImageCard
+                        , fileList =
+                            [ file "p" "one.jpg" Upload.Finished (Just 100) (Just imageLogo) (Just imageLogo) (Just "image/jpeg") ]
+                    }
+                )
+            , Upload.view theme
+                (withId "live-upload-card-thumb"
+                    { upD
+                        | listType = Upload.ImageCard
+                        , fileList =
+                            [ file "q" "two.pdf" Upload.Finished (Just 100) Nothing Nothing Nothing ]
+                    }
+                )
+            ]
+        , demoRow "Dragger trigger"
+            [ Upload.view theme
+                (withId "live-upload-dragger"
+                    { upD
+                        | draggerInside = True
+                        , triggerNode = Just (Upload.viewDragger upD [ Element.text "Click or drag a file here" ])
+                    }
+                )
+            ]
+        , demoRow "Disabled"
+            [ Upload.view theme
+                (withId "live-upload-disabled"
+                    { upD
+                        | disabled = True
+                        , fileList = [ file "a" "a.png" Upload.Uploading (Just 5) Nothing Nothing Nothing ]
+                    }
+                )
+            ]
+        , demoRow "Max reached (trigger disabled)"
+            [ Upload.view theme
+                (withId "live-upload-max"
+                    { upD
+                        | max = Just 1
+                        , fileList = [ file "a" "a.png" Upload.Finished (Just 100) Nothing Nothing Nothing ]
+                    }
+                )
+            ]
+        , demoRow "Directory"
+            [ Upload.view theme
+                (withId "live-upload-directory" { upD | directory = True })
+            ]
+        , demoRow "renderIcon + alwaysShowActions"
+            [ Upload.view theme
+                (withId "live-upload-rendericon"
+                    { upD
+                        | renderIcon = Just (\_ -> Element.text "ICON")
+                        , fileList = [ file "a" "a.png" Upload.Pending (Just 0) Nothing Nothing Nothing ]
+                    }
+                )
+            , Upload.view theme
+                (withId "live-upload-always-show"
+                    { upD
+                        | alwaysShowActions = True
+                        , fileList = [ file "a" "a.png" Upload.Uploading (Just 20) Nothing Nothing Nothing ]
+                    }
+                )
+            ]
+        , demoRow "Abstract trigger"
+            (Upload.viewAbstract theme
+                upD
+                (Element.el [ Element.htmlAttribute (HA.id "live-upload-abstract-slot") ]
+                    (Element.text "Click to pick a file")
+                )
+            )
         ]
 
 

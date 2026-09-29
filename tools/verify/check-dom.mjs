@@ -168,7 +168,9 @@ const targets = {
   // trigger div.n-color-picker and the div.n-color-picker-panel each get the
   // cssVarsRef inline style upstream.
   '.n-color-picker': true,
-  '.n-color-picker-panel': true
+  '.n-color-picker-panel': true,
+  // Upload: the root carries the full 16-var set (dragger/item vars, bezier).
+  '.n-upload': true
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {

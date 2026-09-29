@@ -95,6 +95,7 @@
     "NUI.Transfer",
     "NUI.Tree",
     "NUI.TreeSelect",
+    "NUI.Upload",
     "NUI.Watermark",
     "NUI.Theme",
     "NUI.Theme.Alert",

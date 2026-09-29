@@ -45,6 +45,10 @@ const ALLOW = new Set([
   // TransferListItem.tsx :70-72 emits the side modifier on every item, but only
   // --source has a rule (cursor: pointer); --target carries none.
   'n-transfer-list-item--target',
+  // UploadFile.tsx :123-125 emits the progress-status modifier on every row;
+  // only --error-status has a cssr rule (the info/success variants carry none).
+  'n-upload-file--info-status',
+  'n-upload-file--success-status',
   // Tree.tsx emits --checkable on the root; no rule targets it (checkable
   // gates whether the checkbox column renders at all).
   'n-tree--checkable',

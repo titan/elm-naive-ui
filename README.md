@@ -92,6 +92,7 @@ bridge, tests).
 | `NUI.Tree`        | ✅ |
 | `NUI.Transfer`    | ✅ |
 | `NUI.TreeSelect` | ✅ |
+| `NUI.Upload`     | ✅ |
 | `NUI.Table`       | ✅ |
 | `NUI.Watermark`   | ✅ |
 | `NUI.Menu`        | ✅ |
