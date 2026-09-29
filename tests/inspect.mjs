@@ -3903,6 +3903,22 @@ dEq(
         .length
     : -1
 )
+dTrue(
+  'DOM: Tabs card + justifyContent still pads every tab after the first (Tabs.tsx:1031-1037)',
+  doc.querySelectorAll('#live-tabs-card-justify .n-tabs-tab-pad').length === 2 &&
+    !hasCls(doc.querySelector('#live-tabs-card-justify .n-tabs'), 'n-tabs--flex'),
+  clsOf(doc.querySelector('#live-tabs-card-justify .n-tabs'))
+)
+dEq(
+  'DOM: Tabs add tab carries tabClass last (modifiers then class prop, Tab.tsx:118-122)',
+  'n-tabs-tab n-tabs-tab--addable x',
+  clsOf(doc.querySelector('#live-tabs-addable-class [data-name="__addable"]'))
+)
+dTrue(
+  'DOM: Tabs segment nav carries n-tabs-nav--segment-type (Tabs.tsx:1116-1118)',
+  hasCls(doc.querySelector('#live-tabs-segment .n-tabs-nav'), 'n-tabs-nav--segment-type'),
+  clsOf(doc.querySelector('#live-tabs-segment .n-tabs-nav'))
+)
 
 // Scrollbar -------------------------------------------------------------------
 const scrollRoot = doc.querySelector('#live-scrollbar-default .n-scrollbar')

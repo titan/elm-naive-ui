@@ -2962,6 +2962,21 @@ tStylingOpts =
     }
 
 
+{-| S1 probe: `Card` ignores `justifyContent`, but the resolved justify still drives
+whether the `n-tabs-tab-pad` is emitted (pads for every tab after the first).
+-}
+tCardJustifyOpts : Tabs.Options Msg
+tCardJustifyOpts =
+    { tCardOpts | justifyContent = Just Tabs.JustifySpaceBetween }
+
+
+{-| S2 probe: the add tab inherits `tabClass` (its documented contract).
+-}
+tAddableClassOpts : Tabs.Options Msg
+tAddableClassOpts =
+    { tCardOpts | addable = True, tabClass = Just "x" }
+
+
 
 -- SCROLLBAR -------------------------------------------------------------------
 
@@ -12984,6 +12999,10 @@ liveNodes =
                     (Tabs.view Theme.default tHoverOpts ttabs)
                 , Element.el [ Element.htmlAttribute (HA.id "live-tabs-styling") ]
                     (Tabs.view Theme.default tStylingOpts ttabs)
+                , Element.el [ Element.htmlAttribute (HA.id "live-tabs-card-justify") ]
+                    (Tabs.view Theme.default tCardJustifyOpts ttabs)
+                , Element.el [ Element.htmlAttribute (HA.id "live-tabs-addable-class") ]
+                    (Tabs.view Theme.default tAddableClassOpts ttabs)
 
                 -- Scrollbar
                 , Element.el [ Element.htmlAttribute (HA.id "live-scrollbar-default") ]

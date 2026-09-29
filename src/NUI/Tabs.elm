@@ -53,6 +53,24 @@ owns the active `value` (like `NUI.Form` / `NUI.Descriptions`).
     `paneWrapperClass`/`Style`, `addTabClass`/`Style`, `tabsPadding` > 0, `labelSize`,
     `onBeforeLeave`, `addable` as an object, `showScrollButton`.
   - `name` is `String` (upstream `string | number`).
+  - `[oracle D]` **D1 — add tab ignores `trigger`.** `onAdd` is always
+    click-wired (`:1072-1080`); upstream's add tab is a `Tab`, so a hover
+    trigger adds on mouseenter (`Tab.tsx:124`).
+  - `[oracle D]` **D2 — close `aria-disabled`.** The port omits it when enabled;
+    `NBaseClose` always emits it (`Close.tsx:40` renders `"false"` when
+    enabled).
+  - `[oracle D]` **D3 — icon SVG byte drift.** `closePath` drops the trailing
+    zero-area path segment + outer `<g>`; the add icon drops `width="512"
+    height="512"` — visually identical (the shipped `_internal/icon` rule sizes
+    the svg to `1em`).
+  - `[oracle D]` **D4 — placement `start`/`end` not ported.** Upstream resolves
+    them via RTL (`Tabs.tsx:171-180`); callers pre-resolve to Left/Right.
+  - `[oracle D]` **D5 — `addTabFixed` not modeled.** The port always renders the
+    add tab inside the scroll wrapper; upstream pins it outside once measured
+    (`Tabs.tsx:666-704`, `:1244`).
+  - `[oracle D]` **D9 — uncontrolled seeding.** Upstream seeds the first pane's
+    name when uncontrolled (`Tabs.tsx:215-223`); the port is fully caller-owned
+    (`value` required).
 
 -}
 
@@ -883,8 +901,9 @@ addNode opts tabCount =
 
 
 {-| `segment` selects the segment rail's left-padding rule (every tab after the
-first); the non-segment rule also skips `space-between`/`around`/`evenly`
-(Tabs.tsx:1019-1027 vs 1152).
+first); the non-segment rule skips `space-between`/`around`/`evenly` only when
+justify applies (line/bar) — `Card` ignores `justifyContent`, so it pads every
+tab after the first (Tabs.tsx:1019-1027 vs 1152).
 -}
 tabWrappers : Options msg -> Bool -> List ( Int, Tab msg ) -> List (Html msg)
 tabWrappers opts segment indexed =
@@ -911,10 +930,12 @@ leftPadded opts segment index =
         index /= 0
 
     else
+        -- gate on the RESOLVED justify (`justifiedForClass` = upstream
+        -- `mergedJustifyContent`, Tabs.tsx:1004); `Card`/`Segment` are never
+        -- justified, so their tabs are always padded (Tabs.tsx:1031-1037).
         index
             /= 0
-            && (opts.justifyContent
-                    == Nothing
+            && (not (justifiedForClass opts)
                     || opts.justifyContent
                     == Just JustifyCenter
                     || opts.justifyContent
@@ -1043,7 +1064,12 @@ addTabNode opts leftPad =
     Html.div [ HA.class "n-tabs-tab-wrapper" ]
         (tabPadInner opts leftPad
             ++ [ Html.div
-                    ([ HA.class "n-tabs-tab n-tabs-tab--addable"
+                    ([ HA.class
+                        (String.join " "
+                            ([ "n-tabs-tab", "n-tabs-tab--addable" ]
+                                ++ extraClass opts.tabClass
+                            )
+                        )
                      , HA.attribute "data-name" "__addable"
                      ]
                         ++ tabStyleAttr opts
