@@ -94,6 +94,7 @@ import NUI.Tabs as Tabs
 import NUI.Tag as Tag
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Thing as Thing
+import NUI.TimePicker as TimePicker
 import NUI.Timeline as Timeline
 import NUI.Tooltip as Tooltip
 import NUI.Transfer as Transfer
@@ -764,6 +765,7 @@ body =
     , anchorSection
     , transferSection
     , treeSelectSection
+    , timePickerSection
     , rtlSection
     , themeSection
     ]
@@ -5066,6 +5068,58 @@ treeSelectSection =
                         }
                     )
                 ]
+            ]
+        ]
+
+
+timePickerSection : Element msg
+timePickerSection =
+    let
+        tpD =
+            TimePicker.defaultOptions
+
+        -- 10:54:00 as a time-of-day timestamp (the port uses the epoch civil day).
+        tenToEleven =
+            (10 * 60 + 54) * 60 * 1000
+
+        pair opts =
+            Element.column [ Element.spacing 8 ]
+                [ TimePicker.view theme opts
+                , Element.el [ Element.width (Element.px 200) ]
+                    (TimePicker.panel theme opts)
+                ]
+    in
+    section "TimePicker"
+        "An input trigger over a caller-mounted clock panel — show state, positioning and the value are caller-owned."
+        [ demoRow "Default (HH:mm:ss)"
+            [ pair { tpD | value = Just tenToEleven } ]
+        , demoRow "Hour + minute (HH:mm)"
+            [ pair { tpD | format = "HH:mm", value = Just tenToEleven } ]
+        , demoRow "12 hours + period (hh:mm:ss a)"
+            [ pair { tpD | use12Hours = True, format = "hh:mm:ss a", value = Just tenToEleven } ]
+        , demoRow "Actions clear / now / confirm"
+            [ pair
+                { tpD
+                    | value = Just tenToEleven
+                    , clearable = True
+                    , actions = [ TimePicker.Clear, TimePicker.Now, TimePicker.Confirm ]
+                }
+            ]
+        , demoRow "Disabled units (5-min steps, seconds 0/30, hours ≤ 12)"
+            [ pair
+                { tpD
+                    | value = Just tenToEleven
+                    , minutes = TimePicker.StepUnits 5
+                    , seconds = TimePicker.OnlyUnits [ 0, 30 ]
+                    , isHourDisabled = Just (\h -> h > 12)
+                }
+            ]
+        , demoRow "Sizes / clearable / disabled / status"
+            [ TimePicker.view theme { tpD | size = T.Small, value = Just tenToEleven }
+            , TimePicker.view theme { tpD | value = Just tenToEleven, clearable = True }
+            , TimePicker.view theme { tpD | size = T.Large, placeholder = "Pick" }
+            , TimePicker.view theme { tpD | value = Just tenToEleven, disabled = True }
+            , TimePicker.view theme { tpD | value = Just tenToEleven, status = Just Input.Error }
             ]
         ]
 

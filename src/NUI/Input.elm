@@ -84,6 +84,43 @@ Three seams beyond the basic props:
     raw list appends after) — pass only attributes the fields above don't
     own.
 
+Picker-trigger seams (all default-off — the standalone input renders
+byte-identically without them; upstream drives them from the picker
+components' `NInput` invocations):
+
+  - `passivelyActivated` / `activated` — the manual-activation focus split
+    (upstream `Input.tsx:1140-1143` on the root, `:1203` / `:1273` / `:1410`
+    on the inner elements): while `passivelyActivated && !activated` the ROOT
+    carries `tabindex 0` (iff not disabled) and the inner input / textarea
+    carry `tabindex -1`. Enter / Escape activation
+    (`handleWrapperKeydownEnter` / `...Esc`) and programmatic focus
+    (`focus()` / `activate()`) are caller-owned runtime — no ports in house
+    style; flip `activated` yourself.
+  - `internalForceFocus` — upstream's visual-only focus seam (`mergedFocus`,
+    `Input.tsx:283-285`): adds `n-input--focus` to the root. Upstream has NO
+    `--active` / `--hover` classes at all (hover is pure CSS `:hover`,
+    activation is state-only).
+  - `textDecoration` — inline `text-decoration` on the input / textarea
+    element (upstream `:1208` / `:1269`; the pickers pass `'line-through'`
+    while the value is invalid).
+  - `attrSize` — the native `size` attribute on the `<input>` only (upstream
+    `:1288`; the default 20 equals the HTML default, so it is emitted only
+    when set — TimePicker passes `format.length + 4`). Never the textarea.
+  - `onFocus` / `onBlur` — raw focus / blur events on the input / textarea
+    element.
+  - `clearIconPlaceholder` — upstream's `clear-icon-placeholder` slot: the
+    content shown inside `NBaseClear`'s placeholder while the clear button
+    is hidden. `NBaseClear` renders iff `clearable` OR this is set (upstream
+    `:1324-1346`), but the `.n-input__suffix` wrapper itself still needs
+    `clearable` / a suffix / loading (upstream's own suffix condition,
+    `:1316-1320`) — exactly as upstream. A picker's icon rides this slot
+    when `clearable` (it swaps to the clear icon over a value) and `suffix`
+    otherwise. The port's `NBaseClear` DOM diverges from upstream only in
+    carrying the `_internal/clear` rules as inline styles (that cssr is not
+    part of the generated stylesheet — the existing clear implementation's
+    divergence); an `Element` here embeds with `display:contents`
+    (`clearPlaceholder` is the raw-`Html` twin).
+
 -}
 
 import Element exposing (Element)
@@ -139,6 +176,14 @@ type alias Options msg =
     , rtl : Bool
     , loading : Bool
     , inputAttributes : List (Html.Attribute msg)
+    , passivelyActivated : Bool
+    , activated : Bool
+    , internalForceFocus : Bool
+    , textDecoration : Maybe String
+    , attrSize : Maybe Int
+    , onFocus : Maybe msg
+    , onBlur : Maybe msg
+    , clearIconPlaceholder : Maybe (Element msg)
     }
 
 
@@ -167,6 +212,14 @@ defaults =
     , rtl = False
     , loading = False
     , inputAttributes = []
+    , passivelyActivated = False
+    , activated = False
+    , internalForceFocus = False
+    , textDecoration = Nothing
+    , attrSize = Nothing
+    , onFocus = Nothing
+    , onBlur = Nothing
+    , clearIconPlaceholder = Nothing
     }
 
 
@@ -199,10 +252,25 @@ view theme opts =
                     ]
     in
     Element.row
-        [ I.classes (rootClasses opts isTextarea)
-        , I.cssVars (cssVars theme opts.size (InputTheme.vars theme))
-        ]
+        ([ I.classes (rootClasses opts isTextarea)
+         , I.cssVars (cssVars theme opts.size (InputTheme.vars theme))
+         ]
+            ++ passiveRootTabindex opts
+        )
         (wrapper :: borderEls)
+
+
+{-| The wrapper's `tabindex 0` under manual activation (upstream
+`Input.tsx:1140-1143`): the root is focusable only while passively
+activated, not yet activated, and not disabled.
+-}
+passiveRootTabindex : Options msg -> List (Element.Attribute msg)
+passiveRootTabindex opts =
+    if opts.passivelyActivated && not opts.activated && not opts.disabled then
+        [ Element.htmlAttribute (HA.tabindex 0) ]
+
+    else
+        []
 
 
 emptyEl : String -> Element msg
@@ -240,6 +308,7 @@ inputArea opts =
                          ]
                             ++ placeholderAttrs opts
                             ++ lengthAttrs opts
+                            ++ triggerAttrs opts
                             ++ inputEvents opts
                             ++ opts.inputAttributes
                         )
@@ -258,6 +327,8 @@ inputArea opts =
                          ]
                             ++ placeholderAttrs opts
                             ++ lengthAttrs opts
+                            ++ triggerAttrs opts
+                            ++ attrSizeAttrs opts
                             ++ inputEvents opts
                             ++ opts.inputAttributes
                         )
@@ -342,6 +413,56 @@ inputEvents opts =
             []
 
 
+{-| The picker-trigger attributes shared by the input and the textarea: the
+manual-activation `tabindex -1` (upstream `:1203` / `:1273`), the inline
+`text-decoration` (`:1208` / `:1269`), and the raw focus / blur events. All
+default-off.
+-}
+triggerAttrs : Options msg -> List (Html.Attribute msg)
+triggerAttrs opts =
+    (if opts.passivelyActivated && not opts.activated then
+        [ HA.tabindex -1 ]
+
+     else
+        []
+    )
+        ++ (case opts.textDecoration of
+                Just d ->
+                    [ HA.style "text-decoration" d ]
+
+                Nothing ->
+                    []
+           )
+        ++ (case opts.onFocus of
+                Just m ->
+                    [ HE.onFocus m ]
+
+                Nothing ->
+                    []
+           )
+        ++ (case opts.onBlur of
+                Just m ->
+                    [ HE.onBlur m ]
+
+                Nothing ->
+                    []
+           )
+
+
+{-| The native `size` attribute — the `<input>` only (upstream `:1288`);
+emitted only when set (the default 20 equals the HTML default, so a bare
+input renders attribute-less, byte-identically).
+-}
+attrSizeAttrs : Options msg -> List (Html.Attribute msg)
+attrSizeAttrs opts =
+    case opts.attrSize of
+        Just n ->
+            [ HA.attribute "size" (String.fromInt n) ]
+
+        Nothing ->
+            []
+
+
 
 -- suffix / clear button ------------------------------------------------------
 
@@ -372,7 +493,7 @@ of the generated stylesheet, so the rules are ported as inline styles; the
 -}
 clearArea : Options msg -> List (Element msg)
 clearArea opts =
-    if not opts.clearable then
+    if not opts.clearable && opts.clearIconPlaceholder == Nothing then
         []
 
     else
@@ -384,7 +505,7 @@ clearArea opts =
                 , HA.style "width" "1em"
                 , HA.style "position" "relative"
                 ]
-                [ if showClear opts then
+                [ if opts.clearable && showClear opts then
                     clearButton opts
 
                   else
@@ -441,13 +562,29 @@ clearPlaceholder opts =
          ]
             ++ centeredStyle
         )
-        (case opts.clearPlaceholder of
-            Just icon ->
-                [ icon ]
+        (case opts.clearIconPlaceholder of
+            Just el ->
+                [ embedEl el ]
 
             Nothing ->
-                []
+                case opts.clearPlaceholder of
+                    Just icon ->
+                        [ icon ]
+
+                    Nothing ->
+                        []
         )
+
+
+{-| An `Element` inside the raw clear DOM — embed through `layoutWith` with
+`noStaticStyleSheet` (the `NUI.Scrollbar.embedChild` idiom) so no duplicate
+elm-ui stylesheet lands and the node joins no layout.
+-}
+embedEl : Element msg -> Html msg
+embedEl el =
+    Element.layoutWith { options = [ Element.noStaticStyleSheet ] }
+        [ Element.htmlAttribute (HA.attribute "style" "display:contents;font:inherit;color:inherit") ]
+        el
 
 
 centeredStyle : List (Html.Attribute msg)
@@ -627,6 +764,7 @@ rootClasses opts isTextarea =
         , I.classIf (isTextarea && opts.resizable && not opts.autosize) "n-input--resizable"
         , I.classIf opts.autosize "n-input--autosize"
         , I.classIf (opts.round && not isTextarea) "n-input--round"
+        , I.classIf opts.internalForceFocus "n-input--focus"
         , I.classIf opts.stateful "n-input--stateful"
         ]
 

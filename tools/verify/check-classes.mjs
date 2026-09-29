@@ -102,6 +102,10 @@ const ALLOW = new Set([
   'n-base-selection--multiple',
   'n-base-selection--selected',
   'n-base-selection--rtl',
+  // Panel.tsx:348 emits n-time-picker-actions__confirm on the primary confirm
+  // button, but the time-picker cssr styles only `.n-time-picker-actions`
+  // (space-evenly) — no rule targets the marker upstream. Kept faithful.
+  'n-time-picker-actions__confirm',
 ])
 
 const srcDir = path.join(root, 'src', 'NUI')

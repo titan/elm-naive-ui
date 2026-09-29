@@ -175,6 +175,7 @@
     "NUI.Theme.Typography",
     "NUI.Theme.Watermark",
     "NUI.Thing",
+    "NUI.TimePicker",
     "NUI.Timeline",
     "NUI.Tooltip",
     "NUI.Types",

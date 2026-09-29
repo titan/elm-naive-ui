@@ -153,7 +153,12 @@ const targets = {
   // TreeSelect: trigger root is BARE (no vars — everything rides the menu
   // root and the embedded tree's scrollbar); the menu carries the 11 vars.
   '.n-tree-select': false,
-  '.n-tree-select-menu': true
+  '.n-tree-select-menu': true,
+  // TimePicker: the trigger root is BARE (no vars — the 3 trigger vars ride it
+  // as inline style; everything else lives on the panel and the embedded
+  // scrollbar); the panel carries the 14 vars.
+  '.n-time-picker': false,
+  '.n-time-picker-panel': true
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {

@@ -146,6 +146,7 @@ bridge, tests).
 | `NUI.Switch`      | ✅ |
 | `NUI.Tag`         | ✅ |
 | `NUI.Thing`       | ✅ |
+| `NUI.TimePicker`  | ✅ |
 | `NUI.Timeline`    | ✅ |
 | `NUI.Tooltip`     | ✅ |
 | `NUI.Typography`  | ✅ |
