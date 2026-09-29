@@ -13,8 +13,6 @@ module NUI.Internal.Color exposing
     , getHexFromName
     , getModeFromValue
     , getWCAGContrast
-    , hexStringToHex
-    , hexStringToHexa
     , hsl2hsv
     , hsl2rgb
     , hslWithAlpha
@@ -81,6 +79,9 @@ eq-pin surface.
     `roundDeg` wraps `360 → 0` (used by the serializers). Both are kept.
   - `floor` (`utils.ts:95`) is a dead export upstream — **not ported** (no call
     site in the component).
+  - seemly's `toHex{,a}String(string)` overloads are **not ported** either:
+    naive-ui only ever calls the array overloads (`utils.ts:112,139,153`), so
+    the string forms have no call site in this tree either.
   - The named-colour resolution is a static 149-entry table (seemly's map), not
     the upstream `canvas.getContext('2d').fillStyle` path — so CSS _system_
     colours (`highlight`, `buttonface`, …) that a canvas could resolve fall back
@@ -562,77 +563,6 @@ hexDigit d =
          else
             55 + d
         )
-
-
-
--- HEX-STRING OVERLOADS (seemly toHex{,a}String(string), exact) -------------------
-
-
-{-| `toHexString` for a hex string (`#RRGGBB` → itself, `#RRGGBBAA` → first 7).
--}
-hexStringToHex : String -> Result String String
-hexStringToHex base =
-    case firstMatch hexRegex base of
-        Just m ->
-            Ok m.match
-
-        Nothing ->
-            case firstMatch hexaRegex base of
-                Just m ->
-                    Ok (String.left 7 m.match)
-
-                Nothing ->
-                    case ( firstMatch sHexRegex base, firstMatch sHexaRegex base ) of
-                        ( Just m, _ ) ->
-                            Ok (shortHex m)
-
-                        ( _, Just m ) ->
-                            Ok (shortHex m)
-
-                        _ ->
-                            Err ("[seemly/toHexString]: Invalid hex value " ++ base ++ ".")
-
-
-{-| `toHexaString` for a hex string (`#RRGGBB` → `#RRGGBBFF`, short forms expand).
--}
-hexStringToHexa : String -> Result String String
-hexStringToHexa base =
-    case firstMatch hexRegex base of
-        Just m ->
-            Ok (m.match ++ "FF")
-
-        Nothing ->
-            case firstMatch hexaRegex base of
-                Just m ->
-                    Ok m.match
-
-                Nothing ->
-                    case firstMatch sHexRegex base of
-                        Just m ->
-                            Ok (shortHex m ++ "FF")
-
-                        Nothing ->
-                            case firstMatch sHexaRegex base of
-                                Just m ->
-                                    Ok
-                                        ("#"
-                                            ++ gdef 1 m
-                                            ++ gdef 1 m
-                                            ++ gdef 2 m
-                                            ++ gdef 2 m
-                                            ++ gdef 3 m
-                                            ++ gdef 3 m
-                                            ++ gdef 4 m
-                                            ++ gdef 4 m
-                                        )
-
-                                Nothing ->
-                                    Err ("[seemly/toHexString]: Invalid hex value " ++ base ++ ".")
-
-
-shortHex : Regex.Match -> String
-shortHex m =
-    "#" ++ gdef 1 m ++ gdef 1 m ++ gdef 2 m ++ gdef 2 m ++ gdef 3 m ++ gdef 3 m
 
 
 
