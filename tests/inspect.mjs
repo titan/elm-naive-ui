@@ -10646,6 +10646,237 @@ dTrue(
   'standalone tree unchanged'
 )
 
+// time-picker / date-picker ---------------------------------------------------
+// Pins: tasks/recon/date-picker-pins.md. elm-ui structure classes precede the
+// n-* ones, so class assertions normalize to the n-* subset (nClassesStr).
+const varOrder = (el) =>
+  (styleAt(el) || '')
+    .split(';')
+    .map((d) => d.split(':')[0])
+    .filter((k) => k.startsWith('--n-'))
+    .join('|')
+
+const tpTrigger = doc.querySelector('#live-time-picker .n-time-picker')
+dEq(
+  'DOM: time-picker trigger 3 vars in upstream order (icon-color-override, icon-color-disabled-override, bezier)',
+  '--n-icon-color-override|--n-icon-color-disabled-override|--n-bezier',
+  varOrder(tpTrigger)
+)
+
+const tpPanel = doc.querySelector('#live-time-picker-panel .n-time-picker-panel')
+dEq(
+  'DOM: time-picker panel 14 vars in upstream order',
+  '--n-bezier|--n-border-radius|--n-item-color-hover|--n-item-font-size|--n-item-height|--n-item-opacity-disabled|--n-item-text-color|--n-item-text-color-active|--n-item-width|--n-panel-action-padding|--n-panel-box-shadow|--n-panel-color|--n-panel-divider-color|--n-item-border-radius',
+  varOrder(tpPanel)
+)
+dEq('DOM: time-picker panel carries exactly 14 --n-* vars', 14, countVars(tpPanel))
+
+dEq(
+  'DOM: time-picker panel cols — 3 visible units (hour/minute/second), each a bare n-time-picker-col',
+  'n-time-picker-col|n-time-picker-col|n-time-picker-col',
+  Array.from(doc.querySelectorAll('#live-time-picker-panel .n-time-picker-col'))
+    .map((c) => nClassesStr(c))
+    .join('|')
+)
+dEq(
+  'DOM: time-picker col items — exactly 3 active (hour 23, minute 33, second 20) carry --active',
+  '3',
+  String(doc.querySelectorAll('#live-time-picker-panel .n-time-picker-col__item--active').length)
+)
+dTrue(
+  'DOM: time-picker active items carry the data-active attribute (absent otherwise)',
+  doc.querySelectorAll('#live-time-picker-panel .n-time-picker-col__item--active').length === 3 &&
+    Array.from(doc.querySelectorAll('#live-time-picker-panel .n-time-picker-col__item--active')).every(
+      (i) => i.getAttribute('data-active') !== null
+    ) &&
+    Array.from(doc.querySelectorAll('#live-time-picker-panel .n-time-picker-col__item')).filter(
+      (i) => !i.className.includes('--active')
+    ).every((i) => i.getAttribute('data-active') === null),
+  'data-active'
+)
+
+dEq(
+  'DOM: time-picker invalid panel — hour col gains --invalid AFTER the base class',
+  'n-time-picker-col n-time-picker-col--invalid',
+  nClassesStr(doc.querySelector('#live-time-picker-panel-invalid .n-time-picker-col'))
+)
+dTrue(
+  'DOM: time-picker invalid panel — confirm button disabled (n-button--disabled + aria-disabled)',
+  (() => {
+    const b = doc.querySelector('#live-time-picker-panel-invalid .n-time-picker-actions__confirm')
+    return !!b && b.className.includes('n-button--disabled') && b.getAttribute('aria-disabled') === 'true'
+  })(),
+  (() => {
+    const b = doc.querySelector('#live-time-picker-panel-invalid .n-time-picker-actions__confirm')
+    return b ? b.getAttribute('class') : 'missing'
+  })()
+)
+dTrue(
+  'DOM: time-picker valid panel — confirm button enabled (no --disabled)',
+  (() => {
+    const b = doc.querySelector('#live-time-picker-panel .n-time-picker-actions__confirm')
+    return !!b && !b.className.includes('n-button--disabled')
+  })(),
+  'confirm'
+)
+
+dEq(
+  'DOM: time-picker actions row — Clear, Now, confirm (primary + __confirm marker) in order',
+  'n-button n-button--default-type n-button--tiny-type|n-button n-button--default-type n-button--tiny-type|n-button n-button--primary-type n-button--tiny-type n-time-picker-actions__confirm',
+  Array.from(doc.querySelectorAll('#live-time-picker-panel-actions .n-time-picker-actions .n-button'))
+    .map((b) => nClassesStr(b))
+    .join('|')
+)
+dEq(
+  'DOM: time-picker use12Hours adds the 4th (AM/PM) column',
+  '4',
+  String(doc.querySelectorAll('#live-time-picker-panel-12h .n-time-picker-col').length)
+)
+
+// DatePicker trigger
+dEq(
+  'DOM: date-picker trigger single is a bare n-date-picker (no --range / --disabled)',
+  'n-date-picker',
+  nClassesStr(doc.querySelector('#live-date-picker .n-date-picker'))
+)
+dEq(
+  'DOM: date-picker trigger range adds --range after the base',
+  'n-date-picker n-date-picker--range',
+  nClassesStr(doc.querySelector('#live-date-picker-range .n-date-picker'))
+)
+dEq(
+  'DOM: date-picker trigger 3 vars in upstream order (bezier, icon-color-override, icon-color-disabled-override)',
+  '--n-bezier|--n-icon-color-override|--n-icon-color-disabled-override',
+  varOrder(doc.querySelector('#live-date-picker .n-date-picker'))
+)
+
+dEq(
+  'DOM: date-panel root classes per type — month/year/quarter hardcode --month, monthrange reuses --daterange, --shadow present (popup/panel body)',
+  [
+    'date:n-date-panel n-date-panel--date n-date-panel--shadow',
+    'week:n-date-panel n-date-panel--week n-date-panel--shadow',
+    'datetime:n-date-panel n-date-panel--datetime n-date-panel--shadow',
+    'daterange:n-date-panel n-date-panel--daterange n-date-panel--shadow',
+    'datetimerange:n-date-panel n-date-panel--datetimerange n-date-panel--shadow',
+    'month:n-date-panel n-date-panel--month n-date-panel--shadow',
+    'year:n-date-panel n-date-panel--month n-date-panel--shadow',
+    'quarter:n-date-panel n-date-panel--month n-date-panel--shadow',
+    'monthrange:n-date-panel n-date-panel--daterange n-date-panel--shadow'
+  ].join('|'),
+  ['date', 'week', 'datetime', 'daterange', 'datetimerange', 'month', 'year', 'quarter', 'monthrange']
+    .map((t) => t + ':' + nClassesStr(doc.querySelector('#live-date-panel-' + t + ' .n-date-panel')))
+    .join('|')
+)
+dEq(
+  'DOM: date-panel 43 vars in upstream declaration order',
+  '--n-bezier|--n-panel-border-radius|--n-panel-color|--n-panel-box-shadow|--n-panel-text-color|--n-panel-header-padding|--n-panel-header-divider-color|--n-calendar-left-padding|--n-calendar-right-padding|--n-calendar-title-color-hover|--n-calendar-title-height|--n-calendar-title-padding|--n-calendar-title-font-size|--n-calendar-title-font-weight|--n-calendar-title-text-color|--n-calendar-title-grid-template-columns|--n-calendar-days-height|--n-calendar-days-divider-color|--n-calendar-days-font-size|--n-calendar-days-text-color|--n-calendar-divider-color|--n-panel-action-padding|--n-panel-extra-footer-padding|--n-panel-action-divider-color|--n-item-font-size|--n-item-border-radius|--n-item-size|--n-item-cell-width|--n-item-cell-height|--n-item-text-color|--n-item-color-included|--n-item-color-disabled|--n-item-color-hover|--n-item-color-active|--n-item-text-color-disabled|--n-item-text-color-active|--n-scroll-item-width|--n-scroll-item-height|--n-scroll-item-border-radius|--n-arrow-size|--n-arrow-color|--n-icon-color|--n-icon-color-disabled',
+  varOrder(doc.querySelector('#live-date-panel-date .n-date-panel'))
+)
+dEq(
+  'DOM: date-panel carries exactly 43 --n-* vars',
+  43,
+  countVars(doc.querySelector('#live-date-panel-date .n-date-panel'))
+)
+
+dEq(
+  'DOM: single date panel — 42 cells, one --selected (2024-05-09) and one --current (2024-05-01)',
+  '42|1|1',
+  [
+    String(doc.querySelectorAll('#live-date-panel-date .n-date-panel-dates > .n-date-panel-date').length),
+    String(doc.querySelectorAll('#live-date-panel-date .n-date-panel-date--selected').length),
+    String(doc.querySelectorAll('#live-date-panel-date .n-date-panel-date--current').length)
+  ].join('|')
+)
+
+dEq(
+  'DOM: daterange cell class ORDER (excluded, current, selected, covered, start, end, disabled) — start cell=current+selected+start, end cell=selected+end, band=covered, prev-month=excluded',
+  'n-date-panel-date n-date-panel-date--current n-date-panel-date--selected n-date-panel-date--start|n-date-panel-date n-date-panel-date--selected n-date-panel-date--end|n-date-panel-date n-date-panel-date--covered|n-date-panel-date n-date-panel-date--excluded',
+  (() => {
+    const cells = doc.querySelectorAll('#live-date-panel-daterange .n-date-panel-dates')[0].children
+    return [cells[3], cells[13], cells[4], cells[0]].map((c) => nClassesStr(c)).join('|')
+  })()
+)
+
+dEq(
+  'DOM: datetimerange header 4 controls in upstream order (input, time-picker, input, time-picker)',
+  'n-input n-input--small-size n-date-panel-date-input|n-time-picker|n-input n-input--small-size n-date-panel-date-input|n-time-picker',
+  Array.from(
+    doc.querySelectorAll(
+      '#live-date-panel-datetimerange .n-date-panel-header .n-date-panel-date-input, #live-date-panel-datetimerange .n-date-panel-header .n-time-picker'
+    )
+  )
+    .map((e) => nClassesStr(e))
+    .join('|')
+)
+
+dEq(
+  'DOM: actions suffix per type — month = [Now, Confirm(primary)], daterange = [Confirm(primary)]',
+  'month:Now|Confirm|daterange:Confirm',
+  [
+    'month:' +
+      Array.from(doc.querySelectorAll('#live-date-panel-month .n-date-panel-actions__suffix .n-button'))
+        .map((b) => b.textContent)
+        .join('|'),
+    'daterange:' +
+      Array.from(doc.querySelectorAll('#live-date-panel-daterange .n-date-panel-actions__suffix .n-button'))
+        .map((b) => b.textContent)
+        .join('|')
+  ].join('|')
+)
+dTrue(
+  'DOM: panel suffix confirm buttons are type=primary',
+  (() => {
+    const m = doc.querySelector('#live-date-panel-month .n-date-panel-actions__suffix .n-button--primary-type')
+    const d = doc.querySelector('#live-date-panel-daterange .n-date-panel-actions__suffix .n-button--primary-type')
+    return (
+      !!m &&
+      !!d &&
+      m.textContent === 'Confirm' &&
+      d.textContent === 'Confirm' &&
+      doc.querySelectorAll('#live-date-panel-month .n-date-panel-actions__suffix .n-button--primary-type').length === 1
+    )
+  })(),
+  'primary'
+)
+
+// Input pair seams
+dEq(
+  'DOM: Input pair root class order — n-input, size, --pair, --focus, --stateful',
+  'n-input n-input--medium-size n-input--pair n-input--focus n-input--stateful',
+  nClassesStr(doc.querySelector('#live-input-pair .n-input'))
+)
+dEq(
+  'DOM: Input pair tree — wrapper1, span separator, wrapper2, then border/state-border',
+  'n-input-wrapper|n-input__separator|n-input-wrapper|n-input__border|n-input__state-border',
+  Array.from(doc.querySelector('#live-input-pair .n-input').children)
+    .map((c) => nClassesStr(c))
+    .join('|')
+)
+dEq(
+  'DOM: Input pair — wrapper1 holds just the input area; wrapper2 adds the pair-only suffix (clearable)',
+  '1|2',
+  (() => {
+    const w = doc.querySelectorAll('#live-input-pair .n-input-wrapper')
+    return [String(w[0].children.length), String(w[1].children.length)].join('|')
+  })()
+)
+dEq(
+  'DOM: Input pair — attrSize size attr on input1 only; text-decoration inline on the decorated input',
+  '12|line-through|none|',
+  (() => {
+    const inputs = doc.querySelectorAll('#live-input-pair .n-input__input-el')
+    const i1 = inputs[0]
+    const i2 = inputs[1]
+    const s1 = i1 ? i1.getAttribute('style') || '' : ''
+    return [
+      i1 ? i1.getAttribute('size') : 'none',
+      s1.includes('line-through') ? 'line-through' : 'none',
+      i2 && i2.getAttribute('size') === null ? 'none' : 'has-size',
+      i2 && (i2.getAttribute('style') || '').includes('text-decoration') ? 'deco' : ''
+    ].join('|')
+  })()
+)
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

@@ -37,6 +37,7 @@ import NUI.Collapse as Collapse
 import NUI.Countdown as Countdown
 import NUI.Css as Css
 import NUI.DataTable as DataTable
+import NUI.DatePicker as DatePicker
 import NUI.Descriptions as Descriptions
 import NUI.Dialog as Dialog
 import NUI.DialogProvider as DialogProvider
@@ -64,6 +65,7 @@ import NUI.Input as Input
 import NUI.InputNumber as InputNumber
 import NUI.InputOtp as InputOtp
 import NUI.Internal as Internal
+import NUI.Internal.DateTime as DT
 import NUI.Layout as Layout
 import NUI.LayoutFooter as LayoutFooter
 import NUI.LayoutHeader as LayoutHeader
@@ -122,6 +124,7 @@ import NUI.Theme.Tag as TagTheme
 import NUI.Theme.Tree as TreeTheme
 import NUI.Theme.Watermark as WatermarkTheme
 import NUI.Thing as Thing
+import NUI.TimePicker as TimePicker
 import NUI.Timeline as Timeline
 import NUI.Tooltip as Tooltip
 import NUI.Transfer as Transfer
@@ -1257,6 +1260,174 @@ treeSelectOptions =
 treeSelectLiveOpts : TreeSelect.Options msg
 treeSelectLiveOpts =
     TreeSelect.defaults
+
+
+
+-- DATE-PICKER / TIME-PICKER FIXTURES — pin derivation: date-picker/src/panel/*
+-- + utils.ts + DatePicker.tsx + use-*.ts + time-picker/src/* + date-fns v2
+-- ground truth. Expectations in tasks/recon/date-picker-pins.md. All
+-- timestamps are UTC instants (verified with TZ=UTC node).
+
+
+dpTSA : Int
+dpTSA =
+    1715297600000
+
+
+dpTSB : Int
+dpTSB =
+    1704067200000
+
+
+dpMayAnchor : Int
+dpMayAnchor =
+    1714521600000
+
+
+dpRangeEnd : Int
+dpRangeEnd =
+    1715385600000
+
+
+dpApr28 : Int
+dpApr28 =
+    1714262400000
+
+
+dpJun08 : Int
+dpJun08 =
+    1717804800000
+
+
+dpMay20 : Int
+dpMay20 =
+    1716163200000
+
+
+dpMay05 : Int
+dpMay05 =
+    1714867200000
+
+
+dpMay09 : Int
+dpMay09 =
+    1715212800000
+
+
+dpApr01 : Int
+dpApr01 =
+    1711929600000
+
+
+dpFeb29 : Int
+dpFeb29 =
+    1709164800000
+
+
+dpJan31 : Int
+dpJan31 =
+    1706659200000
+
+
+dpY1999 : Int
+dpY1999 =
+    915148800000
+
+
+dpD2004 : Int
+dpD2004 =
+    1104451200000
+
+
+dpNoFields :
+    { year : Maybe Int
+    , month : Maybe Int
+    , day : Maybe Int
+    , hours : Maybe Int
+    , minutes : Maybe Int
+    , seconds : Maybe Int
+    , quarter : Maybe Int
+    }
+dpNoFields =
+    { year = Nothing
+    , month = Nothing
+    , day = Nothing
+    , hours = Nothing
+    , minutes = Nothing
+    , seconds = Nothing
+    , quarter = Nothing
+    }
+
+
+dpCellAt : Int -> List DT.DateItem -> Maybe DT.DateItem
+dpCellAt ts items =
+    List.filter (\i -> i.ts == ts) items |> List.head
+
+
+dpCellSelected : Int -> List DT.DateItem -> Bool
+dpCellSelected ts items =
+    dpCellAt ts items |> Maybe.map .selected |> Maybe.withDefault False
+
+
+dpCellFlag : (DT.DateItem -> Bool) -> Int -> List DT.DateItem -> Bool
+dpCellFlag f ts items =
+    dpCellAt ts items |> Maybe.map f |> Maybe.withDefault False
+
+
+dpBool : Bool -> String
+dpBool b =
+    if b then
+        "True"
+
+    else
+        "False"
+
+
+dpDateItems : List DT.DateItem
+dpDateItems =
+    DT.dateArray dpMayAnchor (DT.SingleTs dpTSA) dpTSA 6 False False
+
+
+dpWeekItems : List DT.DateItem
+dpWeekItems =
+    DT.dateArray dpMayAnchor (DT.SingleTs dpTSA) dpTSA 6 False True
+
+
+dpRangeItems : List DT.DateItem
+dpRangeItems =
+    DT.dateArray dpMayAnchor (DT.RangeTs dpMayAnchor dpRangeEnd) dpMayAnchor 6 False False
+
+
+dpClickTarget : DatePicker.ClickTarget
+dpClickTarget =
+    { ts = dpMay20, year = 2024, month = 5, day = 20, quarter = 2 }
+
+
+{-| The base panel options for the DOM fixtures: UTC zone, May-2024 anchor.
+-}
+dpBaseOpts : DatePicker.Options msg
+dpBaseOpts =
+    let
+        d =
+            DatePicker.defaultOptions
+    in
+    { d
+        | now = Time.millisToPosix dpMayAnchor
+        , zone = Time.utc
+    }
+
+
+dpTimeBaseOpts : TimePicker.Options msg
+dpTimeBaseOpts =
+    let
+        d =
+            TimePicker.defaultOptions
+    in
+    { d
+        | now = Time.millisToPosix dpTSA
+        , zone = Time.utc
+        , value = Just dpTSA
+    }
 
 
 tsSingleOpts : TreeSelect.Options msg
@@ -11561,6 +11732,276 @@ checks =
            , eq "dt fixedColumnLeftMap over a grouped column set — the walk is over the LEAVES (nested fixed `a` start 0, flat `c` start 100); the group `g` never joins (b4 formula)"
                 [ ( "a", 0 ), ( "c", 100 ) ]
                 (DataTable.fixedColumnLeftMap dtGroupFixedCols)
+
+           -- DATE-PICKER / TIME-PICKER — pins derived from date-picker/src/panel/*
+           -- + utils.ts + DatePicker.tsx + time-picker/src/* + date-fns v2 ground
+           -- truth. Expectations: tasks/recon/date-picker-pins.md.
+           -- =====================================================================
+           , eq "dp P1.1 engine format yyyy-MM-dd @ 2024-05-09T23:33:20Z"
+                "2024-05-09"
+                (DT.format "yyyy-MM-dd" Time.utc dpTSA)
+           , eq "dp P1.2 engine format yyyy-MM-dd HH:mm:ss @ TS_A"
+                "2024-05-09 23:33:20"
+                (DT.format "yyyy-MM-dd HH:mm:ss" Time.utc dpTSA)
+           , eq "dp P1.3 MMM @ TS_A" "May" (DT.format "MMM" Time.utc dpTSA)
+           , eq "dp P1.4 eeeeee @ TS_A (date-fns short weekday)" "Th" (DT.format "eeeeee" Time.utc dpTSA)
+           , eq "dp P1.5 yyyy-qqq @ TS_A" "2024-Q2" (DT.format "yyyy-qqq" Time.utc dpTSA)
+           , eq "dp P1.6 yy @ TS_A" "24" (DT.format "yy" Time.utc dpTSA)
+           , eq "dp P1.7 H @ TS_A (unpadded)" "23" (DT.format "H" Time.utc dpTSA)
+           , eq "dp P1.8 HH @ TS_A (padded)" "23" (DT.format "HH" Time.utc dpTSA)
+           , eq "dp P1.9 \"yyyy-'Q'Q\" @ TS_A (quoted literal Q + quarter)" "2024-Q2" (DT.format "yyyy-'Q'Q" Time.utc dpTSA)
+           , eq "dp P1.10 yyyy-MM-dd @ 2024-01-01T00:00Z" "2024-01-01" (DT.format "yyyy-MM-dd" Time.utc dpTSB)
+           , eq "dp P1.11 datetime @ TS_B" "2024-01-01 00:00:00" (DT.format "yyyy-MM-dd HH:mm:ss" Time.utc dpTSB)
+           , eq "dp P1.12 MMM @ TS_B" "Jan" (DT.format "MMM" Time.utc dpTSB)
+           , eq "dp P1.13 eeeeee @ TS_B" "Mo" (DT.format "eeeeee" Time.utc dpTSB)
+           , eq "dp P1.14 H @ TS_B (unpadded zero)" "0" (DT.format "H" Time.utc dpTSB)
+           , eq "dp P1.15 HH @ TS_B (padded zero)" "00" (DT.format "HH" Time.utc dpTSB)
+           , eq "dp P1.16 yyyy-qqq @ TS_B" "2024-Q1" (DT.format "yyyy-qqq" Time.utc dpTSB)
+           , eq "dp P1.17 YYYY-w @ TS_B (ISO week 1 of 2024)" "2024-1" (DT.format "YYYY-w" Time.utc dpTSB)
+           , eq "dp P1.18 YYYY-w @ 2004-12-31 (port contract fcwd=4/wso=0 → 2004-52; pin re-derivation in the doc)"
+                "2004-52"
+                (DT.format "YYYY-w" Time.utc dpD2004)
+           , eq "dp P6.4a ISO weekNumber(2024-01-01) = 1" 1 (DT.weekNumber 1 Time.utc dpTSB)
+           , eq "dp P6.4b ISO weekNumber(2004-12-31) = 53 (the documented getWeek 2004/53 edge)" 53 (DT.weekNumber 1 Time.utc dpD2004)
+           , eq "dp P6.4c ISO weekYear(2004-12-31) = 2004" 2004 (DT.weekYear 1 Time.utc dpD2004)
+
+           -- P2 strictParse
+           , eq "dp P2.1 strictParse accepts '2024-05-09' @ yyyy-MM-dd"
+                (Just dpMay09)
+                (DT.strictParse "2024-05-09" "yyyy-MM-dd" Time.utc)
+           , eq "dp P2.2 strictParse rejects '2024-02-30'" Nothing (DT.strictParse "2024-02-30" "yyyy-MM-dd" Time.utc)
+           , eq "dp P2.3 strictParse rejects '2024-5-9' (round-trip mismatch)" Nothing (DT.strictParse "2024-5-9" "yyyy-MM-dd" Time.utc)
+           , eq "dp P2.4 strictParse accepts '23:33:20' @ HH:mm:ss → epoch-day ts"
+                (Just 84800000)
+                (DT.strictParse "23:33:20" "HH:mm:ss" Time.utc)
+           , eq "dp P2.5 strictParse rejects '23:33:20' @ HH:mm (no seconds token)" Nothing (DT.strictParse "23:33:20" "HH:mm" Time.utc)
+
+           -- P3 dateArray
+           , eq "dp P3.1 dateArray strip=False → 42 cells" 42 (List.length dpDateItems)
+           , eq "dp P3.2 first cell ts = 2024-04-28 (Sunday)"
+                (Just dpApr28)
+                (List.head dpDateItems |> Maybe.map .ts)
+           , eq "dp P3.3 last cell ts = 2024-06-08"
+                (Just dpJun08)
+                (List.reverse dpDateItems |> List.head |> Maybe.map .ts)
+           , eq "dp P3.4 cell 2024-05-09 selected" True (dpCellSelected dpMay09 dpDateItems)
+           , eq "dp P3.5 cells 2024-05-08 / 2024-05-10 not selected"
+                [ False, False ]
+                [ dpCellSelected (dpMay09 - 86400000) dpDateItems
+                , dpCellSelected (dpMay09 + 86400000) dpDateItems
+                ]
+           , eq "dp P3.6 inCurrentMonth count = 31 (May 1..31)"
+                31
+                (List.filter .inCurrentMonth dpDateItems |> List.length)
+           , eq "dp P3.7 isCurrentDate True only for 2024-05-09"
+                [ "True", "1" ]
+                [ dpBool (dpCellFlag .isCurrentDate dpMay09 dpDateItems)
+                , String.fromInt (List.filter .isCurrentDate dpDateItems |> List.length)
+                ]
+           , eq "dp P3.8 weekMode: selected is False for every cell"
+                []
+                (List.filter .selected dpWeekItems |> List.map .ts)
+           , eq "dp P3.9 weekMode: inSelectedWeek True for the 7 cells 2024-05-05..05-11"
+                [ "True", "True", "True", "True", "True", "True", "True", "7" ]
+                ([ 0, 1, 2, 3, 4, 5, 6 ]
+                    |> List.map (\i -> dpBool (dpCellFlag .inSelectedWeek (dpMay05 + i * 86400000) dpWeekItems))
+                    |> (\xs -> xs ++ [ String.fromInt (List.filter .inSelectedWeek dpWeekItems |> List.length) ])
+                )
+
+           -- P4 dual span flags
+           , eq "dp P4.1 2024-05-01 startOfSpan True, inSpan False"
+                [ True, False ]
+                [ dpCellFlag .startOfSpan dpMayAnchor dpRangeItems
+                , dpCellFlag .inSpan dpMayAnchor dpRangeItems
+                ]
+           , eq "dp P4.2 2024-05-11 endOfSpan True, inSpan False"
+                [ True, False ]
+                [ dpCellFlag .endOfSpan dpRangeEnd dpRangeItems
+                , dpCellFlag .inSpan dpRangeEnd dpRangeItems
+                ]
+           , eq "dp P4.3 2024-05-02..05-10 all inSpan True (strict exclusive)"
+                (List.repeat 9 True)
+                (List.range 1 9 |> List.map (\i -> dpCellFlag .inSpan (dpMayAnchor + i * 86400000) dpRangeItems))
+           , eq "dp P4.4 2024-05-01 & 2024-05-11 selected; 05-02..05-10 not"
+                [ "True", "True", "0" ]
+                [ dpBool (dpCellSelected dpMayAnchor dpRangeItems)
+                , dpBool (dpCellSelected dpRangeEnd dpRangeItems)
+                , String.fromInt (List.range 1 9 |> List.filter (\i -> dpCellSelected (dpMayAnchor + i * 86400000) dpRangeItems) |> List.length)
+                ]
+
+           -- P5 month / quarter / year arrays
+           , eq "dp P5.1 monthArray 12 items, labels Jan..Dec (MMM)"
+                [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ]
+                (DT.monthArray dpMayAnchor (DT.SingleTs dpTSA) dpTSA { monthFormat = "MMM" }
+                    |> List.map (\m -> DT.format m.monthFormat Time.utc m.ts)
+                )
+           , eq "dp P5.2 monthArray first ts = 2024-01-01"
+                (Just dpTSB)
+                (DT.monthArray dpMayAnchor (DT.SingleTs dpTSA) dpTSA { monthFormat = "MMM" }
+                    |> List.head
+                    |> Maybe.map .ts
+                )
+           , eq "dp P5.3 quarterArray 4 items, labels Q1..Q4 (qqq)"
+                [ "Q1", "Q2", "Q3", "Q4" ]
+                (DT.quarterArray dpMayAnchor (DT.SingleTs dpTSA) dpTSA { quarterFormat = "qqq" }
+                    |> List.map (\q -> DT.format q.quarterFormat Time.utc q.ts)
+                )
+           , eq "dp P5.4 quarterArray ts[1] = 2024-04-01 (Q2 start)"
+                (Just dpApr01)
+                (DT.quarterArray dpMayAnchor (DT.SingleTs dpTSA) dpTSA { quarterFormat = "qqq" }
+                    |> List.drop 1
+                    |> List.head
+                    |> Maybe.map .ts
+                )
+           , eq "dp P5.5 yearArray (1901,2100) → 199 items (exclusive end), first 1901, last 2099"
+                [ 199, 1901, 2099 ]
+                (let
+                    ys =
+                        DT.yearArray (DT.SingleTs dpY1999) dpTSA { yearFormat = "yyyy" } ( 1901, 2100 )
+                 in
+                 [ List.length ys
+                 , List.head ys |> Maybe.map (\y -> y.dateObject.year) |> Maybe.withDefault 0
+                 , List.reverse ys |> List.head |> Maybe.map (\y -> y.dateObject.year) |> Maybe.withDefault 0
+                 ]
+                )
+           , eq "dp P5.6 yearArray selected only for 1999"
+                [ 1999 ]
+                (DT.yearArray (DT.SingleTs dpY1999) dpTSA { yearFormat = "yyyy" } ( 1901, 2100 )
+                    |> List.filter .selected
+                    |> List.map (\y -> y.dateObject.year)
+                )
+
+           -- P6 civil math
+           , eq "dp P6.1 addMonthsClamped 2024-01-31 +1 → 2024-02-29"
+                { year = 2024, month = 2, day = 29 }
+                (DT.addMonthsClamped 1 { year = 2024, month = 1, day = 31 })
+           , eq "dp P6.2 setFields month→3 on 2024-02-29 keeps day → 2024-03-29"
+                { year = 2024, month = 3, day = 29 }
+                (DT.toCivil Time.utc (DT.setFields Time.utc dpFeb29 { dpNoFields | month = Just 3 }))
+           , eq "dp P6.3 setFields month→2 on 2024-01-31 clamps → 2024-02-29"
+                { year = 2024, month = 2, day = 29 }
+                (DT.toCivil Time.utc (DT.setFields Time.utc dpJan31 { dpNoFields | month = Just 2 }))
+           , eq "dp P6.5 firstDayOfWeekToDateFns 6 = 0" 0 (DT.firstDayOfWeekToDateFns 6)
+
+           -- P7 TimePicker pure helpers
+           , eq "tp P7.1 formatValue HH:mm:ss @ TS_A" "23:33:20" (TimePicker.formatValue "HH:mm:ss" Time.utc dpTSA)
+           , eq "tp P7.2 parseInput '23:33:20' @ HH:mm:ss → epoch-day ts"
+                (Just 84800000)
+                (TimePicker.parseInput "HH:mm:ss" Time.utc "23:33:20")
+           , eq "tp P7.2b parseInput then formatValue reproduces the string"
+                (Just "23:33:20")
+                (TimePicker.parseInput "HH:mm:ss" Time.utc "23:33:20"
+                    |> Maybe.map (TimePicker.formatValue "HH:mm:ss" Time.utc)
+                )
+           , eq "tp P7.3 snapNow minutes StepUnits 15: 23:33:20 → 23:30:20 (nearest, ties→lower)"
+                (dpTSA - 180000)
+                (TimePicker.snapNow "HH:mm:ss" Time.utc (Time.millisToPosix dpTSA) TimePicker.AllUnits (TimePicker.StepUnits 15) TimePicker.AllUnits)
+           , eq "tp P7.4 snapNow hours OnlyUnits [0,12]: 23 → 12"
+                (dpTSA - 39600000)
+                (TimePicker.snapNow "HH:mm:ss" Time.utc (Time.millisToPosix dpTSA) (TimePicker.OnlyUnits [ 0, 12 ]) TimePicker.AllUnits TimePicker.AllUnits)
+
+           -- P8 default action tables
+           , eq "dp P8.1 date, clearable=False → [Now]" [ DatePicker.Now ] (DatePicker.defaultActions DatePicker.Date False)
+           , eq "dp P8.2 date, clearable=True → [Clear, Now]" [ DatePicker.Clear, DatePicker.Now ] (DatePicker.defaultActions DatePicker.Date True)
+           , eq "dp P8.3 datetime → [Now, Confirm]" [ DatePicker.Now, DatePicker.Confirm ] (DatePicker.defaultActions DatePicker.Datetime False)
+           , eq "dp P8.4 daterange → [Confirm]" [ DatePicker.Confirm ] (DatePicker.defaultActions DatePicker.Daterange False)
+           , eq "dp P8.5 datetimerange, clearable=True → [Clear, Confirm]" [ DatePicker.Clear, DatePicker.Confirm ] (DatePicker.defaultActions DatePicker.Datetimerange True)
+           , eq "dp P8.6 month → [Now, Confirm]" [ DatePicker.Now, DatePicker.Confirm ] (DatePicker.defaultActions DatePicker.Month False)
+           , eq "dp P8.7 year → [Now]" [ DatePicker.Now ] (DatePicker.defaultActions DatePicker.Year False)
+           , eq "dp P8.8 quarter → [Now, Confirm]" [ DatePicker.Now, DatePicker.Confirm ] (DatePicker.defaultActions DatePicker.Quarter False)
+           , eq "dp P8.9 monthrange → [Confirm]" [ DatePicker.Confirm ] (DatePicker.defaultActions DatePicker.Monthrange False)
+           , eq "dp P8.10 week → [Now]" [ DatePicker.Now ] (DatePicker.defaultActions DatePicker.Week False)
+
+           -- P9 sanitizeValue (ts TS_A, zone UTC)
+           , eq "dp P9 sanitizeValue → exact ms per panel type"
+                [ 1715297600000, 1714521600000, 1704067200000, 1711929600000, 1714867200000, 1715212800000, 1715212800000, 1714521600000, 1715297600000 ]
+                [ DatePicker.sanitizeValue DatePicker.Datetime dpTSA
+                , DatePicker.sanitizeValue DatePicker.Month dpTSA
+                , DatePicker.sanitizeValue DatePicker.Year dpTSA
+                , DatePicker.sanitizeValue DatePicker.Quarter dpTSA
+                , DatePicker.sanitizeValue DatePicker.Week dpTSA
+                , DatePicker.sanitizeValue DatePicker.Date dpTSA
+                , DatePicker.sanitizeValue DatePicker.Daterange dpTSA
+                , DatePicker.sanitizeValue DatePicker.Monthrange dpTSA
+                , DatePicker.sanitizeValue DatePicker.Datetimerange dpTSA
+                ]
+
+           -- P10 singleDateClick
+           , eq "dp P10.1 date click 2024-05-20 → value, close True"
+                { value = DatePicker.Single (Just dpMay20), close = True }
+                (DatePicker.singleDateClick
+                    { type_ = DatePicker.Date
+                    , value = DatePicker.Single (Just dpTSB)
+                    , target = dpClickTarget
+                    , isDisabled = False
+                    , defaultTime = Nothing
+                    , now = dpMayAnchor
+                    , zone = Time.utc
+                    }
+                )
+           , eq "dp P10.2 month click 2024-05-20 → startOfMonth, close False"
+                { value = DatePicker.Single (Just dpMayAnchor), close = False }
+                (DatePicker.singleDateClick
+                    { type_ = DatePicker.Month
+                    , value = DatePicker.Single (Just dpTSB)
+                    , target = dpClickTarget
+                    , isDisabled = False
+                    , defaultTime = Nothing
+                    , now = dpTSB
+                    , zone = Time.utc
+                    }
+                )
+           , eq "dp P10.3 datetime click + DefaultSingle '03:04:05' → time applied"
+                { value = DatePicker.Single (Just 1716174245000), close = False }
+                (DatePicker.singleDateClick
+                    { type_ = DatePicker.Datetime
+                    , value = DatePicker.Single (Just dpTSB)
+                    , target = dpClickTarget
+                    , isDisabled = False
+                    , defaultTime = Just (DatePicker.DefaultSingle "03:04:05")
+                    , now = dpTSB
+                    , zone = Time.utc
+                    }
+                )
+
+           -- P11 dual interactions
+           , eq "dp P11.1 first dualDateClick → [t,t], selecting True"
+                { value = DatePicker.Range (Just ( dpMayAnchor, dpMayAnchor )), selecting = True, close = False, confirm = False }
+                (DatePicker.dualDateClick
+                    { value = DatePicker.Single Nothing
+                    , selecting = False
+                    , type_ = DatePicker.Daterange
+                    , closeOnSelect = False
+                    , updateValueOnClose = False
+                    }
+                    dpMayAnchor
+                )
+           , eq "dp P11.2 second dualDateClick → selecting False, value kept"
+                { value = DatePicker.Range (Just ( dpMayAnchor, dpRangeEnd )), selecting = False, close = False, confirm = False }
+                (DatePicker.dualDateClick
+                    { value = DatePicker.Range (Just ( dpMayAnchor, dpRangeEnd ))
+                    , selecting = True
+                    , type_ = DatePicker.Daterange
+                    , closeOnSelect = False
+                    , updateValueOnClose = False
+                    }
+                    dpRangeEnd
+                )
+           , eq "dp P11.3 dualHover reversed → normalized [min,max]"
+                (Just (DatePicker.Range (Just ( dpMayAnchor, dpRangeEnd ))))
+                (DatePicker.dualHover
+                    { value = DatePicker.Range (Just ( dpMayAnchor, dpRangeEnd ))
+                    , selecting = True
+                    , memorizedStart = Just dpRangeEnd
+                    , disabled = False
+                    }
+                    dpMayAnchor
+                )
+           , eq "dp P11.5 colItemClick: start item after end collapses; end item before start collapses"
+                [ DatePicker.Range (Just ( dpMay20, dpMay20 )), DatePicker.Range (Just ( dpApr01, dpApr01 )) ]
+                [ DatePicker.colItemClick DatePicker.Daterange (DatePicker.Range (Just ( dpMayAnchor, dpRangeEnd ))) dpMay20 DatePicker.RangeStart
+                , DatePicker.colItemClick DatePicker.Daterange (DatePicker.Range (Just ( dpMayAnchor, dpRangeEnd ))) dpApr01 DatePicker.RangeEnd
+                ]
            ]
 
 
@@ -14009,6 +14450,56 @@ liveNodes =
                     )
                 , Element.el [ Element.htmlAttribute (HA.id "live-data-table-merge-expand") ]
                     (DataTable.view Theme.default dtMergeExpandOpts)
+
+                -- time-picker / date-picker live fixtures — pins in
+                -- tasks/recon/date-picker-pins.md
+                , Element.el [ Element.htmlAttribute (HA.id "live-time-picker") ]
+                    (TimePicker.view Theme.default dpTimeBaseOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-time-picker-panel") ]
+                    (TimePicker.panel Theme.default dpTimeBaseOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-time-picker-panel-invalid") ]
+                    (TimePicker.panel Theme.default { dpTimeBaseOpts | hours = TimePicker.OnlyUnits [ 0 ] })
+                , Element.el [ Element.htmlAttribute (HA.id "live-time-picker-panel-12h") ]
+                    (TimePicker.panel Theme.default { dpTimeBaseOpts | use12Hours = True })
+                , Element.el [ Element.htmlAttribute (HA.id "live-time-picker-panel-actions") ]
+                    (TimePicker.panel Theme.default { dpTimeBaseOpts | actions = [ TimePicker.Clear, TimePicker.Now, TimePicker.Confirm ] })
+                , Element.el [ Element.htmlAttribute (HA.id "live-date-picker") ]
+                    (DatePicker.view Theme.default { dpBaseOpts | type_ = DatePicker.Date, value = DatePicker.Single (Just dpMay09) })
+                , Element.el [ Element.htmlAttribute (HA.id "live-date-picker-range") ]
+                    (DatePicker.view Theme.default { dpBaseOpts | type_ = DatePicker.Daterange, value = DatePicker.Range (Just ( dpMayAnchor, dpRangeEnd )) })
+                , Element.el [ Element.htmlAttribute (HA.id "live-date-panel-date") ]
+                    (DatePicker.panel Theme.default { dpBaseOpts | type_ = DatePicker.Date, value = DatePicker.Single (Just dpMay09) })
+                , Element.el [ Element.htmlAttribute (HA.id "live-date-panel-week") ]
+                    (DatePicker.panel Theme.default { dpBaseOpts | type_ = DatePicker.Week, value = DatePicker.Single (Just dpMayAnchor) })
+                , Element.el [ Element.htmlAttribute (HA.id "live-date-panel-datetime") ]
+                    (DatePicker.panel Theme.default { dpBaseOpts | type_ = DatePicker.Datetime, value = DatePicker.Single (Just dpTSA) })
+                , Element.el [ Element.htmlAttribute (HA.id "live-date-panel-daterange") ]
+                    (DatePicker.panel Theme.default { dpBaseOpts | type_ = DatePicker.Daterange, value = DatePicker.Range (Just ( dpMayAnchor, dpRangeEnd )) })
+                , Element.el [ Element.htmlAttribute (HA.id "live-date-panel-datetimerange") ]
+                    (DatePicker.panel Theme.default { dpBaseOpts | type_ = DatePicker.Datetimerange, value = DatePicker.Range (Just ( dpMayAnchor, dpRangeEnd )) })
+                , Element.el [ Element.htmlAttribute (HA.id "live-date-panel-month") ]
+                    (DatePicker.panel Theme.default { dpBaseOpts | type_ = DatePicker.Month, value = DatePicker.Single (Just dpMayAnchor) })
+                , Element.el [ Element.htmlAttribute (HA.id "live-date-panel-year") ]
+                    (DatePicker.panel Theme.default { dpBaseOpts | type_ = DatePicker.Year, value = DatePicker.Single (Just dpMayAnchor) })
+                , Element.el [ Element.htmlAttribute (HA.id "live-date-panel-quarter") ]
+                    (DatePicker.panel Theme.default { dpBaseOpts | type_ = DatePicker.Quarter, value = DatePicker.Single (Just dpMayAnchor) })
+                , Element.el [ Element.htmlAttribute (HA.id "live-date-panel-monthrange") ]
+                    (DatePicker.panel Theme.default { dpBaseOpts | type_ = DatePicker.Monthrange, value = DatePicker.Range (Just ( dpMayAnchor, dpRangeEnd )) })
+                , Element.el [ Element.htmlAttribute (HA.id "live-input-pair") ]
+                    (let
+                        d =
+                            Input.defaults
+                     in
+                     Input.view Theme.default
+                        { d
+                            | pairValue = Just ( "2024-05-01", "2024-05-11" )
+                            , pairPlaceholder = Just ( "Start", "End" )
+                            , attrSize = Just 12
+                            , pairTextDecoration = Just ( "line-through", "" )
+                            , clearable = True
+                            , internalForceFocus = True
+                        }
+                    )
                 ]
             )
         ]
