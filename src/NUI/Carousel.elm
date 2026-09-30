@@ -150,12 +150,12 @@ upstream (`opts.currentIndex` wins over `state.displayIndex` via
     there is no pure equivalent otherwise.
   - `dragEnd` takes the elapsed drag time (`Float` ms) — upstream reads
     `Date.now()`, which is a runtime concern.
-  - `getLastViewTranslate`'s "auto" gate is `Env.autoSlideSize`
-    (`displaySlidesPerView == auto || (slidesPerView == auto && centeredSlides)`)
-    rather than upstream's narrower `displaySlidesPerView == auto`; upstream's
-    literal check would give `centeredSlides + slidesPerView:auto` the numeric
-    branch, contradicting pins §A4 (last-view translate 900). Flagged for the
-    oracle round.
+  - `getLastViewTranslate`'s "auto" gate is upstream's NARROW
+    `displaySlidesPerView == auto` (`Carousel.tsx:480`) — NOT `Env.autoSlideSize`.
+    Consequence: `centeredSlides + slidesPerView:auto` (displaySpv forced to 1)
+    takes the numeric branch `translates[totalView - 1]`. Pins §A4 re-derived
+    from bytes and CORRECTED (1500, not 900 — orchestrator re-check vs
+    Carousel.tsx:186-189, 478-497; the feat lane had flagged the divergence).
   - Inline style strings: the root uses the house `NUI.Internal.renderVars`
     form (joined `k:v` with `;`, no spaces); the track/slide styles mirror
     upstream Vue's serialization (`key: value; key: value`) since they are the
@@ -1057,11 +1057,12 @@ getTranslate env index =
 
 
 {-| Upstream `getLastViewTranslate` (`Carousel.tsx:470-490`). The "auto" gate is
-`Env.autoSlideSize` — see the module notes (pins §A4).
+upstream's narrow `displaySlidesPerView == auto` (NOT `Env.autoSlideSize` — see module
+notes + pins §A4 CORRECTED).
 -}
 getLastViewTranslate : Env -> Float
 getLastViewTranslate env =
-    if env.autoSlideSize then
+    if env.displaySlidesPerView == PerViewAuto then
         let
             perView =
                 envAxis env
