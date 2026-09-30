@@ -19,6 +19,7 @@
     "NUI.ButtonGroup",
     "NUI.Calendar",
     "NUI.Card",
+    "NUI.Carousel",
     "NUI.Cascader",
     "NUI.Checkbox",
     "NUI.Collapse",

@@ -170,7 +170,9 @@ const targets = {
   '.n-color-picker': true,
   '.n-color-picker-panel': true,
   // Upload: the root carries the full 16-var set (dragger/item vars, bezier).
-  '.n-upload': true
+  '.n-upload': true,
+  // Carousel: the root carries the 8-var set (bezier + 7 dot/arrow vars).
+  '.n-carousel': true
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {

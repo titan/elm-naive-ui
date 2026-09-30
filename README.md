@@ -86,6 +86,7 @@ bridge, tests).
 | `NUI.ButtonGroup` | ✅ |
 | `NUI.Calendar`    | ✅ |
 | `NUI.Card`        | ✅ |
+| `NUI.Carousel`  | ✅ |
 | `NUI.Cascader`    | ✅ |
 | `NUI.ColorPicker` | ✅ |
 | `NUI.DatePicker`  | ✅ |

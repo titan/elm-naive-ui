@@ -22,6 +22,7 @@ import NUI.Button as Button
 import NUI.ButtonGroup as ButtonGroup
 import NUI.Calendar as Calendar
 import NUI.Card as Card
+import NUI.Carousel as Carousel
 import NUI.Cascader as Cascader
 import NUI.Checkbox as Checkbox
 import NUI.Collapse as Collapse
@@ -772,6 +773,7 @@ body =
     , datePickerSection
     , colorPickerSection
     , uploadSection
+    , carouselSection
     , rtlSection
     , themeSection
     ]
@@ -5410,6 +5412,97 @@ uploadSection =
                     (Element.text "Click to pick a file")
                 )
             )
+        ]
+
+
+carouselSection : Element msg
+carouselSection =
+    let
+        carouselD =
+            Carousel.defaults
+
+        img gradient =
+            Html.img
+                [ HA.attribute "style" ("display:block;width:100%;height:100%;object-fit:cover;background:" ++ gradient)
+                , HA.src "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+                , HA.alt ""
+                ]
+                []
+
+        carouselSlides =
+            [ img "linear-gradient(135deg, #18a058, #63e2b7)"
+            , img "linear-gradient(135deg, #2080f0, #70c0e8)"
+            , img "linear-gradient(135deg, #f0a020, #fcd68a)"
+            , img "linear-gradient(135deg, #d03050, #e88080)"
+            ]
+
+        demo id size opts =
+            Carousel.view theme
+                { opts | attributes = [ HA.id id ] }
+                (Carousel.resize opts size (Carousel.init opts 4))
+                carouselSlides
+    in
+    section "Carousel"
+        "A slide track over a caller-owned clock and measurement — autoplay, drag and resize are the caller's to own."
+        [ demoRow "Basic (loop, 4 slides + clones)"
+            [ demo "live-carousel" { width = 1000, height = 400 } carouselD ]
+        , demoRow "Vertical + dots right"
+            [ demo "live-carousel-vertical"
+                { width = 600, height = 300 }
+                { carouselD | direction = Carousel.Vertical, dotPlacement = Carousel.DotsRight }
+            ]
+        , demoRow "Arrows + line dots"
+            [ demo "live-carousel-arrows"
+                { width = 1000, height = 400 }
+                { carouselD | showArrow = True, dotType = Carousel.Line }
+            ]
+        , demoRow "Loop off (previous arrow disabled)"
+            [ demo "live-carousel-no-loop"
+                { width = 1000, height = 400 }
+                { carouselD | loop = False, showArrow = True }
+            ]
+        , demoRow "slidesPerView 3 + spaceBetween 20"
+            [ demo "live-carousel-slides-per-view"
+                { width = 1000, height = 400 }
+                { carouselD
+                    | slidesPerView = Carousel.PerView 3
+                    , spaceBetween = 20
+                    , loop = False
+                    , showArrow = True
+                }
+            ]
+        , demoRow "Fade"
+            [ demo "live-carousel-fade"
+                { width = 1000, height = 400 }
+                { carouselD | effect = Carousel.FadeEffect }
+            ]
+        , demoRow "Card (previous/next slide styles)"
+            [ demo "live-carousel-card"
+                { width = 1000, height = 400 }
+                { carouselD
+                    | effect = Carousel.CardEffect
+                    , showDots = False
+                    , prevSlideStyle = Just "transform:translateX(-60%) scale(0.7)"
+                    , nextSlideStyle = Just "transform:translateX(60%) scale(0.7)"
+                }
+            ]
+        , demoRow "Custom (usercontrol) + renderDots"
+            [ demo "live-carousel-custom"
+                { width = 1000, height = 400 }
+                { carouselD
+                    | effect = Carousel.CustomEffect
+                    , renderDots =
+                        Just
+                            (\info ->
+                                Element.text (String.fromInt (info.currentIndex + 1) ++ " / " ++ String.fromInt info.total)
+                            )
+                }
+            ]
+        , demoRow "defaultIndex 2 (seeded)"
+            [ demo "live-carousel-default-index"
+                { width = 1000, height = 400 }
+                { carouselD | defaultIndex = 2 }
+            ]
         ]
 
 
