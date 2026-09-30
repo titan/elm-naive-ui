@@ -208,6 +208,11 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the component conventions
 - Static rendering only: components render the correct markup, classes and themed
   values. Interactive behaviour (focus management, transitions on mount, virtualised
   lists, portalled overlays) is not implemented — those are Vue-runtime concerns.
+- No bundled highlight.js/KaTeX: an Elm package cannot ship JS, so the caller supplies
+  the engines — an `Hljs` record (`getLanguage`/`highlight`) for `NUI.Code`/`NUI.Log`,
+  a bound `renderToString` closure for `NUI.Equation`. Without one, code and log
+  lines render as plain text and an equation as the literal `no katex provided`
+  (upstream's fallback); see the module docstrings.
 - `css/naive-ui.css` is generated; do not edit it by hand.
 - Licence: MIT. Naive UI is MIT too; the extracted CSS originates from that project.
 
