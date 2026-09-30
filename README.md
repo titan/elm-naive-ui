@@ -105,6 +105,7 @@ bridge, tests).
 | `NUI.Notification` | ✅ |
 | `NUI.NumberAnimation` | ✅ |
 | `NUI.Checkbox`    | ✅ |
+| `NUI.Code`        | ✅ |
 | `NUI.Collapse`    | ✅ |
 | `NUI.Countdown`   | ✅ |
 | `NUI.Divider`     | ✅ |
@@ -118,6 +119,7 @@ bridge, tests).
 | `NUI.DynamicTags` | ✅ |
 | `NUI.Ellipsis`    | ✅ |
 | `NUI.Empty`       | ✅ |
+| `NUI.Equation`    | ✅ |
 | `NUI.Flex`        | ✅ |
 | `NUI.FloatButton` | ✅ |
 | `NUI.FloatButtonGroup` | ✅ |
@@ -136,6 +138,7 @@ bridge, tests).
 | `NUI.LayoutSider` | ✅ |
 | `NUI.List`        | ✅ |
 | `NUI.LoadingBar`  | ✅ |
+| `NUI.Log`         | ✅ |
 | `NUI.Marquee`     | ✅ |
 | `NUI.Mention`     | ✅ |
 | `NUI.Modal`       | ✅ |

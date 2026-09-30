@@ -25,6 +25,7 @@ import NUI.Card as Card
 import NUI.Carousel as Carousel
 import NUI.Cascader as Cascader
 import NUI.Checkbox as Checkbox
+import NUI.Code as Code
 import NUI.Collapse as Collapse
 import NUI.ColorPicker as ColorPicker
 import NUI.Countdown as Countdown
@@ -42,6 +43,7 @@ import NUI.DynamicInput as DynamicInput
 import NUI.DynamicTags as DynamicTags
 import NUI.Ellipsis as Ellipsis
 import NUI.Empty as Empty
+import NUI.Equation as Equation
 import NUI.Flex as Flex
 import NUI.FloatButton as FloatButton
 import NUI.FloatButtonGroup as FloatButtonGroup
@@ -64,6 +66,7 @@ import NUI.LayoutHeader as LayoutHeader
 import NUI.LayoutSider as LayoutSider
 import NUI.List as NList
 import NUI.LoadingBar as LoadingBar
+import NUI.Log as Log
 import NUI.Marquee as Marquee
 import NUI.Mention as Mention
 import NUI.Menu as Menu
@@ -594,6 +597,21 @@ highlightD =
     Highlight.defaults
 
 
+codeD : Code.Options msg
+codeD =
+    Code.defaults
+
+
+equationD : Equation.Options
+equationD =
+    Equation.defaults
+
+
+logD : Log.Options msg
+logD =
+    Log.defaults
+
+
 iconD : Icon.Options msg
 iconD =
     Icon.defaults
@@ -774,6 +792,9 @@ body =
     , colorPickerSection
     , uploadSection
     , carouselSection
+    , codeSection
+    , equationSection
+    , logSection
     , rtlSection
     , themeSection
     ]
@@ -5502,6 +5523,155 @@ carouselSection =
             [ demo "live-carousel-default-index"
                 { width = 1000, height = 400 }
                 { carouselD | defaultIndex = 2 }
+            ]
+        ]
+
+
+{-| A deterministic stand-in for highlight.js (the port never ships one): it
+recognises two languages and wraps each input in one token span.
+-}
+codeHljs : Code.Hljs
+codeHljs =
+    let
+        tokenClass lang =
+            if lang == "elm" then
+                "hljs-string"
+
+            else
+                "hljs-keyword"
+    in
+    { getLanguage = \lang -> List.member lang [ "javascript", "elm" ]
+    , highlight = \code lang -> "<span class=\"" ++ tokenClass lang ++ "\">" ++ code ++ "</span>"
+    }
+
+
+{-| A deterministic stand-in for KaTeX's `renderToString` (inline shape).
+-}
+fakeKatex : String -> String
+fakeKatex value =
+    "<span class=\"katex\"><span class=\"katex-mathml\">" ++ value ++ "</span></span>"
+
+
+{-| The `katex-display` shape (a block wrapper).
+-}
+fakeKatexDisplay : String -> String
+fakeKatexDisplay value =
+    "<div class=\"katex-display\">" ++ value ++ "</div>"
+
+
+codeSection : Element msg
+codeSection =
+    section "Code"
+        "A code block over a caller-supplied highlight.js — highlighting is the caller's to own."
+        [ demoRow "Basic (highlighted)"
+            [ Code.view theme
+                { codeD
+                    | code = "const message = 'hello'"
+                    , language = Just "javascript"
+                    , hljs = Just codeHljs
+                }
+                []
+            ]
+        , demoRow "Inline"
+            [ Element.text "Call "
+            , Code.view theme
+                { codeD
+                    | code = "greet()"
+                    , language = Just "javascript"
+                    , hljs = Just codeHljs
+                    , inline = True
+                }
+                []
+            , Element.text " to run it."
+            ]
+        , demoRow "Line numbers"
+            [ Code.view theme
+                { codeD
+                    | code = "const a = 1\nconst b = 2\nconst c = 3"
+                    , language = Just "javascript"
+                    , hljs = Just codeHljs
+                    , showLineNumbers = True
+                }
+                []
+            ]
+        , demoRow "Word wrap (line numbers suppressed)"
+            [ Element.el [ Element.width (Element.px 220) ]
+                (Code.view theme
+                    { codeD
+                        | code = "const longName = someFunction(anotherArgument, yetAnotherArgument)"
+                        , language = Just "javascript"
+                        , hljs = Just codeHljs
+                        , wordWrap = True
+                        , showLineNumbers = True
+                    }
+                    []
+                )
+            ]
+        , demoRow "URI encoded"
+            [ Code.view theme
+                { codeD
+                    | code = "const%20x%20%3D%201"
+                    , uri = True
+                    , language = Just "javascript"
+                    , hljs = Just codeHljs
+                }
+                []
+            ]
+        , demoRow "Trim off"
+            [ Code.view theme
+                { codeD
+                    | code = "    const spaced = true    "
+                    , trim = False
+                    , language = Just "javascript"
+                    , hljs = Just codeHljs
+                }
+                []
+            ]
+        , demoRow "No hljs (plain text)"
+            [ Code.view theme
+                { codeD | code = "const plain = 1", language = Just "javascript" }
+                []
+            ]
+        ]
+
+
+equationSection : Element msg
+equationSection =
+    section "Equation"
+        "KaTeX-rendered math via a caller-supplied renderToString closure (the component ships no KaTeX)."
+        [ demoRow "Inline (fake katex)"
+            [ Equation.view theme { equationD | value = "E = mc^2", katex = Just fakeKatex } ]
+        , demoRow "Display wrapper"
+            [ Equation.view theme { equationD | value = "x^2 + y^2 = z^2", katex = Just fakeKatexDisplay } ]
+        , demoRow "No katex"
+            [ Equation.view theme { equationD | value = "a^2 + b^2 = c^2" } ]
+        ]
+
+
+logSection : Element msg
+logSection =
+    section "Log"
+        "A scrolling log pane (Code + Scrollbar + loader) — scrolling, wheel and load events are the caller's to own."
+        [ demoRow "Lines (fixed rows)"
+            [ Element.el [ Element.width (Element.px 420) ]
+                (Log.view theme
+                    { logD
+                        | lines = [ "2026-09-30 first entry", "second entry", "third entry" ]
+                        , rows = 5
+                    }
+                )
+            ]
+        , demoRow "Highlighted + loading"
+            [ Element.el [ Element.width (Element.px 420) ]
+                (Log.view theme
+                    { logD
+                        | log = Just "const a = 1\nconst b = 2\nconst c = 3"
+                        , language = Just "javascript"
+                        , hljs = Just codeHljs
+                        , loading = True
+                        , rows = 4
+                    }
+                )
             ]
         ]
 

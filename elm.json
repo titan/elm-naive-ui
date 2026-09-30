@@ -22,6 +22,7 @@
     "NUI.Carousel",
     "NUI.Cascader",
     "NUI.Checkbox",
+    "NUI.Code",
     "NUI.Collapse",
     "NUI.ColorPicker",
     "NUI.Countdown",
@@ -39,6 +40,7 @@
     "NUI.DynamicTags",
     "NUI.Ellipsis",
     "NUI.Empty",
+    "NUI.Equation",
     "NUI.Flex",
     "NUI.FloatButton",
     "NUI.FloatButtonGroup",
@@ -62,6 +64,7 @@
     "NUI.LayoutSider",
     "NUI.List",
     "NUI.LoadingBar",
+    "NUI.Log",
     "NUI.Mention",
     "NUI.Marquee",
     "NUI.Menu",
@@ -199,6 +202,7 @@
     "elm/regex": "1.0.0 <= v < 2.0.0",
     "elm/svg": "1.0.0 <= v < 2.0.0",
     "elm/time": "1.0.0 <= v < 2.0.0",
+    "elm/url": "1.0.0 <= v < 2.0.0",
     "mdgriffith/elm-ui": "1.0.0 <= v < 2.0.0"
   },
   "test-dependencies": {}

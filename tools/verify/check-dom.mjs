@@ -172,7 +172,13 @@ const targets = {
   // Upload: the root carries the full 16-var set (dragger/item vars, bezier).
   '.n-upload': true,
   // Carousel: the root carries the 8-var set (bezier + 7 dot/arrow vars).
-  '.n-carousel': true
+  '.n-carousel': true,
+  // Code: the raw-Html root carries the 15-var set (bezier + font + hljs
+  // token colours). Equation has no BEM class of its own (covered by tests).
+  '.n-code': true,
+  // Log: the root carries the 6-var loader set plus the inline line-height /
+  // height (the loader itself is absent unless `loading`).
+  '.n-log': true
 }
 
 const dom = new JSDOM(fs.readFileSync(htmlPath, 'utf8'), {
