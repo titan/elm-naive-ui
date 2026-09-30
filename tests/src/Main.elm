@@ -34,6 +34,7 @@ import NUI.Card as Card
 import NUI.Carousel as Carousel
 import NUI.Cascader as Cascader
 import NUI.Checkbox as Checkbox
+import NUI.Code as Code
 import NUI.Collapse as Collapse
 import NUI.ColorPicker as ColorPicker
 import NUI.Countdown as Countdown
@@ -50,6 +51,7 @@ import NUI.DynamicInput as DynamicInput
 import NUI.DynamicTags as DynamicTags
 import NUI.Ellipsis as Ellipsis
 import NUI.Empty as Empty
+import NUI.Equation as Equation
 import NUI.Flex as Flex
 import NUI.FloatButton as FloatButton
 import NUI.FloatButtonGroup as FloatButtonGroup
@@ -68,12 +70,14 @@ import NUI.InputNumber as InputNumber
 import NUI.InputOtp as InputOtp
 import NUI.Internal as Internal
 import NUI.Internal.DateTime as DT
+import NUI.Internal.RawHtml as RawHtml
 import NUI.Layout as Layout
 import NUI.LayoutFooter as LayoutFooter
 import NUI.LayoutHeader as LayoutHeader
 import NUI.LayoutSider as LayoutSider
 import NUI.List as NList
 import NUI.LoadingBar as LoadingBar
+import NUI.Log as Log
 import NUI.Marquee as Marquee
 import NUI.Mention as Mention
 import NUI.Menu as Menu
@@ -136,6 +140,7 @@ import NUI.Types as T
 import NUI.Upload as Upload
 import NUI.Watermark as Watermark
 import Time
+import Url
 
 
 main : Program () Int Msg
@@ -473,6 +478,24 @@ isNothing m =
 
         Just _ ->
             False
+
+
+{-| Elm forbids record updates on a QUALIFIED base (`{ cfCodeDefaults | … }` is a
+parse error), so the code-family fixtures/eq pins update these plain bindings.
+-}
+cfCodeDefaults : Code.Options Msg
+cfCodeDefaults =
+    Code.defaults
+
+
+cfLogDefaults : Log.Options Msg
+cfLogDefaults =
+    Log.defaults
+
+
+cfEquationDefaults : Equation.Options
+cfEquationDefaults =
+    Equation.defaults
 
 
 
@@ -1622,6 +1645,96 @@ carDupEmpty =
 carDupEmptyExpected : List Int
 carDupEmptyExpected =
     []
+
+
+
+-- CODE FAMILY FIXTURES — pin derivation: code/src/Code.tsx (createCodeHtml
+-- :41-56, lineNumbers :172-189, render :160-215) + equation/src/Equation.tsx
+-- (:28-41) + log/src/Log.tsx (:94-142, :162-174, :231-250) + LogLine.tsx
+-- (:16-46) + LogLoader.tsx (:26-36) + styles/light.ts. Expectations in
+-- tasks/recon/code-family-pins.md (derived from those bytes BEFORE the port).
+-- The toy Hljs / katex closures below are deterministic strings (no real JS
+-- libs); the two Hljs shapes mirror the pins doc §A6 (eq) and §D (DOM).
+-- =====================================================================
+
+
+{-| The pins-doc toy hljs (code-family-pins.md §A6): `getLanguage l = l == "js"`,
+`highlight code language = "H[" ++ language ++ "]" ++ code`.
+-}
+toyHljs : Code.Hljs
+toyHljs =
+    { getLanguage = \l -> l == "js"
+    , highlight = \code language -> "H[" ++ language ++ "]" ++ code
+    }
+
+
+{-| The DOM-probe hljs (§D2): highlights to one `hljs-keyword` span.
+-}
+domHljs : Code.Hljs
+domHljs =
+    { getLanguage = \l -> l == "js"
+    , highlight = \code _ -> "<span class=\"hljs-keyword\">" ++ code ++ "</span>"
+    }
+
+
+{-| Nested markup (§D24) — real nesting, not text.
+-}
+nestedHljs : Code.Hljs
+nestedHljs =
+    { getLanguage = \l -> l == "js"
+    , highlight = \code _ -> "<span class=\"a\"><span class=\"b\">" ++ code ++ "</span></span>"
+    }
+
+
+{-| Entity-bearing markup (§D25) — highlight.js escapes real ampersands.
+-}
+entityHljs : Code.Hljs
+entityHljs =
+    { getLanguage = \l -> l == "js"
+    , highlight = \_ _ -> "<span class=\"hljs-keyword\">a &amp; b &lt; c</span>"
+    }
+
+
+{-| Fake katex renderToString closures (§D11-14, §D26).
+-}
+katexSpan : String -> String
+katexSpan _ =
+    "<span class=\"katex\">E = mc^2</span>"
+
+
+katexDisplay : String -> String
+katexDisplay _ =
+    "<div class=\"katex-display\">content</div>"
+
+
+katexNoMatch : String -> String
+katexNoMatch _ =
+    "<span><b>x</b></span>"
+
+
+katexSvg : String -> String
+katexSvg _ =
+    "<span class=\"katex\"><svg viewBox=\"0 0 10 10\"></svg></span>"
+
+
+{-| `RawHtml.nodes` at a concrete `Msg` (the pins compare the parsed tree for
+structural equality against `Html.node`/`Html.text` expectations).
+-}
+rawNodes : String -> List (Html.Html Msg)
+rawNodes =
+    RawHtml.nodes
+
+
+{-| The `Equation.extract` triple, with the katex closure ignoring the value.
+-}
+eqExtract : Maybe String -> ( String, Maybe String, String )
+eqExtract outer =
+    tuple3 (Equation.extract (Maybe.map (\html _ -> html) outer) "")
+
+
+tuple3 : Equation.Extracted -> ( String, Maybe String, String )
+tuple3 ext =
+    ( ext.wrapperTag, ext.wrapperClass, ext.innerHtml )
 
 
 
@@ -12942,6 +13055,133 @@ checks =
            , eq "car autoplayEnabled (True, dtv 4) → True" True (Carousel.autoplayEnabled True 4)
            , eq "car autoplayEnabled (True, dtv 1) → False" False (Carousel.autoplayEnabled True 1)
            , eq "car autoplayEnabled (False, dtv 5) → False" False (Carousel.autoplayEnabled False 5)
+
+           -- CODE / EQUATION / LOG — pins derived from code/src/Code.tsx
+           -- (createCodeHtml :41-56, lineNumbers :172-189) + equation/src/
+           -- Equation.tsx (:28-41) + log/src/Log.tsx (:94-142, :162-174,
+           -- :231-250). Expectations: tasks/recon/code-family-pins.md (from
+           -- those bytes BEFORE the port). eq surface = NUI.{Code,Equation,Log}
+           -- + NUI.Internal.RawHtml.* only.
+           -- =====================================================================
+           -- §E1 lineNumbers (Code.tsx:172-189) over the RAW code
+           , eq "code lineNumbers \"\" → \"1\"" "1" (Code.lineNumbers "")
+           , eq "code lineNumbers \"a\" → \"1\"" "1" (Code.lineNumbers "a")
+           , eq "code lineNumbers \"a\\nb\" → \"1\\n2\"" "1\n2" (Code.lineNumbers "a\nb")
+           , eq "code lineNumbers \"a\\n\" → \"1\" (trailing wrap)" "1" (Code.lineNumbers "a\n")
+           , eq "code lineNumbers \"\\n\\n\" → \"1\\n2\"" "1\n2" (Code.lineNumbers "\n\n")
+           , eq "code lineNumbers \"\\n\" → \"1\"" "1" (Code.lineNumbers "\n")
+           , eq "code lineNumbers \"x\\ny\\nz\" → \"1\\n2\\n3\"" "1\n2\n3" (Code.lineNumbers "x\ny\nz")
+           , eq "code lineNumbers \"a\\n\\nb\" → \"1\\n2\\n3\"" "1\n2\n3" (Code.lineNumbers "a\n\nb")
+           , eq "code lineNumbers \"abc\\n\\n\" → \"1\\n2\" (lastWrap)" "1\n2" (Code.lineNumbers "abc\n\n")
+
+           -- §E2 styleHeight (Log.tsx:94-98) = calc(round(rows*lh*fs)px)
+           , eq "log styleHeight rows 15 lh 1.25 fs 14 → 263" "calc(263px)" (Log.styleHeight { cfLogDefaults | rows = 15, lineHeight = 1.25, fontSize = 14 })
+           , eq "log styleHeight rows 1 lh 1.25 fs 14 → 18" "calc(18px)" (Log.styleHeight { cfLogDefaults | rows = 1, lineHeight = 1.25, fontSize = 14 })
+           , eq "log styleHeight rows 3 lh 1.5 fs 15 → 68" "calc(68px)" (Log.styleHeight { cfLogDefaults | rows = 3, lineHeight = 1.5, fontSize = 15 })
+           , eq "log styleHeight rows 5 lh 20 fs 10 → 1000" "calc(1000px)" (Log.styleHeight { cfLogDefaults | rows = 5, lineHeight = 20, fontSize = 10 })
+           , eq "log styleHeight rows 7 lh 1.1 fs 13 → 100" "calc(100px)" (Log.styleHeight { cfLogDefaults | rows = 7, lineHeight = 1.1, fontSize = 13 })
+
+           -- §E3 mergedLines (Log.tsx:99-105) — truthy log splits, "" falls through
+           , eq "log mergedLines log \"a\\nb\" → [a,b]" [ "a", "b" ] (Log.mergedLines { cfLogDefaults | log = Just "a\nb" })
+           , eq "log mergedLines log \"a\\n\" → [a,\"\"]" [ "a", "" ] (Log.mergedLines { cfLogDefaults | log = Just "a\n" })
+           , eq "log mergedLines log \"\" → lines" [ "x", "y" ] (Log.mergedLines { cfLogDefaults | log = Just "", lines = [ "x", "y" ] })
+           , eq "log mergedLines log Nothing → lines" [ "x" ] (Log.mergedLines { cfLogDefaults | log = Nothing, lines = [ "x" ] })
+           , eq "log mergedLines log Nothing lines [] → []" [] (Log.mergedLines cfLogDefaults)
+
+           -- §E4 mergedShowLineNumbers (Code.tsx:200-205)
+           , eq "code mergedShowLineNumbers inline → False" False (Code.mergedShowLineNumbers { cfCodeDefaults | inline = True, showLineNumbers = True })
+           , eq "code mergedShowLineNumbers wordWrap → False" False (Code.mergedShowLineNumbers { cfCodeDefaults | wordWrap = True, showLineNumbers = True })
+           , eq "code mergedShowLineNumbers showLineNumbers → True" True (Code.mergedShowLineNumbers { cfCodeDefaults | showLineNumbers = True })
+           , eq "code mergedShowLineNumbers default → False" False (Code.mergedShowLineNumbers { cfCodeDefaults | showLineNumbers = False })
+
+           -- §E5 scrollEvents (Log.tsx:129-142) — <= both ends, RMTop before ReachTop
+           , eq "log scrollEvents (0,100,100,0,0) → both ends" [ Log.RequireMoreFrom Log.Top, Log.ReachTop, Log.RequireMoreFrom Log.Bottom, Log.ReachBottom ] (Log.scrollEvents { scrollTop = 0, containerHeight = 100, contentHeight = 100, offsetTop = 0, offsetBottom = 0 })
+           , eq "log scrollEvents (0,100,100,0,5) → both ends (0 <= 5)" [ Log.RequireMoreFrom Log.Top, Log.ReachTop, Log.RequireMoreFrom Log.Bottom, Log.ReachBottom ] (Log.scrollEvents { scrollTop = 0, containerHeight = 100, contentHeight = 100, offsetTop = 0, offsetBottom = 5 })
+           , eq "log scrollEvents (10,100,1000,10,0) → top only (== boundary)" [ Log.RequireMoreFrom Log.Top, Log.ReachTop ] (Log.scrollEvents { scrollTop = 10, containerHeight = 100, contentHeight = 1000, offsetTop = 10, offsetBottom = 0 })
+           , eq "log scrollEvents (50,100,1000,0,0) → []" [] (Log.scrollEvents { scrollTop = 50, containerHeight = 100, contentHeight = 1000, offsetTop = 0, offsetBottom = 0 })
+           , eq "log scrollEvents (800,100,1000,0,100) → bottom only (100 == 100)" [ Log.RequireMoreFrom Log.Bottom, Log.ReachBottom ] (Log.scrollEvents { scrollTop = 800, containerHeight = 100, contentHeight = 1000, offsetTop = 0, offsetBottom = 100 })
+           , eq "log scrollEvents (800,100,1000,0,99) → [] (100 > 99)" [] (Log.scrollEvents { scrollTop = 800, containerHeight = 100, contentHeight = 1000, offsetTop = 0, offsetBottom = 99 })
+           , eq "log scrollEvents (0,100,1000,0,0) → top only" [ Log.RequireMoreFrom Log.Top, Log.ReachTop ] (Log.scrollEvents { scrollTop = 0, containerHeight = 100, contentHeight = 1000, offsetTop = 0, offsetBottom = 0 })
+
+           -- §E6 wheelEvents (Log.tsx:162-171) — top STRICT === 0, bottom <= 0
+           , eq "log wheelEvents (0,100,500,-10) → [RMTop]" [ Log.RequireMoreFrom Log.Top ] (Log.wheelEvents { scrollTop = 0, containerHeight = 100, contentHeight = 500, deltaY = -10 })
+           , eq "log wheelEvents (1,100,500,-10) → [] (top needs exactly 0)" [] (Log.wheelEvents { scrollTop = 1, containerHeight = 100, contentHeight = 500, deltaY = -10 })
+           , eq "log wheelEvents (0,100,100,5) → [RMBottom] (scrollBottom 0 <= 0)" [ Log.RequireMoreFrom Log.Bottom ] (Log.wheelEvents { scrollTop = 0, containerHeight = 100, contentHeight = 100, deltaY = 5 })
+           , eq "log wheelEvents (0,100,500,5) → []" [] (Log.wheelEvents { scrollTop = 0, containerHeight = 100, contentHeight = 500, deltaY = 5 })
+           , eq "log wheelEvents (0,100,100,0) → [] (no delta)" [] (Log.wheelEvents { scrollTop = 0, containerHeight = 100, contentHeight = 100, deltaY = 0 })
+           , eq "log wheelEvents (0,100,100,-10) → [RMTop]" [ Log.RequireMoreFrom Log.Top ] (Log.wheelEvents { scrollTop = 0, containerHeight = 100, contentHeight = 100, deltaY = -10 })
+
+           -- §E7 extract (Equation.tsx:28-36) — ^<([a-z]+)[^>]+class="([^"]+)"[^>]*>
+           , eq "eq extract <span class=katex>content</span>" ( "span", Just "katex", "content" ) (eqExtract (Just "<span class=\"katex\">content</span>"))
+           , eq "eq extract <div class=katex-display>content</div>" ( "div", Just "katex-display", "content" ) (eqExtract (Just "<div class=\"katex-display\">content</div>"))
+           , eq "eq extract <span data-x=1 class=katex>y</span>" ( "span", Just "katex", "y" ) (eqExtract (Just "<span data-x=\"1\" class=\"katex\">y</span>"))
+           , eq "eq extract <span><b>x</b></span> → no class" ( "span", Nothing, "<b>x</b>" ) (eqExtract (Just "<span><b>x</b></span>"))
+           , eq "eq extract no katex → span/no-class/verbatim" ( "span", Nothing, "no katex provided" ) (Equation.extract Nothing "no katex provided" |> tuple3)
+           , eq "eq extract <span class=\"a b\">z</span>" ( "span", Just "a b", "z" ) (eqExtract (Just "<span class=\"a b\">z</span>"))
+
+           -- §E8 codeHtml (Code.tsx:41-56) gates, over toyHljs
+           , eq "code codeHtml GATE1 no hljs → Nothing" Nothing (Code.codeHtml Nothing (Just "js") True "  a  ")
+           , eq "code codeHtml GATE2 no language → Nothing" Nothing (Code.codeHtml (Just toyHljs) Nothing True "  a  ")
+           , eq "code codeHtml GATE2 unknown language → Nothing" Nothing (Code.codeHtml (Just toyHljs) (Just "py") True "x")
+           , eq "code codeHtml trims then highlights → H[js]a" (Just "H[js]a") (Code.codeHtml (Just toyHljs) (Just "js") True "  a  ")
+           , eq "code codeHtml trim=False keeps raw → H[js]  a  " (Just "H[js]  a  ") (Code.codeHtml (Just toyHljs) (Just "js") False "  a  ")
+           , eq "code codeHtml empty language → Nothing" Nothing (Code.codeHtml (Just toyHljs) (Just "") True "x")
+
+           -- §E9 cssVarsFor Code — the 15 --n-* names in emission order
+           , eq "code cssVarsFor order (15 names)" "--n-font-size;--n-font-family;--n-font-weight-strong;--n-bezier;--n-text-color;--n-mono-3;--n-hue-1;--n-hue-2;--n-hue-3;--n-hue-4;--n-hue-5;--n-hue-5-2;--n-hue-6;--n-hue-6-2;--n-line-number-text-color" (String.join ";" (List.map Tuple.first (Code.cssVarsFor light cfCodeDefaults)))
+           , eq "code cssVarsFor COUNT 15 (not 16)" 15 (List.length (Code.cssVarsFor light cfCodeDefaults))
+
+           -- §E10 internalFontSize override ${n}px else theme fontSize
+           , eq "code cssVarsFor internalFontSize 20 → --n-font-size 20px" (Just "20px") (lookup "--n-font-size" (Code.cssVarsFor light { cfCodeDefaults | internalFontSize = Just 20 }))
+           , eq "code cssVarsFor no internalFontSize → theme fontSize" (Just common.fontSize) (lookup "--n-font-size" (Code.cssVarsFor light cfCodeDefaults))
+
+           -- §E12 cssVarsFor Code theme values (light)
+           , eq "code cssVarsFor light --n-mono-3" (Just "#a0a1a7") (lookup "--n-mono-3" (Code.cssVarsFor light cfCodeDefaults))
+           , eq "code cssVarsFor light --n-hue-1" (Just "#0184bb") (lookup "--n-hue-1" (Code.cssVarsFor light cfCodeDefaults))
+           , eq "code cssVarsFor light --n-hue-5-2" (Just "#c91243") (lookup "--n-hue-5-2" (Code.cssVarsFor light cfCodeDefaults))
+           , eq "code cssVarsFor light --n-text-color = common.textColor2" (Just common.textColor2) (lookup "--n-text-color" (Code.cssVarsFor light cfCodeDefaults))
+           , eq "code cssVarsFor light --n-font-family = common.fontFamilyMono" (Just common.fontFamilyMono) (lookup "--n-font-family" (Code.cssVarsFor light cfCodeDefaults))
+
+           -- §E13 cssVarsFor Code theme values (dark)
+           , eq "code cssVarsFor dark --n-mono-3" (Just "#5c6370") (lookup "--n-mono-3" (Code.cssVarsFor dark cfCodeDefaults))
+           , eq "code cssVarsFor dark --n-hue-3" (Just "#c678dd") (lookup "--n-hue-3" (Code.cssVarsFor dark cfCodeDefaults))
+
+           -- §E17 locate/percent-decode (elm/url)
+           , eq "url percentDecode a%20b" (Just "a b") (Url.percentDecode "a%20b")
+           , eq "url percentDecode %E2%9C%93" (Just "✓") (Url.percentDecode "%E2%9C%93")
+           , eq "url percentDecode %ZZ → Nothing" Nothing (Url.percentDecode "%ZZ")
+
+           -- §E18 RawHtml entities (render-level: nodes → Html)
+           , eq "raw nodes &amp; → text &" [ Html.text "&" ] (rawNodes "&amp;")
+           , eq "raw nodes &lt; → text <" [ Html.text "<" ] (rawNodes "&lt;")
+           , eq "raw nodes &quot; → text \"" [ Html.text "\"" ] (rawNodes "&quot;")
+           , eq "raw nodes &#39; → text '" [ Html.text "'" ] (rawNodes "&#39;")
+           , eq "raw nodes &#x27; → text '" [ Html.text "'" ] (rawNodes "&#x27;")
+           , eq "raw nodes &nbsp; → U+00A0" [ Html.text "\u{00A0}" ] (rawNodes "&nbsp;")
+           , eq "raw nodes &#65; → text A" [ Html.text "A" ] (rawNodes "&#65;")
+           , eq "raw nodes &foo; → literal" [ Html.text "&foo;" ] (rawNodes "&foo;")
+           , eq "raw nodes bare & → literal" [ Html.text "&" ] (rawNodes "&")
+
+           -- §E19 RawHtml void + self-close
+           , eq "raw nodes a<br>b → 3 children (br childless)" [ Html.text "a", Html.node "br" [] [], Html.text "b" ] (rawNodes "a<br>b")
+           , eq "raw nodes <br/> → childless br" [ Html.node "br" [] [] ] (rawNodes "<br/>")
+           , eq "raw nodes <img src=x.png> → void, no closer" [ Html.node "img" [ HA.attribute "src" "x.png" ] [] ] (rawNodes "<img src=\"x.png\">")
+
+           -- §E20 RawHtml recovery
+           , eq "raw nodes stray </span> → []" [] (rawNodes "</span>")
+           , eq "raw nodes unclosed <span class=a>x → one span" [ Html.node "span" [ HA.attribute "class" "a" ] [ Html.text "x" ] ] (rawNodes "<span class=\"a\">x")
+           , eq "raw nodes a < b → 3 text runs (rendered 'a < b')" [ Html.text "a ", Html.text "<", Html.text " b" ] (rawNodes "a < b")
+           , eq "raw nodes <!-- c --><span>x</span> → comment dropped" [ Html.node "span" [] [ Html.text "x" ] ] (rawNodes "<!-- c --><span>x</span>")
+
+           -- §E21 RawHtml attrs (quote styles; SVG attrs)
+           , eq "raw nodes single-quoted class == double-quoted" (rawNodes "<span class=\"a\">x</span>") (rawNodes "<span class='a'>x</span>")
+           , eq "raw nodes unquoted class == double-quoted" (rawNodes "<span class=\"a\">x</span>") (rawNodes "<span class=a>x</span>")
+           , eq "raw nodes svg viewBox + stroke-width kept" [ Html.node "svg" [ HA.attribute "viewBox" "0 0 100 100", HA.attribute "stroke-width" "2" ] [] ] (rawNodes "<svg viewBox=\"0 0 100 100\" stroke-width=\"2\"></svg>")
+
+           -- §E22 RawHtml case — tag lowercased; attr NAME keeps case (CORRECTED:
+           -- the pins doc claimed the attr NAME lowercases, but §E21's viewBox
+           -- requires case preservation — RawHtml's own contract keeps names)
+           , eq "raw nodes <SPAN Class=a>x</SPAN> → span, Class kept" [ Html.node "span" [ HA.attribute "Class" "a" ] [ Html.text "x" ] ] (rawNodes "<SPAN Class=\"a\">x</SPAN>")
            ]
 
 
@@ -15678,6 +15918,77 @@ liveNodes =
                     (Carousel.view Theme.default { carouselDefault | trigger = Carousel.HoverTrigger } (carouselBoot { carouselDefault | trigger = Carousel.HoverTrigger } 4) carouselSlides)
                 , Element.el [ Element.htmlAttribute (HA.id "live-carousel-default-index") ]
                     (Carousel.view Theme.default { carouselDefault | defaultIndex = 2 } (carouselBoot { carouselDefault | defaultIndex = 2 } 4) carouselSlides)
+
+                -- code / equation / log live fixtures — pins in
+                -- tasks/recon/code-family-pins.md §D (toy Hljs / katex above)
+                , Element.el [ Element.htmlAttribute (HA.id "live-code") ]
+                    (Code.view Theme.default { cfCodeDefaults | code = "console.log(a)" } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-code-hl") ]
+                    (Code.view Theme.default { cfCodeDefaults | code = "a", language = Just "js", hljs = Just domHljs } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-code-inline") ]
+                    (Code.view Theme.default { cfCodeDefaults | code = "a", language = Just "js", hljs = Just domHljs, inline = True } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-code-inline-plain") ]
+                    (Code.view Theme.default { cfCodeDefaults | code = "b", inline = True } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-code-wordwrap") ]
+                    (Code.view Theme.default { cfCodeDefaults | code = "c", wordWrap = True } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-code-linenumbers") ]
+                    (Code.view Theme.default { cfCodeDefaults | code = "a\nb", showLineNumbers = True } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-code-linenumbers-wordwrap") ]
+                    (Code.view Theme.default { cfCodeDefaults | code = "a\nb", showLineNumbers = True, wordWrap = True } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-code-slot") ]
+                    (Code.view Theme.default
+                        { cfCodeDefaults | code = "ignored" }
+                        [ Html.span [ HA.class "slotx" ] [ Html.text "slot" ] ]
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-code-font") ]
+                    (Code.view Theme.default { cfCodeDefaults | code = "d", internalFontSize = Just 20 } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-code-markup-plain") ]
+                    (Code.view Theme.default { cfCodeDefaults | code = "<div>x</div>" } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-code-markup-inline") ]
+                    (Code.view Theme.default { cfCodeDefaults | code = "<div>x</div>", inline = True } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-code-nohighlight") ]
+                    (Code.view Theme.default
+                        { cfCodeDefaults | code = "<div>y</div>", language = Just "js", hljs = Just domHljs, internalNoHighlight = True }
+                        []
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-code-raw-nested") ]
+                    (Code.view Theme.default { cfCodeDefaults | code = "t", language = Just "js", hljs = Just nestedHljs } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-code-entity") ]
+                    (Code.view Theme.default { cfCodeDefaults | code = "x", language = Just "js", hljs = Just entityHljs } [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-equation") ]
+                    (Equation.view Theme.default { cfEquationDefaults | value = "E = mc^2", katex = Just katexSpan })
+                , Element.el [ Element.htmlAttribute (HA.id "live-equation-display") ]
+                    (Equation.view Theme.default { cfEquationDefaults | value = "E = mc^2", katex = Just katexDisplay })
+                , Element.el [ Element.htmlAttribute (HA.id "live-equation-nokatex") ]
+                    (Equation.view Theme.default { cfEquationDefaults | value = "E = 1", katex = Nothing })
+                , Element.el [ Element.htmlAttribute (HA.id "live-equation-nomatch") ]
+                    (Equation.view Theme.default { cfEquationDefaults | value = "x", katex = Just katexNoMatch })
+                , Element.el [ Element.htmlAttribute (HA.id "live-equation-svg") ]
+                    (Equation.view Theme.default { cfEquationDefaults | value = "x", katex = Just katexSvg })
+                , Element.el [ Element.htmlAttribute (HA.id "live-log") ]
+                    (Log.view Theme.default { cfLogDefaults | lines = [ "test1", "test2" ] })
+                , Element.el [ Element.htmlAttribute (HA.id "live-log-dark") ]
+                    (Log.view Theme.dark { cfLogDefaults | lines = [ "t" ] })
+                , Element.el [ Element.htmlAttribute (HA.id "live-log-untrimmed") ]
+                    (Log.view Theme.default { cfLogDefaults | log = Just " test1     " })
+                , Element.el [ Element.htmlAttribute (HA.id "live-log-trim") ]
+                    (Log.view Theme.default { cfLogDefaults | log = Just " test1     ", trim = True })
+                , Element.el [ Element.htmlAttribute (HA.id "live-log-hl") ]
+                    (Log.view Theme.default { cfLogDefaults | lines = [ "a" ], language = Just "js", hljs = Just domHljs })
+                , Element.el [ Element.htmlAttribute (HA.id "live-log-loading") ]
+                    (Log.view Theme.default { cfLogDefaults | loading = True })
+                , Element.el [ Element.htmlAttribute (HA.id "live-log-loading-text") ]
+                    (Log.view Theme.default { cfLogDefaults | loading = True, loadingText = Just "Wait" })
+                , Element.el [ Element.htmlAttribute (HA.id "live-log-loader-transition") ]
+                    (Log.view Theme.default { cfLogDefaults | loading = True, loaderTransition = Just Internal.EnterFrom })
+                , Element.el [ Element.htmlAttribute (HA.id "live-log-font") ]
+                    (Log.view Theme.default { cfLogDefaults | fontSize = 20 })
+                , Element.el [ Element.htmlAttribute (HA.id "live-log-rows") ]
+                    (Log.view Theme.default { cfLogDefaults | rows = 5, fontSize = 10, lineHeight = 20 })
+                , Element.el [ Element.htmlAttribute (HA.id "live-log-text-line") ]
+                    (Log.view Theme.default { cfLogDefaults | lines = [ "<b>x</b>" ] })
+                , Element.el [ Element.htmlAttribute (HA.id "live-log-parse-line") ]
+                    (Log.view Theme.default { cfLogDefaults | lines = [ "<b>x</b>" ], language = Just "py", hljs = Just domHljs })
                 ]
             )
         ]

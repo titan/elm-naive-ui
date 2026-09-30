@@ -11606,6 +11606,152 @@ dEq('DOM: Carousel trigger=hover still renders dots', 4, carDotEls('live-carouse
 dEq('DOM: Carousel defaultIndex 2 → current slide data-index 3', '3', carCurrentDataIndex('live-carousel-default-index'))
 dEq('DOM: Carousel defaultIndex 2 → dot[2] active', 'n-carousel__dot n-carousel__dot--active', nClassesStr(carDotEls('live-carousel-default-index')[2]))
 
+// Code / Equation / Log / RawHtml ---------------------------------------------
+// Pins: tasks/recon/code-family-pins.md §D + §E (the RawHtml render-level pins,
+// §E18-22, are eq pins in tests/src/Main.elm; §E11/14/15/16 land here because
+// Log.cssVarsFor is private). Ports: src/NUI/{Code,Equation,Log}.elm +
+// src/NUI/Internal/RawHtml.elm. Toys are deterministic Elm strings (no hljs/katex).
+const cfRoot = (id) => doc.querySelector('#' + id + ' .n-code')
+const cfPreCode = (id) => doc.querySelector('#' + id + ' .n-code pre.__code__')
+const cfLineNums = (id) => doc.querySelector('#' + id + ' .n-code pre.n-code__line-numbers')
+const cfLogRoot = (id) => doc.querySelector('#' + id + ' .n-log')
+const cfLogPre = (id) => doc.querySelector('#' + id + ' .n-code > pre')
+const cfLogPres = (id) => [...doc.querySelectorAll('#' + id + ' .n-code > pre')]
+// countVars' `--n-[a-z-]+:` misses digit-bearing names (--n-mono-3, --n-hue-5-2);
+// varOrder splits on ';' so it sees every emitted custom property.
+const cfCountVars = (el) => varOrder(el).split('|').filter(Boolean).length
+
+// §D1 — Code block, plain
+dTrue('DOM: Code block plain renders .n-code', !!cfRoot('live-code'), cfRoot('live-code') ? cfRoot('live-code').getAttribute('class') : 'missing')
+dEq('DOM: Code block plain pre.__code__ textContent', 'console.log(a)', cfPreCode('live-code') ? cfPreCode('live-code').textContent : null)
+dTrue('DOM: Code block plain has NO line-numbers pre', !doc.querySelector('#live-code .n-code__line-numbers'), 'line-numbers')
+
+// §D2 — Code block, highlighted
+dEq('DOM: Code block highlighted pre.__code__ innerHTML == toy html', '<span class="hljs-keyword">a</span>', cfPreCode('live-code-hl') ? cfPreCode('live-code-hl').innerHTML : null)
+dTrue('DOM: Code block highlighted has .__code__ .hljs-keyword', !!doc.querySelector('#live-code-hl .n-code .__code__ .hljs-keyword'), 'hljs-keyword')
+
+// §D3 — Code inline, highlighted (no .__code__; markup on the root <code>)
+dTrue('DOM: Code inline has NO .__code__', !doc.querySelector('#live-code-inline .n-code pre.__code__'), 'no pre')
+dEq('DOM: Code inline code innerHTML == toy html', '<span class="hljs-keyword">a</span>', cfRoot('live-code-inline') ? cfRoot('live-code-inline').innerHTML : null)
+dTrue('DOM: Code inline .hljs-keyword directly under code', !!doc.querySelector('#live-code-inline .n-code > .hljs-keyword'), 'hljs-keyword')
+
+// §D4 — Code inline, plain
+dEq('DOM: Code inline plain textContent', 'b', cfRoot('live-code-inline-plain') ? cfRoot('live-code-inline-plain').textContent : null)
+dTrue('DOM: Code inline plain has NO .__code__', !doc.querySelector('#live-code-inline-plain pre.__code__'), 'no pre')
+
+// §D5 — Code word-wrap
+dTrue('DOM: Code word-wrap root class', !!cfRoot('live-code-wordwrap') && cfRoot('live-code-wordwrap').classList.contains('n-code--word-wrap'), cfRoot('live-code-wordwrap') ? cfRoot('live-code-wordwrap').getAttribute('class') : 'missing')
+
+// §D6 — Code show-line-numbers
+dTrue('DOM: Code show-line-numbers root class', !!cfRoot('live-code-linenumbers') && cfRoot('live-code-linenumbers').classList.contains('n-code--show-line-numbers'), cfRoot('live-code-linenumbers') ? cfRoot('live-code-linenumbers').getAttribute('class') : 'missing')
+dEq('DOM: Code line-numbers pre textContent', '1\n2', cfLineNums('live-code-linenumbers') ? cfLineNums('live-code-linenumbers').textContent : null)
+dTrue('DOM: Code line-numbers pre is first child, __code__ follows', (() => { const root = cfRoot('live-code-linenumbers'); return !!root && root.children[0] === cfLineNums('live-code-linenumbers') && root.children[1] === cfPreCode('live-code-linenumbers') })(), 'child order')
+
+// §D7 — Code show-line-numbers + word-wrap (mergedShowLineNumbers false)
+dTrue('DOM: Code line-numbers + word-wrap → NO line-numbers pre', !doc.querySelector('#live-code-linenumbers-wordwrap .n-code__line-numbers'), 'none')
+dTrue('DOM: Code line-numbers + word-wrap root still --word-wrap', !!cfRoot('live-code-linenumbers-wordwrap') && cfRoot('live-code-linenumbers-wordwrap').classList.contains('n-code--word-wrap'), cfRoot('live-code-linenumbers-wordwrap') ? cfRoot('live-code-linenumbers-wordwrap').getAttribute('class') : 'missing')
+
+// §D8 — attributes/slot passthrough
+dTrue('DOM: Code slot children pass through (span.slotx)', !!doc.querySelector('#live-code-slot .n-code .slotx'), 'slotx')
+dTrue('DOM: Code slot path has NO .__code__', !doc.querySelector('#live-code-slot pre.__code__'), 'no pre')
+
+// §D9 + §E11 — cssVars order/COUNT (Code 15, Log 6)
+dEq('DOM: Code root 15 --n-* vars in upstream order', '--n-font-size|--n-font-family|--n-font-weight-strong|--n-bezier|--n-text-color|--n-mono-3|--n-hue-1|--n-hue-2|--n-hue-3|--n-hue-4|--n-hue-5|--n-hue-5-2|--n-hue-6|--n-hue-6-2|--n-line-number-text-color', varOrder(cfRoot('live-code')))
+dEq('DOM: Code root exactly 15 --n-* vars', 15, cfCountVars(cfRoot('live-code')))
+dTrue('DOM: Code root carries no --n-line-number-color (stale cssr comment)', !(styleAt(cfRoot('live-code')) || '').includes('--n-line-number-color'), styleAt(cfRoot('live-code')))
+
+// §D10 — Code internalFontSize
+ dTrue('DOM: Code internalFontSize 20 → --n-font-size:20px', (styleAt(cfRoot('live-code-font')) || '').includes('--n-font-size:20px'), styleAt(cfRoot('live-code-font')))
+
+// §D11 — Equation span
+const cfEqKatex = doc.querySelector('#live-equation .katex')
+dEq('DOM: Equation .katex tagName', 'SPAN', cfEqKatex ? cfEqKatex.tagName : null)
+dEq('DOM: Equation .katex innerHTML', 'E = mc^2', cfEqKatex ? cfEqKatex.innerHTML : null)
+
+// §D12 — Equation div
+const cfEqDisplay = doc.querySelector('#live-equation-display div.katex-display')
+dEq('DOM: Equation div.katex-display tagName', 'DIV', cfEqDisplay ? cfEqDisplay.tagName : null)
+dEq('DOM: Equation div.katex-display innerHTML', 'content', cfEqDisplay ? cfEqDisplay.innerHTML : null)
+
+// §D13 — Equation no-katex (class: undefined → NO class attr)
+const cfEqNoKatex = doc.querySelector('#live-equation-nokatex span')
+dTrue('DOM: Equation no-katex root span has NO class attribute', !!cfEqNoKatex && !cfEqNoKatex.hasAttribute('class'), cfEqNoKatex ? cfEqNoKatex.getAttribute('class') : 'missing')
+dEq('DOM: Equation no-katex text', 'no katex provided', cfEqNoKatex ? cfEqNoKatex.textContent : null)
+
+// §D14 — Equation no-match
+const cfEqNoMatch = doc.querySelector('#live-equation-nomatch span')
+dTrue('DOM: Equation no-match root span has NO class attribute', !!cfEqNoMatch && !cfEqNoMatch.hasAttribute('class'), cfEqNoMatch ? cfEqNoMatch.getAttribute('class') : 'missing')
+dEq('DOM: Equation no-match innerHTML (outer tags stripped)', '<b>x</b>', cfEqNoMatch ? cfEqNoMatch.innerHTML : null)
+
+// §D15 + §E11/14/15 — Log root style (line-height/height then 6 vars) + values
+dTrue('DOM: Log root style line-height:1.25;height:calc(263px); then vars', (styleAt(cfLogRoot('live-log')) || '').startsWith('line-height:1.25;height:calc(263px);'), styleAt(cfLogRoot('live-log')))
+dEq('DOM: Log root 6 --n-* vars in order', '--n-bezier|--n-loader-font-size|--n-loader-border|--n-loader-color|--n-loader-text-color|--n-loading-color', varOrder(cfLogRoot('live-log')))
+dEq('DOM: Log root exactly 6 --n-* vars', 6, cfCountVars(cfLogRoot('live-log')))
+dTrue('DOM: Log light --n-loader-color:#fff (modalColor)', (styleAt(cfLogRoot('live-log')) || '').includes('--n-loader-color:#fff'), styleAt(cfLogRoot('live-log')))
+dTrue('DOM: Log light --n-loader-border:1px solid rgb(224, 224, 230)', (styleAt(cfLogRoot('live-log')) || '').includes('--n-loader-border:1px solid rgb(224, 224, 230)'), styleAt(cfLogRoot('live-log')))
+dTrue('DOM: Log dark --n-loader-color:rgba(255, 255, 255, 0.1) (inputColor)', (styleAt(cfLogRoot('live-log-dark')) || '').includes('--n-loader-color:rgba(255, 255, 255, 0.1)'), styleAt(cfLogRoot('live-log-dark')))
+dTrue('DOM: Log dark --n-loader-border:1px solid #0000', (styleAt(cfLogRoot('live-log-dark')) || '').includes('--n-loader-border:1px solid #0000'), styleAt(cfLogRoot('live-log-dark')))
+
+// §D16 — Log structure
+dTrue('DOM: Log .n-log > .n-scrollbar', !!doc.querySelector('#live-log .n-log > .n-scrollbar'), 'scrollbar')
+dTrue('DOM: Log .n-log .n-code', !!doc.querySelector('#live-log .n-log .n-code'), 'n-code')
+dEq('DOM: Log .n-code has one pre per merged line', 2, cfLogPres('live-log').length)
+dEq('DOM: Log line pre texts', 'test1|test2', cfLogPres('live-log').map((p) => p.textContent).join('|'))
+
+// §D17 — Log trim false/true
+dEq('DOM: Log trim false preserves padding', ' test1     ', cfLogPre('live-log-untrimmed') ? cfLogPre('live-log-untrimmed').textContent : null)
+dEq('DOM: Log trim true trims per line', 'test1', cfLogPre('live-log-trim') ? cfLogPre('live-log-trim').textContent : null)
+
+// §D18 — Log highlight
+dEq('DOM: Log highlight pre innerHTML == toy html', '<span class="hljs-keyword">a</span>', cfLogPre('live-log-hl') ? cfLogPre('live-log-hl').innerHTML : null)
+dTrue('DOM: Log highlight pre has .hljs-keyword', !!doc.querySelector('#live-log-hl .n-code > pre .hljs-keyword'), 'hljs-keyword')
+
+// §D19 + §E16 — Log loading
+dTrue('DOM: Log loading → .n-log-loader present', !!doc.querySelector('#live-log-loading .n-log-loader'), 'loader')
+dEq('DOM: Log loader content text (enUS Loading default)', 'Loading', doc.querySelector('#live-log-loading .n-log-loader__content') ? doc.querySelector('#live-log-loading .n-log-loader__content').textContent : null)
+dTrue('DOM: Log loader spinner svg.n-base-loading__icon under .n-base-loading', !!doc.querySelector('#live-log-loading .n-base-loading svg.n-base-loading__icon'), 'spinner')
+dTrue('DOM: Log loading=false → no .n-log-loader', !doc.querySelector('#live-log .n-log-loader'), 'no loader')
+
+// §D20 — Log loadingText override
+dEq('DOM: Log loadingText override', 'Wait', doc.querySelector('#live-log-loading-text .n-log-loader__content') ? doc.querySelector('#live-log-loading-text .n-log-loader__content').textContent : null)
+
+// §D21 — Log loader transition class (§D21 corrected: the loader only mounts on
+// loading OR a LEAVE phase, so the fixture sets loading=true + EnterFrom)
+dTrue('DOM: Log loader EnterFrom class', !!doc.querySelector('#live-log-loader-transition .n-log-loader') && doc.querySelector('#live-log-loader-transition .n-log-loader').classList.contains('fade-in-scale-up-transition-enter-from'), doc.querySelector('#live-log-loader-transition .n-log-loader') ? doc.querySelector('#live-log-loader-transition .n-log-loader').getAttribute('class') : 'missing')
+
+// §D22 — Log fontSize → embedded .n-code internalFontSize
+dTrue('DOM: Log fontSize 20 → embedded .n-code --n-font-size:20px', (styleAt(doc.querySelector('#live-log-font .n-code')) || '').includes('--n-font-size:20px'), styleAt(doc.querySelector('#live-log-font .n-code')))
+
+// §D23 — Log rows
+dTrue('DOM: Log rows=5 fs=10 lh=20 → height:calc(1000px)', (styleAt(cfLogRoot('live-log-rows')) || '').includes('height:calc(1000px)'), styleAt(cfLogRoot('live-log-rows')))
+
+// §D24 — RawHtml nested render
+dTrue('DOM: RawHtml nested .__code__ .a .b (real nesting, not text)', !!doc.querySelector('#live-code-raw-nested .n-code .__code__ .a .b'), 'nested')
+dEq('DOM: RawHtml nested innermost textContent', 't', doc.querySelector('#live-code-raw-nested .n-code .__code__ .a .b') ? doc.querySelector('#live-code-raw-nested .n-code .__code__ .a .b').textContent : null)
+
+// §D25 — RawHtml entity in DOM (compare textContent — see §T)
+dEq('DOM: RawHtml entity textContent', 'a & b < c', doc.querySelector('#live-code-entity .n-code .hljs-keyword') ? doc.querySelector('#live-code-entity .n-code .hljs-keyword').textContent : null)
+
+// §D26 — RawHtml svg-ish passthrough
+const cfEqSvg = doc.querySelector('#live-equation-svg .katex svg')
+dTrue('DOM: RawHtml svg passthrough exists (.katex svg)', !!cfEqSvg, 'svg')
+dEq('DOM: RawHtml svg viewBox attr', '0 0 10 10', cfEqSvg ? cfEqSvg.getAttribute('viewBox') : null)
+
+// §D27 — Code PLAIN-with-markup stays TEXT (textContent path, not innerHTML)
+const cfMarkupPre = doc.querySelector('#live-code-markup-plain .n-code pre.__code__')
+dEq('DOM: Code plain-with-markup stays TEXT (block)', '<div>x</div>', cfMarkupPre ? cfMarkupPre.textContent : null)
+dEq('DOM: Code plain-with-markup block has NO element children', 0, cfMarkupPre ? cfMarkupPre.children.length : -1)
+dEq('DOM: Code plain-with-markup stays TEXT (inline)', '<div>x</div>', cfRoot('live-code-markup-inline') ? cfRoot('live-code-markup-inline').textContent : null)
+dEq('DOM: Code plain-with-markup inline has NO div child', 0, cfRoot('live-code-markup-inline') ? cfRoot('live-code-markup-inline').querySelectorAll('div').length : -1)
+const cfNoHlPre = doc.querySelector('#live-code-nohighlight .n-code pre.__code__')
+dEq('DOM: Code internalNoHighlight forces text (block)', '<div>y</div>', cfNoHlPre ? cfNoHlPre.textContent : null)
+dEq('DOM: Code internalNoHighlight has NO element children', 0, cfNoHlPre ? cfNoHlPre.children.length : -1)
+
+// §D28 — Log per-line language gate (§T: language set ⇒ innerHTML-of-raw path)
+dEq('DOM: Log language-Nothing markup line stays TEXT', '<b>x</b>', cfLogPre('live-log-text-line') ? cfLogPre('live-log-text-line').textContent : null)
+dEq('DOM: Log language-Nothing line has NO b element', 0, cfLogPre('live-log-text-line') ? cfLogPre('live-log-text-line').children.length : -1)
+dTrue('DOM: Log language-set unknown-lang parses markup (real b element)', !!doc.querySelector('#live-log-parse-line .n-code > pre b'), 'b element')
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
