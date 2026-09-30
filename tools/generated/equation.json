@@ -1,0 +1,14 @@
+{
+  "light": {},
+  "dark": {},
+  "refs": {
+    "light": {
+      "refs": {},
+      "seen": []
+    },
+    "dark": {
+      "refs": {},
+      "seen": []
+    }
+  }
+}

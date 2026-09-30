@@ -1,0 +1,48 @@
+{
+  "light": {
+    "loaderFontSize": "14px",
+    "loaderTextColor": "rgb(51, 54, 57)",
+    "loaderColor": "#fff",
+    "loaderBorder": "1px solid rgb(224, 224, 230)",
+    "loadingColor": "#18a058"
+  },
+  "dark": {
+    "loaderFontSize": "14px",
+    "loaderTextColor": "rgba(255, 255, 255, 0.82)",
+    "loaderColor": "rgba(255, 255, 255, 0.1)",
+    "loaderBorder": "1px solid #0000",
+    "loadingColor": "#63e2b7"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "loaderFontSize": "fontSize",
+        "loaderTextColor": "textColor2",
+        "loaderColor": "modalColor",
+        "loadingColor": "primaryColor"
+      },
+      "seen": [
+        "loaderFontSize",
+        "loaderTextColor",
+        "loaderColor",
+        "loaderBorder",
+        "loadingColor"
+      ]
+    },
+    "dark": {
+      "refs": {
+        "loaderFontSize": "fontSize",
+        "loaderTextColor": "textColor2",
+        "loaderColor": "inputColor",
+        "loadingColor": "primaryColor"
+      },
+      "seen": [
+        "loaderFontSize",
+        "loaderTextColor",
+        "loaderColor",
+        "loaderBorder",
+        "loadingColor"
+      ]
+    }
+  }
+}

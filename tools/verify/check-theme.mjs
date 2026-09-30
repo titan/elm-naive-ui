@@ -30,9 +30,12 @@ const unesc = s =>
   s.replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\\"/g, '"').replace(/\\\\/g, '\\')
 
 // Parse the `{ field = expr, ... }` bodies of `light` / `dark`.
+// Bodies never contain nested braces (expressions are `common.x` refs, string
+// literals, or list literals), so `[^{}]*` is exact — and it also matches the
+// empty record `{}` (equation's upstream `self = () => ({})`).
 function parseModule(src) {
   const out = {}
-  const re = /(light|dark)\b[^\n]*=\s*\n?\s*\{([\s\S]*?)\n\s*\}/g
+  const re = /(light|dark)\b[^\n]*=\s*\n?\s*\{([^{}]*)\}/g
   let m
   while ((m = re.exec(src))) {
     const fields = {}
@@ -40,7 +43,10 @@ function parseModule(src) {
       const fm = line.match(/^\s*[,{]?\s*([a-zA-Z_]\w*)\s*=\s*(.+?),?\s*$/)
       if (fm) fields[fm[1]] = fm[2].trim()
     }
-    if (Object.keys(fields).length) out[m[1]] = fields
+    // Keep even zero-field bodies: a matched-but-empty record (equation's
+    // upstream `self = () => ({})`) is a VALID theme — only a mode whose
+    // `light`/`dark` never matched at all reports "no record parsed".
+    out[m[1]] = fields
   }
   return out
 }

@@ -9479,6 +9479,125 @@ color: var(--n-item-text-color-error);}.nui-root.nui-root .n-upload-file-list .n
         opacity: 0.4;
         transform: translateX(0%) translateZ(-200px);}
 
+/* ===== naive-ui: code ===== */
+.nui-root.nui-root .n-code {
+
+    font-size: var(--n-font-size);
+    font-family: var(--n-font-family);}.nui-root.nui-root .n-code.n-code--show-line-numbers {
+
+      display: flex;}.nui-root.nui-root .n-code .n-code__line-numbers {
+
+      user-select: none;
+      padding-right: 12px;
+      text-align: right;
+      transition: color .3s var(--n-bezier);
+      color: var(--n-line-number-text-color);}.nui-root.nui-root .n-code.n-code--word-wrap pre {
+
+        white-space: pre-wrap;
+        word-break: break-all;}.nui-root.nui-root .n-code pre {
+
+      margin: 0;
+      line-height: inherit;
+      font-size: inherit;
+      font-family: inherit;}.nui-root.nui-root .n-code [class^=hljs] {
+
+      color: var(--n-text-color);
+      transition: 
+        color .3s var(--n-bezier),
+        background-color .3s var(--n-bezier);}.nui-root.nui-root .n-code .hljs-comment,
+.nui-root.nui-root .n-code .hljs-quote {
+        color: var(--n-mono-3);
+        font-style: italic;}.nui-root.nui-root .n-code .hljs-doctag,
+.nui-root.nui-root .n-code .hljs-keyword,
+.nui-root.nui-root .n-code .hljs-formula {
+        color: var(--n-hue-3);}.nui-root.nui-root .n-code .hljs-section,
+.nui-root.nui-root .n-code .hljs-name,
+.nui-root.nui-root .n-code .hljs-selector-tag,
+.nui-root.nui-root .n-code .hljs-deletion,
+.nui-root.nui-root .n-code .hljs-subst {
+        color: var(--n-hue-5);}.nui-root.nui-root .n-code .hljs-literal {
+        color: var(--n-hue-1);}.nui-root.nui-root .n-code .hljs-string,
+.nui-root.nui-root .n-code .hljs-regexp,
+.nui-root.nui-root .n-code .hljs-addition,
+.nui-root.nui-root .n-code .hljs-attribute,
+.nui-root.nui-root .n-code .hljs-meta-string {
+        color: var(--n-hue-4);}.nui-root.nui-root .n-code .hljs-built_in,
+.nui-root.nui-root .n-code .hljs-class .hljs-title {
+        color: var(--n-hue-6-2);}.nui-root.nui-root .n-code .hljs-attr,
+.nui-root.nui-root .n-code .hljs-variable,
+.nui-root.nui-root .n-code .hljs-template-variable,
+.nui-root.nui-root .n-code .hljs-type,
+.nui-root.nui-root .n-code .hljs-selector-class,
+.nui-root.nui-root .n-code .hljs-selector-attr,
+.nui-root.nui-root .n-code .hljs-selector-pseudo,
+.nui-root.nui-root .n-code .hljs-number {
+        color: var(--n-hue-6);}.nui-root.nui-root .n-code .hljs-symbol,
+.nui-root.nui-root .n-code .hljs-bullet,
+.nui-root.nui-root .n-code .hljs-link,
+.nui-root.nui-root .n-code .hljs-meta,
+.nui-root.nui-root .n-code .hljs-selector-id,
+.nui-root.nui-root .n-code .hljs-title {
+        color: var(--n-hue-2);}.nui-root.nui-root .n-code .hljs-emphasis {
+        font-style: italic;}.nui-root.nui-root .n-code .hljs-strong {
+        font-weight: var(--n-font-weight-strong);}.nui-root.nui-root .n-code .hljs-link {
+        text-decoration: underline;}
+
+
+/* ===== naive-ui: log ===== */
+.nui-root.nui-root .n-log {
+
+  position: relative;
+  box-sizing: border-box;
+  transition: border-color .3s var(--n-bezier);}.nui-root.nui-root .n-log pre {
+
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin: 0;}.nui-root.nui-root .n-log .n-log-loader {
+
+    transition:
+      color .3s var(--n-bezier),
+      background-color .3s var(--n-bezier),
+      border-color .3s var(--n-bezier);
+    box-sizing: border-box;
+    position: absolute;
+    right: 16px;
+    top: 8px;
+    height: 34px;
+    border-radius: 17px;
+    line-height: 34px;
+    white-space: nowrap;
+    overflow: hidden;
+    border: var(--n-loader-border);
+    color: var(--n-loader-text-color);
+    background-color: var(--n-loader-color);
+    font-size: var(--n-loader-font-size);}.nui-root.nui-root .n-log .n-log-loader.fade-in-scale-up-transition-leave-active {
+  transform-origin: inherit;
+  transition: opacity .2s cubic-bezier(.4, 0, 1, 1), transform .2s cubic-bezier(.4, 0, 1, 1) ;}.nui-root.nui-root .n-log .n-log-loader.fade-in-scale-up-transition-enter-active {
+  transform-origin: inherit;
+  transition: opacity .2s cubic-bezier(0, 0, .2, 1), transform .2s cubic-bezier(0, 0, .2, 1) ;}.nui-root.nui-root .n-log .n-log-loader.fade-in-scale-up-transition-enter-from,
+.nui-root.nui-root .n-log .n-log-loader.fade-in-scale-up-transition-leave-to {
+  opacity: 0;
+  transform:  scale(.9);}.nui-root.nui-root .n-log .n-log-loader.fade-in-scale-up-transition-leave-from,
+.nui-root.nui-root .n-log .n-log-loader.fade-in-scale-up-transition-enter-to {
+  opacity: 1;
+  transform:  scale(1);}.nui-root.nui-root .n-log .n-log-loader .n-log-loader__content {
+
+      display: inline-block;
+      vertical-align: bottom;
+      line-height: 34px;
+      padding-left: 40px;
+      padding-right: 20px;
+      white-space: nowrap;}.nui-root.nui-root .n-log .n-log-loader .n-base-loading {
+
+      color: var(--n-loading-color);
+      position: absolute;
+      left: 12px;
+      top: calc(50% - 10px);
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      display: inline-block;}
+
 /* ===== elm-ui bridge =====
  *
  * Components are built from elm-ui elements, and elm-ui styles its own helper classes

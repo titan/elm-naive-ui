@@ -8,15 +8,18 @@
 //   - Elm keywords (`type`, `if`, ...)      -> suffix `_`
 //   - leading-underscore names (`__invertScrollbar`, naive-ui's marker for an
 //     internal, non-CSS-var theme value)    -> strip the prefix
+//   - hyphenated names (code's hljs palette `mono-3`, `hue-5-2`) -> drop the
+//     hyphens (`mono3`, `hue52`); reversible against the json key list, and
+//     fromElmField throws if two upstream keys ever collide under the rule
 
 const ELM_RESERVED = new Set([
   'type', 'if', 'then', 'else', 'case', 'of', 'let', 'in', 'as', 'port',
   'module', 'import', 'exposing', 'where', 'infix', 'alias'
 ])
 
-// `__invertScrollbar` -> `invertScrollbar`; `type` -> `type_`.
+// `__invertScrollbar` -> `invertScrollbar`; `type` -> `type_`; `mono-3` -> `mono3`.
 export const toElmField = key => {
-  const stripped = key.replace(/^_+/, '') || 'underscore'
+  const stripped = key.replace(/^_+/, '').replace(/-/g, '') || 'underscore'
   return ELM_RESERVED.has(stripped) ? `${stripped}_` : stripped
 }
 

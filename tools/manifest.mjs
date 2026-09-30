@@ -615,5 +615,41 @@ export const components = {
     // --show-arrow dot offsets). No rtl.cssr upstream.
     cssr: ['carousel/src/styles/index.cssr.ts'],
     theme: 'carousel/styles/light.ts'
+  },
+  code: {
+    // The .n-code family: root font-size/font-family, --show-line-numbers flex
+    // + __line-numbers gutter (user-select none, 12px right pad, right-align),
+    // --word-wrap pre wrapping (pre-wrap + break-all), base pre resets (margin
+    // 0, inherit line-height/font), the [class^=hljs] text-color transition,
+    // and the full atom-one hljs token palette keyed to the --n-mono-3/hue-1..6
+    // theme vars (comment/quote italic, doctag/keyword/formula, section/name/
+    // selector-tag/deletion/subst, literal, string/regexp/addition/attribute/
+    // meta-string, built_in/class .title, attr/variable/type/selector-*/number,
+    // symbol/bullet/link/meta/selector-id/title, emphasis/strong/link decor).
+    // The hljs rules are the ONLY cssr in upstream reading `props.bPrefix`
+    // (function-form children) — extract-css renders with bPrefix '.n-'.
+    // No rtl.cssr upstream.
+    cssr: ['code/src/styles/index.cssr.ts'],
+    theme: 'code/styles/light.ts'
+  },
+  log: {
+    // The .n-log family: root (relative, border-color transition) + pre resets
+    // (pre-wrap, break-word) + the absolute __loader pill (34px tall, 17px
+    // radius, right 16px top 8px, loader border/color/text-color/font-size
+    // vars, fade-in-scale-up transition) with its inline-block __content
+    // (padding-left 40px for the spinner) and the absolutely-positioned
+    // .n-base-loading slot (20px box, --n-loading-color, left 12px,
+    // top calc(50% - 10px)). The scrollbar + code subtrees ride their own
+    // chunks (peers). No rtl.cssr upstream.
+    cssr: ['log/src/styles/index.cssr.ts'],
+    theme: 'log/styles/light.ts'
+  },
+  equation: {
+    // Theme-only entry (the tooltip precedent): Equation.tsx renders no cssr
+    // and no --n-* vars at all — just the katex wrapper tag/class the caller's
+    // renderToString produced. The empty-self theme exists purely for the
+    // config-provider theme assembly.
+    cssr: [],
+    theme: 'equation/styles/light.ts'
   }
 }

@@ -1,0 +1,62 @@
+{
+  "light": {
+    "textColor": "rgb(51, 54, 57)",
+    "fontSize": "14px",
+    "fontWeightStrong": "500",
+    "mono-3": "#a0a1a7",
+    "hue-1": "#0184bb",
+    "hue-2": "#4078f2",
+    "hue-3": "#a626a4",
+    "hue-4": "#50a14f",
+    "hue-5": "#e45649",
+    "hue-5-2": "#c91243",
+    "hue-6": "#986801",
+    "hue-6-2": "#c18401",
+    "lineNumberTextColor": "rgb(118, 124, 130)"
+  },
+  "dark": {
+    "textColor": "rgba(255, 255, 255, 0.82)",
+    "fontSize": "14px",
+    "fontWeightStrong": "500",
+    "mono-3": "#5c6370",
+    "hue-1": "#56b6c2",
+    "hue-2": "#61aeee",
+    "hue-3": "#c678dd",
+    "hue-4": "#98c379",
+    "hue-5": "#e06c75",
+    "hue-5-2": "#be5046",
+    "hue-6": "#d19a66",
+    "hue-6-2": "#e6c07b",
+    "lineNumberTextColor": "rgba(255, 255, 255, 0.52)"
+  },
+  "refs": {
+    "light": {
+      "refs": {
+        "textColor": "textColor2",
+        "lineNumberTextColor": "textColor3",
+        "fontSize": "fontSize",
+        "fontWeightStrong": "fontWeightStrong"
+      },
+      "seen": [
+        "textColor",
+        "lineNumberTextColor",
+        "fontSize",
+        "fontWeightStrong"
+      ]
+    },
+    "dark": {
+      "refs": {
+        "textColor": "textColor2",
+        "fontSize": "fontSize",
+        "fontWeightStrong": "fontWeightStrong",
+        "lineNumberTextColor": "textColor3"
+      },
+      "seen": [
+        "textColor",
+        "fontSize",
+        "fontWeightStrong",
+        "lineNumberTextColor"
+      ]
+    }
+  }
+}

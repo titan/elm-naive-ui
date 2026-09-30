@@ -120,7 +120,12 @@ async function renderCssr(rel) {
   const src = `import cssr from ${JSON.stringify('./' + path.basename(abs))}\nexport default cssr`
   const mod = await loadModuleAt(path.dirname(abs), abs, src)
   const node = mod.default
-  if (node && typeof node.render === 'function') return node.render({})
+  // Props mirror the runtime mount (use-theme.ts): default clsPrefix 'n' →
+  // bPrefix '.n-'. Only function-form cssr children read them (code's hljs
+  // token rules build `${props.bPrefix}code` selectors); every other cssr
+  // tree ignores props, so this is inert for previously-extracted components.
+  if (node && typeof node.render === 'function')
+    return node.render({ bPrefix: '.n-' })
   if (typeof node === 'function') return node()
   return `/* no render: ${rel} */`
 }
