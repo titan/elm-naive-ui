@@ -11463,6 +11463,136 @@ dTrue(
   [...upInput('live-upload-directory').attributes].map((a) => a.name).join(',')
 )
 
+// Carousel -------------------------------------------------------------------
+// Pins: tasks/recon/carousel-pins.md §D (derived from carousel/src/Carousel.tsx
+// render :1000-1063 + CarouselItem/CarouselDots/CarouselArrow.tsx +
+// styles/index.cssr.ts). Port: src/NUI/Carousel.elm. Live fixtures feed
+// perViewSize {1000,400} so the px are deterministic.
+const carRoot = (id) => doc.querySelector('#' + id + ' .n-carousel')
+const carSlides = (id) => doc.querySelector('#' + id + ' .n-carousel__slides')
+const carSlideEls = (id) => [...doc.querySelectorAll('#' + id + ' .n-carousel__slide')]
+const carDots = (id) => doc.querySelector('#' + id + ' .n-carousel__dots')
+const carDotEls = (id) => [...doc.querySelectorAll('#' + id + ' .n-carousel__dot')]
+const carArrowEls = (id) => [...doc.querySelectorAll('#' + id + ' .n-carousel__arrow')]
+const carArrowPath = (id, i) => {
+  const a = carArrowEls(id)[i]
+  const p = a ? a.querySelector('svg path') : null
+  return p ? p.getAttribute('d') : null
+}
+const carSlideClassOf = (id, cls) =>
+  carSlideEls(id).find((s) => s.classList.contains(cls)) || null
+const carCurrentDataIndex = (id) => {
+  const s = carSlideEls(id).find((el) => el.classList.contains('n-carousel__slide--current'))
+  return s ? s.getAttribute('data-index') : null
+}
+
+// §D1 — basic (A1): root classes, track style, 6 clones, marker classes, dots
+dEq(
+  'DOM: Carousel root class order (basic A1)',
+  'n-carousel n-carousel--bottom n-carousel--horizontal n-carousel--slide',
+  carRoot('live-carousel').getAttribute('class')
+)
+dEq('DOM: Carousel slides role=listbox', 'listbox', carSlides('live-carousel').getAttribute('role'))
+dTrue(
+  'DOM: Carousel track style has transition-duration: 300ms',
+  (styleAt(carSlides('live-carousel')) || '').includes('transition-duration: 300ms'),
+  styleAt(carSlides('live-carousel'))
+)
+dTrue(
+  'DOM: Carousel track style has transform: translateX(-1000px)',
+  (styleAt(carSlides('live-carousel')) || '').includes('transform: translateX(-1000px)'),
+  styleAt(carSlides('live-carousel'))
+)
+dEq('DOM: Carousel 6 slides (4 + 2 clones)', 6, carSlideEls('live-carousel').length)
+dEq(
+  'DOM: Carousel data-index 0..5 (REAL duplicate-inclusive space)',
+  '0,1,2,3,4,5',
+  carSlideEls('live-carousel').map((s) => s.getAttribute('data-index')).join(',')
+)
+dEq(
+  'DOM: Carousel aria-hidden "true" except data-index 1',
+  'true,false,true,true,true,true',
+  carSlideEls('live-carousel').map((s) => s.getAttribute('aria-hidden')).join(',')
+)
+dEq('DOM: Carousel --current on data-index 1', 'n-carousel__slide n-carousel__slide--current', nClassesStr(carSlideEls('live-carousel')[1]))
+dEq('DOM: Carousel --prev on data-index 0 (prepended clone)', 'n-carousel__slide n-carousel__slide--prev', nClassesStr(carSlideEls('live-carousel')[0]))
+dEq('DOM: Carousel --next on data-index 2', 'n-carousel__slide n-carousel__slide--next', nClassesStr(carSlideEls('live-carousel')[2]))
+dEq('DOM: Carousel slide margin-right: 0px (spaceBetween 0)', 'margin-right: 0px', styleAt(carSlideEls('live-carousel')[0]))
+dEq('DOM: Carousel 4 dots (displayTotalView 6-2)', 4, carDotEls('live-carousel').length)
+dEq('DOM: Carousel dots container = __dots __dots--dot', 'n-carousel__dots n-carousel__dots--dot', nClassesStr(carDots('live-carousel')))
+dEq('DOM: Carousel dots role=tablist', 'tablist', carDots('live-carousel').getAttribute('role'))
+dEq('DOM: Carousel dot[0] --active', 'n-carousel__dot n-carousel__dot--active', nClassesStr(carDotEls('live-carousel')[0]))
+dEq('DOM: Carousel dot[0] aria-selected "true"', 'true', carDotEls('live-carousel')[0].getAttribute('aria-selected'))
+dEq('DOM: Carousel dot role=button', 'button', carDotEls('live-carousel')[0].getAttribute('role'))
+dEq('DOM: Carousel dot tabindex=0', '0', carDotEls('live-carousel')[0].getAttribute('tabindex'))
+
+// §D2 — vertical renders the token TWICE (slot #3 gate + slot #6 direction)
+dEq(
+  'DOM: Carousel vertical renders --vertical TWICE in the class attribute',
+  'n-carousel n-carousel--vertical n-carousel--bottom n-carousel--vertical n-carousel--slide',
+  carRoot('live-carousel-vertical').getAttribute('class')
+)
+
+// §D3 — dotPlacement token precedes --horizontal
+dEq('DOM: Carousel --left before --horizontal', 'n-carousel n-carousel--left n-carousel--horizontal n-carousel--slide', carRoot('live-carousel-left').getAttribute('class'))
+dEq('DOM: Carousel --right before --horizontal', 'n-carousel n-carousel--right n-carousel--horizontal n-carousel--slide', carRoot('live-carousel-right').getAttribute('class'))
+dEq('DOM: Carousel --top before --horizontal', 'n-carousel n-carousel--top n-carousel--horizontal n-carousel--slide', carRoot('live-carousel-top').getAttribute('class'))
+
+// §D4 — dotType line
+dEq('DOM: Carousel dotType=line → __dots--line', 'n-carousel__dots n-carousel__dots--line', nClassesStr(carDots('live-carousel-line')))
+
+// §D5 — showArrow (loop=True → no --disabled) + byte-verbatim glyphs
+dEq('DOM: Carousel --show-arrow root class', 'n-carousel n-carousel--show-arrow n-carousel--bottom n-carousel--horizontal n-carousel--slide', carRoot('live-carousel-arrow').getAttribute('class'))
+dEq('DOM: Carousel arrow-group present', 'n-carousel__arrow-group', nClassesStr(doc.querySelector('#live-carousel-arrow .n-carousel__arrow-group')))
+dEq('DOM: Carousel 2 arrows', 2, carArrowEls('live-carousel-arrow').length)
+dEq('DOM: Carousel arrows role=button', 'button,button', carArrowEls('live-carousel-arrow').map((a) => a.getAttribute('role')).join(','))
+dEq('DOM: Carousel backward arrow d byte-verbatim', 'M10.26 3.2a.75.75 0 0 1 .04 1.06L6.773 8l3.527 3.74a.75.75 0 1 1-1.1 1.02l-4-4.25a.75.75 0 0 1 0-1.02l4-4.25a.75.75 0 0 1 1.06-.04z', carArrowPath('live-carousel-arrow', 0))
+dEq('DOM: Carousel forward arrow d byte-verbatim', 'M5.74 3.2a.75.75 0 0 0-.04 1.06L9.227 8L5.7 11.74a.75.75 0 1 0 1.1 1.02l4-4.25a.75.75 0 0 0 0-1.02l-4-4.25a.75.75 0 0 0-1.06-.04z', carArrowPath('live-carousel-arrow', 1))
+dEq('DOM: Carousel loop=True → no arrow --disabled', 'n-carousel__arrow,n-carousel__arrow', carArrowEls('live-carousel-arrow').map((a) => nClassesStr(a)).join(','))
+
+// §D6 — loop=False at display 0
+dEq('DOM: Carousel loop=False arrow 0 --disabled', 'n-carousel__arrow n-carousel__arrow--disabled', nClassesStr(carArrowEls('live-carousel-no-loop')[0]))
+dEq('DOM: Carousel loop=False arrow 1 not disabled', 'n-carousel__arrow', nClassesStr(carArrowEls('live-carousel-no-loop')[1]))
+dEq('DOM: Carousel loop=False → 4 slides (no clones)', 4, carSlideEls('live-carousel-no-loop').length)
+dTrue('DOM: Carousel loop=False at 0 → no --prev slide', carSlideEls('live-carousel-no-loop').every((s) => !s.classList.contains('n-carousel__slide--prev')), carSlideEls('live-carousel-no-loop').map((s) => nClassesStr(s)).join('|'))
+
+// §D7 — slidesPerView 3 / spaceBetween
+dEq('DOM: Carousel spv3 slide style width 320px + margin-right 20px', 'width: 320px; margin-right: 20px', styleAt(carSlideEls('live-carousel-spv3')[0]))
+dEq('DOM: Carousel spv3 → 2 dots (totalView 2)', 2, carDotEls('live-carousel-spv3').length)
+dEq('DOM: Carousel spaceBetween 25 → first slide margin-right: 25px (spec #13)', 'margin-right: 25px', styleAt(carSlideEls('live-carousel-space25')[0]))
+
+// §D8 — fade (mount gate)
+dEq('DOM: Carousel --fade root class', 'n-carousel n-carousel--bottom n-carousel--horizontal n-carousel--fade', carRoot('live-carousel-fade').getAttribute('class'))
+dTrue('DOM: Carousel fade mounted=False → NO transition-duration on slide', !((styleAt(carSlideEls('live-carousel-fade')[0]) || '').includes('transition-duration')), styleAt(carSlideEls('live-carousel-fade')[0]))
+dTrue('DOM: Carousel fade mounted=True → slide transition-duration: 300ms', (styleAt(carSlideEls('live-carousel-fade-mounted')[0]) || '').includes('transition-duration: 300ms'), styleAt(carSlideEls('live-carousel-fade-mounted')[0]))
+dEq('DOM: Carousel fade slide role/attrs (option, tabindex -1, data-index 0)', 'option,-1,0', [carSlideEls('live-carousel-fade')[0].getAttribute('role'), carSlideEls('live-carousel-fade')[0].getAttribute('tabindex'), carSlideEls('live-carousel-fade')[0].getAttribute('data-index')].join(','))
+
+// §D9 — card prevSlideStyle/nextSlideStyle appended
+dEq('DOM: Carousel --card root class', 'n-carousel n-carousel--bottom n-carousel--horizontal n-carousel--card', carRoot('live-carousel-card').getAttribute('class'))
+dTrue('DOM: Carousel card prevSlideStyle appended on --prev', (styleAt(carSlideClassOf('live-carousel-card', 'n-carousel__slide--prev')) || '').includes('transform: translateX(-150%) translateZ(-800px);'), styleAt(carSlideClassOf('live-carousel-card', 'n-carousel__slide--prev')))
+dTrue('DOM: Carousel card nextSlideStyle appended on --next', (styleAt(carSlideClassOf('live-carousel-card', 'n-carousel__slide--next')) || '').includes('transform: translateX(50%) translateZ(-800px);'), styleAt(carSlideClassOf('live-carousel-card', 'n-carousel__slide--next')))
+
+// §D10 — custom (--usercontrol) classless wrappers
+dEq('DOM: Carousel --custom + --usercontrol root class', 'n-carousel n-carousel--bottom n-carousel--horizontal n-carousel--custom n-carousel--usercontrol', carRoot('live-carousel-custom').getAttribute('class'))
+dTrue('DOM: Carousel custom wrappers are classless plain divs', [...carSlides('live-carousel-custom').children].length === 4 && [...carSlides('live-carousel-custom').children].every((c) => c.getAttribute('class') === null), [...carSlides('live-carousel-custom').children].map((c) => c.getAttribute('class') === null).join(','))
+dEq('DOM: Carousel custom active wrapper no style, inactive display:none', '|display: none|display: none|display: none', [...carSlides('live-carousel-custom').children].map((c) => c.getAttribute('style') || '').join('|'))
+
+// §D11 — showDots=False / single slide
+dTrue('DOM: Carousel showDots=false → no __dots', !carDots('live-carousel-nodots'), 'nodots')
+dTrue('DOM: Carousel single slide (displayTotalView 1) → no __dots', !carDots('live-carousel-once'), 'once')
+
+// §D12 — cssVars (8 --n-* in cssVarsRef order)
+dEq('DOM: Carousel root 8 --n-* vars in cssVarsRef order', '--n-bezier|--n-dot-color|--n-dot-color-focus|--n-dot-color-active|--n-dot-size|--n-dot-line-width|--n-dot-line-width-active|--n-arrow-color', varOrder(carRoot('live-carousel')))
+dEq('DOM: Carousel root exactly 8 --n-* vars', 8, countVars(carRoot('live-carousel')))
+dTrue('DOM: Carousel root style is renderVars form + --n-dot-size:8px default', !/;\s/.test(styleAt(carRoot('live-carousel')) || '') && !(styleAt(carRoot('live-carousel')) || '').endsWith(';') && (styleAt(carRoot('live-carousel')) || '').includes('--n-dot-size:8px'), styleAt(carRoot('live-carousel')))
+
+// §D13 — trigger=hover still renders dots
+dEq('DOM: Carousel trigger=hover still renders dots', 4, carDotEls('live-carousel-hover').length)
+
+// §D14 — defaultIndex 2 (INTENDED semantics per §A6)
+dEq('DOM: Carousel defaultIndex 2 → current slide data-index 3', '3', carCurrentDataIndex('live-carousel-default-index'))
+dEq('DOM: Carousel defaultIndex 2 → dot[2] active', 'n-carousel__dot n-carousel__dot--active', nClassesStr(carDotEls('live-carousel-default-index')[2]))
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)

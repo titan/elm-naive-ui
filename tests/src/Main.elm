@@ -31,6 +31,7 @@ import NUI.Button as Button
 import NUI.ButtonGroup as ButtonGroup
 import NUI.Calendar as Calendar
 import NUI.Card as Card
+import NUI.Carousel as Carousel
 import NUI.Cascader as Cascader
 import NUI.Checkbox as Checkbox
 import NUI.Collapse as Collapse
@@ -1423,6 +1424,204 @@ uploadDarkVars =
     , ( "--n-item-border-image-card-error", "1px solid #e88080" )
     , ( "--n-item-border-image-card", "1px solid rgba(255, 255, 255, 0.24)" )
     ]
+
+
+
+-- CAROUSEL FIXTURES — pin derivation: carousel/src/Carousel.tsx (props :73-146,
+-- state machinery :156-894, render :1000-1063) + CarouselItem/CarouselDots/
+-- CarouselArrow.tsx + utils/duplicatedLogic.ts + utils/index.ts +
+-- styles/index.cssr.ts. Expectations: tasks/recon/carousel-pins.md (derived from
+-- those bytes BEFORE the port existed). eq surface = NUI.Carousel.* only.
+-- =====================================================================
+
+
+carouselDefault : Carousel.Options Msg
+carouselDefault =
+    Carousel.defaults
+
+
+{-| The A-fixture measured container (upstream `calculateSize(innerOnly=true)`).
+-}
+carouselPerView : Carousel.Size
+carouselPerView =
+    { width = 1000, height = 400 }
+
+
+{-| The measured A-fixture state for `n` slides under `opts` (perView {1000,400}).
+-}
+carouselBoot : Carousel.Options Msg -> Int -> Carousel.State
+carouselBoot opts n =
+    Carousel.resize opts carouselPerView (Carousel.init opts n)
+
+
+{-| A1 — 4 slides, loop, spv 1, measured {1000,400}. `init`+`resize` leaves the
+post-measure translate (inTransition True, previousTranslate 1000).
+-}
+carouselA1 : Carousel.State
+carouselA1 =
+    carouselBoot carouselDefault 4
+
+
+{-| A1 after the initial `transitionend` (post-measure settle): inTransition
+False, previousTranslate 1000. The prev()/next()/to()/dragEnd pins start here.
+-}
+carouselA1Settled : Carousel.State
+carouselA1Settled =
+    Carousel.transitionEnd carouselDefault carouselA1
+
+
+{-| A2 step 4 — prev() at display 0 (the loop-jump pipeline result).
+-}
+carouselPrev : Carousel.State
+carouselPrev =
+    Carousel.prev carouselDefault carouselA1Settled
+
+
+{-| A2 step 5 — the loop-jump instant snap after `transitionend`.
+-}
+carouselPrevEnd : Carousel.State
+carouselPrevEnd =
+    Carousel.transitionEnd carouselDefault carouselPrev
+
+
+{-| A2 append-case mirror — next() from real 4.
+-}
+carouselNext : Carousel.State
+carouselNext =
+    Carousel.next carouselDefault carouselPrev
+
+
+{-| A2 append-case snap after `transitionend`.
+-}
+carouselNextEnd : Carousel.State
+carouselNextEnd =
+    Carousel.transitionEnd carouselDefault carouselNext
+
+
+{-| A2 edge — dots `to(0)` from display 3 (no expectedDirection ⇒ no shortcut).
+-}
+carouselTo0 : Carousel.State
+carouselTo0 =
+    Carousel.to carouselDefault carouselPrev 0
+
+
+{-| Drive a drag: touchstart at x=0 then move to `offset` along the x axis.
+-}
+carouselDrag : Carousel.Options Msg -> Carousel.State -> Float -> Carousel.State
+carouselDrag opts st offset =
+    Carousel.dragMove opts (Carousel.dragStart opts st { x = 0, y = 0, time = 0 }) { x = offset, y = 0 }
+
+
+{-| A5(a) — drag 600px, settle scan lands on the prepended clone (display 3).
+-}
+carouselDragSettle : Carousel.State
+carouselDragSettle =
+    Carousel.dragEnd carouselDefault (carouselDrag carouselDefault carouselA1Settled 600) 400
+
+
+{-| A5(b) — drag 200px, slow release (200/1000ms = 0.2), snap back to display 0.
+-}
+carouselDragSlow : Carousel.State
+carouselDragSlow =
+    Carousel.dragEnd carouselDefault (carouselDrag carouselDefault carouselA1Settled 200) 1000
+
+
+{-| A5(c) — drag 200px, fast flick right (0.5 > 0.4) ⇒ prev() loop-jump.
+-}
+carouselDragFlickPrev : Carousel.State
+carouselDragFlickPrev =
+    Carousel.dragEnd carouselDefault (carouselDrag carouselDefault carouselA1Settled 200) 400
+
+
+{-| A5(d) — drag -200px, fast flick left (-0.5 < -0.4) ⇒ next() to display 1.
+-}
+carouselDragFlickNext : Carousel.State
+carouselDragFlickNext =
+    Carousel.dragEnd carouselDefault (carouselDrag carouselDefault carouselA1Settled -200) 400
+
+
+{-| A3 — spv 3, spaceBetween 20, loop False, 4 slides, perView 1000.
+-}
+carouselA3Opts : Carousel.Options Msg
+carouselA3Opts =
+    { carouselDefault | slidesPerView = Carousel.PerView 3, spaceBetween = 20, loop = False }
+
+
+carouselA3 : Carousel.State
+carouselA3 =
+    carouselBoot carouselA3Opts 4
+
+
+{-| A4 — centeredSlides + spv auto, measured per-slide sizes, perView 1000.
+-}
+carouselA4Opts : Carousel.Options Msg
+carouselA4Opts =
+    { carouselDefault | centeredSlides = True, slidesPerView = Carousel.PerViewAuto }
+
+
+carouselAutoSizes : List Carousel.Size
+carouselAutoSizes =
+    [ { width = 600, height = 0 }
+    , { width = 200, height = 0 }
+    , { width = 1000, height = 0 }
+    , { width = 400, height = 0 }
+    ]
+
+
+carouselA4 : Carousel.State
+carouselA4 =
+    Carousel.resize carouselA4Opts carouselPerView (Carousel.setSlideSizes carouselA4Opts carouselAutoSizes (Carousel.init carouselA4Opts 4))
+
+
+{-| Vertical A1 (direction=vertical) — feeds the vertical wheel / dot-key pins.
+-}
+carouselVertOpts : Carousel.Options Msg
+carouselVertOpts =
+    { carouselDefault | direction = Carousel.Vertical }
+
+
+carouselVert : Carousel.State
+carouselVert =
+    Carousel.transitionEnd carouselVertOpts (carouselBoot carouselVertOpts 4)
+
+
+{-| Keyboard-enabled opt sets (`dotKeyAction` gates on `keyboard`).
+-}
+carouselKbOpts : Carousel.Options Msg
+carouselKbOpts =
+    { carouselDefault | keyboard = True }
+
+
+carouselVertKbOpts : Carousel.Options Msg
+carouselVertKbOpts =
+    { carouselVertOpts | keyboard = True }
+
+
+{-| A `KeyInfo` (`Enter`/`Space` are view-channel; the matrix keys are pinned).
+-}
+carKey : String -> Bool -> Carousel.KeyInfo
+carKey code shift =
+    { code = code, shiftKey = shift, altKey = False, ctrlKey = False, metaKey = False }
+
+
+{-| The 4 `Html` slides the live views / snapshots feed the carousel.
+-}
+carouselSlides : List (Html.Html Msg)
+carouselSlides =
+    List.map (\n -> Html.div [] [ Html.text (String.fromInt n) ]) (List.range 1 4)
+
+
+{-| `duplicateWrap []` with a concrete element type (the empty case is otherwise
+ambiguous).
+-}
+carDupEmpty : List Int
+carDupEmpty =
+    Carousel.duplicateWrap []
+
+
+carDupEmptyExpected : List Int
+carDupEmptyExpected =
+    []
 
 
 
@@ -12586,6 +12785,157 @@ checks =
            , eq "up buttonKindOf Finished -> Nothing" Nothing (Upload.buttonKindOf Upload.Finished)
            , eq "up buttonKindOf Removed -> Nothing" Nothing (Upload.buttonKindOf Upload.Removed)
            , eq "up buttonKindOf Error -> Just Error" (Just T.Error) (Upload.buttonKindOf Upload.Error)
+
+           -- CAROUSEL — pins derived from carousel/src/Carousel.tsx (state
+           -- machinery :156-894, render :1000-1063) + utils/duplicatedLogic.ts +
+           -- utils/index.ts. Expectations: tasks/recon/carousel-pins.md (from
+           -- those bytes BEFORE the port). eq surface = NUI.Carousel.* only.
+           -- =====================================================================
+           -- §E1 resolveSpeed (utils/index.ts:26-37)
+           , eq "car resolveSpeed 300ms → 300" 300 (Carousel.resolveSpeed (Just "300ms"))
+           , eq "car resolveSpeed .5s → 500 (leading-dot Number)" 500 (Carousel.resolveSpeed (Just ".5s"))
+           , eq "car resolveSpeed 2s → 2000" 2000 (Carousel.resolveSpeed (Just "2s"))
+           , eq "car resolveSpeed 10 → 10 (default unit ms)" 10 (Carousel.resolveSpeed (Just "10"))
+           , eq "car resolveSpeed 1.5s → 1500" 1500 (Carousel.resolveSpeed (Just "1.5s"))
+           , eq "car resolveSpeed 0.4s → 400" 400 (Carousel.resolveSpeed (Just "0.4s"))
+           , eq "car resolveSpeed 1. → 0 (no trailing digit)" 0 (Carousel.resolveSpeed (Just "1."))
+           , eq "car resolveSpeed ms → 0" 0 (Carousel.resolveSpeed (Just "ms"))
+           , eq "car resolveSpeed abc → 0" 0 (Carousel.resolveSpeed (Just "abc"))
+           , eq "car resolveSpeed \"\" → 0" 0 (Carousel.resolveSpeed (Just ""))
+           , eq "car resolveSpeed Nothing → 0" 0 (Carousel.resolveSpeed Nothing)
+
+           -- §E2 clampValue
+           , eq "car clampValue (5,0,3) → 3" 3 (Carousel.clampValue 5 0 3)
+           , eq "car clampValue (-1,0,3) → 0" 0 (Carousel.clampValue -1 0 3)
+           , eq "car clampValue (2,0,3) → 2" 2 (Carousel.clampValue 2 0 3)
+           , eq "car clampValue (7,0,10) → 7" 7 (Carousel.clampValue 7 0 10)
+
+           -- §E3-8 index algebra (duplicatedLogic.ts)
+           , eq "car getDisplayIndex (0,6,T) → 3" 3 (Carousel.getDisplayIndex 0 6 True)
+           , eq "car getDisplayIndex (5,6,T) → 0" 0 (Carousel.getDisplayIndex 5 6 True)
+           , eq "car getDisplayIndex (2,6,T) → 1" 1 (Carousel.getDisplayIndex 2 6 True)
+           , eq "car getDisplayIndex (2,6,F) → 2" 2 (Carousel.getDisplayIndex 2 6 False)
+           , eq "car getDisplayIndex (0,1,T) → 0" 0 (Carousel.getDisplayIndex 0 1 True)
+           , eq "car getDisplayIndex (0,1,F) → 0" 0 (Carousel.getDisplayIndex 0 1 False)
+           , eq "car getRealIndex (0,T) → 1" 1 (Carousel.getRealIndex 0 True)
+           , eq "car getRealIndex (3,T) → 4" 4 (Carousel.getRealIndex 3 True)
+           , eq "car getRealIndex (3,F) → 3" 3 (Carousel.getRealIndex 3 False)
+           , eq "car getPrevIndex (0,6,T) → Just 5" (Just 5) (Carousel.getPrevIndex 0 6 True)
+           , eq "car getPrevIndex (0,6,F) → Nothing" Nothing (Carousel.getPrevIndex 0 6 False)
+           , eq "car getPrevIndex (0,4,F) → Nothing" Nothing (Carousel.getPrevIndex 0 4 False)
+           , eq "car getPrevIndex (3,6,T) → Just 2" (Just 2) (Carousel.getPrevIndex 3 6 True)
+           , eq "car getPrevIndex (-1,6,T) → Nothing" Nothing (Carousel.getPrevIndex -1 6 True)
+           , eq "car getNextIndex (5,6,T) → Just 0" (Just 0) (Carousel.getNextIndex 5 6 True)
+           , eq "car getNextIndex (5,6,F) → Nothing" Nothing (Carousel.getNextIndex 5 6 False)
+           , eq "car getNextIndex (3,4,F) → Nothing (>len-1)" Nothing (Carousel.getNextIndex 3 4 False)
+           , eq "car getNextIndex (2,6,T) → Just 3" (Just 3) (Carousel.getNextIndex 2 6 True)
+           , eq "car getDisplayTotalView (6,T) → 4" 4 (Carousel.getDisplayTotalView 6 True)
+           , eq "car getDisplayTotalView (4,T) → 2" 2 (Carousel.getDisplayTotalView 4 True)
+           , eq "car getDisplayTotalView (3,T) → 3" 3 (Carousel.getDisplayTotalView 3 True)
+           , eq "car getDisplayTotalView (6,F) → 6" 6 (Carousel.getDisplayTotalView 6 False)
+           , eq "car duplicateWrap [a,b,c] → [c,a,b,c,a]" [ 3, 1, 2, 3, 1 ] (Carousel.duplicateWrap [ 1, 2, 3 ])
+           , eq "car duplicateWrap [x] → [x]" [ 1 ] (Carousel.duplicateWrap [ 1 ])
+           , eq "car duplicateWrap [] → []" carDupEmptyExpected carDupEmpty
+
+           -- §E9 envOf A1 (4 slides, loop, spv 1, perView 1000)
+           , eq "car envOf A1 translates" [ 0, 1000, 2000, 3000, 4000, 5000 ] (Carousel.envOf carouselDefault carouselA1 4).translates
+           , eq "car envOf A1 totalView" 6 (Carousel.envOf carouselDefault carouselA1 4).totalView
+           , eq "car envOf A1 displayTotalView" 4 (Carousel.envOf carouselDefault carouselA1 4).displayTotalView
+           , eq "car envOf A1 realIndex (1 == clone seed)" 1 (Carousel.envOf carouselDefault carouselA1 4).realIndex
+           , eq "car envOf A1 speed (resolveSpeed 300ms)" 300 (Carousel.envOf carouselDefault carouselA1 4).speed
+           , eq "car envOf A1 autoplayEnabled False" False (Carousel.envOf carouselDefault carouselA1 4).autoplayEnabled
+
+           -- §E10 envOf A3 (spv 3, space 20, loop False, 4 slides)
+           , eq "car envOf A3 slideSizes 320 each"
+                [ { width = 320, height = 400 }, { width = 320, height = 400 }, { width = 320, height = 400 }, { width = 320, height = 400 } ]
+                (Carousel.envOf carouselA3Opts carouselA3 4).slideSizes
+           , eq "car envOf A3 translates" [ 0, 340, 680, 1020 ] (Carousel.envOf carouselA3Opts carouselA3 4).translates
+           , eq "car envOf A3 totalView" 2 (Carousel.envOf carouselA3Opts carouselA3 4).totalView
+           , eq "car A3 slideInfo 0 = active only (no --prev)"
+                (Just { isPrev = False, isNext = False, isActive = True, index = 0 })
+                (Carousel.slideInfo carouselA3Opts carouselA3 0)
+           , eq "car A3 slideInfo 1 = --next"
+                (Just { isPrev = False, isNext = True, isActive = False, index = 1 })
+                (Carousel.slideInfo carouselA3Opts carouselA3 1)
+
+           -- §E11 envOf A4 (centered + auto)
+           , eq "car envOf A4 translates (centered offsets)" [ -200, 200, 800, 1500 ] (Carousel.envOf carouselA4Opts carouselA4 4).translates
+           , eq "car envOf A4 totalView (displaySpv forced to 1)" 4 (Carousel.envOf carouselA4Opts carouselA4 4).totalView
+           , eq "car getLastViewTranslate A4 = 1500 (numeric branch; CORRECTED §A4)" 1500 (Carousel.getLastViewTranslate (Carousel.envOf carouselA4Opts carouselA4 4))
+
+           -- §E12 prev() loop-jump pipeline (§A2 steps 1-5)
+           , eq "car prev A2 (displayIndex, inTransition)"
+                ( 3, True )
+                ( carouselPrev.displayIndex, carouselPrev.inTransition )
+           , eq "car prev A2 (expectedDirection, previousTranslate)"
+                ( 0, 4000 )
+                ( carouselPrev.expectedDirection, carouselPrev.previousTranslate )
+           , eq "car prev transitionEnd snap (displayIndex, inTransition)"
+                ( 3, False )
+                ( carouselPrevEnd.displayIndex, carouselPrevEnd.inTransition )
+           , eq "car prev transitionEnd snap (translate, translateSpeed)"
+                ( 4000, 0 )
+                ( carouselPrevEnd.translate, carouselPrevEnd.translateSpeed )
+
+           -- §E13 next() append-case mirror (§A2)
+           , eq "car next append (displayIndex, previousTranslate, translate=appended clone)"
+                ( 0, 1000, 5000 )
+                ( carouselNext.displayIndex, carouselNext.previousTranslate, carouselNext.translate )
+           , eq "car next transitionEnd snap (translate 1000, inTransition False)"
+                ( 1000, False )
+                ( carouselNextEnd.translate, carouselNextEnd.inTransition )
+
+           -- §E14 dots to(0) from display 3 (no expectedDirection ⇒ long animate)
+           , eq "car to(0) from display 3 → translateTo(1,300) (displayIndex, translate, previousTranslate)"
+                ( 0, 1000, 1000 )
+                ( carouselTo0.displayIndex, carouselTo0.translate, carouselTo0.previousTranslate )
+
+           -- §E15 dragEnd branches (§A5)
+           , eq "car dragEnd settle-to-0 (displayIndex, inTransition)"
+                ( 3, True )
+                ( carouselDragSettle.displayIndex, carouselDragSettle.inTransition )
+           , eq "car dragEnd settle-to-0 (isEffectiveDrag, previousTranslate)"
+                ( True, 4000 )
+                ( carouselDragSettle.isEffectiveDrag, carouselDragSettle.previousTranslate )
+           , eq "car dragEnd same-index slow (displayIndex 0, translate 1000, isEffectiveDrag False)"
+                ( 0, 1000, False )
+                ( carouselDragSlow.displayIndex, carouselDragSlow.translate, carouselDragSlow.isEffectiveDrag )
+           , eq "car dragEnd flick right → prev (displayIndex 3, previousTranslate 4000, inTransition True)"
+                ( 3, 4000, True )
+                ( carouselDragFlickPrev.displayIndex, carouselDragFlickPrev.previousTranslate, carouselDragFlickPrev.inTransition )
+           , eq "car dragEnd flick left → next (displayIndex 1)" 1 carouselDragFlickNext.displayIndex
+
+           -- §E16 dragMove clamp
+           , eq "car dragMove offset 1500 → clamped 1000" 1000 (carouselDrag carouselDefault carouselA1Settled 1500).dragOffset
+           , eq "car dragMove offset -1500 → clamped -1000" -1000 (carouselDrag carouselDefault carouselA1Settled -1500).dragOffset
+
+           -- §E17 wheel matrix
+           , eq "car wheel horizontal dx 15 → next (displayIndex 1)" 1 (Carousel.wheel carouselDefault carouselA1Settled { deltaX = 15, deltaY = 0, shiftKey = False }).displayIndex
+           , eq "car wheel horizontal dx -15 → prev (displayIndex 3)" 3 (Carousel.wheel carouselDefault carouselA1Settled { deltaX = -15, deltaY = 0, shiftKey = False }).displayIndex
+           , eq "car wheel dy 20 (rx*dx=0 < 10) → no-op (displayIndex 0)" 0 (Carousel.wheel carouselDefault carouselA1Settled { deltaX = 0, deltaY = 20, shiftKey = False }).displayIndex
+           , eq "car wheel vertical dy 12 → next (displayIndex 1)" 1 (Carousel.wheel carouselVertOpts carouselVert { deltaX = 0, deltaY = 12, shiftKey = False }).displayIndex
+           , eq "car wheel shift + dy 12 → next (deltaX fallback, displayIndex 1)" 1 (Carousel.wheel carouselDefault carouselA1Settled { deltaX = 0, deltaY = 12, shiftKey = True }).displayIndex
+           , eq "car wheel responseStep dx 9 → no-op (displayIndex 0)" 0 (Carousel.wheel carouselDefault carouselA1Settled { deltaX = 9, deltaY = 0, shiftKey = False }).displayIndex
+           , eq "car wheel inTransition → no-op (displayIndex 0)" 0 (Carousel.wheel carouselDefault carouselA1 { deltaX = 15, deltaY = 0, shiftKey = False }).displayIndex
+
+           -- §E18 dotKeyAction matrix
+           , eq "car dotKey horizontal ArrowRight → ToNext" (Just Carousel.ToNext) (Carousel.dotKeyAction carouselKbOpts (Carousel.envOf carouselKbOpts carouselA1Settled 4) (carKey "ArrowRight" False))
+           , eq "car dotKey horizontal PageUp → ToNext" (Just Carousel.ToNext) (Carousel.dotKeyAction carouselKbOpts (Carousel.envOf carouselKbOpts carouselA1Settled 4) (carKey "PageUp" False))
+           , eq "car dotKey horizontal ArrowLeft → ToPrev" (Just Carousel.ToPrev) (Carousel.dotKeyAction carouselKbOpts (Carousel.envOf carouselKbOpts carouselA1Settled 4) (carKey "ArrowLeft" False))
+           , eq "car dotKey horizontal PageDown → ToPrev" (Just Carousel.ToPrev) (Carousel.dotKeyAction carouselKbOpts (Carousel.envOf carouselKbOpts carouselA1Settled 4) (carKey "PageDown" False))
+           , eq "car dotKey vertical ArrowUp → ToNext" (Just Carousel.ToNext) (Carousel.dotKeyAction carouselVertKbOpts (Carousel.envOf carouselVertKbOpts carouselVert 4) (carKey "ArrowUp" False))
+           , eq "car dotKey vertical ArrowDown → ToPrev" (Just Carousel.ToPrev) (Carousel.dotKeyAction carouselVertKbOpts (Carousel.envOf carouselVertKbOpts carouselVert 4) (carKey "ArrowDown" False))
+           , eq "car dotKey shift+ArrowRight → None (modifier guard)" (Just Carousel.None) (Carousel.dotKeyAction carouselKbOpts (Carousel.envOf carouselKbOpts carouselA1Settled 4) (carKey "ArrowRight" True))
+           , eq "car dotKey keyboard=False → Nothing" Nothing (Carousel.dotKeyAction carouselDefault (Carousel.envOf carouselDefault carouselA1Settled 4) (carKey "ArrowRight" False))
+
+           -- §E19 indexChange
+           , eq "car indexChange 0→1 → Just (1,0)" (Just ( 1, 0 )) (Carousel.indexChange { carouselA1Settled | displayIndex = 0 } { carouselA1Settled | displayIndex = 1 })
+           , eq "car indexChange 1→1 → Nothing" Nothing (Carousel.indexChange { carouselA1Settled | displayIndex = 1 } { carouselA1Settled | displayIndex = 1 })
+
+           -- §E20 autoplayEnabled
+           , eq "car autoplayEnabled (True, dtv 4) → True" True (Carousel.autoplayEnabled True 4)
+           , eq "car autoplayEnabled (True, dtv 1) → False" False (Carousel.autoplayEnabled True 1)
+           , eq "car autoplayEnabled (False, dtv 5) → False" False (Carousel.autoplayEnabled False 5)
            ]
 
 
@@ -15274,6 +15624,54 @@ liveNodes =
                     )
                 , Element.el [ Element.htmlAttribute (HA.id "live-upload-abstract-list") ]
                     (Upload.viewFileList Theme.default { uploadLiveOpts | abstract = True, fileList = uploadFiles })
+                , Element.el [ Element.htmlAttribute (HA.id "live-carousel") ]
+                    (Carousel.view Theme.default carouselDefault carouselA1 carouselSlides)
+                , Element.el [ Element.htmlAttribute (HA.id "live-carousel-vertical") ]
+                    (Carousel.view Theme.default carouselVertOpts carouselVert carouselSlides)
+                , Element.el [ Element.htmlAttribute (HA.id "live-carousel-left") ]
+                    (Carousel.view Theme.default { carouselDefault | dotPlacement = Carousel.DotsLeft } (carouselBoot { carouselDefault | dotPlacement = Carousel.DotsLeft } 4) carouselSlides)
+                , Element.el [ Element.htmlAttribute (HA.id "live-carousel-right") ]
+                    (Carousel.view Theme.default { carouselDefault | dotPlacement = Carousel.DotsRight } (carouselBoot { carouselDefault | dotPlacement = Carousel.DotsRight } 4) carouselSlides)
+                , Element.el [ Element.htmlAttribute (HA.id "live-carousel-top") ]
+                    (Carousel.view Theme.default { carouselDefault | dotPlacement = Carousel.DotsTop } (carouselBoot { carouselDefault | dotPlacement = Carousel.DotsTop } 4) carouselSlides)
+                , Element.el [ Element.htmlAttribute (HA.id "live-carousel-line") ]
+                    (Carousel.view Theme.default { carouselDefault | dotType = Carousel.Line } (carouselBoot { carouselDefault | dotType = Carousel.Line } 4) carouselSlides)
+                , Element.el [ Element.htmlAttribute (HA.id "live-carousel-arrow") ]
+                    (Carousel.view Theme.default { carouselDefault | showArrow = True } (carouselBoot { carouselDefault | showArrow = True } 4) carouselSlides)
+                , Element.el [ Element.htmlAttribute (HA.id "live-carousel-no-loop") ]
+                    (Carousel.view Theme.default { carouselDefault | showArrow = True, loop = False } (carouselBoot { carouselDefault | showArrow = True, loop = False } 4) carouselSlides)
+                , Element.el [ Element.htmlAttribute (HA.id "live-carousel-spv3") ]
+                    (Carousel.view Theme.default carouselA3Opts carouselA3 carouselSlides)
+                , Element.el [ Element.htmlAttribute (HA.id "live-carousel-space25") ]
+                    (Carousel.view Theme.default { carouselDefault | spaceBetween = 25 } (carouselBoot { carouselDefault | spaceBetween = 25 } 4) carouselSlides)
+                , Element.el [ Element.htmlAttribute (HA.id "live-carousel-fade") ]
+                    (Carousel.view Theme.default { carouselDefault | effect = Carousel.FadeEffect } (carouselBoot { carouselDefault | effect = Carousel.FadeEffect } 4) carouselSlides)
+                , Element.el [ Element.htmlAttribute (HA.id "live-carousel-fade-mounted") ]
+                    (Carousel.view Theme.default
+                        { carouselDefault | effect = Carousel.FadeEffect }
+                        (Carousel.markMounted (carouselBoot { carouselDefault | effect = Carousel.FadeEffect } 4))
+                        carouselSlides
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-carousel-card") ]
+                    (Carousel.view Theme.default
+                        { carouselDefault
+                            | effect = Carousel.CardEffect
+                            , prevSlideStyle = Just "transform: translateX(-150%) translateZ(-800px);"
+                            , nextSlideStyle = Just "transform: translateX(50%) translateZ(-800px);"
+                        }
+                        (carouselBoot { carouselDefault | effect = Carousel.CardEffect } 4)
+                        carouselSlides
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-carousel-custom") ]
+                    (Carousel.view Theme.default { carouselDefault | effect = Carousel.CustomEffect } (carouselBoot { carouselDefault | effect = Carousel.CustomEffect } 4) carouselSlides)
+                , Element.el [ Element.htmlAttribute (HA.id "live-carousel-nodots") ]
+                    (Carousel.view Theme.default { carouselDefault | showDots = False } (carouselBoot { carouselDefault | showDots = False } 4) carouselSlides)
+                , Element.el [ Element.htmlAttribute (HA.id "live-carousel-once") ]
+                    (Carousel.view Theme.default { carouselDefault | loop = False } (carouselBoot { carouselDefault | loop = False } 1) carouselSlides)
+                , Element.el [ Element.htmlAttribute (HA.id "live-carousel-hover") ]
+                    (Carousel.view Theme.default { carouselDefault | trigger = Carousel.HoverTrigger } (carouselBoot { carouselDefault | trigger = Carousel.HoverTrigger } 4) carouselSlides)
+                , Element.el [ Element.htmlAttribute (HA.id "live-carousel-default-index") ]
+                    (Carousel.view Theme.default { carouselDefault | defaultIndex = 2 } (carouselBoot { carouselDefault | defaultIndex = 2 } 4) carouselSlides)
                 ]
             )
         ]
