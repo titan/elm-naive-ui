@@ -11806,6 +11806,10 @@ dEq('DOM: RawHtml entity textContent', 'a & b < c', doc.querySelector('#live-cod
 const cfEqSvg = doc.querySelector('#live-equation-svg .katex svg')
 dTrue('DOM: RawHtml svg passthrough exists (.katex svg)', !!cfEqSvg, 'svg')
 dEq('DOM: RawHtml svg viewBox attr', '0 0 10 10', cfEqSvg ? cfEqSvg.getAttribute('viewBox') : null)
+svgNsPin(
+  'DOM: RawHtml synthetic svg is SVG-namespace (createElementNS, renders in real browsers)',
+  '#live-equation-svg .katex svg'
+)
 
 // §D27 — Code PLAIN-with-markup stays TEXT (textContent path, not innerHTML)
 const cfMarkupPre = doc.querySelector('#live-code-markup-plain .n-code pre.__code__')
@@ -11821,6 +11825,28 @@ dEq('DOM: Code internalNoHighlight has NO element children', 0, cfNoHlPre ? cfNo
 dEq('DOM: Log language-Nothing markup line stays TEXT', '<b>x</b>', cfLogPre('live-log-text-line') ? cfLogPre('live-log-text-line').textContent : null)
 dEq('DOM: Log language-Nothing line has NO b element', 0, cfLogPre('live-log-text-line') ? cfLogPre('live-log-text-line').children.length : -1)
 dTrue('DOM: Log language-set unknown-lang parses markup (real b element)', !!doc.querySelector('#live-log-parse-line .n-code > pre b'), 'b element')
+
+// §D29 — RawHtml foreign namespaces (§E23's DOM witnesses). The
+// #live-equation-stretchy fixture is byte-real katex@0.16.47 output for
+// `c = \pm\sqrt{a^2 + b^2}` — its \sqrt surd is a real <svg><path/></svg> and
+// its a11y copy is real MathML. Namespace-blind selectors can't see the
+// difference; namespaceURI through the live Elm runtime can.
+const MATHML_NS = 'http://www.w3.org/1998/Math/MathML'
+const stSvg = doc.querySelector('#live-equation-stretchy .katex-html svg')
+const stPath = doc.querySelector('#live-equation-stretchy .katex-html svg path')
+const stMath = doc.querySelector('#live-equation-stretchy .katex-mathml math')
+const stAnnotation = doc.querySelector('#live-equation-stretchy .katex-mathml annotation')
+svgNsPin(
+  'DOM: RawHtml katex stretchy svg is SVG-namespace',
+  '#live-equation-stretchy .katex-html svg'
+)
+dEq('DOM: RawHtml katex svg path is SVG-namespace', SVG_NS, stPath ? stPath.namespaceURI : null)
+dEq('DOM: RawHtml katex svg viewBox (byte-real)', '0 0 400000 1080', stSvg ? stSvg.getAttribute('viewBox') : null)
+dEq('DOM: RawHtml katex svg preserveAspectRatio', 'xMinYMin slice', stSvg ? stSvg.getAttribute('preserveAspectRatio') : null)
+dTrue('DOM: RawHtml katex svg path d starts M95,702 (byte-real surd)', !!stPath && (stPath.getAttribute('d') || '').startsWith('M95,702'))
+dEq('DOM: RawHtml katex mathml math is MathML-namespace', MATHML_NS, stMath ? stMath.namespaceURI : null)
+dEq('DOM: RawHtml katex annotation tex text', 'c = \\pm\\sqrt{a^2 + b^2}', stAnnotation ? stAnnotation.textContent : null)
+dEq('DOM: RawHtml ns scope exits — .katex-html is xhtml', 'http://www.w3.org/1999/xhtml', doc.querySelector('#live-equation-stretchy .katex-html') ? doc.querySelector('#live-equation-stretchy .katex-html').namespaceURI : null)
 
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]

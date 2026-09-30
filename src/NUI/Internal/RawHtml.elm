@@ -35,6 +35,23 @@ output shapes those two libraries emit and recovers from anything else.
     dropped.
 
 
+## Foreign namespaces
+
+An `<svg>`…`</svg>` or `<math>`…`</math>` subtree is emitted with elements in
+its TRUE namespace (`VirtualDom.nodeNS`, i.e. `createElementNS`) — the same
+DOM a browser produces when the string is assigned to `innerHTML`. That is
+what makes KaTeX's stretchy shapes render at all: the size3/size4 delimiters,
+tall `\sqrt` surds and `\overbrace`/`\underbrace` are
+`<svg xmlns=…><path d=…/></svg>` markup (an HTML-namespace `svg` element is an
+unknown element no browser draws), and the `katex-mathml` accessibility copy
+is real MathML. The switch is TAG-driven and inherited by the whole subtree
+(a nested `<path>`/`<mrow>` is foreign too); `</svg>`/`</math>` close it. The
+HTML parser's integration points (`<foreignObject>`/`<desc>`/`<title>` inside
+svg, `annotation-xml` inside math, which switch back to HTML) are NOT
+modelled — hljs and KaTeX never emit them, the same contract class as the
+recovery simplification below.
+
+
 ## Recovery
 
   - A close tag with no matching open element is skipped — only the INNERMOST
@@ -64,13 +81,14 @@ import Html exposing (Html)
 import Html.Attributes as HA
 import List
 import String
+import VirtualDom
 
 
 {-| Parse machine-generated HTML into real `Html` nodes.
 -}
 nodes : String -> List (Html msg)
 nodes source =
-    List.map render (Tuple.first (parse Nothing (String.toList source)))
+    List.map render (Tuple.first (parse Nothing Nothing (String.toList source)))
 
 
 
@@ -78,7 +96,7 @@ nodes source =
 
 
 type Node
-    = El String (List ( String, String )) (List Node)
+    = El (Maybe String) String (List ( String, String )) (List Node)
     | Tx String
 
 
@@ -88,8 +106,17 @@ render node =
         Tx text ->
             Html.text text
 
-        El tag attrs kids ->
-            Html.node tag (List.map attr attrs) (List.map render kids)
+        El ns tag attrs kids ->
+            let
+                element =
+                    case ns of
+                        Just namespace ->
+                            VirtualDom.nodeNS namespace tag
+
+                        Nothing ->
+                            Html.node tag
+            in
+            element (List.map attr attrs) (List.map render kids)
 
 
 attr : ( String, String ) -> Html.Attribute msg
@@ -102,24 +129,25 @@ attr ( key, value ) =
 
 
 {-| Read a run of sibling nodes; `end` (if any) is the tag name whose close ends
-the run. Returns the nodes and the input left after that close (or the end).
+the run, `ns` the foreign namespace in scope (`Nothing` = HTML). Returns the
+nodes and the input left after that close (or the end).
 -}
-parse : Maybe String -> List Char -> ( List Node, List Char )
-parse end chars =
-    parseHelp end chars []
+parse : Maybe String -> Maybe String -> List Char -> ( List Node, List Char )
+parse end ns chars =
+    parseHelp end ns chars []
 
 
-parseHelp : Maybe String -> List Char -> List Node -> ( List Node, List Char )
-parseHelp end chars acc =
+parseHelp : Maybe String -> Maybe String -> List Char -> List Node -> ( List Node, List Char )
+parseHelp end ns chars acc =
     case chars of
         [] ->
             ( List.reverse acc, [] )
 
         '<' :: '!' :: rest ->
-            parseHelp end (skipBang rest) acc
+            parseHelp end ns (skipBang rest) acc
 
         '<' :: '?' :: rest ->
-            parseHelp end (skipTo '>' rest) acc
+            parseHelp end ns (skipTo '>' rest) acc
 
         '<' :: '/' :: rest ->
             let
@@ -130,7 +158,7 @@ parseHelp end chars acc =
                 ( List.reverse acc, after )
 
             else
-                parseHelp end after acc
+                parseHelp end ns after acc
 
         '<' :: rest ->
             case rest of
@@ -138,12 +166,12 @@ parseHelp end chars acc =
                     if Char.isAlpha c then
                         let
                             ( node, after ) =
-                                parseEl rest
+                                parseEl ns rest
                         in
-                        parseHelp end after (node :: acc)
+                        parseHelp end ns after (node :: acc)
 
                     else
-                        parseHelp end rest (Tx "<" :: acc)
+                        parseHelp end ns rest (Tx "<" :: acc)
 
                 [] ->
                     ( List.reverse (Tx "<" :: acc), [] )
@@ -153,13 +181,14 @@ parseHelp end chars acc =
                 ( text, after ) =
                     parseText chars
             in
-            parseHelp end after (Tx text :: acc)
+            parseHelp end ns after (Tx text :: acc)
 
 
-{-| Parse one element; `chars` begins at its tag name (the `<` is consumed).
+{-| Parse one element; `chars` begins at its tag name (the `<` is consumed),
+`scope` the namespace in effect around it.
 -}
-parseEl : List Char -> ( Node, List Char )
-parseEl chars =
+parseEl : Maybe String -> List Char -> ( Node, List Char )
+parseEl scope chars =
     let
         ( rawName, afterName ) =
             span isNameChar chars
@@ -169,16 +198,54 @@ parseEl chars =
 
         ( attrs, closed, afterTag ) =
             parseTag afterName
+
+        ns =
+            openNs scope name
     in
     if closed || List.member name voidElements then
-        ( El name attrs [], afterTag )
+        ( El ns name attrs [], afterTag )
 
     else
         let
             ( kids, after ) =
-                parse (Just name) afterTag
+                parse (Just name) ns afterTag
         in
-        ( El name attrs kids, after )
+        ( El ns name attrs kids, after )
+
+
+{-| The namespace an element with this tag parses into, given the surrounding
+scope: `<svg>`/`<math>` OPEN a foreign scope (overriding any outer one, as a
+browser's foreign-content rules do); every other tag inherits the scope it
+sits in.
+-}
+openNs : Maybe String -> String -> Maybe String
+openNs scope tag =
+    case tag of
+        "svg" ->
+            Just svgNamespace
+
+        "math" ->
+            Just mathNamespace
+
+        _ ->
+            scope
+
+
+{-| `http://www.w3.org/2000/svg` — what a browser puts `<svg>`-subtree
+elements into on an innerHTML parse (KaTeX emits the namespace attribute
+itself; the ELEMENT namespace still comes from the tag rule).
+-}
+svgNamespace : String
+svgNamespace =
+    "http://www.w3.org/2000/svg"
+
+
+{-| `http://www.w3.org/1998/Math/MathML` — the `katex-mathml` accessibility
+copy is a real MathML `<math>` subtree.
+-}
+mathNamespace : String
+mathNamespace =
+    "http://www.w3.org/1998/Math/MathML"
 
 
 {-| Parse an open tag's attributes and terminator (`>` or `/>`).

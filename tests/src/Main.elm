@@ -141,6 +141,7 @@ import NUI.Upload as Upload
 import NUI.Watermark as Watermark
 import Time
 import Url
+import VirtualDom
 
 
 main : Program () Int Msg
@@ -1726,12 +1727,39 @@ katexSvg _ =
     "<span class=\"katex\"><svg viewBox=\"0 0 10 10\"></svg></span>"
 
 
+{-| Byte-real `katex@0.16.47` (naive-ui v2.45.3 pins `^0.16.28`; no lockfile
+upstream, latest-in-range is the ground truth) `renderToString
+"c = \pm\sqrt{a^2 + b^2}"` — carries BOTH foreign subtrees KaTeX emits: the
+MathML a11y copy (`<span class="katex-mathml">…<math xmlns=…>`) and the svg
+`\sqrt` surd (`<svg xmlns=… viewBox="0 0 400000 1080"
+preserveAspectRatio=…><path d="M95,702…"/></svg>`). One line, escaped verbatim
+from the node ground truth (newlines stay inside the `d` attribute).
+-}
+katexStretchy : String -> String
+katexStretchy _ =
+    "<span class=\"katex\"><span class=\"katex-mathml\"><math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><mrow><mi>c</mi><mo>=</mo><mo>±</mo><msqrt><mrow><msup><mi>a</mi><mn>2</mn></msup><mo>+</mo><msup><mi>b</mi><mn>2</mn></msup></mrow></msqrt></mrow><annotation encoding=\"application/x-tex\">c = \\pm\\sqrt{a^2 + b^2}</annotation></semantics></math></span><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">c</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1.04em;vertical-align:-0.1266em;\"></span><span class=\"mord\">±</span><span class=\"mord sqrt\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.9134em;\"><span class=\"svg-align\" style=\"top:-3em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\" style=\"padding-left:0.833em;\"><span class=\"mord\"><span class=\"mord mathnormal\">a</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.7401em;\"><span style=\"top:-2.989em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">2</span></span></span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">b</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.7401em;\"><span style=\"top:-2.989em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">2</span></span></span></span></span></span></span></span></span></span><span style=\"top:-2.8734em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"hide-tail\" style=\"min-width:0.853em;height:1.08em;\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"400em\" height=\"1.08em\" viewBox=\"0 0 400000 1080\" preserveAspectRatio=\"xMinYMin slice\"><path d=\"M95,702\nc-2.7,0,-7.17,-2.7,-13.5,-8c-5.8,-5.3,-9.5,-10,-9.5,-14\nc0,-2,0.3,-3.3,1,-4c1.3,-2.7,23.83,-20.7,67.5,-54\nc44.2,-33.3,65.8,-50.3,66.5,-51c1.3,-1.3,3,-2,5,-2c4.7,0,8.7,3.3,12,10\ns173,378,173,378c0.7,0,35.3,-71,104,-213c68.7,-142,137.5,-285,206.5,-429\nc69,-144,104.5,-217.7,106.5,-221\nl0 -0\nc5.3,-9.3,12,-14,20,-14\nH400000v40H845.2724\ns-225.272,467,-225.272,467s-235,486,-235,486c-2.7,4.7,-9,7,-19,7\nc-6,0,-10,-1,-12,-3s-194,-422,-194,-422s-65,47,-65,47z\nM834 80h400000v40h-400000z\"/></svg></span></span></span><span class=\"vlist-s\">\u{200B}</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1266em;\"><span></span></span></span></span></span></span></span></span>"
+
+
 {-| `RawHtml.nodes` at a concrete `Msg` (the pins compare the parsed tree for
 structural equality against `Html.node`/`Html.text` expectations).
 -}
 rawNodes : String -> List (Html.Html Msg)
 rawNodes =
     RawHtml.nodes
+
+
+{-| The two foreign namespaces a browser innerHTML parse yields for the same
+string — the `svg`/`math` subtree pins (§E21/§E23) build expectations with
+`VirtualDom.nodeNS` against them.
+-}
+svgNS : String
+svgNS =
+    "http://www.w3.org/2000/svg"
+
+
+mathNS : String
+mathNS =
+    "http://www.w3.org/1998/Math/MathML"
 
 
 {-| The `Equation.extract` triple, with the katex closure ignoring the value.
@@ -13252,12 +13280,32 @@ checks =
            -- §E21 RawHtml attrs (quote styles; SVG attrs)
            , eq "raw nodes single-quoted class == double-quoted" (rawNodes "<span class=\"a\">x</span>") (rawNodes "<span class='a'>x</span>")
            , eq "raw nodes unquoted class == double-quoted" (rawNodes "<span class=\"a\">x</span>") (rawNodes "<span class=a>x</span>")
-           , eq "raw nodes svg viewBox + stroke-width kept" [ Html.node "svg" [ HA.attribute "viewBox" "0 0 100 100", HA.attribute "stroke-width" "2" ] [] ] (rawNodes "<svg viewBox=\"0 0 100 100\" stroke-width=\"2\"></svg>")
+           , eq "raw nodes svg viewBox + stroke-width kept (svg-ns node)" [ VirtualDom.nodeNS svgNS "svg" [ HA.attribute "viewBox" "0 0 100 100", HA.attribute "stroke-width" "2" ] [] ] (rawNodes "<svg viewBox=\"0 0 100 100\" stroke-width=\"2\"></svg>")
 
            -- §E22 RawHtml case — tag lowercased; attr NAME keeps case (CORRECTED:
            -- the pins doc claimed the attr NAME lowercases, but §E21's viewBox
            -- requires case preservation — RawHtml's own contract keeps names)
            , eq "raw nodes <SPAN Class=a>x</SPAN> → span, Class kept" [ Html.node "span" [ HA.attribute "Class" "a" ] [ Html.text "x" ] ] (rawNodes "<SPAN Class=\"a\">x</SPAN>")
+
+           -- §E23 RawHtml foreign namespaces — <svg>/<math> subtrees are
+           -- created in their TRUE namespace (VirtualDom.nodeNS →
+           -- createElementNS), exactly what a browser does with the same
+           -- innerHTML string. Scope is TAG-driven, inherits down the subtree
+           -- and exits at </svg>/</math>. KaTeX ground truth: §D29's byte-real
+           -- fixture (svg path surd + mathml a11y copy); these are the
+           -- tree-level twins.
+           , eq "raw nodes svg subtree carries SVG ns (children inherit)"
+                [ VirtualDom.nodeNS svgNS "svg" [ HA.attribute "viewBox" "0 0 10 10" ] [ VirtualDom.nodeNS svgNS "path" [ HA.attribute "d" "M0 0" ] [] ] ]
+                (rawNodes "<svg viewBox=\"0 0 10 10\"><path d=\"M0 0\"/></svg>")
+           , eq "raw nodes nested g inherits svg ns"
+                [ VirtualDom.nodeNS svgNS "svg" [] [ VirtualDom.nodeNS svgNS "g" [] [ VirtualDom.nodeNS svgNS "path" [] [] ] ] ]
+                (rawNodes "<svg><g><path/></g></svg>")
+           , eq "raw nodes math subtree carries MathML ns (text stays text)"
+                [ VirtualDom.nodeNS mathNS "math" [ HA.attribute "xmlns" mathNS ] [ VirtualDom.nodeNS mathNS "semantics" [] [ VirtualDom.nodeNS mathNS "annotation" [ HA.attribute "encoding" "application/x-tex" ] [ Html.text "x" ] ] ] ]
+                (rawNodes "<math xmlns=\"http://www.w3.org/1998/Math/MathML\"><semantics><annotation encoding=\"application/x-tex\">x</annotation></semantics></math>")
+           , eq "raw nodes ns scope EXITS at </svg> (following span is HTML)"
+                [ VirtualDom.nodeNS svgNS "svg" [] [], Html.node "span" [ HA.attribute "class" "a" ] [ Html.text "x" ] ]
+                (rawNodes "<svg></svg><span class=\"a\">x</span>")
            ]
 
 
@@ -16050,6 +16098,8 @@ liveNodes =
                     (Equation.view Theme.default { cfEquationDefaults | value = "x", katex = Just katexNoMatch })
                 , Element.el [ Element.htmlAttribute (HA.id "live-equation-svg") ]
                     (Equation.view Theme.default { cfEquationDefaults | value = "x", katex = Just katexSvg })
+                , Element.el [ Element.htmlAttribute (HA.id "live-equation-stretchy") ]
+                    (Equation.view Theme.default { cfEquationDefaults | value = "c = \\pm\\sqrt{a^2 + b^2}", katex = Just katexStretchy })
                 , Element.el [ Element.htmlAttribute (HA.id "live-log") ]
                     (Log.view Theme.default { cfLogDefaults | lines = [ "test1", "test2" ] })
                 , Element.el [ Element.htmlAttribute (HA.id "live-log-dark") ]
