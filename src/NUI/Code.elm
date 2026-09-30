@@ -376,6 +376,13 @@ cssVarsFor theme opts =
 fontSizeValue : Options msg -> CodeTheme.Vars -> String
 fontSizeValue opts v =
     case opts.internalFontSize of
+        -- `[oracle D1]` upstream `internalFontSize ? \`${internalFontSize}px\` :
+        -- fontSize` is JS truthiness — `0` falls back to the theme size
+        -- (reachable via `Log` `fontSize = 0`). Only exact `0` (and the
+        -- impossible NaN); negatives are truthy.
+        Just 0 ->
+            v.fontSize
+
         Just n ->
             String.fromInt n ++ "px"
 

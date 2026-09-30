@@ -13133,6 +13133,8 @@ checks =
 
            -- §E10 internalFontSize override ${n}px else theme fontSize
            , eq "code cssVarsFor internalFontSize 20 → --n-font-size 20px" (Just "20px") (lookup "--n-font-size" (Code.cssVarsFor light { cfCodeDefaults | internalFontSize = Just 20 }))
+           , eq "code cssVarsFor internalFontSize 0 → theme fontSize (JS falsy, oracle D1)" (Just common.fontSize) (lookup "--n-font-size" (Code.cssVarsFor light { cfCodeDefaults | internalFontSize = Just 0 }))
+           , eq "code cssVarsFor internalFontSize -2 → -2px (negatives truthy)" (Just "-2px") (lookup "--n-font-size" (Code.cssVarsFor light { cfCodeDefaults | internalFontSize = Just -2 }))
            , eq "code cssVarsFor no internalFontSize → theme fontSize" (Just common.fontSize) (lookup "--n-font-size" (Code.cssVarsFor light cfCodeDefaults))
 
            -- §E12 cssVarsFor Code theme values (light)

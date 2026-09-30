@@ -61,6 +61,11 @@ default is `True`).
   - `[D]` Log passes the single global `Theme` to the embedded Code/Scrollbar;
     upstream threads a peer theme (extract-theme only reads `self`, so peers
     never reach the generated Elm theme).
+  - `[oracle R4]` the root and the loader are `Element.column`s (elm-ui flex
+    columns) where upstream mounts bare `div`s — layout-neutral here: the cssr
+    declares every load-bearing property of `.n-log` / `.n-log-loader`
+    (`position`, `height`, absolute placement), and the loader is the last
+    child either way.
 
 -}
 

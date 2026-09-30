@@ -44,6 +44,16 @@ output shapes those two libraries emit and recovers from anything else.
     unwinds).
   - A `<` not followed by `[a-zA-Z/!?]` is a literal text character.
 
+**`[oracle D2]`** a run of text split by a recovered literal `<` (e.g.
+`"a < b"`) becomes SEVERAL adjacent text nodes where a browser's innerHTML
+parse yields one — `textContent` and serialization are identical, so no probe
+can tell them apart.
+
+**`[oracle R1]`** deeply misnested closes (`<b>1<i>2</b>3</i>`) recover by the
+stray-close rule above, NOT the HTML5 adoption algorithm a browser runs — the
+documented contract, unreachable from hljs/KaTeX output; the simple
+mismatch/EOF cases agree with jsdom.
+
 `nodes` is pure and deterministic; it folds characters rather than using
 regexes.
 
