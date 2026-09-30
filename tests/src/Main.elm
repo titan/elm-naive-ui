@@ -2720,6 +2720,20 @@ calendarSixWeekOpts =
     { d | panel = { year = 2026, month = 8 }, now = { year = 2026, month = 8, day = 1 } }
 
 
+{-| The upstream `strip = true` EDGE month: Sep 1 2024 is a Sunday, so with the
+enUS `firstDayOfWeek = 6` the leading-prev-month loop stops IMMEDIATELY (Aug 31
+is a Saturday = `weekday == startDay`) — 0 leading days, 30 current, 5 trailing
+October days (upstream `Calendar.tsx:179` vs the picker's `strip = false`).
+-}
+calendarStripOpts : Calendar.Options msg
+calendarStripOpts =
+    let
+        d =
+            Calendar.defaults
+    in
+    { d | panel = { year = 2024, month = 9 }, now = { year = 2024, month = 9, day = 15 } }
+
+
 
 -- PAGINATION OPTION SETS -------------------------------------------------------
 
@@ -13720,6 +13734,8 @@ liveNodes =
                     (Calendar.view Theme.default calendarLiveOpts)
                 , Element.el [ Element.htmlAttribute (HA.id "live-calendar-6wk") ]
                     (Calendar.view Theme.default calendarSixWeekOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-calendar-strip") ]
+                    (Calendar.view Theme.default calendarStripOpts)
                 , Element.el [ Element.htmlAttribute (HA.id "live-pagination") ]
                     (Pagination.view Theme.default paginationLiveOpts [])
                 , Element.el [ Element.htmlAttribute (HA.id "live-pagination-simple") ]

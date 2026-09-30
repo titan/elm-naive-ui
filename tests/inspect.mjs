@@ -1721,6 +1721,34 @@ dEq(
   42,
   doc.querySelectorAll('#live-calendar-6wk .n-calendar-cell').length
 )
+dEq(
+  'DOM: Calendar Sep 2024 (strip edge: month starts on startDay) renders 35 cells',
+  35,
+  doc.querySelectorAll('#live-calendar-strip .n-calendar-cell').length
+)
+const calStripFirst = doc.querySelector('#live-calendar-strip .n-calendar-cell')
+dTrue(
+  'DOM: Calendar Sep 2024 strip edge → FIRST cell is Sep 1 (0 leading days)',
+  !!calStripFirst &&
+    !calStripFirst.classList.contains('n-calendar-cell--other-month') &&
+    calStripFirst.querySelector('.n-calendar-date__date').textContent === '1',
+  calStripFirst ? calStripFirst.getAttribute('class') : 'missing'
+)
+dEq(
+  'DOM: Calendar Sep 2024 strip edge → exactly 5 other-month cells (October tail)',
+  5,
+  doc.querySelectorAll('#live-calendar-strip .n-calendar-cell--other-month').length
+)
+const calStripLast = doc.querySelector(
+  '#live-calendar-strip .n-calendar-cell:last-child'
+)
+dTrue(
+  'DOM: Calendar Sep 2024 strip edge → LAST cell is Oct 5 (other-month)',
+  !!calStripLast &&
+    calStripLast.classList.contains('n-calendar-cell--other-month') &&
+    calStripLast.querySelector('.n-calendar-date__date').textContent === '5',
+  calStripLast ? calStripLast.getAttribute('class') : 'missing'
+)
 const calSelected = doc.querySelector('#live-calendar .n-calendar-cell--selected')
 dTrue(
   'DOM: Calendar selected cell is 2026-07-20',
