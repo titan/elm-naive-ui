@@ -13871,6 +13871,8 @@ liveNodes =
                     )
                 , Element.el [ Element.htmlAttribute (HA.id "live-input-number-rtl") ]
                     (InputNumber.view Theme.default inputNumberRtlOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-input-number-dark") ]
+                    (InputNumber.view Theme.dark inputNumberLiveOpts [])
                 , Element.el [ Element.htmlAttribute (HA.id "live-layout") ]
                     (Layout.view Theme.default layoutPlainOpts [ Element.text "C" ])
                 , Element.el [ Element.htmlAttribute (HA.id "live-layout-sider") ]

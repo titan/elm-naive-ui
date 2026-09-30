@@ -1975,6 +1975,40 @@ dTrue(
   inpNumRtl ? inpNumRtl.getAttribute('class') : 'missing'
 )
 
+// InputNumber buttonThemeOverrides (upstream InputNumber.tsx:657-667) — the
+// buttons' disabled vars come from THIS component's iconColorDisabled through
+// the Button.varOverrides seam: textColorTextDisabled → rgb(r, g, b), alpha →
+// opacityDisabled (light textColorDisabled rgba(194,194,194,1), dark
+// rgba(255,255,255,0.38); a text-variant button emits --n-text-color-disabled).
+const inpNumBtnStyle = (() => {
+  const b = doc.querySelector('#live-input-number .n-input__suffix .n-button')
+  return b ? b.getAttribute('style') : null
+})()
+dTrue(
+  'DOM: InputNumber button --n-text-color-disabled = rgb(194, 194, 194) (iconColorDisabled, light)',
+  (inpNumBtnStyle || '').includes('--n-text-color-disabled:rgb(194, 194, 194)'),
+  inpNumBtnStyle
+)
+dTrue(
+  'DOM: InputNumber button --n-opacity-disabled = 1 (iconColorDisabled alpha, light)',
+  (inpNumBtnStyle || '').includes('--n-opacity-disabled:1'),
+  inpNumBtnStyle
+)
+const inpNumBtnDarkStyle = (() => {
+  const b = doc.querySelector('#live-input-number-dark .n-button')
+  return b ? b.getAttribute('style') : null
+})()
+dTrue(
+  'DOM: InputNumber dark button --n-text-color-disabled = rgb(255, 255, 255)',
+  (inpNumBtnDarkStyle || '').includes('--n-text-color-disabled:rgb(255, 255, 255)'),
+  inpNumBtnDarkStyle
+)
+dTrue(
+  'DOM: InputNumber dark button --n-opacity-disabled = 0.38 (iconColorDisabled alpha, dark)',
+  (inpNumBtnDarkStyle || '').includes('--n-opacity-disabled:0.38'),
+  inpNumBtnDarkStyle
+)
+
 // Layout ---------------------------------------------------------------------
 const layout = doc.querySelector('#live-layout .n-layout')
 dTrue(

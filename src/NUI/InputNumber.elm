@@ -100,11 +100,6 @@ differently for the two, exactly like upstream.
     `NUI.Input` has no padding option (see `NUI.InputOtp`'s header), so the
     input renders with its own defaults (`"0 10px"` / `"0 12px"` / `"0 14px"`)
     — the right padding is 2–6 px wider than upstream when buttons show.
-  - Upstream derives the buttons' disabled text colour from this component's
-    theme (`iconColorDisabled` in `NUI.Theme.InputNumber`) via
-    `buttonThemeOverrides`; `NUI.Button` takes no per-instance theme overrides,
-    so disabled buttons use the Button theme's own values (light mode: a darker
-    grey at 0.5 opacity instead of upstream's `rgb(194, 194, 194)` at 1).
   - Upstream strikes invalid text through (`textDecoration = 'line-through'`
     when `displayedValueInvalid`); `NUI.Input` has no text-decoration option.
   - `NUI.Input`'s `prefix` / `suffix` are single `Element`s, so a slot holding
@@ -124,7 +119,9 @@ import Html.Attributes as HA
 import NUI.Button as Button
 import NUI.Input as Input
 import NUI.Internal as I
+import NUI.Internal.Color as Color
 import NUI.Theme exposing (Theme)
+import NUI.Theme.InputNumber as InputNumberTheme
 import NUI.Types as T
 import Svg
 
@@ -297,6 +294,29 @@ slotRow els =
 -- add / minus buttons (upstream: NButton text + NBaseIcon glyph) -------------
 
 
+{-| `buttonThemeOverrides` (`InputNumber.tsx:657-667`): both buttons' disabled
+text colour comes from THIS component's `iconColorDisabled`, rgba-split so
+the Button keeps its own opacity channel — `textColorTextDisabled` becomes
+`rgb(r, g, b)`, `opacityDisabled` the alpha — threaded through `NUI.Button`'s
+`varOverrides` seam (a text-variant button emits the former as
+`--n-text-color-disabled`). Light: `rgb(194, 194, 194)` / `1`; dark:
+`rgb(255, 255, 255)` / `0.38`. An unparsable colour is upstream-unreachable
+(theme-generated); it degrades to no override.
+-}
+buttonVarOverrides : Theme -> List ( String, String )
+buttonVarOverrides theme =
+    case Color.rgba (InputNumberTheme.vars theme).iconColorDisabled of
+        Ok { r, g, b, a } ->
+            [ ( "--n-text-color-disabled"
+              , "rgb(" ++ String.fromFloat r ++ ", " ++ String.fromFloat g ++ ", " ++ String.fromFloat b ++ ")"
+              )
+            , ( "--n-opacity-disabled", String.fromFloat a )
+            ]
+
+        Err _ ->
+            []
+
+
 minusButton : Theme -> Options msg -> Element msg
 minusButton theme opts =
     let
@@ -308,6 +328,7 @@ minusButton theme opts =
             | variant = Button.Text
             , disabled = not (minusable (contextOf opts)) || opts.disabled || opts.readonly
             , icon = Just (baseIcon removeIconSvg)
+            , varOverrides = buttonVarOverrides theme
             , onPress =
                 case opts.onChange of
                     Nothing ->
@@ -330,6 +351,7 @@ addButton theme opts =
             | variant = Button.Text
             , disabled = not (addable (contextOf opts)) || opts.disabled || opts.readonly
             , icon = Just (baseIcon addIconSvg)
+            , varOverrides = buttonVarOverrides theme
             , onPress =
                 case opts.onChange of
                     Nothing ->
