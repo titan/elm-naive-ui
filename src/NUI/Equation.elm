@@ -23,15 +23,16 @@ reproduces that with two module-level regexes; there is **no `n-equation` class
 and no stylesheet of its own** (the root IS whatever tag/class KaTeX returns,
 e.g. `<span class="katex">` or `<div class="katex-display">`).
 
-**⚠ `[D]` Raw-HTML injection is IMPOSSIBLE in Elm.** Upstream renders the peeled
+**⚠ `[D]` Raw HTML is parsed, not injected.** Upstream renders the peeled
 KaTeX HTML with Vue's `innerHTML`; elm/html blocks that path (the VirtualDom
 kernel remaps the `innerHTML` key, `_VirtualDom_noInnerHtmlOrFormAction`, and
-`setAttribute "innerHTML"` is a no-op). The port therefore renders the peeled
-string as the wrapper's TEXT content (`Html.text`) — the outer tag/class are
-still reproduced, but a real KaTeX output (nested `<span class="katex">`
-markup) appears literally rather than as elements. `katex` is consequently
-expected to produce plain text for a meaningful render. (Recon-2 §5(b) claimed
-`HA.property "innerHTML"` works; empirically it does not.)
+`setAttribute "innerHTML"` is a no-op). The port therefore runs the SAME peeled
+string through `NUI.Internal.RawHtml.nodes` — a pure parser of the KaTeX (and
+highlight.js) output shapes, its grammar and recovery semantics docstringed
+there. A real KaTeX output (nested `<span class="katex">` markup) therefore
+renders as elements; the outer tag/class are still reproduced from the regex
+peel above. (Recon-2 §5(b) claimed `HA.property "innerHTML"` works;
+empirically it does not.)
 
 **Caller-bound KaTeX.** Upstream resolves `props.katex || configProvider.katex`
 and calls `renderToString(value, { throwOnError: false, ...katexOptions })`. The
@@ -54,13 +55,14 @@ record for the same reason.
     the `m` flag for `^` — except JS `$` also matches before a single trailing
     `\n`; a KaTeX output ending in `\n` would strip differently. KaTeX does not
     emit a trailing newline, so the divergence is unreachable in practice.
-  - `[D]` the inner HTML is TEXT (see the injection note above).
+  - `[D]` the inner HTML is parsed into nodes (see the injection note above).
 
 -}
 
 import Element exposing (Element)
 import Html
 import Html.Attributes as HA
+import NUI.Internal.RawHtml as RawHtml
 import NUI.Theme exposing (Theme)
 import Regex
 
@@ -95,9 +97,10 @@ defaults =
 
 
 {-| The equation element: `h(wrapperTag, { class: wrapperClass, innerHTML })`
-(`Equation.tsx:38-41`), as a raw `Html` tree through `Element.html`. `[D]` the
-inner HTML is rendered as TEXT (Elm cannot inject raw HTML; see the module
-notes).
+(`Equation.tsx:38-41`), as a raw `Html` tree through `Element.html`. `[D]`
+upstream passes the peeled string as the node's `innerHTML`; the port parses the
+same string with `NUI.Internal.RawHtml`, whose recovery semantics are
+docstringed.
 -}
 view : Theme -> Options -> Element msg
 view _ opts =
@@ -108,7 +111,7 @@ view _ opts =
     Element.html
         (Html.node ext.wrapperTag
             (classAttr ext.wrapperClass)
-            [ Html.text ext.innerHtml ]
+            (RawHtml.nodes ext.innerHtml)
         )
 
 

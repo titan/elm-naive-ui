@@ -19,7 +19,8 @@ const INTERNAL = new Set([
   'NUI.Qrcodegen', // vendored QR encoder, reached via NUI.QrCode
   'NUI.Internal.Loading', // shared NBaseLoading spinner svg, reached via the components
   'NUI.Internal.DateTime', // the pure date/time engine, reached via NUI.DatePicker / NUI.TimePicker
-  'NUI.Internal.Color' // the pure colour engine, reached via NUI.ColorPicker
+  'NUI.Internal.Color', // the pure colour engine, reached via NUI.ColorPicker
+  'NUI.Internal.RawHtml' // shared highlight/katex markup parser, reached via NUI.Code / NUI.Log / NUI.Equation
 ])
 
 const modules = new Set()

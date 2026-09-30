@@ -37,16 +37,16 @@ root is a plain `<code>` whose children are inserted imperatively (`innerHTML` /
 `attributes` field is a `List (Html.Attribute msg)` (an `Element.Attribute`
 cannot attach to a raw node).
 
-**⚠ `[D]` Raw-HTML injection is IMPOSSIBLE in Elm.** `Code.tsx` embeds the
+**⚠ `[D]` Raw HTML is parsed, not injected.** `Code.tsx` embeds the
 highlighter's output with `el.innerHTML = html`; elm/html blocks that path — the
 VirtualDom kernel remaps the `innerHTML` property key
 (`_VirtualDom_noInnerHtmlOrFormAction`) and `setAttribute "innerHTML"` is a
-no-op — so the port renders the highlighter's RETURN STRING as a text node
-(`Html.text`) instead of parsing it into elements. Real highlight.js output
-containing `<span class="hljs-…">` markup therefore appears literally; in this
-port `Hljs.highlight` is expected to return (already highlighted) TEXT. This
-affects the `innerHTML` sites only — the class / style / line-number structure
-stays byte-faithful. (Recon-2 §5(b) claimed `HA.property "innerHTML"` works;
+no-op. The port instead runs the SAME resolved string through
+`NUI.Internal.RawHtml.nodes`, a pure parser of the highlight.js / KaTeX output
+shapes (its grammar and recovery semantics are docstringed there). Real
+highlight.js output containing `<span class="hljs-…">` markup therefore renders
+as elements, faithfully; the class / style / line-number structure stays
+byte-faithful. (Recon-2 §5(b) claimed `HA.property "innerHTML"` works;
 empirically it does not.)
 
 **Static image of `setCode`.** Upstream writes the code content imperatively on
@@ -58,9 +58,9 @@ also what the DOM probes assert:
     (`Code.tsx:63`) — the line-numbers `<pre>` is rendered, then the children
     untouched;
   - otherwise `inline` puts the resolved code (highlighted, or plain) as the
-    `<code>` root's text content;
+    `<code>` root's children (parsed — `[D]`);
   - the block form renders the line-numbers `<pre>` then a `pre.__code__`
-    carrying the resolved code. (`innerHTML` is the text-fallback — `[D]`.)
+    carrying the resolved code (parsed — `[D]`).
 
 **Caller-owned runtime.** The `uri` / `inline` / `wordWrap` / `showLineNumbers`
 / `internalFontSize` / `internalNoHighlight` props are all modelled exactly;
@@ -88,6 +88,7 @@ import Element exposing (Element)
 import Html
 import Html.Attributes as HA
 import NUI.Internal as I
+import NUI.Internal.RawHtml as RawHtml
 import NUI.Theme exposing (Theme)
 import NUI.Theme.Code as CodeTheme
 import Url
@@ -189,9 +190,12 @@ staticNode opts attrs =
             codeHtml opts.hljs opts.language opts.trim code
     in
     if opts.inline then
-        -- mergedShowLineNumbers is always False under `inline`, so there is no
-        -- line-numbers pre to preserve (upstream's `innerHTML =` wipes it anyway).
-        Html.node "code" attrs [ Html.text (Maybe.withDefault code highlighted) ]
+        -- `[D]` upstream sets `codeEl.innerHTML = html` for the highlighted
+        -- branch (and `textContent = code` for the plain one); the port parses
+        -- the same resolved string with `NUI.Internal.RawHtml` (recovery
+        -- semantics docstringed there). mergedShowLineNumbers is always False
+        -- under `inline`, so there is no line-numbers pre to preserve.
+        Html.node "code" attrs (RawHtml.nodes (Maybe.withDefault code highlighted))
 
     else
         Html.node "code" attrs (lineNumbersPre opts ++ [ codePre highlighted code ])
@@ -213,13 +217,14 @@ lineNumbersPre opts =
 
 
 {-| The block-mode `pre.__code__` (`Code.tsx:90-97` / `103-108`): the resolved
-code as text (the highlighted string when the gates passed, else the plain
-code). `[D]` upstream uses `innerHTML` for the highlighted branch; see the
-module notes — Elm cannot inject raw HTML, so both branches are text.
+code (the highlighted string when the gates passed, else the plain code) parsed
+into real nodes. `[D]` upstream sets `pre.innerHTML = html` for the highlighted
+branch (and `textContent = code` for the plain one); the port parses the same
+string with `NUI.Internal.RawHtml`, whose recovery semantics are docstringed.
 -}
 codePre : Maybe String -> String -> Html.Html msg
 codePre highlighted code =
-    Html.node "pre" [ HA.class "__code__" ] [ Html.text (Maybe.withDefault code highlighted) ]
+    Html.node "pre" [ HA.class "__code__" ] (RawHtml.nodes (Maybe.withDefault code highlighted))
 
 
 {-| The root class list, in upstream order (`Code.tsx:200-205`): `n-code`, then

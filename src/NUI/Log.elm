@@ -53,8 +53,9 @@ default is `True`).
     `Nothing` (or `Just ""`) yields `"Loading"` via `Maybe.withDefault` — this
     port adds the field, so there is no upstream JS-truthiness to mirror.
   - `[D]` `LogLine` sets the per-line highlight with `innerHTML`
-    (`LogLine.tsx:35-46`); Elm cannot inject raw HTML (see `NUI.Code`), so each
-    line is rendered as a text node — the highlight string appears literally.
+    (`LogLine.tsx:35-46`); elm/html blocks that path (see `NUI.Code`), so each
+    line's resolved string is parsed by `NUI.Internal.RawHtml` — the highlight
+    renders as real elements, and its recovery semantics are docstringed.
   - `[D]` The `NBaseLoading` `NIconSwitchTransition` wrapper adds no node and
     `show` is always `true` here, so the `.__placeholder` branch never renders.
   - `[D]` Log passes the single global `Theme` to the embedded Code/Scrollbar;
@@ -69,6 +70,7 @@ import Html.Attributes as HA
 import NUI.Code as Code
 import NUI.Internal as I
 import NUI.Internal.Loading as Loading
+import NUI.Internal.RawHtml as RawHtml
 import NUI.Scrollbar as Scrollbar
 import NUI.Theme exposing (Theme)
 import NUI.Theme.Log as LogTheme
@@ -288,10 +290,11 @@ codeOpts opts =
 
 
 {-| The static image of one `NLogLine` (`LogLine.tsx:16-46`): trim per line, then
-the same highlight gates as `NUI.Code` — the resolved string as text. `[D]`
-upstream injects the highlight with `innerHTML`; Elm cannot, so the node always
-carries a text child (the highlighted string when the gates pass, else the
-trimmed line).
+the same highlight gates as `NUI.Code`, then the resolved string parsed into real
+nodes. `[D]` upstream sets the line's `innerHTML` to that resolved string; the
+port parses the same string with `NUI.Internal.RawHtml`, whose recovery
+semantics are docstringed (note upstream's plain fallback is `innerHTML = code`
+too — `LogLine.tsx:35-46`).
 -}
 logLineHtml : Options msg -> String -> Html.Html msg
 logLineHtml opts line =
@@ -305,9 +308,9 @@ logLineHtml opts line =
     in
     Html.node "pre"
         []
-        [ Html.text
+        (RawHtml.nodes
             (Maybe.withDefault trimmed (Code.codeHtml opts.hljs opts.language opts.trim line))
-        ]
+        )
 
 
 {-| The loader is mounted while `loading` OR while a leave transition is playing
