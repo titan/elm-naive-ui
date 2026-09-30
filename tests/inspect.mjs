@@ -11572,10 +11572,23 @@ dEq('DOM: Carousel --card root class', 'n-carousel n-carousel--bottom n-carousel
 dTrue('DOM: Carousel card prevSlideStyle appended on --prev', (styleAt(carSlideClassOf('live-carousel-card', 'n-carousel__slide--prev')) || '').includes('transform: translateX(-150%) translateZ(-800px);'), styleAt(carSlideClassOf('live-carousel-card', 'n-carousel__slide--prev')))
 dTrue('DOM: Carousel card nextSlideStyle appended on --next', (styleAt(carSlideClassOf('live-carousel-card', 'n-carousel__slide--next')) || '').includes('transform: translateX(50%) translateZ(-800px);'), styleAt(carSlideClassOf('live-carousel-card', 'n-carousel__slide--next')))
 
-// §D10 — custom (--usercontrol) classless wrappers
+// §D10 — custom (--usercontrol): wrapper > ITEM structure ([oracle S1] re-pinned
+// from Carousel.tsx:1035-1043 — the ORIGINAL probes here were circular: they
+// matched the port's wrong reading (no inner item, display:none on wrapper))
 dEq('DOM: Carousel --custom + --usercontrol root class', 'n-carousel n-carousel--bottom n-carousel--horizontal n-carousel--custom n-carousel--usercontrol', carRoot('live-carousel-custom').getAttribute('class'))
 dTrue('DOM: Carousel custom wrappers are classless plain divs', [...carSlides('live-carousel-custom').children].length === 4 && [...carSlides('live-carousel-custom').children].every((c) => c.getAttribute('class') === null), [...carSlides('live-carousel-custom').children].map((c) => c.getAttribute('class') === null).join(','))
-dEq('DOM: Carousel custom active wrapper no style, inactive display:none', '|display: none|display: none|display: none', [...carSlides('live-carousel-custom').children].map((c) => c.getAttribute('style') || '').join('|'))
+dTrue('DOM: Carousel custom wrappers carry NO style (usercontrol slideStyles = size only, spv 1)', [...carSlides('live-carousel-custom').children].every((c) => c.getAttribute('style') === null), [...carSlides('live-carousel-custom').children].map((c) => c.getAttribute('style') === null).join(','))
+dEq('DOM: Carousel custom inner items = 4 n-carousel__slide', 4, carSlideEls('live-carousel-custom').length)
+dTrue('DOM: Carousel custom inner items are each wrapper\'s only child', [...carSlides('live-carousel-custom').children].every((c) => c.children.length === 1 && c.children[0].classList.contains('n-carousel__slide')), 'wrapper>slide')
+dEq('DOM: Carousel custom inner data-index 0..3', '0,1,2,3', carSlideEls('live-carousel-custom').map((s) => s.getAttribute('data-index')).join(','))
+dEq('DOM: Carousel custom vShow: active item no style, inactive display:none (INNER)', '|display: none|display: none|display: none', carSlideEls('live-carousel-custom').map((s) => s.getAttribute('style') || '').join('|'))
+dEq('DOM: Carousel custom inner aria-hidden', 'false,true,true,true', carSlideEls('live-carousel-custom').map((s) => s.getAttribute('aria-hidden')).join(','))
+
+// [oracle S3] non-sequence tracks carry NO style attribute (translateStyleRef stays {})
+dTrue('DOM: Carousel fade track has NO style attr', !carSlides('live-carousel-fade').hasAttribute('style'), 'fade track')
+dTrue('DOM: Carousel card track has NO style attr', !carSlides('live-carousel-card').hasAttribute('style'), 'card track')
+dTrue('DOM: Carousel custom track has NO style attr', !carSlides('live-carousel-custom').hasAttribute('style'), 'custom track')
+dTrue('DOM: Carousel slide (loop=false) track KEEPS style attr', carSlides('live-carousel-no-loop').hasAttribute('style') && (styleAt(carSlides('live-carousel-no-loop')) || '').includes('transform: translateX'), styleAt(carSlides('live-carousel-no-loop')))
 
 // §D11 — showDots=False / single slide
 dTrue('DOM: Carousel showDots=false → no __dots', !carDots('live-carousel-nodots'), 'nodots')

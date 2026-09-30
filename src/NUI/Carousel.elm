@@ -126,6 +126,25 @@ effects (the same service/caller pattern `NUI.Upload` uses for XHR):
     matches upstream SSR (fade/card slides carry no transition props until
     mounted).
 
+**Oracle round (`tasks/recon/carousel-oracle.md`) — 4 S findings fixed here:**
+
+  - `[oracle S1]` usercontrol renders `wrapper div > div.n-carousel__slide`
+    (upstream maps the ITEM vnodes into plain wrappers,
+    `Carousel.tsx:1035-1043`); `vShow`'s `display: none` lives on the inner
+    item, and BOTH usercontrol styles are the early-return branch — size
+    only, no margin.
+  - `[oracle S2]` `dragEnd`'s flick branch reproduces Vue's ASYNC
+    `realIndex` watcher (`flush: 'pre'`): the sync `fixTranslate` runs first,
+    the queued watcher body lands after it — the final translate is the
+    loop-jump clone target, `transitionend` snaps back to the real slide.
+  - `[oracle S3]` the track carries NO style attribute for non-sequence
+    effects (upstream `translateStyleRef` stays `{}`); the live drag translate
+    is sequence-only (`Carousel.tsx:657`).
+  - `[oracle S4]` `onSlideClick` fires on the card-effect gate
+    (`allowClick && effect=='card' && !isRealActive`, `Carousel.tsx:565-577`);
+    the listener is attached only when the gate passes (the closed gate emits
+    nothing either way; the `preventDefault` suppression half is caller-side).
+
 Non-divergences worth noting: controlled usage is supported exactly as
 upstream (`opts.currentIndex` wins over `state.displayIndex` via
 `useMergedState`; route the same events through `to`). `to`'s upper clamp is
@@ -1327,7 +1346,7 @@ dragEnd opts st elapsed =
             else
                 real0
 
-        stAfterMove =
+        ( stAfterMove, flickDir ) =
             if currentIndex == real0 then
                 let
                     perView =
@@ -1348,16 +1367,16 @@ dragEnd opts st elapsed =
                             st.dragOffset / elapsed
                 in
                 if st.dragOffset > perView / 2 || ratio > 0.4 then
-                    prev opts st
+                    ( prev opts st, Just -1 )
 
                 else if st.dragOffset < -perView / 2 || ratio < -0.4 then
-                    next opts st
+                    ( next opts st, Just 1 )
 
                 else
-                    st
+                    ( st, Nothing )
 
             else
-                st
+                ( st, Nothing )
     in
     if currentIndex /= real0 then
         let
@@ -1378,7 +1397,29 @@ dragEnd opts st elapsed =
         resetDragStatus st2
 
     else
-        resetDragStatus (fixTranslate opts stAfterMove env0.speed)
+        resetDragStatus
+            (case flickDir of
+                Just dir ->
+                    -- `[oracle S2]` Vue's `watch(realIndexRef, …, { flush: 'pre' })`
+                    -- is ASYNC: in the flick branch `prev()`/`next()` only WRITE
+                    -- the display index (queueing the watcher), the sync
+                    -- `else` branch runs `fixTranslate(speed)` FIRST, and the
+                    -- queued watcher body lands AFTER it — so the final
+                    -- translate is the loop-jump clone target (0), with
+                    -- `transitionend` snapping back to the real slide later
+                    -- (`Carousel.tsx:661-713` + `:803-837`). The eager
+                    -- `applyIndexChange` inside `prev`/`next` models the same
+                    -- body, so we re-set `expectedDirection` and re-apply it
+                    -- after `fixTranslate` to reproduce the flush order.
+                    let
+                        stFix =
+                            fixTranslate opts stAfterMove env0.speed
+                    in
+                    applyIndexChange opts { stFix | expectedDirection = dir } real0 env0.speed
+
+                Nothing ->
+                    fixTranslate opts stAfterMove env0.speed
+            )
 
 
 scanNearest : Float -> List Float -> Int -> Int
@@ -1672,16 +1713,28 @@ slidesNode opts state env0 slides =
 
         content =
             if env0.userWantsControl then
-                List.indexedMap (userControlWrapper opts env0) rendered
+                List.indexedMap (userControlWrapper opts state env0) rendered
 
             else
                 List.indexedMap (slideNode opts state env0) rendered
+
+        -- [oracle S3] upstream `translateStyleRef` stays `{}` for non-sequence
+        -- effects (fade/card/custom: `updateTranslate` only ever runs under
+        -- `sequenceLayout`, and `fixTranslate`'s non-seq branch is gated on
+        -- `previousTranslate !== 0`, which never becomes non-zero there) — no
+        -- style attribute on the track at all.
+        styleAttrs =
+            if env0.sequenceLayout then
+                [ HA.attribute "style" (trackStyle opts state env0) ]
+
+            else
+                []
     in
     Html.div
         ([ HA.class "n-carousel__slides"
          , HA.attribute "role" "listbox"
-         , HA.attribute "style" (trackStyle opts state env0)
          ]
+            ++ styleAttrs
             ++ transitionEndListener opts
         )
         content
@@ -1695,6 +1748,9 @@ transitionEndListener opts =
 
 trackStyle : Options msg -> State -> Env -> String
 trackStyle opts state env0 =
+    -- sequence-only caller (the gate lives in `slidesNode`); the live drag
+    -- translate also only exists under sequenceLayout upstream
+    -- (`handleTouchmove` gates on it, `Carousel.tsx:657`).
     let
         translate =
             if state.dragging then
@@ -1726,6 +1782,22 @@ trackStyle opts state env0 =
 
 slideNode : Options msg -> State -> Env -> Int -> Html.Html msg -> Html.Html msg
 slideNode opts state env0 i content =
+    slideNodeIn opts state env0 False i content
+
+
+{-| `[oracle S1]` The usercontrol inner node: same `n-carousel__slide` element
+upstream renders inside each plain wrapper (`Carousel.tsx:1035-1043` maps the
+NCarouselItem vnodes, and `vShow` lands `display: none` on THAT item), with
+the usercontrol `slideStyles` branch — size only, NO margin (`slideStylesRef`
+returns early, `Carousel.tsx:275-280`).
+-}
+slideNodeUC : Options msg -> State -> Env -> Int -> Html.Html msg -> Html.Html msg
+slideNodeUC opts state env0 i content =
+    slideNodeIn opts state env0 True i content
+
+
+slideNodeIn : Options msg -> State -> Env -> Bool -> Int -> Html.Html msg -> Html.Html msg
+slideNodeIn opts state env0 userControl i content =
     let
         ( isActive, isPrev, isNext ) =
             slideFlags env0 opts.loop i
@@ -1736,26 +1808,66 @@ slideNode opts state env0 i content =
                         ++ I.classIf isPrev "n-carousel__slide--prev"
                         ++ I.classIf isNext "n-carousel__slide--next"
                    )
+
+        styleStr =
+            slideStyle opts state env0 userControl i isActive isPrev isNext
     in
     Html.div
-        [ HA.class (String.join " " classes)
-        , HA.attribute "role" "option"
-        , HA.attribute "tabindex" "-1"
-        , HA.attribute "data-index" (String.fromInt i)
-        , HA.attribute "aria-hidden"
+        ([ HA.class (String.join " " classes)
+         , HA.attribute "role" "option"
+         , HA.attribute "tabindex" "-1"
+         , HA.attribute "data-index" (String.fromInt i)
+         , HA.attribute "aria-hidden"
             (if isActive then
                 "false"
 
              else
                 "true"
             )
-        , HA.attribute "style" (slideStyle opts state env0 i isPrev isNext)
-        ]
+         ]
+            ++ (if String.isEmpty styleStr then
+                    []
+
+                else
+                    [ HA.attribute "style" styleStr ]
+               )
+            ++ slideClickListener opts state env0 i isActive
+        )
         [ content ]
 
 
-slideStyle : Options msg -> State -> Env -> Int -> Bool -> Bool -> String
-slideStyle opts state env0 i isPrev isNext =
+{-| `[oracle S4]` Upstream `onCarouselItemClick` (`Carousel.tsx:565-577`): the
+card-effect `to(index)` fires only when `allowClick && effect === 'card' &&
+!isRealActive` (`allowClick = !inTransition && !dragging &&
+!isEffectiveDrag`). The handler itself is attached to every item in every
+effect (the internal gate decides); the `preventDefault`/`stopPropagation`
+suppression half stays caller-side (documented divergence).
+-}
+slideClickListener : Options msg -> State -> Env -> Int -> Bool -> List (Html.Attribute msg)
+slideClickListener opts state env0 i isActive =
+    case opts.onSlideClick of
+        Nothing ->
+            []
+
+        Just f ->
+            let
+                allowClick =
+                    not state.inTransition && not state.dragging && not state.isEffectiveDrag
+
+                fires =
+                    opts.effect == CardEffect && allowClick && not isActive
+            in
+            -- when the gate is closed there is no msg to emit (the
+            -- preventDefault/stopPropagation suppression half stays caller-side)
+            if fires then
+                [ HE.onClick (f i) ]
+
+            else
+                []
+
+
+slideStyle : Options msg -> State -> Env -> Bool -> Int -> Bool -> Bool -> Bool -> String
+slideStyle opts state env0 userControl i isActive isPrev isNext =
     let
         useComputedSize =
             not (env0.autoSlideSize || env0.realSlidesPerView == PerView 1)
@@ -1771,8 +1883,14 @@ slideStyle opts state env0 i isPrev isNext =
             else
                 []
 
+        -- `[oracle S1]` the usercontrol `slideStylesRef` branch returns early:
+        -- `getSlideSize(i)` only — no margin (`Carousel.tsx:275-292`).
         marginDecls =
-            [ "margin-" ++ envSpaceAxisName env0 ++ ": " ++ num opts.spaceBetween ++ "px" ]
+            if userControl then
+                []
+
+            else
+                [ "margin-" ++ envSpaceAxisName env0 ++ ": " ++ num opts.spaceBetween ++ "px" ]
 
         transitionDecls =
             if state.mounted && (opts.effect == FadeEffect || opts.effect == CardEffect) then
@@ -1801,12 +1919,26 @@ slideStyle opts state env0 i isPrev isNext =
                     else
                         []
                    )
+
+        -- `[oracle S1]` `vShow` on the usercontrol item: `display: none` when
+        -- inactive, nothing when active (display:'' restores).
+        displayDecls =
+            if userControl && not isActive then
+                [ "display: none" ]
+
+            else
+                []
     in
-    String.join "; " (sizeDecls ++ marginDecls ++ transitionDecls ++ extraDecls)
+    String.join "; " (sizeDecls ++ marginDecls ++ transitionDecls ++ extraDecls ++ displayDecls)
 
 
-userControlWrapper : Options msg -> Env -> Int -> Html.Html msg -> Html.Html msg
-userControlWrapper opts env0 i content =
+{-| `[oracle S1]` The usercontrol wrapper (`Carousel.tsx:1035-1043`): a PLAIN
+classless `div` whose style is the usercontrol `slideStyles[i]` — size only,
+NO margin, no display — wrapping the real `n-carousel__slide` item (vShow's
+`display: none` lives on that inner item, not here).
+-}
+userControlWrapper : Options msg -> State -> Env -> Int -> Html.Html msg -> Html.Html msg
+userControlWrapper opts state env0 i content =
     let
         useComputedSize =
             not (env0.autoSlideSize || env0.realSlidesPerView == PerView 1)
@@ -1822,26 +1954,14 @@ userControlWrapper opts env0 i content =
             else
                 []
 
-        ( isActive, _, _ ) =
-            slideFlags env0 opts.loop i
+        wrapperAttrs =
+            if List.isEmpty sizeDecls then
+                []
 
-        decls =
-            sizeDecls
-                ++ (if isActive then
-                        []
-
-                    else
-                        [ "display: none" ]
-                   )
+            else
+                [ HA.attribute "style" (String.join "; " sizeDecls) ]
     in
-    Html.div
-        (if List.isEmpty decls then
-            []
-
-         else
-            [ HA.attribute "style" (String.join "; " decls) ]
-        )
-        [ content ]
+    Html.div wrapperAttrs [ slideNodeUC opts state env0 i content ]
 
 
 dotsNodes : Options msg -> State -> Env -> List (Html.Html msg)

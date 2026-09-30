@@ -12903,7 +12903,13 @@ checks =
            , eq "car dragEnd flick right → prev (displayIndex 3, previousTranslate 4000, inTransition True)"
                 ( 3, 4000, True )
                 ( carouselDragFlickPrev.displayIndex, carouselDragFlickPrev.previousTranslate, carouselDragFlickPrev.inTransition )
+           , eq "car dragEnd flick right END translate = clone target 0 ([oracle S2] Vue's async watcher lands AFTER the sync fixTranslate)"
+                0
+                carouselDragFlickPrev.translate
            , eq "car dragEnd flick left → next (displayIndex 1)" 1 carouselDragFlickNext.displayIndex
+           , eq "car dragEnd flick left END translate 2000 (no loop-jump from real 1)"
+                2000
+                carouselDragFlickNext.translate
 
            -- §E16 dragMove clamp
            , eq "car dragMove offset 1500 → clamped 1000" 1000 (carouselDrag carouselDefault carouselA1Settled 1500).dragOffset
