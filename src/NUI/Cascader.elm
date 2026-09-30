@@ -1416,13 +1416,14 @@ emptyNode theme mopts =
         (Maybe.withDefault (NUI.Empty.view theme NUI.Empty.defaults []) mopts.empty)
 
 
-{-| The action slot wrapper (`resolveWrappedSlot` gates it on the slot).
+{-| The action slot wrapper (`resolveWrappedSlot` gates it on the slot);
+`data-action` serializes `"true"` (bare JSX attr — the transfer S2 rule).
 -}
 actionNode : Element msg -> Element msg
 actionNode action =
     Element.el
         [ I.classes [ "n-cascader-menu-action" ]
-        , Element.htmlAttribute (HA.attribute "data-action" "")
+        , Element.htmlAttribute (HA.attribute "data-action" "true")
         ]
         action
 

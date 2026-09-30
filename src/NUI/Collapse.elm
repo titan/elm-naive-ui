@@ -190,7 +190,7 @@ arrowNode : Options msg -> Item msg -> Element msg
 arrowNode opts it =
     Element.row
         ([ I.classes [ "n-collapse-item-arrow" ]
-         , Element.htmlAttribute (HA.attribute "data-arrow" "")
+         , Element.htmlAttribute (HA.attribute "data-arrow" "true")
          ]
             ++ toggleAttrs opts it Arrow
         )
@@ -203,7 +203,7 @@ extraNode opts it =
         (\extra ->
             Element.row
                 ([ I.classes [ "n-collapse-item__header-extra" ]
-                 , Element.htmlAttribute (HA.attribute "data-extra" "")
+                 , Element.htmlAttribute (HA.attribute "data-extra" "true")
                  ]
                     ++ toggleAttrs opts it Extra
                 )

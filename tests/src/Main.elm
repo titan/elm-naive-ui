@@ -934,6 +934,15 @@ rtlInputOpts =
     { d | rtl = True }
 
 
+inputClearOpts : Input.Options msg
+inputClearOpts =
+    let
+        d =
+            Input.defaults
+    in
+    { d | value = "Clearable", clearable = True }
+
+
 rtlRadioOpts : Radio.Options msg
 rtlRadioOpts =
     let
@@ -13403,6 +13412,8 @@ liveNodes =
                     (Checkbox.view Theme.default rtlCheckboxOpts [ Element.text "RTL" ])
                 , Element.el [ Element.htmlAttribute (HA.id "live-rtl-input") ]
                     (Input.view Theme.default rtlInputOpts)
+                , Element.el [ Element.htmlAttribute (HA.id "live-input-clear") ]
+                    (Input.view Theme.default inputClearOpts)
                 , Element.el [ Element.htmlAttribute (HA.id "live-rtl-radio") ]
                     (Radio.view Theme.default rtlRadioOpts [ Element.text "RTL" ])
                 , Element.el [ Element.htmlAttribute (HA.id "live-rtl-radio-group") ]
@@ -14964,6 +14975,11 @@ liveNodes =
                 , Element.el [ Element.htmlAttribute (HA.id "live-casc-menu-loading") ]
                     (Cascader.menu Theme.default
                         { cascMenuD | hoverKey = Just "a", loadingKeys = [ "a2" ] }
+                        cascTree
+                    )
+                , Element.el [ Element.htmlAttribute (HA.id "live-cascader-menu-action") ]
+                    (Cascader.menu Theme.default
+                        { cascMenuD | action = Just (Element.text "#action") }
                         cascTree
                     )
 

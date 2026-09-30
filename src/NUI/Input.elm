@@ -740,7 +740,7 @@ pairClearButton : Options msg -> Html msg
 pairClearButton opts =
     Html.div
         ([ HA.class "n-base-clear__clear"
-         , HA.attribute "data-clear" ""
+         , HA.attribute "data-clear" "true"
          , HA.style "font-size" "var(--n-clear-size)"
          , HA.style "height" "1em"
          , HA.style "width" "1em"
@@ -827,7 +827,7 @@ clearButton : Options msg -> Html msg
 clearButton opts =
     Html.div
         ([ HA.class "n-base-clear__clear"
-         , HA.attribute "data-clear" ""
+         , HA.attribute "data-clear" "true"
          , HA.style "font-size" "var(--n-clear-size)"
          , HA.style "height" "1em"
          , HA.style "width" "1em"

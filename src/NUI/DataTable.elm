@@ -1633,7 +1633,7 @@ filterButtonNode opts col =
             List.member col.key opts.filterMenuShown
     in
     Html.div
-        ([ HA.attribute "data-data-table-filter" ""
+        ([ HA.attribute "data-data-table-filter" "true"
          , HA.class
             (String.join " "
                 ([ "n-data-table-filter" ]

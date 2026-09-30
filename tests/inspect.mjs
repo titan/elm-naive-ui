@@ -1443,6 +1443,14 @@ dEq(
   1,
   doc.querySelectorAll('#live-collapse-show .n-collapse-item__content-wrapper').length
 )
+dEq(
+  'DOM: Collapse arrow serializes data-arrow="true" (CollapseItem.tsx:159 bare JSX attr — the transfer S2 rule)',
+  'true',
+  (() => {
+    const a = doc.querySelector('#live-collapse .n-collapse-item-arrow')
+    return a ? a.getAttribute('data-arrow') : null
+  })()
+)
 const collapseShowWrapper = doc.querySelector('#live-collapse-show .n-collapse-item__content-wrapper')
 dTrue(
   'DOM: Collapse ShowContent collapsed wrapper is display:none',
@@ -1521,6 +1529,14 @@ dTrue(
   'ok'
 )
 dEq(
+  'DOM: FloatButton menu wrapper serializes data-float-button-menu="true" (FloatButton.tsx:284 bare JSX attr — the transfer S2 rule)',
+  'true',
+  (() => {
+    const m = doc.querySelector('[data-float-button-menu]')
+    return m ? m.getAttribute('data-float-button-menu') : null
+  })()
+)
+dEq(
   'DOM: FloatButton without menuTrigger omits __close/__menu',
   0,
   doc.querySelectorAll(
@@ -1564,6 +1580,16 @@ dTrue(
   'DOM: FloatButton Custom "50%" passes through as width:50%',
   !!fbPercent && (fbPercent.getAttribute('style') || '').includes('width:50%'),
   fbPercent ? fbPercent.getAttribute('style') : 'missing'
+)
+
+// Input ----------------------------------------------------------------------
+dEq(
+  'DOM: Input clearable renders the clear button with data-clear="true" (Clear.tsx:41 bare JSX attr — the transfer S2 rule)',
+  'true',
+  (() => {
+    const c = doc.querySelector('#live-input-clear .n-base-clear__clear')
+    return c ? c.getAttribute('data-clear') : null
+  })()
 )
 
 // InputOtp -------------------------------------------------------------------
@@ -4005,9 +4031,9 @@ const scrollRail = doc.querySelector(
   '#live-scrollbar-default .n-scrollbar-rail.n-scrollbar-rail--vertical.n-scrollbar-rail--vertical--right'
 )
 dTrue(
-  'DOM: Scrollbar default renders the vertical-right rail with data-scrollbar-rail + aria-hidden',
+  'DOM: Scrollbar default renders the vertical-right rail with data-scrollbar-rail="true" (bare JSX attr — the transfer S2 rule) + aria-hidden',
   !!scrollRail &&
-    scrollRail.hasAttribute('data-scrollbar-rail') &&
+    scrollRail.getAttribute('data-scrollbar-rail') === 'true' &&
     scrollRail.getAttribute('aria-hidden') === 'true',
   clsOf(scrollRail)
 )
@@ -6958,9 +6984,9 @@ dEq(
     : null
 )
 dTrue(
-  'DOM: SelectMenu header slot -> __header[data-header]; action slot -> __action[data-action] + the inert focus detector',
-  !!doc.querySelector('#live-selectmenu-header-action .n-base-select-menu__header[data-header]') &&
-    !!doc.querySelector('#live-selectmenu-header-action .n-base-select-menu__action[data-action]') &&
+  'DOM: SelectMenu header slot -> __header[data-header="true"]; action -> __action[data-action="true"] (bare JSX attrs — the transfer S2 rule) + the inert focus detector',
+  !!doc.querySelector('#live-selectmenu-header-action .n-base-select-menu__header[data-header="true"]') &&
+    !!doc.querySelector('#live-selectmenu-header-action .n-base-select-menu__action[data-action="true"]') &&
     smFocusDetector('live-selectmenu-header-action').length === 1,
   clsOf(doc.querySelector('#live-selectmenu-header-action .n-base-select-menu__action'))
 )
@@ -7431,8 +7457,8 @@ svgNsPin(
   '#live-basesel-default .n-base-icon.n-base-suffix__arrow svg'
 )
 dEq(
-  'DOM: BaseSelection showClear -> n-base-clear > __clear[data-clear]',
-  'present|present|true|',
+  'DOM: BaseSelection showClear -> n-base-clear > __clear[data-clear="true"] (bare JSX attr — the transfer S2 rule)',
+  'present|present|true|true',
   (() => {
     const id = 'live-basesel-clear'
     const clear = doc.querySelector(`#${id} .n-base-clear__clear`)
@@ -8008,8 +8034,8 @@ dEq(
 // menu's __empty wrapper renders BARE: NEmpty never mounts (the opposite of
 // Select.menu, whose absent slot falls back to NUI.Empty).
 dEq(
-  'DOM: Cascader.selectMenu zero rows -> bare __empty wrapper [data-empty], no .n-empty, no option-wrapper',
-  'present||0|0',
+  'DOM: Cascader.selectMenu zero rows -> bare __empty wrapper [data-empty="true"], no .n-empty, no option-wrapper',
+  'present|true|0|0',
   (() => {
     const menu = doc.querySelector('#live-casc-selectmenu-empty .n-base-select-menu')
     const emptyEl = menu ? menu.querySelector('.n-base-select-menu__empty') : null
@@ -8019,6 +8045,14 @@ dEq(
       String(menu ? menu.querySelectorAll('.n-empty').length : -1),
       String(menu ? menu.querySelectorAll('.n-base-select-menu-option-wrapper').length : -1)
     ].join('|')
+  })()
+)
+dEq(
+  'DOM: Cascader columns-menu action slot serializes data-action="true" (CascaderMenu.tsx:193 bare JSX attr — the transfer S2 rule)',
+  'true',
+  (() => {
+    const a = doc.querySelector('#live-cascader-menu-action .n-cascader-menu-action')
+    return a ? a.getAttribute('data-action') : null
   })()
 )
 dEq(
@@ -8089,12 +8123,12 @@ dEq(
   })()
 )
 dEq(
-  'DOM: Tree switcher carries data-switcher, width = indent (24px), and the __icon cell',
+  'DOM: Tree switcher carries data-switcher="true" (bare JSX attr — the transfer S2 rule), width = indent (24px), and the __icon cell',
   'true|width: 24px;|true',
   (() => {
     const sw = doc.querySelector('#live-tree-basic .n-tree-node-switcher')
     return [
-      sw ? sw.hasAttribute('data-switcher') : false,
+      sw ? sw.getAttribute('data-switcher') === 'true' : false,
       sw ? sw.getAttribute('style') : null,
       sw ? !!sw.querySelector('.n-tree-node-switcher__icon') : false
     ].join('|')
@@ -8120,13 +8154,13 @@ dEq(
   })()
 )
 dEq(
-  'DOM: Tree checkable -> each row carries a data-checkbox span wrapping .n-checkbox; placement right -> --right',
-  '6|6|0',
+  'DOM: Tree checkable -> each row carries a data-checkbox="true" span wrapping .n-checkbox; placement right -> --right',
+  '6|6|0|true',
   (() => {
     const boxes = doc.querySelectorAll('#live-tree-states .n-tree-node-checkbox')
     const right = doc.querySelectorAll('#live-tree-states .n-tree-node-checkbox--right')
     const plain = doc.querySelectorAll('#live-tree-basic .n-tree-node-checkbox')
-    return [boxes.length, right.length, plain.length].join('|')
+    return [boxes.length, right.length, plain.length, boxes[0] ? boxes[0].getAttribute('data-checkbox') : null].join('|')
   })()
 )
 dEq(
@@ -9816,14 +9850,14 @@ dEq(
   nClassesStr(dtFilter('live-data-table-filter'))
 )
 dTrue(
-  'DOM: dt filter trigger carries data-data-table-filter="" + the i.n-base-icon > FilterIcon svg bytes (Filter.tsx)',
+  'DOM: dt filter trigger carries data-data-table-filter="true" (bare JSX attr — the transfer S2 rule) + the i.n-base-icon > FilterIcon svg bytes (Filter.tsx)',
   (() => {
     const t = dtFilter('live-data-table-filter')
     const svg = t && t.querySelector('i.n-base-icon > svg')
     const path = svg && svg.querySelector('path')
     return (
       !!t &&
-      t.getAttribute('data-data-table-filter') === '' &&
+      t.getAttribute('data-data-table-filter') === 'true' &&
       !!svg &&
       svg.getAttribute('viewBox') === '0 0 28 28' &&
       svg.getAttribute('version') === '1.1' &&
@@ -10830,6 +10864,14 @@ dEq(
     String(doc.querySelectorAll('#live-date-panel-date .n-date-panel-date--selected').length),
     String(doc.querySelectorAll('#live-date-panel-date .n-date-panel-date--current').length)
   ].join('|')
+)
+dEq(
+  'DOM: date-panel cells serialize data-n-date="true" (date.tsx:133 bare JSX attr — the transfer S2 rule)',
+  'true',
+  (() => {
+    const c = doc.querySelector('#live-date-panel-date .n-date-panel-date')
+    return c ? c.getAttribute('data-n-date') : null
+  })()
 )
 
 dEq(

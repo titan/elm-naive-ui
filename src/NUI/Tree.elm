@@ -666,7 +666,7 @@ switcherNode opts state flat =
             )
         , Element.htmlAttribute
             (HA.style "width" (String.fromInt opts.indent ++ "px"))
-        , Element.htmlAttribute (HA.attribute "data-switcher" "")
+        , Element.htmlAttribute (HA.attribute "data-switcher" "true")
         ]
         (Element.el
             [ I.classes [ "n-tree-node-switcher__icon" ] ]
@@ -748,7 +748,7 @@ checkboxNode theme opts state flat checkable disabled =
                 )
             , Element.htmlAttribute
                 (HA.style "width" (String.fromInt opts.indent ++ "px"))
-            , Element.htmlAttribute (HA.attribute "data-checkbox" "")
+            , Element.htmlAttribute (HA.attribute "data-checkbox" "true")
             ]
             (NUI.Checkbox.view theme
                 { d

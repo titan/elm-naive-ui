@@ -194,7 +194,7 @@ menuNode opts =
         Just _ ->
             [ Element.row
                 [ I.classes [ "n-float-button__menu" ]
-                , Element.htmlAttribute (HA.attribute "data-float-button-menu" "")
+                , Element.htmlAttribute (HA.attribute "data-float-button-menu" "true")
                 ]
                 opts.menu
             ]

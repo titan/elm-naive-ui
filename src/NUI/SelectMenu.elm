@@ -35,6 +35,10 @@ the future `Select` batch extends it).
       └─ div.n-base-select-menu__action [data-action]          — iff action
           + div[width:0;height:0][tabindex=0]                  — NFocusDetector, inert
 
+`data-header` / `data-empty` / `data-action` serialize `"true"` (upstream's
+bare JSX attrs compile to `{true}` — the `NUI.Transfer` close-icon /
+`NUI.TreeSelect` slot rule).
+
 Everything runtime is caller-owned (the popover-family precedent): keyboard
 navigation and `--pending` (caller-injected per-option `attributes`),
 `virtualScroll` (the virtual list — the plain option-wrapper path only),
@@ -232,7 +236,7 @@ headerNode opts =
         (\h ->
             Element.el
                 [ I.classes [ "n-base-select-menu__header" ]
-                , Element.htmlAttribute (HA.attribute "data-header" "")
+                , Element.htmlAttribute (HA.attribute "data-header" "true")
                 ]
                 h
         )
@@ -253,7 +257,7 @@ bodyNode theme opts rows =
     else if List.isEmpty rows then
         Element.el
             [ I.classes [ "n-base-select-menu__empty" ]
-            , Element.htmlAttribute (HA.attribute "data-empty" "")
+            , Element.htmlAttribute (HA.attribute "data-empty" "true")
             ]
             (Maybe.withDefault (emptyFallback theme opts.size) opts.empty)
 
@@ -364,7 +368,7 @@ actionNodes opts =
         Just a ->
             [ Element.el
                 [ I.classes [ "n-base-select-menu__action" ]
-                , Element.htmlAttribute (HA.attribute "data-action" "")
+                , Element.htmlAttribute (HA.attribute "data-action" "true")
                 ]
                 a
             , focusDetectorNode

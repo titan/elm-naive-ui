@@ -671,7 +671,7 @@ clearNode opts =
         (if opts.showClear then
             Element.el
                 ([ I.classes [ "n-base-clear__clear" ]
-                 , Element.htmlAttribute (HA.attribute "data-clear" "")
+                 , Element.htmlAttribute (HA.attribute "data-clear" "true")
                  ]
                     ++ (case opts.onClear of
                             Just onClear ->

@@ -1458,7 +1458,7 @@ dateCell opts cfg item =
                 singleCellHandlers opts item
     in
     Html.div
-        ([ HA.attribute "data-n-date" ""
+        ([ HA.attribute "data-n-date" "true"
          , HA.class (String.join " " classes)
          ]
             ++ handlers
@@ -1661,7 +1661,7 @@ pickerItem opts side quickJump isYear cell =
                 pickerHandlers opts side quickJump isYear cell
     in
     Html.div
-        ([ HA.attribute "data-n-date" ""
+        ([ HA.attribute "data-n-date" "true"
          , HA.class
             (String.join " "
                 ([ "n-date-panel-month-calendar__picker-col-item" ]

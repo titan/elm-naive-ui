@@ -268,7 +268,7 @@ railNode : List String -> Maybe String -> List (Html.Html msg) -> Html.Html msg
 railNode extraClasses maybeStyle children =
     Html.div
         ([ HA.class (String.join " " ("n-scrollbar-rail" :: extraClasses))
-         , HA.attribute "data-scrollbar-rail" ""
+         , HA.attribute "data-scrollbar-rail" "true"
          , HA.attribute "aria-hidden" "true"
          ]
             ++ rawStyleAttr maybeStyle
