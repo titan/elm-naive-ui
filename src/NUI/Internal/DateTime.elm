@@ -806,8 +806,12 @@ weekNumber weekStartsOn zone ts =
 `startDay` is Naive UI's `firstDayOfWeek` (0 = Monday … 6 = Sunday) — passed
 through unchanged, exactly as upstream compares it against date-fns `getDay`,
 so the grid's first cell lands on the day _after_ `startDay` (the loop stops one
-day into the week, giving `enUS`'s `6` a Sunday-start grid). `strip = False`
-always yields 42 cells. Week-span matching transforms `startDay` with
+day into the week, giving `enUS`'s `6` a Sunday-start grid). The leading
+prev-month loop starts UNPROTECTED under `strip = True` — a month whose 1st
+lands directly after `startDay` shows **0** leading days (upstream `Calendar`);
+under `strip = False` the first day is always shown (upstream
+`utils.ts:366` `protectLastMonthDateIsShownFlag = !strip`, the pickers) and the
+grid is always 42 cells. Week-span matching transforms `startDay` with
 `firstDayOfWeekToDateFns`. Built in `Time.utc`.
 -}
 dateArray : Int -> ValueTs -> Int -> Int -> Bool -> Bool -> List DateItem
@@ -830,7 +834,7 @@ dateArray monthTs valueTs nowTs startDay strip weekMode =
                 dn :: collectPrev (dn - 1) False
 
         prev =
-            List.reverse (collectPrev (firstDn - 1) True)
+            List.reverse (collectPrev (firstDn - 1) (not strip))
 
         collectCurrent dn =
             if (civilFromDays dn).month == displayMonth then

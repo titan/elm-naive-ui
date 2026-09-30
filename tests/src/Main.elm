@@ -2734,6 +2734,35 @@ calendarStripOpts =
     { d | panel = { year = 2024, month = 9 }, now = { year = 2024, month = 9, day = 15 } }
 
 
+{-| Engine `dateArray` items for the strip-edge month, both strip modes, plus a
+non-edge month — the eq-pin witnesses for the `strip` threading (§ 33b).
+Timestamps are UTC midnights of the anchor's 1st, mirroring `NUI.Calendar.grid`.
+-}
+calMidnight : { hours : Int, minutes : Int, seconds : Int, ms : Int }
+calMidnight =
+    { hours = 0, minutes = 0, seconds = 0, ms = 0 }
+
+
+calTs : Int -> Int -> Int
+calTs year month =
+    DT.toPosix Time.utc { year = year, month = month, day = 1 } calMidnight
+
+
+calStripItems : List DT.DateItem
+calStripItems =
+    DT.dateArray (calTs 2024 9) DT.NoValue (DT.toPosix Time.utc { year = 2024, month = 9, day = 15 } calMidnight) 6 True False
+
+
+calNoStripItems : List DT.DateItem
+calNoStripItems =
+    DT.dateArray (calTs 2024 9) DT.NoValue (DT.toPosix Time.utc { year = 2024, month = 9, day = 15 } calMidnight) 6 False False
+
+
+calJulItems : List DT.DateItem
+calJulItems =
+    DT.dateArray (calTs 2026 7) DT.NoValue (DT.toPosix Time.utc { year = 2026, month = 7, day = 15 } calMidnight) 6 True False
+
+
 
 -- PAGINATION OPTION SETS -------------------------------------------------------
 
@@ -8029,6 +8058,28 @@ checks =
     , eq "calendar todayPanel is Just now-month when they differ"
         (Just { year = 2024, month = 6 })
         (Calendar.todayPanel { calDefaults | panel = { year = 2024, month = 3 }, now = { year = 2024, month = 6, day = 15 } })
+
+    -- 33b. engine dateArray strip threading (Calendar's strip=true path; the
+    --      Sep 2024 month starts exactly on the enUS startDay — derived with
+    --      node over the upstream loop, see tasks/recon/dedup-1.md Check 2)
+    , eq "engine dateArray strip=true Sep 2024 → 35 items" 35 (List.length calStripItems)
+    , eq "engine dateArray strip=true Sep 2024 first cell is Sep 1 (0 leading)"
+        (Just { year = 2024, month = 9, day = 1 })
+        (List.head calStripItems |> Maybe.map .dateObject)
+    , eq "engine dateArray strip=true Sep 2024 last cell is Oct 5"
+        (Just { year = 2024, month = 10, day = 5 })
+        (List.head (List.drop 34 calStripItems) |> Maybe.map .dateObject)
+    , eq "engine dateArray strip=true Sep 2024 inCurrentMonth = 30" 30 (List.length (List.filter .inCurrentMonth calStripItems))
+    , eq "engine dateArray strip=false Sep 2024 → 42 items" 42 (List.length calNoStripItems)
+    , eq "engine dateArray strip=false Sep 2024 first cell is Aug 25 (7 leading)"
+        (Just { year = 2024, month = 8, day = 25 })
+        (List.head calNoStripItems |> Maybe.map .dateObject)
+    , eq "engine dateArray strip=true Jul 2026 (non-edge) first cell is Jun 28"
+        (Just { year = 2026, month = 6, day = 28 })
+        (List.head calJulItems |> Maybe.map .dateObject)
+    , eq "engine dateArray strip=true Jul 2026 → 35 items, 31 in-month"
+        ( 35, 31 )
+        ( List.length calJulItems, List.length (List.filter .inCurrentMonth calJulItems) )
 
     -- 34. NUI.Pagination pageItems (upstream createPageItemsInfo) -----------------
     , eq "pagination pageCount 1 -> [1]" [ "1" ] (pageLabels pg1)

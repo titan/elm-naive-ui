@@ -78,6 +78,7 @@ import NUI.Theme exposing (Theme)
 import NUI.Theme.Calendar as CalendarTheme
 import NUI.Types as T
 import Svg
+import Time
 
 
 {-| A calendar day. `month` is 1–12 (upstream's `DateItem` is 0-based). Pure
@@ -368,106 +369,50 @@ type alias Cell =
 
 grid : Options msg -> List Cell
 grid opts =
-    let
-        first =
-            { year = opts.panel.year, month = opts.panel.month, day = 1 }
-
-        prevDays =
-            prevMonthDays (addDays first -1) opts.locale.firstDayOfWeek
-
-        currentDays =
-            monthDays first
-
-        shown =
-            List.length prevDays + List.length currentDays
-
-        endIndex =
-            if shown <= 28 then
-                28
-
-            else if shown <= 35 then
-                35
-
-            else
-                42
-
-        nextDays =
-            nextMonthDays (addDays first (List.length currentDays)) (endIndex - shown)
-    in
-    List.map (toCell opts) (prevDays ++ currentDays ++ nextDays)
+    -- Upstream `Calendar.tsx:179` builds its panel with the SHARED
+    -- `dateArray(…, strip = true)` — the engine owns the leading/trailing
+    -- week logic (dedup-1 §7 repoint, after threading `strip` into the
+    -- protect flag). Timestamps are UTC midnights of civil days, so the
+    -- engine's civil comparisons equal Calendar's old record comparisons.
+    DT.dateArray
+        (DT.toPosix Time.utc { year = opts.panel.year, month = opts.panel.month, day = 1 } midnight)
+        DT.NoValue
+        (DT.toPosix Time.utc opts.now midnight)
+        opts.locale.firstDayOfWeek
+        True
+        False
+        |> List.map (toCell opts)
 
 
-toCell : Options msg -> Date -> Cell
-toCell opts date =
-    { date = date
-    , inCurrentMonth = date.year == opts.panel.year && date.month == opts.panel.month
-    , isCurrentDate = date == opts.now
-    , selected = opts.value == Just date
+toCell : Options msg -> DT.DateItem -> Cell
+toCell opts item =
+    { date = item.dateObject
+    , inCurrentMonth = item.inCurrentMonth
+    , isCurrentDate = item.isCurrentDate
+    , selected = opts.value == Just item.dateObject
     }
 
 
-{-| Days of the previous month to show, earliest first. Upstream unshifts while
-`getDay(iterator) !== startDay`, so the loop stops one day _after_ the configured
-first day of the week — with `enUS` (6) the grid starts on Sunday.
+{-| Midnight, for the UTC-midnight timestamps the grid hands the engine
+(`DT.midnight` is unexposed).
 -}
-prevMonthDays : Date -> Int -> List Date
-prevMonthDays iterator startDay =
-    if weekday iterator == startDay then
-        []
-
-    else
-        prevMonthDays (addDays iterator -1) startDay ++ [ iterator ]
-
-
-monthDays : Date -> List Date
-monthDays first =
-    List.range 1 (daysInMonth first)
-        |> List.map (\day -> { first | day = day })
-
-
-nextMonthDays : Date -> Int -> List Date
-nextMonthDays iterator count =
-    if count <= 0 then
-        []
-
-    else
-        iterator :: nextMonthDays (addDays iterator 1) (count - 1)
+midnight : { hours : Int, minutes : Int, seconds : Int, ms : Int }
+midnight =
+    { hours = 0, minutes = 0, seconds = 0, ms = 0 }
 
 
 
--- DATE MATH (delegates to the shared engine, NUI.Internal.DateTime)
-
-
-{-| Days since 1970-01-01 (engine: `NUI.Internal.DateTime.daysFromCivil`).
--}
-daysFromCivil : Date -> Int
-daysFromCivil d =
-    DT.daysFromCivil d
-
-
-{-| Inverse of `daysFromCivil` (engine: `NUI.Internal.DateTime.civilFromDays`).
--}
-civilFromDays : Int -> Date
-civilFromDays z =
-    DT.civilFromDays z
-
-
-addDays : Date -> Int -> Date
-addDays date n =
-    DT.civilFromDays (DT.addDays n (DT.daysFromCivil date))
+-- DATE MATH (delegates to the shared engine, NUI.Internal.DateTime;
+-- the grid composition itself now lives in the engine's `dateArray`)
 
 
 {-| Weekday in date-fns `getDay` numbering: 0 is Sunday … 6 is Saturday
-(engine: `NUI.Internal.DateTime.weekday`).
+(engine: `NUI.Internal.DateTime.weekday`). Used by `weekdayName`; the grid
+itself no longer needs it.
 -}
 weekday : Date -> Int
 weekday date =
     DT.weekday date
-
-
-daysInMonth : Date -> Int
-daysInMonth date =
-    DT.daysInMonth date.year date.month
 
 
 panelOf : Date -> Panel
