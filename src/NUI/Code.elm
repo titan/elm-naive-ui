@@ -57,10 +57,12 @@ also what the DOM probes assert:
   - a caller `children` list (Log's slot path) short-circuits `setCode`
     (`Code.tsx:63`) — the line-numbers `<pre>` is rendered, then the children
     untouched;
-  - otherwise `inline` puts the resolved code (highlighted, or plain) as the
-    `<code>` root's children (parsed — `[D]`);
+  - otherwise `inline` puts the highlighted string as the `<code>` root's
+    children (parsed — `[D]`), or the plain code as a text node
+    (`textContent`);
   - the block form renders the line-numbers `<pre>` then a `pre.__code__`
-    carrying the resolved code (parsed — `[D]`).
+    carrying the highlighted string (parsed — `[D]`) or the plain code as
+    text (`textContent`).
 
 **Caller-owned runtime.** The `uri` / `inline` / `wordWrap` / `showLineNumbers`
 / `internalFontSize` / `internalNoHighlight` props are all modelled exactly;
@@ -187,15 +189,29 @@ staticNode opts attrs =
                 opts.code
 
         highlighted =
-            codeHtml opts.hljs opts.language opts.trim code
+            -- `internalNoHighlight` swaps upstream's `hljsRef` for `{ value:
+            -- undefined }` (Code.tsx:37), forcing the textContent path.
+            if opts.internalNoHighlight then
+                Nothing
+
+            else
+                codeHtml opts.hljs opts.language opts.trim code
     in
     if opts.inline then
         -- `[D]` upstream sets `codeEl.innerHTML = html` for the highlighted
-        -- branch (and `textContent = code` for the plain one); the port parses
-        -- the same resolved string with `NUI.Internal.RawHtml` (recovery
-        -- semantics docstringed there). mergedShowLineNumbers is always False
+        -- branch and `codeEl.textContent = code` for the plain one; the port
+        -- parses ONLY the highlighted string (`NUI.Internal.RawHtml`), the
+        -- plain branch is a text node. mergedShowLineNumbers is always False
         -- under `inline`, so there is no line-numbers pre to preserve.
-        Html.node "code" attrs (RawHtml.nodes (Maybe.withDefault code highlighted))
+        Html.node "code"
+            attrs
+            (case highlighted of
+                Just h ->
+                    RawHtml.nodes h
+
+                Nothing ->
+                    [ Html.text code ]
+            )
 
     else
         Html.node "code" attrs (lineNumbersPre opts ++ [ codePre highlighted code ])
@@ -216,15 +232,24 @@ lineNumbersPre opts =
         []
 
 
-{-| The block-mode `pre.__code__` (`Code.tsx:90-97` / `103-108`): the resolved
-code (the highlighted string when the gates passed, else the plain code) parsed
-into real nodes. `[D]` upstream sets `pre.innerHTML = html` for the highlighted
-branch (and `textContent = code` for the plain one); the port parses the same
-string with `NUI.Internal.RawHtml`, whose recovery semantics are docstringed.
+{-| The block-mode `pre.__code__` (`Code.tsx:90-97` / `103-108`): the
+highlighted string parsed into real nodes when the gates passed, else the plain
+code as a text node. `[D]` upstream sets `pre.innerHTML = html` for the
+highlighted branch and `textContent = code` for the plain one; the port parses
+only the highlighted string (`NUI.Internal.RawHtml`, recovery semantics
+docstringed there).
 -}
 codePre : Maybe String -> String -> Html.Html msg
 codePre highlighted code =
-    Html.node "pre" [ HA.class "__code__" ] (RawHtml.nodes (Maybe.withDefault code highlighted))
+    Html.node "pre"
+        [ HA.class "__code__" ]
+        (case highlighted of
+            Just h ->
+                RawHtml.nodes h
+
+            Nothing ->
+                [ Html.text code ]
+        )
 
 
 {-| The root class list, in upstream order (`Code.tsx:200-205`): `n-code`, then

@@ -290,11 +290,14 @@ codeOpts opts =
 
 
 {-| The static image of one `NLogLine` (`LogLine.tsx:16-46`): trim per line, then
-the same highlight gates as `NUI.Code`, then the resolved string parsed into real
-nodes. `[D]` upstream sets the line's `innerHTML` to that resolved string; the
-port parses the same string with `NUI.Internal.RawHtml`, whose recovery
-semantics are docstringed (note upstream's plain fallback is `innerHTML = code`
-too — `LogLine.tsx:35-46`).
+the same highlight gates as `NUI.Code`. `[D]` the two render paths differ
+upstream and here: `language == Nothing` renders the trimmed line as a Vue
+slot TEXT child (`LogLine.tsx:41-46`), while ANY `language` (even `""` —
+`highlightRef` is `language !== undefined`) goes through `innerHTML` of the
+resolved string (`LogLine.tsx:28-35`) — INCLUDING the raw-code fallback when
+the hljs gates fail, so markup-looking log text becomes real elements under a
+set-but-unknown language (upstream quirk, kept). The port mirrors both paths:
+text child, or `NUI.Internal.RawHtml` parse of the same resolved string.
 -}
 logLineHtml : Options msg -> String -> Html.Html msg
 logLineHtml opts line =
@@ -308,8 +311,13 @@ logLineHtml opts line =
     in
     Html.node "pre"
         []
-        (RawHtml.nodes
-            (Maybe.withDefault trimmed (Code.codeHtml opts.hljs opts.language opts.trim line))
+        (case opts.language of
+            Nothing ->
+                [ Html.text trimmed ]
+
+            Just _ ->
+                RawHtml.nodes
+                    (Maybe.withDefault trimmed (Code.codeHtml opts.hljs opts.language opts.trim line))
         )
 
 
