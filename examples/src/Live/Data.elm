@@ -22,6 +22,13 @@ it instead of faking them:
     div). The port's switcher/checkbox are display-only, so expand folds
     into the node click and check rides `checkOnClick` (an upstream flag).
 
+Oracle-round divergences (tasks/recon/live-oracle.md):
+
+  - [oracle D] **DtPageSize resets the page to 1** — upstream clamps into
+    the new pageCount instead (`mergedPage` watcher; Nav's twin Pagination
+    demo clamps). With 8 rows / ≤2 pages the two recipes are observationally
+    identical here; align to the clamp when next touched.
+
 -}
 
 import Element exposing (Element)

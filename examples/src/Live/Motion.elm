@@ -12,6 +12,10 @@ Every runtime concern the port documents as caller-owned lands here:
     document-level `mousemove` / `mouseup` ONLY while a drag is active and
     feeds the port's `dragStart` / `dragMove` / `dragEnd` (elapsed ms from a
     20 ms tick clock — the port takes the elapsed time explicitly).
+  - [oracle D] **Autoplay clock is free-running** — upstream's
+    stopAutoplay/resetAutoplay restarts the FULL interval on un-hover;
+    `Time.every` may fire sooner after un-pausing. Hover-pause itself is
+    faithful.
   - **Log**: the scroll position is model-owned geometry (fixed 17.5 px lines)
     fed to the port's pure `scrollEvents` / `wheelEvents` — the wheel listener
     is real (wheel bubbles to the root; scroll events do not), the buttons

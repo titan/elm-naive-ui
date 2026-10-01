@@ -10,15 +10,32 @@ seeds the expanded path, `Menu.expandTo` / `Menu.keyPathTo` drive the reveal
 button and the path caption, `Pagination.pageCount` / `getDefaultPageSize`
 drive the caption and the size clamps.
 
-Simulated runtime (the port's documented caller-owned concerns):
+Simulated runtime (the port's documented caller-owned concerns) and
+oracle-round divergences (tasks/recon/live-oracle.md):
+
+  - **Tabs close** — activation moves to the neighbour only when the ACTIVE
+    tab is the one closed (upstream addable.demo.vue's `name === value`
+    guard); closing a background tab never moves the selection.
+
+  - [oracle D] **Jumper input keeps raw text** — upstream strips \\D+ at
+    input (Pagination.tsx handleJumperInput); here String.toInt no-ops on
+    garbage, so a garbage commit neither jumps nor clears (same visible
+    outcome as upstream's NaN early-return).
+
+  - [oracle D] **PageSizeSet clamps, not resets** — the page is clamped into
+    the new pageCount (upstream's mergedPage watcher semantics); the Data
+    family's twin demo resets to page 1 instead. Clamp is the upstream-
+    faithful recipe.
 
   - **Anchor / BackTop** — scroll position is model state (`activeHref` /
     `scrollTop`); scroll buttons stand in for the scroll listener, the
     threshold is upstream's default visibility height (180px).
+
   - **Split** — `Options` carries no drag channels at all (no
     `onDragStateChange` / `onMousedown` seam), and real pointer tracking needs
     `Sub` (the Motion family's pattern), so the pane size is driven by a
     −/+/reset stepper.
+
   - **Transition phases** (Collapse / Menu / BackTop `transition` fields) need
     a clock — this family is `Sub.none`, so they stay `Nothing`.
 
@@ -158,10 +175,18 @@ update msg model =
             else
                 model
 
+        -- Upstream's addable demo reassigns the value only when the closed
+        -- tab IS the active one — closing a background tab never moves the
+        -- selection (oracle S1).
         TabClose name ->
             { model
                 | tabs = List.filter (\t -> t.name /= name) model.tabs
-                , activeTab = activeAfterClose name model.tabs
+                , activeTab =
+                    if model.activeTab == name then
+                        activeAfterClose name model.tabs
+
+                    else
+                        model.activeTab
             }
 
         TabAdd ->

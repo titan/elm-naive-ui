@@ -22,6 +22,10 @@ instances; these demos toggle them CLOSED → OPEN from the model.
     the user's next click: the close icon stamps the leave (`destroy`) and a
     second click completes it (`remove`), exactly the two beats the caller
     with a real timer would fire.
+  - [oracle D] **Appear phase is settled at push** — `settleMessage` /
+    `settleNotification` clear `EnterFrom` in the same update (no caller
+    clock in this family), so items render instantly visible. LOAD-BEARING
+    for the LIVE/OVR smoke ("created messages are VISIBLE") — keep.
   - **LoadingBar** is a pure state machine the caller steps — the buttons are
     the animation frames (`start`/`kick`/`finish`/`error` + the enter/leave
     phase ladder).

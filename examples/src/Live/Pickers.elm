@@ -16,6 +16,17 @@ helpers, update uses those instead of re-deriving semantics
 Menus and panels are separate caller-mounted bodies (upstream mounts each in
 its own follower): the trigger always renders, the body only while open.
 
+Oracle-round divergences (tasks/recon/live-oracle.md):
+
+  - [oracle D] **AutoComplete hides the empty-state menu** — `acMenuOpen`
+    requires non-empty matches, so the menu's configured `empty` slot is
+    unreachable (upstream shows the empty-state menu while focused with
+    text). The Mention row in this module mounts its `empty` slot correctly.
+  - [oracle D] **dpSingleCloses re-runs `singleDateClick` against
+    `Single Nothing`** — sound, because the helper's `close` is type-only
+    (closes for Date/Week/Year panels) and the demo discards the re-derived
+    value; the reconstruction is just how the close flag is reached.
+
 -}
 
 import Element exposing (Element)

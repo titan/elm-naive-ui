@@ -9,6 +9,17 @@ ships the interaction algebra as pure helpers, update uses those instead
 of re-deriving semantics (`InputNumber.inputUpdate` /
 `deriveValueFromDisplayedValue`, `Slider.stepValue`).
 
+Oracle-round divergences (tasks/recon/live-oracle.md):
+
+  - [oracle D] **Rate hover is button-simulated** — upstream's hover preview
+    is pointer-position algebra inside the port's rendering seam; the demo's
+    ±½ buttons drive the same `hoverValue` field the port reads.
+  - [oracle D] **Range handles can cross** — stepping "lo +" past `hi`
+    produces `lo > hi` (upstream swaps handle identity on crossing); the
+    port ships no range-ordering helper — drag runtime is caller-owned by
+    contract — and the render self-heals (the fill spans min..max of the
+    arrified value).
+
 -}
 
 import Element exposing (Element)
