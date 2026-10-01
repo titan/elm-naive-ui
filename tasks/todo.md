@@ -1,5 +1,26 @@
 # elm-naive-ui — batch todo (older closed trails below)
 
+## Input pair onFocus/onBlur port gap — CLOSED (1 commit, in-context fix + promotion)
+- [x] fix + promote — `7aac65f` (`pairEvents` mirrors the single-mode focus/blur
+      attrs onto BOTH pair inputs, emitted regardless of onPairInput exactly as
+      upstream `Input.tsx:1289/1422` binds them; DatePicker's `rangeInputOptions`
+      already passed onFocus/onBlur, so the daterange demo unlocked with zero
+      caller edits. Input.elm KNOWN GAP docstring retired; Live/Pickers
+      [smoke note] flipped to resolved. LIVE/PICK +12: pair-input focus mounts
+      `.n-date-panel--daterange` (two calendars), hover before the first click
+      is inert (dualHover gates on selecting), day-12 click starts the pair ·
+      selecting, hover day-18 previews the end ts, day-18 click completes with
+      the panel STAYING open (closeOnSelect False), Confirm keeps the sanitized
+      day pair + closes, pair-input 2 focus reopens (both inputs carry
+      onFocus). Gate 8/8 — **4365/4365, 0 failures** (4353 standing + 12);
+      data-total=2522 parallel.)
+- DOM facts now standing: daterange panel root is
+      `n-date-panel n-date-panel--daterange n-date-panel--shadow`, two
+      `.n-date-panel-calendar`, actions Clear|Confirm; after Range Nothing the
+      panel anchors on the fixed dpNow (May 2024) — day cells reachable in
+      cal[0] with the same non-excluded filter as the single panel; scratch
+      preserved at /tmp/dprange-fix-probe.mjs.
+
 ## LIVE smoke round 2 + Main.elm section split — CLOSED (3 commits, 1 smoke lane + 8 split lanes + in-context integration)
 - [x] prep — `85d567e` (starIcon / codeHljs / fakeKatex / fakeKatexDisplay move
       from Main.elm into Showcase — the cross-family fixtures the split lanes
@@ -125,9 +146,8 @@
 Both handoff candidates are DONE: the LIVE smoke promotion (round 2 —
 LIVE/CTL · MOT · PICK, 98 assertions, top entry) and the Main.elm split
 (87 sections → 8 Sections/* family modules, second entry). The one NEW
-open item is the Input pair onFocus/onBlur port gap the smoke discovered
-(documented in Input.elm KNOWN GAP + Live/Pickers [smoke note]) — fixing it
-unlocks the dropped daterange two-click smoke steps. Otherwise none queued.
+open item — the Input pair onFocus/onBlur port gap the smoke discovered —
+is CLOSED by the entry above (`7aac65f`). Nothing queued.
 
 ## README caller-supplied hljs/katex note — CLOSED (1 docs commit, the LAST optional item)
 - [x] docs — `884b60b` (one bullet in Notes / limitations: the port ships no JS —
