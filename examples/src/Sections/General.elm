@@ -1,0 +1,647 @@
+module Sections.General exposing
+    ( alertSection
+    , avatarSection
+    , badgeSection
+    , cardSection
+    , dividerSection
+    , ellipsisSection
+    , emptySection
+    , gradientTextSection
+    , highlightSection
+    , iconSection
+    , resultSection
+    , rtlSection
+    , spaceSection
+    , statisticSection
+    , tagSection
+    , themeSection
+    , thingSection
+    , typographySection
+    )
+
+{-| Static showcase sections for the general family (typography, tag, alert,
+divider, avatar, card, space, badge, empty, result, gradient text, statistic,
+thing, icon, highlight, ellipsis, RTL, theme), moved verbatim from Main.elm —
+the rendered DOM must stay byte-identical (the check-dom gate reads this
+surface).
+-}
+
+import Element exposing (Element)
+import NUI.Alert as Alert
+import NUI.Avatar as Avatar
+import NUI.AvatarGroup as AvatarGroup
+import NUI.Badge as Badge
+import NUI.Button as Button
+import NUI.Card as Card
+import NUI.Divider as Divider
+import NUI.Ellipsis as Ellipsis
+import NUI.Empty as Empty
+import NUI.GradientText as GradientText
+import NUI.Highlight as Highlight
+import NUI.Icon as Icon
+import NUI.IconWrapper as IconWrapper
+import NUI.Result as Result
+import NUI.Space as Space
+import NUI.Statistic as Statistic
+import NUI.Switch as Switch
+import NUI.Tag as Tag
+import NUI.Thing as Thing
+import NUI.Types as T
+import NUI.Typography as Typo
+import Showcase exposing (capitalize, chip, demoRow, purple, section, starIcon, theme)
+
+
+
+-- DEFAULTS (record-update needs a plain variable, not a qualified name)
+
+
+btn : Button.Options msg
+btn =
+    Button.defaults
+
+
+typ : Typo.Options msg
+typ =
+    Typo.defaults
+
+
+tagD : Tag.Options msg
+tagD =
+    Tag.defaults
+
+
+alertD : Alert.Options msg
+alertD =
+    Alert.defaults
+
+
+swD : Switch.Options msg
+swD =
+    Switch.defaults
+
+
+divD : Divider.Options msg
+divD =
+    Divider.defaults
+
+
+avD : Avatar.Options msg
+avD =
+    Avatar.defaults
+
+
+agD : AvatarGroup.Options msg
+agD =
+    AvatarGroup.defaults
+
+
+cardD : Card.Options msg
+cardD =
+    Card.defaults
+
+
+spaceD : Space.Options msg
+spaceD =
+    Space.defaults
+
+
+badgeD : Badge.Options msg
+badgeD =
+    Badge.defaults
+
+
+emptyD : Empty.Options msg
+emptyD =
+    Empty.defaults
+
+
+resultD : Result.Options msg
+resultD =
+    Result.defaults
+
+
+gtD : GradientText.Options msg
+gtD =
+    GradientText.defaults
+
+
+statD : Statistic.Options msg
+statD =
+    Statistic.defaults
+
+
+thingD : Thing.Options msg
+thingD =
+    Thing.defaults
+
+
+iconD : Icon.Options msg
+iconD =
+    Icon.defaults
+
+
+iconWrapperD : IconWrapper.Options msg
+iconWrapperD =
+    IconWrapper.defaults
+
+
+ellipsisD : Ellipsis.Options msg
+ellipsisD =
+    Ellipsis.defaults
+
+
+highlightD : Highlight.Options msg
+highlightD =
+    Highlight.defaults
+
+
+{-| A distinct colour per showcase avatar (the group's slot path uses the
+`src` as a label).
+-}
+avatarColor : String -> String
+avatarColor name =
+    case name of
+        "Alice" ->
+            "#18a058"
+
+        "Bob" ->
+            "#2080f0"
+
+        "Carol" ->
+            "#f0a020"
+
+        "Dave" ->
+            "#d03050"
+
+        _ ->
+            "#8a8a8a"
+
+
+
+-- SECTIONS
+
+
+typographySection : Element msg
+typographySection =
+    section "Typography"
+        "Headers, text and rich content."
+        [ Typo.h1 theme typ [ Element.text "H1 Heading" ]
+        , Typo.h3 theme typ [ Element.text "H3 Heading" ]
+        , Typo.p theme
+            typ
+            [ Element.text "Body copy. Naive UI's typography scale, weights and colours." ]
+        , Element.wrappedRow [ Element.spacing 16 ]
+            (List.map
+                (\k -> Typo.text theme { typ | kind = k } [ Element.text (capitalize (T.kindClass k)) ])
+                [ T.Default, T.Primary, T.Info, T.Success, T.Warning, T.Error ]
+            )
+        , demoRow "Styles"
+            [ Typo.text theme { typ | strong = True } [ Element.text "Strong" ]
+            , Typo.text theme { typ | italic = True } [ Element.text "Italic" ]
+            , Typo.text theme { typ | underline = True } [ Element.text "Underline" ]
+            , Typo.text theme { typ | delete = True } [ Element.text "Deleted" ]
+            , Typo.text theme { typ | code = True } [ Element.text "code" ]
+            ]
+        , Typo.blockquote theme
+            typ
+            [ Element.text "A quote renders with the blockquote bar and muted colour." ]
+        , Typo.ul theme
+            typ
+            [ Typo.li [ Element.text "First item" ]
+            , Typo.li [ Element.text "Second item" ]
+            ]
+        , Typo.hr theme
+        , Typo.a theme
+            { typ | href = Just "https://www.naiveui.com" }
+            [ Element.text "A link" ]
+        ]
+
+
+tagSection : Element msg
+tagSection =
+    section "Tag" "Compact labels, with optional close and check states." <|
+        [ demoRow "Types"
+            (List.map
+                (\k -> Tag.view theme { tagD | kind = k } [ Element.text (capitalize (T.kindClass k)) ])
+                [ T.Default, T.Primary, T.Info, T.Success, T.Warning, T.Error ]
+            )
+        , demoRow "Shapes & states"
+            [ Tag.view theme { tagD | round = True } [ Element.text "Round" ]
+            , Tag.view theme { tagD | bordered = False } [ Element.text "Filled" ]
+            , Tag.view theme { tagD | kind = T.Primary, strong = True } [ Element.text "Strong" ]
+            , Tag.view theme { tagD | closable = True } [ Element.text "Closable" ]
+            , Tag.view theme { tagD | kind = T.Success, checkable = True, checked = True } [ Element.text "Checked" ]
+            , Tag.view theme { tagD | disabled = True } [ Element.text "Disabled" ]
+            ]
+        ]
+
+
+alertSection : Element msg
+alertSection =
+    section "Alert" "Inline messages." <|
+        [ Alert.view theme alertD [ Element.text "A default alert." ]
+        , Alert.view theme
+            { alertD | kind = T.Info, title = Just "Info" }
+            [ Element.text "With a title and icon." ]
+        , Alert.view theme
+            { alertD | kind = T.Success, title = Just "Success", closable = True }
+            [ Element.text "Closable alert." ]
+        , Alert.view theme { alertD | kind = T.Warning } [ Element.text "A warning." ]
+        , Alert.view theme
+            { alertD | kind = T.Error, bordered = False }
+            [ Element.text "Borderless error." ]
+        ]
+
+
+dividerSection : Element msg
+dividerSection =
+    section "Divider" "Separates content." <|
+        [ Divider.view theme { divD | titlePlacement = Divider.Left } [ Element.text "Left" ]
+        , Divider.view theme { divD | titlePlacement = Divider.Center } [ Element.text "Center" ]
+        , Divider.view theme { divD | titlePlacement = Divider.Right } [ Element.text "Right" ]
+        , Divider.view theme { divD | dashed = True } []
+        , Element.row [ Element.spacing 16, Element.height (Element.px 42) ]
+            [ Element.text "Text"
+            , Divider.view theme { divD | vertical = True } []
+            , Element.text "More"
+            , Divider.view theme { divD | vertical = True } []
+            , Element.text "End"
+            ]
+        ]
+
+
+avatarSection : Element msg
+avatarSection =
+    section "Avatar" "Sizes, shapes and colours." <|
+        [ demoRow "Sizes"
+            [ Avatar.view theme { avD | size = Avatar.Tiny } [ Element.text "T" ]
+            , Avatar.view theme { avD | size = Avatar.Small } [ Element.text "S" ]
+            , Avatar.view theme { avD | size = Avatar.Medium } [ Element.text "M" ]
+            , Avatar.view theme { avD | size = Avatar.Large } [ Element.text "L" ]
+            , Avatar.view theme { avD | size = Avatar.Huge } [ Element.text "H" ]
+            ]
+        , demoRow "Shapes & colours"
+            [ Avatar.view theme { avD | circle = True, color = Just "#18a058" } [ Element.text "A" ]
+            , Avatar.view theme { avD | circle = True, color = Just "#2080f0" } [ Element.text "B" ]
+            , Avatar.view theme { avD | color = Just "#f0a020" } [ Element.text "Rounded" ]
+            ]
+        , demoRow "Group"
+            [ AvatarGroup.view theme
+                { agD
+                    | max = Just 3
+                    , avatar =
+                        Just
+                            (\opt ->
+                                Avatar.view theme
+                                    { avD | color = Just (avatarColor opt.src) }
+                                    [ Element.text (String.left 1 opt.src) ]
+                            )
+                }
+                [ { src = "Alice" }
+                , { src = "Bob" }
+                , { src = "Carol" }
+                , { src = "Dave" }
+                , { src = "Eve" }
+                ]
+            , AvatarGroup.view theme
+                { agD | vertical = True, size = Just Avatar.Medium }
+                [ { src = "https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg" }
+                , { src = "https://picsum.photos/id/1/100/100" }
+                , { src = "https://picsum.photos/id/2/100/100" }
+                ]
+            ]
+        ]
+
+
+cardSection : Element msg
+cardSection =
+    section "Card" "Bordered containers, optionally hoverable." <|
+        [ Element.row [ Element.spacing 16, Element.width Element.fill ]
+            [ Element.el [ Element.width Element.fill ]
+                (Card.view theme
+                    { cardD | title = Just (Element.text "Basic card") }
+                    [ Element.text "Content of the card." ]
+                )
+            , Element.el [ Element.width Element.fill ]
+                (Card.view theme
+                    { cardD | title = Just (Element.text "Hoverable"), hoverable = True }
+                    [ Element.text "Hover me for a shadow." ]
+                )
+            ]
+        , Card.view theme
+            { cardD
+                | title = Just (Element.text "With header extra")
+                , headerExtra = Just (Tag.view theme { tagD | kind = T.Primary } [ Element.text "New" ])
+                , footer = Just (Element.text "Footer")
+            }
+            [ Element.text "Card body content." ]
+        , Card.view theme
+            { cardD | embedded = True, title = Just (Element.text "Embedded") }
+            [ Element.text "An embedded (inset) card." ]
+        ]
+
+
+spaceSection : Element msg
+spaceSection =
+    section "Space" "Spacing between arbitrary children." <|
+        [ demoRow "Small gap"
+            [ Space.view theme { spaceD | size = Space.Small } (List.map chip [ "One", "Two", "Three" ]) ]
+        , demoRow "Medium gap"
+            [ Space.view theme { spaceD | size = Space.Medium } (List.map chip [ "One", "Two", "Three" ]) ]
+        , demoRow "Vertical"
+            [ Space.view theme
+                { spaceD | direction = Space.Vertical, size = Space.Medium }
+                (List.map chip [ "Stacked", "Vertically", "Spaced" ])
+            ]
+        ]
+
+
+badgeSection : Element msg
+badgeSection =
+    section "Badge" "Counts and status dots on arbitrary content." <|
+        [ demoRow "Annotating a button"
+            [ Badge.view theme
+                { badgeD | value = Just (Badge.Number 5) }
+                [ Button.view theme { btn | size = T.Small } [ Element.text "Mail" ] ]
+            , Badge.view theme
+                { badgeD | value = Just (Badge.Number 200), max = Just 99 }
+                [ Button.view theme { btn | size = T.Small } [ Element.text "Inbox" ] ]
+            , Badge.view theme
+                { badgeD | dot = True, processing = True, type_ = Badge.Error }
+                [ Button.view theme { btn | size = T.Small } [ Element.text "Alerts" ] ]
+            ]
+        , demoRow "Types"
+            (List.map
+                (\t ->
+                    Badge.view theme
+                        { badgeD | value = Just (Badge.Number 9), type_ = t }
+                        []
+                )
+                [ Badge.Default, Badge.Info, Badge.Success, Badge.Warning, Badge.Error ]
+            )
+        , demoRow "Custom colour"
+            [ Badge.view theme
+                { badgeD | value = Just (Badge.Text "New"), color = Just "#36ad6a" }
+                []
+            , Badge.view theme { badgeD | dot = True, color = Just "#18a058" } []
+            ]
+        , demoRow "Runtime (digit scroll · wave)"
+            [ Badge.view theme
+                { badgeD
+                    | value = Just (Badge.Number 128)
+                    , previousValue = Just (Badge.Number 118)
+                }
+                []
+            , Badge.view theme
+                { badgeD
+                    | value = Just (Badge.Number 5)
+                    , processing = True
+                    , waveActive = True
+                }
+                []
+            ]
+        ]
+
+
+emptySection : Element msg
+emptySection =
+    section "Empty" "Placeholder for empty states." <|
+        [ demoRow "Default"
+            [ Element.el [ Element.width (Element.px 240) ]
+                (Empty.view theme emptyD [])
+            ]
+        , demoRow "Description & extra"
+            [ Element.el [ Element.width (Element.px 240) ]
+                (Empty.view theme
+                    { emptyD
+                        | description = Just "Nothing here yet."
+                        , extra = Just (Button.view theme { btn | size = T.Small } [ Element.text "Reload" ])
+                    }
+                    []
+                )
+            ]
+        , demoRow "Sizes"
+            [ Element.el [ Element.width (Element.px 150) ]
+                (Empty.view theme { emptyD | size = Empty.Small, description = Just "Small" } [])
+            , Element.el [ Element.width (Element.px 260) ]
+                (Empty.view theme { emptyD | size = Empty.Large, description = Just "Large" } [])
+            ]
+        ]
+
+
+resultSection : Element msg
+resultSection =
+    section "Result" "Important feedback pages." <|
+        [ demoRow "Statuses"
+            [ Element.el [ Element.width (Element.px 210) ]
+                (Result.view theme
+                    { resultD | status = Result.Info, title = Just "Informational" }
+                    []
+                )
+            , Element.el [ Element.width (Element.px 210) ]
+                (Result.view theme
+                    { resultD | status = Result.Success, title = Just "Successful" }
+                    []
+                )
+            ]
+        , Element.el [ Element.width (Element.px 340) ]
+            (Result.view theme
+                { resultD
+                    | status = Result.Code404
+                    , title = Just "404"
+                    , description = Just "The page you are looking for does not exist."
+                    , footer = Just (Button.view theme btn [ Element.text "Back home" ])
+                }
+                [ Element.text "Custom content can fill the default slot." ]
+            )
+        ]
+
+
+gradientTextSection : Element msg
+gradientTextSection =
+    section "Gradient Text" "Themed gradient text." <|
+        [ demoRow "Types"
+            (List.map
+                (\t -> GradientText.view theme { gtD | type_ = t } [ Element.text "Wonderful" ])
+                [ GradientText.Primary
+                , GradientText.Info
+                , GradientText.Success
+                , GradientText.Warning
+                , GradientText.Error
+                ]
+            )
+        , demoRow "Custom gradient"
+            [ GradientText.view theme
+                { gtD
+                    | gradient =
+                        Just (GradientText.Raw "linear-gradient(90deg, #d03050, #2080f0)")
+                }
+                [ Element.text "Raw CSS" ]
+            , GradientText.view theme
+                { gtD | gradient = Just (GradientText.fromTo "#18a058" "#2080f0") }
+                [ Element.text "From / To" ]
+            , GradientText.view theme { gtD | size = Just "22px" } [ Element.text "Sized" ]
+            ]
+        ]
+
+
+statisticSection : Element msg
+statisticSection =
+    section "Statistic" "Labelled numeric displays." <|
+        [ demoRow "Basic"
+            [ Statistic.view theme
+                { statD | label = Just "Active users", value = Just "128" }
+                []
+            , Statistic.view theme
+                { statD
+                    | label = Just "Revenue"
+                    , value = Just "1,024"
+                    , prefix = Just (Element.text "$")
+                }
+                []
+            ]
+        , demoRow "Tabular nums & custom value"
+            [ Statistic.view theme
+                { statD
+                    | label = Just "Growth"
+                    , tabularNums = True
+                    , suffix = Just (Element.text "%")
+                }
+                [ Element.text "12.5" ]
+            ]
+        ]
+
+
+thingSection : Element msg
+thingSection =
+    section "Thing" "A flexible content block (avatar + header + body)." <|
+        [ demoRow "With avatar"
+            [ Element.el [ Element.width (Element.px 320) ]
+                (Thing.view theme
+                    { thingD
+                        | avatar = Just (Avatar.view theme Avatar.defaults [ Element.text "N" ])
+                        , title = Just "naive-ui"
+                        , titleExtra = Just "v2"
+                        , description = Just "A Vue 3 component library."
+                    }
+                    [ Element.text "Content sits under the header." ]
+                )
+            ]
+        , demoRow "Indented content"
+            [ Element.el [ Element.width (Element.px 320) ]
+                (Thing.view theme
+                    { thingD
+                        | avatar = Just (Avatar.view theme Avatar.defaults [ Element.text "I" ])
+                        , contentIndented = True
+                        , title = Just "Indented"
+                    }
+                    [ Element.text "The avatar sits above the block." ]
+                )
+            ]
+        ]
+
+
+ellipsisSection : Element msg
+ellipsisSection =
+    section "Ellipsis" "Truncated text (the expand state is caller-owned)." <|
+        [ Element.el [ Element.width (Element.px 220) ]
+            (Ellipsis.view theme
+                ellipsisD
+                [ Element.text "A very long single line of text that gets cut off with an ellipsis character." ]
+            )
+        , Element.el [ Element.width (Element.px 220) ]
+            (Ellipsis.view theme
+                { ellipsisD | lineClamp = Just 2 }
+                [ Element.text "Line clamping caps this paragraph at two lines and hides the remaining text behind a trailing ellipsis." ]
+            )
+        , Element.el [ Element.width (Element.px 220) ]
+            (Ellipsis.view theme
+                { ellipsisD | lineClamp = Just 2, expandOnClick = True }
+                [ Element.text "A clickable two-line clamp. The caller toggles `expanded`." ]
+            )
+        ]
+
+
+iconSection : Element msg
+iconSection =
+    section "Icon"
+        "Naive UI's icon primitive (`.n-icon`) and its rounded wrapper (`.n-icon-wrapper`). Pass the glyph as the child."
+    <|
+        [ demoRow "Icon"
+            [ Icon.view theme iconD [ starIcon ]
+            , Icon.view theme { iconD | size = Just (Icon.Px 32) } [ starIcon ]
+            , Icon.view theme { iconD | depth = Just Icon.Depth2 } [ starIcon ]
+            ]
+        , demoRow "Wrapper"
+            [ IconWrapper.view theme iconWrapperD [ Icon.view theme iconD [ starIcon ] ]
+            , IconWrapper.view theme
+                { iconWrapperD | color = Just "#18a058", iconColor = Just "#fff" }
+                [ Icon.view theme iconD [ starIcon ] ]
+            ]
+        ]
+
+
+highlightSection : Element msg
+highlightSection =
+    section "Highlight"
+        "Plain text with every pattern occurrence wrapped in a `mark` (no stylesheet of its own)."
+    <|
+        [ Highlight.view theme
+            { highlightD | text = "Naive UI is awesome", patterns = [ "Naive", "UI" ] }
+            []
+        , Highlight.view theme
+            { highlightD
+                | text = "naive-ui is written in TypeScript"
+                , patterns = [ "naive", "typescript" ]
+                , caseSensitive = False
+            }
+            []
+        , Highlight.view theme
+            { highlightD
+                | text = "Price: $100.99 and $5"
+                , patterns = [ "$1", "$5" ]
+                , highlightStyle = [ ( "color", "red" ) ]
+            }
+            []
+        ]
+
+
+rtlSection : Element msg
+rtlSection =
+    section "RTL"
+        "Right-to-left layout — pass `rtl = True`; the RTL rules ship in the stylesheet."
+    <|
+        [ demoRow "Alert"
+            [ Element.el [ Element.width (Element.px 340) ]
+                (Alert.view theme
+                    { alertD | rtl = True, kind = T.Info, title = Just "Info" }
+                    [ Element.text "A right-to-left alert." ]
+                )
+            ]
+        , demoRow "Components"
+            [ Button.view theme { btn | rtl = True, kind = T.Primary } [ Element.text "Button" ]
+            , Tag.view theme { tagD | rtl = True, kind = T.Primary } [ Element.text "Tag" ]
+            , Badge.view theme { badgeD | rtl = True, value = Just (Badge.Number 5) } [ Element.text "Mail" ]
+            , Space.view theme
+                { spaceD | rtl = True }
+                [ Element.text "One", Element.text "Two", Element.text "Three" ]
+            ]
+        ]
+
+
+themeSection : Element msg
+themeSection =
+    section "Theme"
+        "One variable set drives every component — override the primary colour and it propagates."
+    <|
+        [ demoRow "Default primary"
+            [ Button.view theme { btn | kind = T.Primary } [ Element.text "Primary" ]
+            , Tag.view theme { tagD | kind = T.Primary, bordered = False } [ Element.text "Tag" ]
+            , Switch.view theme { swD | value = True } []
+            ]
+        , demoRow "setPrimary \"#7c3aed\""
+            [ Button.view purple { btn | kind = T.Primary } [ Element.text "Primary" ]
+            , Tag.view purple { tagD | kind = T.Primary, bordered = False } [ Element.text "Tag" ]
+            , Switch.view purple { swD | value = True } []
+            ]
+        ]
