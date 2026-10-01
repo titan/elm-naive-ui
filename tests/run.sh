@@ -3,6 +3,8 @@
 #
 #   tests/run.sh
 #
+# Also builds the live showcase page (examples/index.html) that inspect.mjs's
+# Live · Overlays interaction phase drives in a second jsdom instance.
 # Exits non-zero if any assertion fails.
 set -euo pipefail
 
@@ -19,6 +21,9 @@ cd "$here"
 
 echo "== building tests (ELM_HOME=$ELM_HOME) =="
 elm make src/Main.elm --output=index.html
+
+echo "== building live showcase page (examples) =="
+( cd "$here/../examples" && elm make src/Main.elm --output=index.html )
 
 echo "== running assertions =="
 node inspect.mjs index.html

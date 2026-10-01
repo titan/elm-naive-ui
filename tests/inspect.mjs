@@ -11882,6 +11882,277 @@ dEq('DOM: RawHtml katex mathml math is MathML-namespace', MATHML_NS, stMath ? st
 dEq('DOM: RawHtml katex annotation tex text', 'c = \\pm\\sqrt{a^2 + b^2}', stAnnotation ? stAnnotation.textContent : null)
 dEq('DOM: RawHtml ns scope exits — .katex-html is xhtml', 'http://www.w3.org/1999/xhtml', doc.querySelector('#live-equation-stretchy .katex-html') ? doc.querySelector('#live-equation-stretchy .katex-html').namespaceURI : null)
 
+// --- Live · Overlays — interaction phase -------------------------------------
+// The phases above pin the tests page's STATIC render (overlay roots open
+// from init). This one boots a SECOND jsdom instance around the live
+// showcase page — a real Browser.element app whose overlay demos start
+// closed — and drives it with genuine DOM events (click / mouseenter /
+// mouseleave dispatched through the compiled update loop), reading the
+// patched DOM back after each step: trigger algebra, controlled pinning,
+// queue splices, max-eviction and transition stamping across the overlay
+// family. Ported verbatim from the Overlays live lane's scratch smoke (11
+// scenarios / 78 assertions). The 30/20ms scenario sleeps are load-bearing:
+// Elm batches patches on rAF and jsdom's pretendToBeVisual clock needs a
+// tick to flush them — do not tidy them away.
+const liveHtmlPath = process.argv[3] || path.join(here, '..', 'examples', 'index.html')
+if (!fs.existsSync(liveHtmlPath)) {
+  console.error(`live showcase page not found: ${liveHtmlPath}`)
+  console.error('build it first:  cd examples && elm make src/Main.elm --output=index.html')
+  process.exit(1)
+}
+const liveDom = new JSDOM(fs.readFileSync(liveHtmlPath, 'utf8'), {
+  runScripts: 'dangerously',
+  pretendToBeVisual: true,
+  resources: 'usable',
+  virtualConsole
+})
+const liveWindow = liveDom.window
+const liveDoc = liveWindow.document
+
+// same { name, ok, detail } shape the static dEq/dTrue push into domChecks
+const ovlLiveOk = (cond, label) =>
+  domChecks.push({
+    name: 'LIVE/OVR: ' + label,
+    ok: !!cond,
+    detail: cond ? '' : 'live interaction assertion failed'
+  })
+
+try {
+  const ovlSleep = (ms) => new Promise((r) => setTimeout(r, ms))
+  await ovlSleep(700)
+
+  const ovlClick = (el) => {
+    if (!el) throw new Error('click on undefined element')
+    el.dispatchEvent(new liveWindow.MouseEvent('click', { bubbles: true, cancelable: true, view: liveWindow }))
+  }
+  const ovlHover = (el, type) => {
+    el.dispatchEvent(new liveWindow.MouseEvent(type, { bubbles: false, cancelable: true, view: liveWindow }))
+  }
+  const ovlBodyText = () => liveDoc.body.textContent
+  // NUI.Button renders a div.n-button (elm-ui), not a <button> tag
+  const findOvlBtn = (label, root) =>
+    [...(root || liveDoc).querySelectorAll('.n-button')].find((b) => b.textContent.trim() === label)
+
+  // the live demoRow places its controls right BEFORE the cell in document
+  // order — the nearest preceding match is the live one (the static sections
+  // render far earlier in the page)
+  const nearestPreceding = (selector, filter, cell) =>
+    [...liveDoc.querySelectorAll(selector)]
+      .filter((el) => (filter ? filter(el) : true))
+      .filter((el) => el.compareDocumentPosition(cell) & liveWindow.Node.DOCUMENT_POSITION_FOLLOWING)
+      .pop()
+
+  // ---------- Dropdown · click trigger ----------
+  {
+    console.log('Dropdown / click trigger')
+    const host = liveDoc.querySelector('#live-dropdown-click')
+    ovlLiveOk(!!host, 'host rendered')
+    ovlLiveOk(!host.querySelector('.n-dropdown-menu'), 'menu initially closed')
+    ovlClick(findOvlBtn('Open menu \u25BE', host)); await ovlSleep(30)
+    ovlLiveOk(!!host.querySelector('#live-dropdown-menu.n-dropdown-menu'), 'menu opens on trigger click')
+    const edit = [...host.querySelectorAll('.n-dropdown-option-body__label')]
+      .find((n) => n.textContent.trim() === 'Edit')
+    ovlClick(edit); await ovlSleep(30)
+    ovlLiveOk(!host.querySelector('.n-dropdown-menu'), 'menu closes on select')
+    ovlLiveOk(ovlBodyText().includes("onSelect \u2192 'edit'"), 'onSelect caption shown')
+  }
+
+  // ---------- Dropdown · hover trigger ----------
+  {
+    console.log('Dropdown / hover trigger')
+    const host = liveDoc.querySelector('#live-dropdown-hover')
+    ovlLiveOk(!!host, 'host rendered')
+    ovlLiveOk(!host.querySelector('.n-dropdown-menu'), 'initially closed')
+    ovlHover(host, 'mouseenter'); await ovlSleep(30)
+    ovlLiveOk(!!host.querySelector('.n-dropdown-menu'), 'mouseenter opens the menu')
+    ovlHover(host, 'mouseleave'); await ovlSleep(30)
+    ovlLiveOk(!host.querySelector('.n-dropdown-menu'), 'mouseleave closes the menu')
+  }
+
+  // ---------- Popover · controlled ----------
+  {
+    console.log('Popover / controlled')
+    const host = liveDoc.querySelector('#live-popover')
+    ovlLiveOk(!!host, 'host rendered')
+    ovlLiveOk(!host.querySelector('.n-popover'), 'initially closed')
+    ovlClick(findOvlBtn('Show')); await ovlSleep(30)
+    ovlLiveOk(!!host.querySelector('.n-popover.n-popover-shared'), 'Show opens the popover body')
+    ovlLiveOk(!!host.querySelector('.n-popover__header'), 'header rendered')
+    ovlClick(findOvlBtn('Close', host)); await ovlSleep(30)
+    ovlLiveOk(!host.querySelector('.n-popover'), 'footer Close unmounts the body')
+    const liveSwitch = () => nearestPreceding('.n-switch', null, host)
+    ovlClick(liveSwitch()); await ovlSleep(30)
+    ovlLiveOk(!!host.querySelector('.n-popover'), 'controlled switch pins it open')
+    ovlClick(findOvlBtn('Close', host)); await ovlSleep(30)
+    ovlLiveOk(!!host.querySelector('.n-popover'), 'footer Close cannot unmount while pinned')
+    ovlClick(liveSwitch()); await ovlSleep(30)
+    ovlLiveOk(!host.querySelector('.n-popover'), 'unpin releases it')
+  }
+
+  // ---------- Tooltip · hover ----------
+  {
+    console.log('Tooltip / hover')
+    const host = liveDoc.querySelector('#live-tooltip-region')
+    ovlLiveOk(!!host, 'host rendered')
+    ovlLiveOk(!host.querySelector('.n-tooltip'), 'initially closed')
+    ovlHover(host, 'mouseenter'); await ovlSleep(30)
+    ovlLiveOk(!!host.querySelector('.n-tooltip.n-popover-shared'), 'mouseenter mounts the tooltip')
+    ovlHover(host, 'mouseleave'); await ovlSleep(30)
+    ovlLiveOk(!host.querySelector('.n-tooltip'), 'mouseleave unmounts it')
+  }
+
+  // ---------- Popconfirm · confirm flow ----------
+  {
+    console.log('Popconfirm / confirm flow')
+    const host = liveDoc.querySelector('#live-popconfirm')
+    ovlLiveOk(!!host, 'host rendered')
+    const del = findOvlBtn('Delete project\u2026', host)
+    ovlClick(del); await ovlSleep(30)
+    ovlLiveOk(!!host.querySelector('.n-popconfirm__panel'), 'panel opens')
+    ovlClick(findOvlBtn('Cancel', host)); await ovlSleep(30)
+    ovlLiveOk(!host.querySelector('.n-popconfirm__panel'), 'negative closes the panel')
+    ovlLiveOk(ovlBodyText().includes('negative \u2014 kept'), 'negative outcome caption')
+    ovlClick(del); await ovlSleep(30)
+    ovlClick(findOvlBtn('Confirm', host)); await ovlSleep(30)
+    ovlLiveOk(!host.querySelector('.n-popconfirm__panel'), 'positive closes the panel')
+    ovlLiveOk(ovlBodyText().includes('positive \u2014 deleted'), 'positive outcome caption')
+  }
+
+  // ---------- Modal · open/close + mask ----------
+  {
+    console.log('Modal / open/close + mask')
+    const cell = liveDoc.querySelector('#live-modal')
+    ovlLiveOk(!!cell, 'cell rendered')
+    ovlLiveOk(!cell.querySelector('.n-modal-container'), 'initially closed')
+    ovlClick(findOvlBtn('Open modal')); await ovlSleep(30)
+    ovlLiveOk(!!cell.querySelector('#live-modal-tree.n-modal-container'), 'modal tree mounts on open')
+    ovlLiveOk(!!cell.querySelector('.n-card.n-modal'), 'card preset body')
+    ovlLiveOk(cell.textContent.includes('Ticks while open: 0'), 'counter starts at 0')
+    const tick = findOvlBtn('tick', cell)
+    ovlClick(tick); await ovlSleep(30)
+    ovlClick(tick); await ovlSleep(30)
+    ovlLiveOk(cell.textContent.includes('Ticks while open: 2'), 'counter updates while open')
+    const bodyWrapper = cell.querySelector('.n-modal-body-wrapper')
+    ovlClick(bodyWrapper); await ovlSleep(30)
+    ovlLiveOk(!cell.querySelector('.n-modal-container'), 'click outside the card closes (bubbled mask click)')
+    ovlLiveOk(ovlBodyText().includes('closed via mask click'), 'mask-close caption')
+    ovlClick(findOvlBtn('Open modal')); await ovlSleep(30)
+    const closeX = cell.querySelector('.n-card .n-base-close')
+    ovlLiveOk(!!closeX, 'card close ✕ rendered')
+    ovlClick(closeX); await ovlSleep(30)
+    ovlLiveOk(!cell.querySelector('.n-modal-container'), '✕ closes the modal')
+    ovlLiveOk(ovlBodyText().includes('closed via the header \u2715 (onClose)'), 'onClose caption')
+  }
+
+  // ---------- Drawer · placement picker ----------
+  {
+    console.log('Drawer / placement picker')
+    const cell = liveDoc.querySelector('#live-drawer')
+    ovlLiveOk(!!cell, 'cell rendered')
+    ovlLiveOk(!cell.querySelector('.n-drawer-container'), 'initially closed')
+    const leftRadio = [...liveDoc.querySelectorAll('.n-radio')].find((r) => r.textContent.trim() === 'left')
+    ovlClick(leftRadio); await ovlSleep(30)
+    ovlClick(findOvlBtn('Open drawer')); await ovlSleep(30)
+    ovlLiveOk(!!cell.querySelector('.n-drawer.n-drawer--left-placement'), 'drawer opens with the picked left placement')
+    ovlLiveOk(!!cell.querySelector('.n-drawer-mask'), 'mask rendered')
+    ovlClick(cell.querySelector('.n-drawer-mask')); await ovlSleep(30)
+    ovlLiveOk(!cell.querySelector('.n-drawer'), 'onMaskClick closes the drawer')
+    ovlLiveOk(ovlBodyText().includes('closed via onMaskClick'), 'mask-close caption')
+    ovlClick(findOvlBtn('Open drawer')); await ovlSleep(30)
+    const closeX = cell.querySelector('.n-drawer .n-base-close')
+    ovlLiveOk(!!closeX, 'drawer content close ✕ rendered')
+    ovlClick(closeX); await ovlSleep(30)
+    ovlLiveOk(!cell.querySelector('.n-drawer'), '✕ closes the drawer')
+    ovlLiveOk(ovlBodyText().includes('closed via the header \u2715 (onClose)'), 'drawer onClose caption')
+  }
+
+  // ---------- Dialog · positive/negative ----------
+  {
+    console.log('Dialog / positive/negative')
+    const cell = liveDoc.querySelector('#live-dialog')
+    ovlLiveOk(!!cell, 'cell rendered')
+    ovlLiveOk(!cell.querySelector('.n-modal-container'), 'initially closed')
+    ovlClick(findOvlBtn('Open dialog')); await ovlSleep(30)
+    ovlLiveOk(!!cell.querySelector('.n-dialog.n-modal'), 'dialog preset mounts inside the modal')
+    ovlClick(findOvlBtn('Not yet', cell)); await ovlSleep(30)
+    ovlLiveOk(!cell.querySelector('.n-modal-container'), 'negative closes')
+    ovlLiveOk(ovlBodyText().includes('onNegativeClick \u2192 cancelled'), 'negative caption')
+    ovlClick(findOvlBtn('Open dialog')); await ovlSleep(30)
+    ovlClick(findOvlBtn('Submit', cell)); await ovlSleep(30)
+    ovlLiveOk(ovlBodyText().includes('onPositiveClick \u2192 submitted'), 'positive caption')
+    ovlClick(findOvlBtn('Open dialog')); await ovlSleep(30)
+    ovlClick(cell.querySelector('.n-dialog .n-base-close')); await ovlSleep(30)
+    ovlLiveOk(!cell.querySelector('.n-modal-container'), '✕ closes')
+    ovlLiveOk(ovlBodyText().includes('onClose \u2192 dismissed'), 'onClose caption')
+  }
+
+  // ---------- Message · queue ----------
+  {
+    console.log('Message / queue')
+    const cell = liveDoc.querySelector('#live-message-queue')
+    ovlLiveOk(!!cell, 'cell rendered')
+    ovlLiveOk(cell.querySelectorAll('.n-message').length === 0, 'queue empty')
+    const live = (l) =>
+      nearestPreceding('.n-button', (b) => b.textContent.trim() === l, cell)
+    ovlClick(live('info')); await ovlSleep(30)
+    ovlClick(live('info')); await ovlSleep(30)
+    ovlClick(live('success')); await ovlSleep(30)
+    ovlLiveOk(cell.querySelectorAll('.n-message').length === 3, 'three messages queued')
+    ovlLiveOk(cell.textContent.includes('Deploy finished'), 'created messages are VISIBLE (appear settled)')
+    const closes = [...cell.querySelectorAll('button.n-base-close')]
+    ovlLiveOk(closes.length === 3, 'closable close icons rendered')
+    ovlClick(closes[0]); await ovlSleep(30)
+    ovlLiveOk(cell.querySelectorAll('.n-message').length === 3, 'first close click stamps the leave (still mounted)')
+    ovlLiveOk(!!cell.querySelector('.fade-in-height-expand-transition-leave-from'), 'leave-from class stamped')
+    ovlClick(cell.querySelectorAll('button.n-base-close')[0]); await ovlSleep(30)
+    ovlLiveOk(cell.querySelectorAll('.n-message').length === 2, 'second close click splices (after-leave)')
+    ovlClick(live('clear')); await ovlSleep(30)
+    ovlLiveOk(cell.querySelectorAll('.n-message').length === 2, 'clear stamps leaves (still mounted)')
+    ovlClick(live('clear')); await ovlSleep(30)
+    ovlLiveOk(cell.querySelectorAll('.n-message').length === 0, 'second clear removes all')
+  }
+
+  // ---------- Notification · queue (max 3) ----------
+  {
+    console.log('Notification / queue (max 3)')
+    const cell = liveDoc.querySelector('#live-notification-queue')
+    ovlLiveOk(!!cell, 'cell rendered')
+    const infoBtn = nearestPreceding('.n-button', (b) => b.textContent.trim() === 'info', cell)
+    for (let i = 0; i < 4; i++) { ovlClick(infoBtn); await ovlSleep(20) }
+    ovlLiveOk(cell.querySelectorAll('.n-notification').length === 4, '4 notifications live (3 settled + 1 evicted leaving)')
+    ovlLiveOk(!!cell.querySelector('.notification-transition-leave-from'), 'max eviction stamps a leave on the oldest')
+    ovlLiveOk(cell.textContent.includes('Build queued'), 'created notifications visible')
+  }
+
+  // ---------- LoadingBar · manual clock ----------
+  {
+    console.log('LoadingBar / manual clock')
+    const cell = liveDoc.querySelector('#live-loading-bar')
+    ovlLiveOk(!!cell, 'cell rendered')
+    ovlLiveOk(!cell.querySelector('.n-loading-bar-container'), 'bar unmounted while idle')
+    const small = (label) => nearestPreceding('.n-button', (b) => b.textContent.trim() === label, cell)
+    ovlClick(small('start')); await ovlSleep(30)
+    const bar = cell.querySelector('.n-loading-bar--starting')
+    ovlLiveOk(!!bar, 'start mounts the bar with --starting')
+    ovlLiveOk((bar.getAttribute('style') || '').includes('transition'), 'start frame disables the transition (from-width painted)')
+    ovlClick(small('kick')); await ovlSleep(30)
+    const kicked = cell.querySelector('.n-loading-bar')
+    ovlLiveOk((kicked.getAttribute('style') || '').includes('max-width:80'), 'kick tweens to 80%')
+    ovlLiveOk(!(kicked.getAttribute('style') || '').includes('transition: none'), 'kick re-enables the CSS tween')
+    ovlClick(small('finish')); await ovlSleep(30)
+    ovlLiveOk(!!cell.querySelector('.n-loading-bar--finishing'), 'finish retargets to --finishing')
+    ovlLiveOk(!!cell.querySelector('.fade-in-transition-leave-from, .fade-in-transition-leave-active'), 'finish stamps the leave fade')
+    ovlClick(small('start')); await ovlSleep(30)
+    ovlClick(small('error')); await ovlSleep(30)
+    ovlLiveOk(!!cell.querySelector('.n-loading-bar--error'), 'error switches to --error')
+  }
+
+} catch (e) {
+  // a thrown driver error (e.g. click on undefined) must surface as a failed
+  // check in the standing report — never a silent skip of the phase
+  domChecks.push({ name: 'LIVE/OVR driver error', ok: false, detail: String(e && e.stack || e) })
+}
+
 // --- report -----------------------------------------------------------------
 const all = [...elmChecks, ...domChecks]
 const failures = all.filter((c) => !c.ok)
