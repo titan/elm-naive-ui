@@ -1,5 +1,42 @@
 # elm-naive-ui — batch todo (older closed trails below)
 
+## LIVE smoke round 2 + Main.elm section split — CLOSED (3 commits, 1 smoke lane + 8 split lanes + in-context integration)
+- [x] prep — `85d567e` (starIcon / codeHljs / fakeKatex / fakeKatexDisplay move
+      from Main.elm into Showcase — the cross-family fixtures the split lanes
+      would otherwise duplicate; bodies verbatim. Gate 8/8, 4255/4255 counts
+      identical.)
+- [x] smoke lane — /tmp/live-smoke2-probe.mjs (brief tasks/brief-live-smoke2.md;
+      worktree-less verbatim NOT used this time — plain worktree, scratch in
+      /tmp, zero repo edits). 98 assertions 100% on two fresh boots.
+- [x] promote — `720a39e` (inspect.mjs gains LIVE/CTL (56) · LIVE/MOT (29) ·
+      LIVE/PICK (13) over the SAME liveDom as LIVE/OVR — ovl* helpers hoisted
+      out of the OVR try-block to module level for the reuse; s2* helpers for
+      the new event drivers. Gate 8/8 — **4353/4353, 0 failures**
+      (4255 standing + 98 live); data-total=2522.)
+- [x] split — `611c2c9` (87 static sections → examples/src/Sections/{General 18,
+      Display 17, Controls 7, Nav 8, Data 10, Motion 8, Overlays 10, Pickers 9}
+      — 8 parallel fixer lanes, one module each, verbatim bodies + local
+      copies of the defaults/helpers their sections use; Main.elm 5,808 → 261 L
+      harness (Live wiring + chrome + body list). VERIFIED: jsdom boot diff old
+      vs new page — rendered DOM byte-identical, 4,841,116 bytes (only compiled
+      JS symbol names Main$…→Sections$X$… moved); gate 8/8, check-dom 100/100,
+      counts identical. sec-display died once at the loop-breaker (wc'd a
+      glob before creating the file) — one revive, clean.)
+- PORT GAP found by the smoke lane, documented not fixed (next candidate):
+      **NUI.Input pair mode drops onFocus/onBlur** — pairEvents carries
+      onInput only, upstream Input.tsx:1289/1422 binds focus/blur on BOTH
+      pair inputs → the daterange demo's DpRangeFocused can never fire, its
+      panel unreachable from the DOM (LIVE/PICK substitutes the single-date
+      panel; notes in Input.elm KNOWN GAP + Live/Pickers [smoke note]).
+      Fix = mirror the single-mode attrs into pairEvents + DOM pins; unlocks
+      the dropped daterange two-click smoke steps.
+- Smoke-promotion DOM facts now standing knowledge: stepper buttons are
+      `.n-input__suffix .n-button` [minus, add]; input clear is
+      `.n-base-clear__clear[data-clear]`; Carousel wheel picks the
+      FIRST-nonzero axis, |d|≥10, gated on not-inTransition (driver must
+      dispatch transitionend on `.n-carousel__slides` — jsdom never fires
+      it); Log wheel needs post-clamp scrollTop exactly at the boundary.
+
 ## Live/* oracle audit round — CLOSED (1 commit, oracle lane + in-context fix)
 - [x] oracle — `tasks/recon/live-oracle.md` (oracle lane, worktree-less: read-only
       specialist, report lands directly in untracked tasks/; brief
@@ -85,13 +122,12 @@
       provider=deepseek — the failure mode is the known stream timeout.
 
 ## Trail outcome (for the next session)
-The showcase is now a real Elm app: 87 static sections (check-dom surface) + six
-Live/* interactive families covering all 53 channel-bearing components (56 demos
-total). The Overlays smoke promotion is DONE (second entry). The oracle audit
-round over the six Live modules is DONE (top entry). Possible follow-ups,
-none queued: promoting the OTHER five lanes' smokes the same way if they ever
-write any (only Overlays had one — oracle R5 ranks the candidates), splitting
-static sections into modules (they still live in one 5,880-line Main.elm).
+Both handoff candidates are DONE: the LIVE smoke promotion (round 2 —
+LIVE/CTL · MOT · PICK, 98 assertions, top entry) and the Main.elm split
+(87 sections → 8 Sections/* family modules, second entry). The one NEW
+open item is the Input pair onFocus/onBlur port gap the smoke discovered
+(documented in Input.elm KNOWN GAP + Live/Pickers [smoke note]) — fixing it
+unlocks the dropped daterange two-click smoke steps. Otherwise none queued.
 
 ## README caller-supplied hljs/katex note — CLOSED (1 docs commit, the LAST optional item)
 - [x] docs — `884b60b` (one bullet in Notes / limitations: the port ships no JS —
