@@ -1,13 +1,26 @@
 module Main exposing (main)
 
 {-| Showcase page for elm-naive-ui: every component, rendered by the library.
+
+The 87 static sections below render every component at fixed states — that
+surface feeds the check-dom gate, so it must keep rendering every root.
+Interactivity lives in the Live/\* family modules (own Model/Msg/update each,
+spliced in via Element.map) — one real update loop per component family.
+
 -}
 
+import Browser
 import Element exposing (Element)
 import Element.Background as Bg
 import Element.Font as Font
 import Html
 import Html.Attributes as HA
+import Live.Controls
+import Live.Data
+import Live.Motion
+import Live.Nav
+import Live.Overlays
+import Live.Pickers
 import NUI.Affix as Affix
 import NUI.Alert as Alert
 import NUI.Anchor as Anchor
@@ -110,26 +123,76 @@ import NUI.Types as T
 import NUI.Typography as Typo
 import NUI.Upload as Upload
 import NUI.Watermark as Watermark
+import Showcase exposing (capitalize, chip, darkTheme, demoRow, purple, section, theme)
 import Time
 
 
 
--- THEMES
+-- APP STATE (the Live/* families own the interactive state)
 
 
-theme : Theme
-theme =
-    Theme.default
+type alias Model =
+    { controls : Live.Controls.Model
+    , pickers : Live.Pickers.Model
+    , overlays : Live.Overlays.Model
+    , nav : Live.Nav.Model
+    , data : Live.Data.Model
+    , motion : Live.Motion.Model
+    }
 
 
-purple : Theme
-purple =
-    Theme.setPrimary "#7c3aed" theme
+init : Model
+init =
+    { controls = Live.Controls.init
+    , pickers = Live.Pickers.init
+    , overlays = Live.Overlays.init
+    , nav = Live.Nav.init
+    , data = Live.Data.init
+    , motion = Live.Motion.init
+    }
 
 
-darkTheme : Theme
-darkTheme =
-    Theme.dark
+type Msg
+    = ControlsMsg Live.Controls.Msg
+    | PickersMsg Live.Pickers.Msg
+    | OverlaysMsg Live.Overlays.Msg
+    | NavMsg Live.Nav.Msg
+    | DataMsg Live.Data.Msg
+    | MotionMsg Live.Motion.Msg
+
+
+update : Msg -> Model -> Model
+update msg model =
+    case msg of
+        ControlsMsg m ->
+            { model | controls = Live.Controls.update m model.controls }
+
+        PickersMsg m ->
+            { model | pickers = Live.Pickers.update m model.pickers }
+
+        OverlaysMsg m ->
+            { model | overlays = Live.Overlays.update m model.overlays }
+
+        NavMsg m ->
+            { model | nav = Live.Nav.update m model.nav }
+
+        DataMsg m ->
+            { model | data = Live.Data.update m model.data }
+
+        MotionMsg m ->
+            { model | motion = Live.Motion.update m model.motion }
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch
+        [ Sub.map ControlsMsg (Live.Controls.subscriptions model.controls)
+        , Sub.map PickersMsg (Live.Pickers.subscriptions model.pickers)
+        , Sub.map OverlaysMsg (Live.Overlays.subscriptions model.overlays)
+        , Sub.map NavMsg (Live.Nav.subscriptions model.nav)
+        , Sub.map DataMsg (Live.Data.subscriptions model.data)
+        , Sub.map MotionMsg (Live.Motion.subscriptions model.motion)
+        ]
 
 
 
@@ -673,13 +736,18 @@ avatarColor name =
 -- PAGE
 
 
-main : Html.Html msg
+main : Program () Model Msg
 main =
-    Css.layout [] page
+    Browser.element
+        { init = \() -> ( init, Cmd.none )
+        , view = \model -> Css.layout [] (page model)
+        , update = \msg model -> ( update msg model, Cmd.none )
+        , subscriptions = subscriptions
+        }
 
 
-page : Element msg
-page =
+page : Model -> Element Msg
+page model =
     Element.el
         [ Element.width Element.fill
         , Element.height Element.fill
@@ -692,7 +760,7 @@ page =
             , Element.paddingXY 24 40
             ]
             (Element.column [ Element.spacing 34, Element.width Element.fill ]
-                (Css.element :: header ++ body)
+                (Css.element :: header ++ body model)
             )
         )
 
@@ -708,8 +776,8 @@ header =
     ]
 
 
-body : List (Element msg)
-body =
+body : Model -> List (Element Msg)
+body model =
     [ typographySection
     , buttonSection
     , tagSection
@@ -795,6 +863,24 @@ body =
     , codeSection
     , equationSection
     , logSection
+    , section "Live · Controls"
+        "A real update loop: Button, Input, InputNumber, Switch, Checkbox, Radio, Rate, Slider, InputOtp — state in the model, every channel one Msg."
+        [ Element.map ControlsMsg (Live.Controls.view theme model.controls) ]
+    , section "Live · Pickers"
+        "A real update loop: Select, Popselect, Cascader, TreeSelect, AutoComplete, Mention, DatePicker, TimePicker, ColorPicker — open state and values in the model."
+        [ Element.map PickersMsg (Live.Pickers.view theme model.pickers) ]
+    , section "Live · Overlays"
+        "A real update loop: Dropdown, Popover, Tooltip, Popconfirm, Modal, Drawer, Dialog, Message, Notification, LoadingBar — open/queue state in the model."
+        [ Element.map OverlaysMsg (Live.Overlays.view theme model.overlays) ]
+    , section "Live · Nav"
+        "A real update loop: Tabs, Collapse, Menu, Pagination, Steps, Anchor, BackTop, Split — active/expanded state in the model."
+        [ Element.map NavMsg (Live.Nav.view theme model.nav) ]
+    , section "Live · Data"
+        "A real update loop: Table, DataTable, Tree, Transfer, Calendar, Image preview, Upload, DynamicInput, DynamicTags, Form — selection and list state in the model."
+        [ Element.map DataMsg (Live.Data.view theme model.data) ]
+    , section "Live · Motion"
+        "A real update loop: Carousel (autoplay clock + arrows + drag), Log (scroll load), Countdown, NumberAnimation, Progress, Spin, Skeleton, Marquee — time-driven state."
+        [ Element.map MotionMsg (Live.Motion.view theme model.motion) ]
     , rtlSection
     , themeSection
     ]
@@ -5780,33 +5866,6 @@ themeSection =
 -- HELPERS
 
 
-{-| A titled block: heading, description, examples, then a divider.
--}
-section : String -> String -> List (Element msg) -> Element msg
-section title desc examples =
-    Element.column [ Element.spacing 16, Element.width Element.fill ]
-        [ Typo.h3 theme typ [ Element.text title ]
-        , Typo.text theme { typ | depth = Just 3 } [ Element.text desc ]
-        , Element.column [ Element.spacing 20, Element.width Element.fill ] examples
-        , Divider.view theme divD []
-        ]
-
-
-{-| A labelled, wrapping row of examples.
--}
-demoRow : String -> List (Element msg) -> Element msg
-demoRow label items =
-    Element.column [ Element.spacing 10, Element.width Element.fill ]
-        [ Typo.text theme { typ | depth = Just 4, size = Just 12 } [ Element.text (String.toUpper label) ]
-        , Element.wrappedRow [ Element.spacing 12 ] items
-        ]
-
-
-chip : String -> Element msg
-chip label =
-    Tag.view theme { tagD | bordered = False } [ Element.text label ]
-
-
 {-| A small inline SVG glyph for the icon showcase.
 -}
 starIcon : Element msg
@@ -5823,8 +5882,3 @@ starIcon =
                 []
             ]
         )
-
-
-capitalize : String -> String
-capitalize s =
-    String.toUpper (String.left 1 s) ++ String.dropLeft 1 s
