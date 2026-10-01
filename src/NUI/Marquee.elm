@@ -69,8 +69,9 @@ view _ opts children =
                 ( [ original ], [ mirror ] )
     in
     Element.row
-        (I.classes
-            ("n-marquee" :: I.classIf opts.autoFill "n-marquee--auto-fill")
+        (Element.width Element.fill
+            :: I.classes
+                ("n-marquee" :: I.classIf opts.autoFill "n-marquee--auto-fill")
             :: I.cssVars (cssVarsFor opts)
             :: opts.attributes
         )

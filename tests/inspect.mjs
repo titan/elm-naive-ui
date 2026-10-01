@@ -1190,6 +1190,11 @@ dEq(
   1,
   doc.querySelectorAll('#live-marquee .n-marquee__original-item').length
 )
+dTrue(
+  'DOM: Marquee root is width-fill (upstream .n-marquee is a block flex container; a content-width root paints both __groups side-by-side past the overflow clip)',
+  !!marquee && marquee.classList.contains('wf'),
+  marquee ? marquee.getAttribute('class') : 'missing'
+)
 
 // List -----------------------------------------------------------------------
 const list = doc.querySelector('#live-list .n-list')
@@ -10878,6 +10883,21 @@ dEq(
   ['date', 'week', 'datetime', 'daterange', 'datetimerange', 'month', 'year', 'quarter', 'monthrange']
     .map((t) => t + ':' + nClassesStr(doc.querySelector('#live-date-panel-' + t + ' .n-date-panel')))
     .join('|')
+)
+dEq(
+  'DOM: calendar nav wraps in .n-date-panel-month (date.tsx:69-71) — one per single calendar, two per range pair, none on month-grid panels',
+  'date:1|week:1|datetime:1|daterange:2|datetimerange:2|month:0|year:0|quarter:0|monthrange:0',
+  ['date', 'week', 'datetime', 'daterange', 'datetimerange', 'month', 'year', 'quarter', 'monthrange']
+    .map((t) => t + ':' + doc.querySelectorAll('#live-date-panel-' + t + ' .n-date-panel-calendar > .n-date-panel-month').length)
+    .join('|')
+)
+dEq(
+  'DOM: date-panel nav arrows are children of .n-date-panel-month (the cssr sizing scope — unsized 266px arrows without the wrapper)',
+  'n-date-panel-month',
+  (() => {
+    const a = doc.querySelector('#live-date-panel-date .n-date-panel-month__fast-prev')
+    return a && a.parentElement ? nClassesStr(a.parentElement) : 'missing'
+  })()
 )
 dEq(
   'DOM: date-panel 43 vars in upstream declaration order',

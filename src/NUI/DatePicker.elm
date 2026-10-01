@@ -1351,8 +1351,8 @@ bodyFor theme opts quickJump =
 calendarBody : Theme -> Options msg -> List (Html msg)
 calendarBody theme opts =
     [ Html.div [ HA.class "n-date-panel-calendar" ]
-        (monthNav theme opts CalStart (singleCalendarValue opts)
-            ++ [ weekdaysNode opts CalStart
+        (Html.div [ HA.class "n-date-panel-month" ] (monthNav theme opts CalStart (singleCalendarValue opts))
+            :: [ weekdaysNode opts CalStart
                , Html.div [ HA.class "n-date-panel-dates" ]
                     (List.map (dateCell opts { side = CalStart, rangeMode = False, suppressDisabled = False }) (dateItems opts CalStart))
                ]
@@ -1383,8 +1383,8 @@ rangeCalendar theme opts side =
                    )
             )
         ]
-        (monthNav theme opts side (rangeCalendarValue opts side)
-            ++ [ weekdaysNode opts side
+        (Html.div [ HA.class "n-date-panel-month" ] (monthNav theme opts side (rangeCalendarValue opts side))
+            :: [ weekdaysNode opts side
                , Html.div [ HA.class "n-date-panel__divider" ] []
                , Html.div [ HA.class "n-date-panel-dates" ]
                     (List.map
