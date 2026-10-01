@@ -164,12 +164,18 @@ scrollbarCopy =
 
 {-| The caller-owned follower wrapper: a `v-placement` host the popover body sits
 in (upstream: vueuc's `v-binder-follower-content` with runtime positioning).
+Rendered as a labelled "static preview" box — bordered, tinted, min-height so
+the floating body reads as a mounted preview, not an unanchored island.
 -}
 popoverHost : Popover.Placement -> List (Element.Attribute msg) -> Element msg -> Element msg
 popoverHost placement attrs content =
     Element.el
         ([ Popover.placementAttribute placement
-         , Element.htmlAttribute (HA.attribute "style" "position:relative;padding:34px 28px;")
+         , Element.htmlAttribute
+            (HA.attribute
+                "style"
+                "position:relative;padding:34px 28px;min-height:120px;min-width:180px;border:1px dashed #dcdae2;border-radius:4px;background:#fafafc"
+            )
          ]
             ++ attrs
         )
@@ -686,18 +692,21 @@ notificationSection =
         ]
 
 
-{-| The caller-owned modal host: upstream teleports the fixed tree to `to`; here a
-`transform: translate(0,0)` cell becomes the containing block that confines the
-fixed container/mask/body-wrapper, and `overflow: hidden` clips the overlay to
-the demo cell.
+{-| The fixed-tree preview cell (Modal/Drawer/DialogProvider): a sized,
+relative, translated box — `transform` makes it the containing block for the
+components' fixed trees, `overflow: hidden` keeps their geometry inside.
+Width/height ride elm-ui's px classes (raw inline width collapses under
+`.s.r > .s { flex-basis: 0% }` when the cell sits in a demo card row).
 -}
 modalHost : List (Element.Attribute msg) -> Element msg -> Element msg
 modalHost attrs content =
     Element.el
-        ([ Element.htmlAttribute
+        ([ Element.width (Element.px 320)
+         , Element.height (Element.px 210)
+         , Element.htmlAttribute
             (HA.attribute
                 "style"
-                "position:relative;transform:translate(0,0);height:210px;width:320px;overflow:hidden;border:1px solid #efeff5;background:#fafafc"
+                "position:relative;transform:translate(0,0);overflow:hidden;border:1px solid #efeff5;border-radius:4px;background:#fafafc"
             )
          ]
             ++ attrs
@@ -713,7 +722,7 @@ cell content =
     Element.el
         [ Element.width (Element.px 320)
         , Element.htmlAttribute
-            (HA.attribute "style" "border:1px solid #efeff5;background:#fafafc")
+            (HA.attribute "style" "border:1px solid #efeff5;border-radius:4px;background:#fafafc")
         ]
         content
 

@@ -256,16 +256,20 @@ alertSection =
 dividerSection : Element msg
 dividerSection =
     section "Divider" "Separates content." <|
-        [ Divider.view theme { divD | titlePlacement = Divider.Left } [ Element.text "Left" ]
-        , Divider.view theme { divD | titlePlacement = Divider.Center } [ Element.text "Center" ]
-        , Divider.view theme { divD | titlePlacement = Divider.Right } [ Element.text "Right" ]
-        , Divider.view theme { divD | dashed = True } []
-        , Element.row [ Element.spacing 16, Element.height (Element.px 42) ]
-            [ Element.text "Text"
-            , Divider.view theme { divD | vertical = True } []
-            , Element.text "More"
-            , Divider.view theme { divD | vertical = True } []
-            , Element.text "End"
+        [ demoRow "Title placements"
+            [ Divider.view theme { divD | titlePlacement = Divider.Left } [ Element.text "Left" ]
+            , Divider.view theme { divD | titlePlacement = Divider.Center } [ Element.text "Center" ]
+            , Divider.view theme { divD | titlePlacement = Divider.Right } [ Element.text "Right" ]
+            ]
+        , demoRow "Dashed + vertical"
+            [ Divider.view theme { divD | dashed = True } []
+            , Element.row [ Element.spacing 16, Element.height (Element.px 42) ]
+                [ Element.text "Text"
+                , Divider.view theme { divD | vertical = True } []
+                , Element.text "More"
+                , Divider.view theme { divD | vertical = True } []
+                , Element.text "End"
+                ]
             ]
         ]
 
@@ -609,13 +613,13 @@ highlightSection =
 rtlSection : Element msg
 rtlSection =
     section "RTL"
-        "Right-to-left layout — pass `rtl = True`; the RTL rules ship in the stylesheet."
+        "Right-to-left layout — pass `rtl = True`; the RTL rules ship in the stylesheet. (The alert copy is Arabic so the bidi layout is exercised with real RTL text.)"
     <|
         [ demoRow "Alert"
             [ Element.el [ Element.width (Element.px 340) ]
                 (Alert.view theme
-                    { alertD | rtl = True, kind = T.Info, title = Just "Info" }
-                    [ Element.text "A right-to-left alert." ]
+                    { alertD | rtl = True, kind = T.Info, title = Just "معلومة" }
+                    [ Element.text "تنبيه من اليمين إلى اليسار." ]
                 )
             ]
         , demoRow "Components"

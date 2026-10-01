@@ -333,34 +333,37 @@ carouselSection =
             , img "linear-gradient(135deg, #d03050, #e88080)"
             ]
 
+        demo : String -> Carousel.Size -> Carousel.Options msg -> Element msg
         demo id size opts =
-            Carousel.view theme
-                { opts | attributes = [ HA.id id ] }
-                (Carousel.resize opts size (Carousel.init opts 4))
-                carouselSlides
+            Element.el [ Element.width (Element.px (round size.width)) ]
+                (Carousel.view theme
+                    { opts | attributes = [ HA.id id ] }
+                    (Carousel.resize opts size (Carousel.init opts 4))
+                    carouselSlides
+                )
     in
     section "Carousel"
         "A slide track over a caller-owned clock and measurement — autoplay, drag and resize are the caller's to own."
         [ demoRow "Basic (loop, 4 slides + clones)"
-            [ demo "live-carousel" { width = 1000, height = 400 } carouselD ]
+            [ demo "live-carousel" { width = 920, height = 360 } carouselD ]
         , demoRow "Vertical + dots right"
             [ demo "live-carousel-vertical"
-                { width = 600, height = 300 }
+                { width = 560, height = 280 }
                 { carouselD | direction = Carousel.Vertical, dotPlacement = Carousel.DotsRight }
             ]
         , demoRow "Arrows + line dots"
             [ demo "live-carousel-arrows"
-                { width = 1000, height = 400 }
+                { width = 920, height = 360 }
                 { carouselD | showArrow = True, dotType = Carousel.Line }
             ]
         , demoRow "Loop off (previous arrow disabled)"
             [ demo "live-carousel-no-loop"
-                { width = 1000, height = 400 }
+                { width = 920, height = 360 }
                 { carouselD | loop = False, showArrow = True }
             ]
         , demoRow "slidesPerView 3 + spaceBetween 20"
             [ demo "live-carousel-slides-per-view"
-                { width = 1000, height = 400 }
+                { width = 920, height = 360 }
                 { carouselD
                     | slidesPerView = Carousel.PerView 3
                     , spaceBetween = 20
@@ -370,12 +373,12 @@ carouselSection =
             ]
         , demoRow "Fade"
             [ demo "live-carousel-fade"
-                { width = 1000, height = 400 }
+                { width = 920, height = 360 }
                 { carouselD | effect = Carousel.FadeEffect }
             ]
         , demoRow "Card (previous/next slide styles)"
             [ demo "live-carousel-card"
-                { width = 1000, height = 400 }
+                { width = 920, height = 360 }
                 { carouselD
                     | effect = Carousel.CardEffect
                     , showDots = False
@@ -385,7 +388,7 @@ carouselSection =
             ]
         , demoRow "Custom (usercontrol) + renderDots"
             [ demo "live-carousel-custom"
-                { width = 1000, height = 400 }
+                { width = 920, height = 360 }
                 { carouselD
                     | effect = Carousel.CustomEffect
                     , renderDots =
@@ -397,7 +400,7 @@ carouselSection =
             ]
         , demoRow "defaultIndex 2 (seeded)"
             [ demo "live-carousel-default-index"
-                { width = 1000, height = 400 }
+                { width = 920, height = 360 }
                 { carouselD | defaultIndex = 2 }
             ]
         ]

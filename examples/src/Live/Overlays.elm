@@ -943,10 +943,12 @@ overlayCell : String -> Element msg -> Element msg
 overlayCell id content =
     Element.el
         [ Element.htmlAttribute (HA.id id)
+        , Element.width (Element.px 320)
+        , Element.height (Element.px 210)
         , Element.htmlAttribute
             (HA.attribute
                 "style"
-                "position:relative;transform:translate(0,0);height:210px;width:320px;overflow:hidden;border:1px solid #efeff5;background:#fafafc"
+                "position:relative;transform:translate(0,0);overflow:hidden;border:1px solid #efeff5;border-radius:4px;background:#fafafc"
             )
         ]
         content

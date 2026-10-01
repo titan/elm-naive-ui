@@ -16,7 +16,7 @@ import NUI.Pagination as Pagination
 import NUI.Split as Split
 import NUI.Steps as Steps
 import NUI.Tabs as Tabs
-import Showcase exposing (demoRow, section, starIcon, theme)
+import Showcase exposing (demoBox, demoRow, section, starIcon, theme)
 
 
 
@@ -200,8 +200,11 @@ stepsSection =
 
 backTopSection : Element msg
 backTopSection =
-    section "BackTop" "A fixed back-to-top button (the scroll state is caller-owned)." <|
-        [ BackTop.view theme { backTopD | show = True } [ Element.text "Up" ]
+    section "BackTop" "A fixed back-to-top button (the scroll state is caller-owned). The preview box is the containing block — the button pins to its corner." <|
+        [ demoBox 160
+            (Element.el [ Element.padding 12 ]
+                (BackTop.view theme { backTopD | show = True } [ Element.text "Up" ])
+            )
         ]
 
 
@@ -405,7 +408,7 @@ anchorSection =
                 demoLinks
             ]
         , demoRow "Affix wrap"
-            [ Element.el [ Element.height (Element.px 120), Element.width (Element.px 200) ]
+            [ demoBox 200
                 (Anchor.view theme
                     { anchorD
                         | affix = Just { affixD | affixed = True, top = Just 88 }

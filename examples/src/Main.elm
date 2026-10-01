@@ -6,15 +6,25 @@ The 87 static sections live in the Sections/\* family modules (moved verbatim
 from here — that surface feeds the check-dom gate, so it must keep rendering
 every root). Interactivity lives in the Live/\* family modules (own
 Model/Msg/update each, spliced in via Element.map) — one real update loop per
-component family. This module is only the harness: app state, page chrome and
-the ordered body list.
+component family. This module is the harness: app state, docs-style page
+chrome (sticky top bar + sidebar nav + content column) and the ordered body
+list.
+
+The sidebar is a real scrollspy: a `Time.every` tick batches
+`Browser.Dom.getElement` over every section id (derived from the title by
+`Showcase.sectionId` — the same function `Showcase.section` uses for the
+anchor ids), and the deepest section above the scroll offset becomes the
+active nav item. No ports — the tasks are plain Elm.
 
 -}
 
 import Browser
+import Browser.Dom
 import Element exposing (Element)
 import Element.Background as Bg
+import Element.Border as Border
 import Element.Font as Font
+import Html.Attributes as HA
 import Live.Controls
 import Live.Data
 import Live.Motion
@@ -31,11 +41,14 @@ import Sections.Motion exposing (carouselSection, countdownSection, logSection, 
 import Sections.Nav exposing (anchorSection, backTopSection, collapseSection, menuSection, paginationSection, splitSection, stepsSection, tabsSection)
 import Sections.Overlays exposing (dialogSection, drawerSection, dropdownSection, loadingBarSection, messageSection, modalSection, notificationSection, popconfirmSection, popoverSection, tooltipSection)
 import Sections.Pickers exposing (autoCompleteSection, cascaderSection, colorPickerSection, datePickerSection, mentionSection, popselectSection, selectSection, timePickerSection, treeSelectSection)
-import Showcase exposing (section, theme)
+import Showcase exposing (chromeCss, section, sectionId, theme)
+import Task
+import Time
 
 
 
--- APP STATE (the Live/* families own the interactive state)
+-- APP STATE (the Live/* families own the interactive state; the chrome owns
+-- the scrollspy's active section).
 
 
 type alias Model =
@@ -45,6 +58,8 @@ type alias Model =
     , nav : Live.Nav.Model
     , data : Live.Data.Model
     , motion : Live.Motion.Model
+    , spyYs : List ( String, Float )
+    , spyVp : Maybe Float
     }
 
 
@@ -56,6 +71,8 @@ init =
     , nav = Live.Nav.init
     , data = Live.Data.init
     , motion = Live.Motion.init
+    , spyYs = []
+    , spyVp = Nothing
     }
 
 
@@ -66,28 +83,65 @@ type Msg
     | NavMsg Live.Nav.Msg
     | DataMsg Live.Data.Msg
     | MotionMsg Live.Motion.Msg
+    | SpyRequest
+    | SpyY String Float
+    | SpyVp Float
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ControlsMsg m ->
-            { model | controls = Live.Controls.update m model.controls }
+            ( { model | controls = Live.Controls.update m model.controls }, Cmd.none )
 
         PickersMsg m ->
-            { model | pickers = Live.Pickers.update m model.pickers }
+            ( { model | pickers = Live.Pickers.update m model.pickers }, Cmd.none )
 
         OverlaysMsg m ->
-            { model | overlays = Live.Overlays.update m model.overlays }
+            ( { model | overlays = Live.Overlays.update m model.overlays }, Cmd.none )
 
         NavMsg m ->
-            { model | nav = Live.Nav.update m model.nav }
+            ( { model | nav = Live.Nav.update m model.nav }, Cmd.none )
 
         DataMsg m ->
-            { model | data = Live.Data.update m model.data }
+            ( { model | data = Live.Data.update m model.data }, Cmd.none )
 
         MotionMsg m ->
-            { model | motion = Live.Motion.update m model.motion }
+            ( { model | motion = Live.Motion.update m model.motion }, Cmd.none )
+
+        SpyRequest ->
+            ( { model | spyYs = [], spyVp = Nothing }
+            , Cmd.batch (spyViewport :: List.map spySample navSectionIds)
+            )
+
+        SpyY id y ->
+            ( { model | spyYs = ( id, y ) :: model.spyYs }, Cmd.none )
+
+        SpyVp vp ->
+            ( { model | spyVp = Just vp }, Cmd.none )
+
+
+{-| One parallel DOM read per section (each is its own rAF-gated task — a
+`Task.sequence` of them would need one frame per link, i.e. 93 frames per
+tick; batched, every pending read resolves in a single frame and Elm folds
+the 93 messages into one render). `Browser.Dom.getElement`'s `element.y` is
+measured scroll-independent (document y), so the viewport offset rides
+alongside and the view subtracts it.
+-}
+spySample : String -> Cmd Msg
+spySample id =
+    Browser.Dom.getElement id
+        |> Task.map (.element >> .y)
+        |> Task.onError (\_ -> Task.succeed (1 / 0))
+        |> Task.perform (SpyY id)
+
+
+spyViewport : Cmd Msg
+spyViewport =
+    Browser.Dom.getViewport
+        |> Task.map .viewport
+        |> Task.map .y
+        |> Task.perform SpyVp
 
 
 subscriptions : Model -> Sub Msg
@@ -99,26 +153,173 @@ subscriptions model =
         , Sub.map NavMsg (Live.Nav.subscriptions model.nav)
         , Sub.map DataMsg (Live.Data.subscriptions model.data)
         , Sub.map MotionMsg (Live.Motion.subscriptions model.motion)
+        , Time.every 350 (\_ -> SpyRequest)
         ]
-
-
-
--- PAGE
 
 
 main : Program () Model Msg
 main =
     Browser.element
-        { init = \() -> ( init, Cmd.none )
+        { init =
+            \() ->
+                ( init
+                , Cmd.batch (List.map spySample navSectionIds)
+                )
         , view = \model -> Css.layout [] (page model)
-        , update = \msg model -> ( update msg model, Cmd.none )
+        , update = update
         , subscriptions = subscriptions
         }
+
+
+
+-- NAV CONFIG (section titles are the single source of truth: Showcase.section
+-- derives the anchor ids from them, the sidebar derives its hrefs the same way)
+
+
+navGroups : List ( String, List String )
+navGroups =
+    [ ( "General"
+      , [ "Typography"
+        , "Tag"
+        , "Alert"
+        , "Divider"
+        , "Avatar"
+        , "Card"
+        , "Space"
+        , "Badge"
+        , "Empty"
+        , "Result"
+        , "Gradient Text"
+        , "Statistic"
+        , "Thing"
+        , "Ellipsis"
+        , "Icon"
+        , "Highlight"
+        , "RTL"
+        , "Theme"
+        ]
+      )
+    , ( "Controls"
+      , [ "Button"
+        , "Input"
+        , "Input OTP"
+        , "Input Number"
+        , "Checkbox · Switch · Radio"
+        , "Rate"
+        , "Slider"
+        ]
+      )
+    , ( "Data"
+      , [ "Dynamic Tags"
+        , "Calendar"
+        , "DynamicInput"
+        , "Table"
+        , "Tree"
+        , "Image"
+        , "Image Preview & Group"
+        , "Data Table"
+        , "Transfer"
+        , "Upload"
+        ]
+      )
+    , ( "Display"
+      , [ "Breadcrumb"
+        , "Timeline"
+        , "List"
+        , "Page Header"
+        , "Affix"
+        , "Flex"
+        , "Grid"
+        , "QrCode"
+        , "Float Button"
+        , "Layout"
+        , "Float Button Group"
+        , "Heatmap"
+        , "Descriptions"
+        , "Scrollbar"
+        , "Watermark"
+        , "Code"
+        , "Equation"
+        ]
+      )
+    , ( "Nav"
+      , [ "Pagination"
+        , "Split"
+        , "Steps"
+        , "BackTop"
+        , "Collapse"
+        , "Tabs"
+        , "Menu"
+        , "Anchor"
+        ]
+      )
+    , ( "Overlays"
+      , [ "LoadingBar"
+        , "Popover"
+        , "Popconfirm"
+        , "Tooltip"
+        , "Dropdown"
+        , "Message"
+        , "Notification"
+        , "Modal"
+        , "Drawer"
+        , "Dialog"
+        ]
+      )
+    , ( "Pickers"
+      , [ "Select"
+        , "Popselect"
+        , "Cascader"
+        , "TreeSelect"
+        , "AutoComplete"
+        , "Mention"
+        , "DatePicker"
+        , "TimePicker"
+        , "ColorPicker"
+        ]
+      )
+    , ( "Motion"
+      , [ "Progress"
+        , "Skeleton"
+        , "Spin"
+        , "Marquee"
+        , "Countdown"
+        , "Number Animation"
+        , "Carousel"
+        , "Log"
+        ]
+      )
+    , ( "Live"
+      , [ "Live · Controls"
+        , "Live · Pickers"
+        , "Live · Overlays"
+        , "Live · Nav"
+        , "Live · Data"
+        , "Live · Motion"
+        ]
+      )
+    ]
+
+
+navSectionIds : List String
+navSectionIds =
+    navGroups
+        |> List.concatMap Tuple.second
+        |> List.map sectionId
+
+
+
+-- PAGE CHROME
 
 
 typ : Typo.Options msg
 typ =
     Typo.defaults
+
+
+accentColor : Element.Color
+accentColor =
+    Element.rgb255 0x18 0xA0 0x58
 
 
 page : Model -> Element Msg
@@ -128,27 +329,181 @@ page model =
         , Element.height Element.fill
         , Bg.color (Element.rgb 1 1 1)
         , Font.family [ Font.typeface "system-ui", Font.sansSerif ]
+        , Font.color (Element.rgb255 0x33 0x36 0x39)
         ]
-        (Element.el
-            [ Element.width (Element.maximum 880 Element.fill)
-            , Element.centerX
-            , Element.paddingXY 24 40
+        (Element.column
+            [ Element.width Element.fill ]
+            [ topBar
+            , Element.row
+                [ Element.width Element.fill
+                , Element.alignTop
+                ]
+                [ sidebar (sectionActive (activeSection model.spyYs model.spyVp))
+                , content model
+                ]
             ]
-            (Element.column [ Element.spacing 34, Element.width Element.fill ]
-                (Css.element :: header ++ body model)
-            )
         )
 
 
-header : List (Element msg)
-header =
-    [ Element.column [ Element.spacing 8 ]
+{-| The deepest section whose top has scrolled past the offset (viewport y
+from the element's document y minus the viewport offset) — the one the reader
+is looking at. `Nothing` until both reads of the current tick have landed.
+-}
+activeSection : List ( String, Float ) -> Maybe Float -> Maybe String
+activeSection ys vp =
+    case vp of
+        Nothing ->
+            Nothing
+
+        Just v ->
+            List.foldl
+                (\( id, y ) best ->
+                    let
+                        rel =
+                            y - v
+                    in
+                    if rel <= 140 && (best == Nothing || (Maybe.map Tuple.second best |> Maybe.withDefault 0) <= rel) then
+                        Just ( id, rel )
+
+                    else
+                        best
+                )
+                Nothing
+                ys
+                |> Maybe.map Tuple.first
+
+
+{-| True when this section id is the scrollspy's active one.
+-}
+sectionActive : Maybe String -> String -> Bool
+sectionActive active id =
+    active == Just id
+
+
+topBar : Element msg
+topBar =
+    Element.el
+        [ Element.width Element.fill
+        , Element.height (Element.px 60)
+        , Bg.color (Element.rgb 1 1 1)
+        , Element.htmlAttribute
+            (HA.attribute
+                "style"
+                "position:sticky;top:0;z-index:100;border-bottom:1px solid #efeff5"
+            )
+        ]
+        (Element.row
+            [ Element.width Element.fill
+            , Element.height Element.fill
+            , Element.paddingXY 28 0
+            , Element.spacing 12
+            ]
+            [ Element.row [ Element.spacing 10, Element.centerY ]
+                [ Element.el
+                    [ Element.width (Element.px 10)
+                    , Element.height (Element.px 10)
+                    , Border.rounded 5
+                    , Bg.color accentColor
+                    ]
+                    Element.none
+                , Element.el
+                    [ Font.size 17, Font.bold, Element.centerY ]
+                    (Element.text "elm-naive-ui")
+                ]
+            , Element.el
+                [ Element.centerY
+                , Font.size 12
+                , Font.color (Element.rgb255 0x7C 0x80 0x87)
+                ]
+                (Element.text "naive-ui v2.45.3 · 100 components · Elm port")
+            ]
+        )
+
+
+{-| The sticky sidebar: family groups of section links, internally scrollable,
+active link in the primary colour.
+-}
+sidebar : (String -> Bool) -> Element msg
+sidebar isActive =
+    Element.el
+        [ Element.width (Element.px 224)
+        , Element.alignTop
+        , Element.htmlAttribute
+            (HA.attribute
+                "style"
+                "position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;border-right:1px solid #efeff5"
+            )
+        ]
+        (Element.column
+            [ Element.width Element.fill
+            , Element.paddingXY 14 20
+            , Element.spacing 3
+            ]
+            (List.concatMap (navGroup isActive) navGroups)
+        )
+
+
+navGroup : (String -> Bool) -> ( String, List String ) -> List (Element msg)
+navGroup isActive ( group, titles ) =
+    Element.el
+        [ Element.paddingEach { top = 14, bottom = 4, left = 10, right = 0 }
+        , Font.size 11
+        , Font.bold
+        , Font.color (Element.rgb255 0x90 0x93 0x99)
+        ]
+        (Element.text (String.toUpper group))
+        :: List.map (navItem isActive) titles
+
+
+navItem : (String -> Bool) -> String -> Element msg
+navItem isActive title =
+    let
+        id =
+            sectionId title
+
+        base =
+            [ Element.width Element.fill
+            , Element.paddingXY 10 4
+            , Border.rounded 3
+            , Font.size 13
+            , Element.mouseOver [ Font.color accentColor ]
+            ]
+
+        attrs =
+            if isActive id then
+                Element.htmlAttribute (HA.attribute "style" "background:#f0faf5")
+                    :: Font.color accentColor
+                    :: base
+
+            else
+                Font.color (Element.rgb255 0x4C 0x50 0x56)
+                    :: base
+    in
+    Element.link attrs
+        { url = "#" ++ id
+        , label = Element.el [] (Element.text title)
+        }
+
+
+content : Model -> Element Msg
+content model =
+    Element.column
+        [ Element.width (Element.maximum 1080 Element.fill)
+        , Element.alignTop
+        , Element.paddingEach { top = 44, bottom = 120, left = 44, right = 36 }
+        , Element.spacing 48
+        ]
+        (hero :: (Css.element :: chromeCss :: body model))
+
+
+hero : Element msg
+hero =
+    Element.column [ Element.spacing 8 ]
         [ Typo.h1 theme typ [ Element.text "Naive UI for Elm" ]
         , Typo.text theme
             { typ | depth = Just 3 }
             [ Element.text "Naive UI components built on elm-ui — Naive UI's own CSS, driven by a typed Elm theme." ]
         ]
-    ]
 
 
 body : Model -> List (Element Msg)

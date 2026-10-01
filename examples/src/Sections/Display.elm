@@ -47,7 +47,7 @@ import NUI.Scrollbar as Scrollbar
 import NUI.Timeline as Timeline
 import NUI.Types as T
 import NUI.Watermark as Watermark
-import Showcase exposing (chip, codeHljs, demoRow, fakeKatex, fakeKatexDisplay, section, theme)
+import Showcase exposing (chip, codeHljs, demoBox, demoRow, fakeKatex, fakeKatexDisplay, section, theme)
 import Time
 
 
@@ -262,11 +262,13 @@ pageHeaderSection =
 
 affixSection : Element msg
 affixSection =
-    section "Affix" "Pins content while scrolling (the affixed state is caller-owned)." <|
-        [ Element.el [ Element.height (Element.px 56) ]
-            (Affix.view theme
-                { affixD | affixed = True, top = Just 12 }
-                [ Button.view theme { btn | kind = T.Primary } [ Element.text "Affixed" ] ]
+    section "Affix" "Pins content while scrolling (the affixed state is caller-owned). The preview box is the containing block — the fixed button stays inside it." <|
+        [ demoBox 150
+            (Element.el [ Element.padding 12 ]
+                (Affix.view theme
+                    { affixD | affixed = True, top = Just 12 }
+                    [ Button.view theme { btn | kind = T.Primary } [ Element.text "Affixed" ] ]
+                )
             )
         ]
 

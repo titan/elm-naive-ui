@@ -1,17 +1,45 @@
-module Showcase exposing (capitalize, chip, codeHljs, darkTheme, demoRow, fakeKatex, fakeKatexDisplay, purple, section, starIcon, theme)
+module Showcase exposing
+    ( capitalize
+    , chip
+    , chromeCss
+    , codeHljs
+    , darkTheme
+    , demoBox
+    , demoRow
+    , fakeKatex
+    , fakeKatexDisplay
+    , purple
+    , section
+    , sectionId
+    , starIcon
+    , theme
+    )
 
-{-| Shared showcase chrome: the theme set, the section/demoRow scaffolding,
-and the cross-family fixtures (a fake highlight.js, fake katex closures, a
-star glyph) used by more than one section family. Used by the static page
-(Main / Sections/_) and every Live/_ interactive family module, so live
-demos read exactly like the static ones.
+{-| Shared showcase chrome: the theme set, the docs-style section/demo scaffolding,
+and the cross-family fixtures (a fake highlight.js, fake katex closures, a star
+glyph) used by more than one section family. Used by the static page
+(Main / Sections/_) and every Live/_ interactive family module, so live demos
+read exactly like the static ones.
+
+The page chrome itself (top bar, sticky sidebar, content column) lives in
+Main.elm; this module owns the pieces every section shares:
+
+  - `section` — a titled, anchor-addressable block (`sectionId` derives the id
+    from the title; the sidebar nav and the scrollspy use the same derivation).
+  - `demoRow` — one bordered "demo card" per labelled example group: the
+    examples sit in a padded body that scrolls horizontally instead of
+    stretching the page, the label is the card's footer bar.
+  - `demoBox` — the bounded preview box for position:fixed/absolute demos
+    (Affix, BackTop, anchor affix): relative + translated so fixed descendants
+    pin to the box, overflow-hidden so their geometry stays inside it.
+
 -}
 
 import Element exposing (Element)
+import Element.Font as Font
 import Html
 import Html.Attributes as HA
 import NUI.Code as Code
-import NUI.Divider as Divider
 import NUI.Tag as Tag
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Typography as Typo
@@ -45,36 +73,145 @@ typ =
     Typo.defaults
 
 
-divD : Divider.Options msg
-divD =
-    Divider.defaults
-
-
 tagD : Tag.Options msg
 tagD =
     Tag.defaults
 
 
-{-| A titled block: heading, description, examples, then a divider.
+{-| Chrome CSS: smooth anchor scrolling and the sticky-header offset for
+section targets. Spliced next to `Css.element` in Main.
+-}
+chromeCss : Element msg
+chromeCss =
+    Element.html
+        (Html.node "style"
+            []
+            [ Html.text
+                (String.join
+                    ""
+                    [ "html{scroll-behavior:smooth}"
+                    , ".sc-sec{scroll-margin-top:78px}"
+
+                    -- elm-ui's height-content class (`.s.e > .hc{height:
+                    -- auto}`, specificity 0,3,0, re-embedded in per-view
+                    -- style nodes) defeats the drawer container's
+                    -- top/bottom stretch inside the demo hosts (height:auto
+                    -- resolves 0); height:100% restores the upstream "fills
+                    -- its mount parent" semantics.
+                    , ".n-drawer-container{height:100% !important}"
+                    ]
+                )
+            ]
+        )
+
+
+{-| Derives the anchor id of a section title — shared by `section` (the id
+attribute) and the sidebar nav (the href), so the two can never drift.
+-}
+sectionId : String -> String
+sectionId title =
+    let
+        step char acc =
+            if Char.isAlphaNum char then
+                acc ++ String.fromChar (Char.toLower char)
+
+            else if String.isEmpty acc then
+                acc
+
+            else if String.endsWith "-" acc then
+                acc
+
+            else
+                acc ++ "-"
+
+        dashed =
+            String.foldl step "" title
+                |> (\s ->
+                        if String.endsWith "-" s then
+                            String.dropRight 1 s
+
+                        else
+                            s
+                   )
+    in
+    "sec-" ++ dashed
+
+
+{-| A titled, anchor-addressable block: heading, description, examples.
 -}
 section : String -> String -> List (Element msg) -> Element msg
 section title desc examples =
-    Element.column [ Element.spacing 16, Element.width Element.fill ]
+    Element.column
+        [ Element.spacing 16
+        , Element.width Element.fill
+        , Element.htmlAttribute (HA.id (sectionId title))
+        , Element.htmlAttribute (HA.class "sc-sec")
+        ]
         [ Typo.h3 theme typ [ Element.text title ]
         , Typo.text theme { typ | depth = Just 3 } [ Element.text desc ]
         , Element.column [ Element.spacing 20, Element.width Element.fill ] examples
-        , Divider.view theme divD []
         ]
 
 
-{-| A labelled, wrapping row of examples.
+{-| A demo card: the examples in a padded body that scrolls horizontally when
+intrinsic content outgrows the column (elm-ui rows never shrink below
+min-content, so wide demos must be fenced here), with the label as the
+footer bar.
 -}
 demoRow : String -> List (Element msg) -> Element msg
 demoRow label items =
-    Element.column [ Element.spacing 10, Element.width Element.fill ]
-        [ Typo.text theme { typ | depth = Just 4, size = Just 12 } [ Element.text (String.toUpper label) ]
-        , Element.wrappedRow [ Element.spacing 12 ] items
+    Element.column
+        [ Element.width Element.fill
+        , Element.htmlAttribute
+            (HA.attribute
+                "style"
+                "border:1px solid #efeff5;border-radius:4px;background:#fff"
+            )
         ]
+        [ Element.wrappedRow
+            [ Element.spacing 16
+            , Element.padding 20
+            , Element.width Element.fill
+            , Element.htmlAttribute (HA.attribute "style" "overflow-x:auto")
+            ]
+            items
+        , footerBar label
+        ]
+
+
+footerBar : String -> Element msg
+footerBar label =
+    Element.el
+        [ Element.width Element.fill
+        , Element.paddingXY 16 9
+        , Element.htmlAttribute
+            (HA.attribute "style" "border-top:1px solid #efeff5")
+        ]
+        (Element.el
+            [ Font.size 11
+            , Font.color (Element.rgb255 0x7C 0x80 0x87)
+            , Font.letterSpacing 0.6
+            ]
+            (Element.text (String.toUpper label))
+        )
+
+
+{-| The bounded preview box for fixed/absolute-position demos: `relative` +
+`transform` makes it the containing block for `position: fixed` descendants,
+`overflow: hidden` keeps their geometry inside the box.
+-}
+demoBox : Int -> Element msg -> Element msg
+demoBox heightPx content =
+    Element.el
+        [ Element.width Element.fill
+        , Element.height (Element.px heightPx)
+        , Element.htmlAttribute
+            (HA.attribute
+                "style"
+                "position:relative;transform:translate(0,0);overflow:hidden;border:1px solid #efeff5;border-radius:4px;background:#fafafc"
+            )
+        ]
+        content
 
 
 chip : String -> Element msg
