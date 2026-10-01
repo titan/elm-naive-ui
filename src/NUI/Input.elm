@@ -112,7 +112,11 @@ components' `NInput` invocations):
     when set — TimePicker passes `format.length + 4`). Never the textarea.
 
   - `onFocus` / `onBlur` — raw focus / blur events on the input / textarea
-    element.
+    element. KNOWN GAP (smoke-found 2026-10): emitted in SINGLE mode only —
+    pair inputs carry `onInput` alone (`pairEvents`), while upstream binds
+    focus/blur on BOTH pair inputs (`Input.tsx:1289/1422`), so a pair
+    trigger wired like DatePicker's daterange can never hear a focus. Fix
+    by mirroring the single-mode attrs into `pairEvents` when next touched.
 
   - pair mode — upstream `Input.tsx:1395-1465`. Set `pairValue = Just (
     start, end )` and the root gains `n-input--pair` and the body becomes

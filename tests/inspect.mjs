@@ -11917,30 +11917,30 @@ const ovlLiveOk = (cond, label) =>
     detail: cond ? '' : 'live interaction assertion failed'
   })
 
+const ovlSleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const ovlClick = (el) => {
+  if (!el) throw new Error('click on undefined element')
+  el.dispatchEvent(new liveWindow.MouseEvent('click', { bubbles: true, cancelable: true, view: liveWindow }))
+}
+const ovlHover = (el, type) => {
+  el.dispatchEvent(new liveWindow.MouseEvent(type, { bubbles: false, cancelable: true, view: liveWindow }))
+}
+const ovlBodyText = () => liveDoc.body.textContent
+// NUI.Button renders a div.n-button (elm-ui), not a <button> tag
+const findOvlBtn = (label, root) =>
+  [...(root || liveDoc).querySelectorAll('.n-button')].find((b) => b.textContent.trim() === label)
+
+// the live demoRow places its controls right BEFORE the cell in document
+// order — the nearest preceding match is the live one (the static sections
+// render far earlier in the page)
+const nearestPreceding = (selector, filter, cell) =>
+  [...liveDoc.querySelectorAll(selector)]
+    .filter((el) => (filter ? filter(el) : true))
+    .filter((el) => el.compareDocumentPosition(cell) & liveWindow.Node.DOCUMENT_POSITION_FOLLOWING)
+    .pop()
+
 try {
-  const ovlSleep = (ms) => new Promise((r) => setTimeout(r, ms))
   await ovlSleep(700)
-
-  const ovlClick = (el) => {
-    if (!el) throw new Error('click on undefined element')
-    el.dispatchEvent(new liveWindow.MouseEvent('click', { bubbles: true, cancelable: true, view: liveWindow }))
-  }
-  const ovlHover = (el, type) => {
-    el.dispatchEvent(new liveWindow.MouseEvent(type, { bubbles: false, cancelable: true, view: liveWindow }))
-  }
-  const ovlBodyText = () => liveDoc.body.textContent
-  // NUI.Button renders a div.n-button (elm-ui), not a <button> tag
-  const findOvlBtn = (label, root) =>
-    [...(root || liveDoc).querySelectorAll('.n-button')].find((b) => b.textContent.trim() === label)
-
-  // the live demoRow places its controls right BEFORE the cell in document
-  // order — the nearest preceding match is the live one (the static sections
-  // render far earlier in the page)
-  const nearestPreceding = (selector, filter, cell) =>
-    [...liveDoc.querySelectorAll(selector)]
-      .filter((el) => (filter ? filter(el) : true))
-      .filter((el) => el.compareDocumentPosition(cell) & liveWindow.Node.DOCUMENT_POSITION_FOLLOWING)
-      .pop()
 
   // ---------- Dropdown · click trigger ----------
   {
@@ -12151,6 +12151,331 @@ try {
   // a thrown driver error (e.g. click on undefined) must surface as a failed
   // check in the standing report — never a silent skip of the phase
   domChecks.push({ name: 'LIVE/OVR driver error', ok: false, detail: String(e && e.stack || e) })
+}
+
+// --- Live round 2 — Controls / Motion / Pickers interaction phase -----------
+// Same live showcase instance as the OVR phase above, three more families
+// (promoted from the /tmp/live-smoke2-probe.mjs lane scratch, 98 assertions,
+// re-verified on master before promotion): the Controls pure-update loops
+// (Button/Input/InputNumber buffer-commit-invalid/Switch/Checkbox/Radio/Rate/
+// Slider/InputOtp), the Motion caller-owned clocks (Carousel arrows/dots/
+// wheel/hover/drag via the port's own algebra + Log scroll/wheel load), and
+// the Pickers daterange trigger + single-date panel (the daterange PANEL is
+// unreachable from the DOM — NUI.Input pair inputs carry onInput only, a
+// port gap documented in Input.elm and Live/Pickers.elm; the smoke drives
+// the single panel as the substitute, same DatePicker algebra).
+// Discovered DOM facts baked in: stepper buttons are
+// `.n-input__suffix .n-button` [minus, add]; input clear is
+// `.n-base-clear__clear[data-clear]`; the port's Carousel wheel picks the
+// FIRST-nonzero axis and needs |d| ≥ 10 (deltaX drives a horizontal
+// carousel; a deltaY-only event is a no-op); wheel/drag are gated on
+// `not inTransition` and jsdom never fires transitionend naturally — the
+// driver dispatches it on `.n-carousel__slides` first; Log's wheel-triggered
+// RequireMoreFrom needs the post-clamp scrollTop exactly at the boundary.
+// The sleeps are load-bearing (rAF-batched patches) — do not tidy them.
+const s2q = (s) => liveDoc.querySelector(s)
+const s2qa = (s) => [...liveDoc.querySelectorAll(s)]
+const s2Norm = (s) => s.replace(/\s+/g, ' ')
+// deepest element whose NORMALIZED textContent matches (captions render as
+// leaf divs via Element.text)
+const s2LeafText = (regex) => {
+  const hits = [...liveDoc.querySelectorAll('div,span')]
+    .filter((el) => el.children.length === 0)
+    .map((el) => s2Norm(el.textContent).trim())
+    .filter((t) => regex.test(t))
+  return hits.length ? hits[0] : null
+}
+const s2RowText = (host) => (host && host.parentElement ? s2Norm(host.parentElement.textContent) : '')
+const s2FireInput = (el, text) => {
+  if (!el) throw new Error('input on undefined element')
+  el.value = text
+  el.dispatchEvent(new liveWindow.Event('input', { bubbles: true }))
+}
+const s2FireFocus = (el) => {
+  if (!el) throw new Error('focus on undefined element')
+  el.dispatchEvent(new liveWindow.FocusEvent('focus', { bubbles: false }))
+}
+const s2FireTransitionEnd = (el) => {
+  if (!el) throw new Error('transitionend on undefined element')
+  el.dispatchEvent(new liveWindow.Event('transitionend', { bubbles: false }))
+}
+const s2FireWheel = (el, init) => {
+  if (!el) throw new Error('wheel on undefined element')
+  el.dispatchEvent(new liveWindow.WheelEvent('wheel', { bubbles: true, cancelable: true, view: liveWindow, ...init }))
+}
+const s2Mouse = (target, type, x, y) => {
+  if (!target) throw new Error(`${type} on undefined element`)
+  target.dispatchEvent(new liveWindow.MouseEvent(type, { bubbles: true, cancelable: true, view: liveWindow, clientX: x, clientY: y }))
+}
+const s2Ok = (prefix) => (cond, name, detail = '') =>
+  domChecks.push({ name: `${prefix}: ${name}`, ok: !!cond, detail: cond ? '' : detail || 'assertion failed' })
+
+try {
+  const ctl = s2Ok('LIVE/CTL')
+  console.log('Live 2 / Controls')
+
+  // -- Button --
+  const counter = s2q('#live-button-counter')
+  ctl(!!counter, 'Button host rendered')
+  ctl(s2Norm(counter.textContent).trim() === 'Pressed 0 times', 'Button counter starts at 0', s2Norm(counter.textContent))
+  ovlClick(counter); await ovlSleep(30)
+  ovlClick(counter); await ovlSleep(30)
+  ctl(s2Norm(counter.textContent).trim() === 'Pressed 2 times', 'Button ×2 clicks → "Pressed 2 times"', s2Norm(counter.textContent))
+  ovlClick(s2q('#live-button-reset')); await ovlSleep(30)
+  ctl(s2Norm(counter.textContent).trim() === 'Pressed 0 times', 'Button reset → "Pressed 0 times"', s2Norm(counter.textContent))
+
+  // -- Input (controlled + clear) --
+  const inputEl = s2q('#live-input-controlled')
+  ctl(!!inputEl && inputEl.tagName === 'INPUT', 'Input inner <input> rendered')
+  s2FireInput(inputEl, 'hi'); await ovlSleep(30)
+  ctl((s2LeafText(/^value: "hi" · focus: no$/) || '').includes('value: "hi"'), 'Input typed "hi" → caption value: "hi" · focus: no', s2LeafText(/^value: ".*" · focus: (yes|no)$/) || '')
+  s2FireFocus(inputEl); await ovlSleep(30)
+  ctl((s2LeafText(/^value: "hi" · focus: yes$/) || '') !== '', 'Input focus event → caption focus: yes', s2LeafText(/^value: ".*" · focus: (yes|no)$/) || '')
+  const clearBtn = inputEl.closest('.n-input').querySelector('.n-base-clear__clear[data-clear]')
+  ctl(!!clearBtn, 'Input clear affordance appears over a value (.n-base-clear__clear)')
+  ovlClick(clearBtn); await ovlSleep(30)
+  ctl((s2LeafText(/^value: "" · focus: yes$/) || '') !== '', 'Input clear click → caption value: ""', s2LeafText(/^value: ".*" · focus: (yes|no)$/) || '')
+
+  // -- InputNumber (stepper + commit) --
+  const stepper = s2q('#live-input-number-stepper')
+  const numInput = stepper.querySelector('input')
+  const numCaption = () => s2LeafText(/^value: .* · buffer: .* · (in)?valid$/) || ''
+  ctl(!!stepper && !!numInput, 'InputNumber host + inner input rendered')
+  ctl(numCaption() === 'value: 3 · buffer: — · valid', 'InputNumber initial caption value: 3 · buffer: — · valid', numCaption())
+  ctl(numInput.value === '3', 'InputNumber input mirrors the derived buffer initially', numInput.value)
+  s2FireInput(numInput, '4'); await ovlSleep(30)
+  ctl(numCaption() === 'value: 4 · buffer: 4 · valid', 'InputNumber type "4" live-syncs value (updateValueOnInput)', numCaption())
+  ctl(numInput.value === '4', 'InputNumber input mirrors the raw buffer ("4")', numInput.value)
+  s2FireInput(numInput, '2x'); await ovlSleep(30)
+  ctl(numCaption() === 'value: 4 · buffer: 2x · invalid', 'InputNumber garbage "2x" keeps value, buffers raw, invalid', numCaption())
+  ctl(numInput.value === '2x', 'InputNumber input mirrors the raw buffer ("2x")', numInput.value)
+  ovlClick(s2q('#live-input-number-commit')); await ovlSleep(30)
+  ctl(numCaption() === 'value: 4 · buffer: 2x · invalid', 'InputNumber commit while invalid → InvalidValue, NOTHING changes', numCaption())
+  s2FireInput(numInput, '5'); await ovlSleep(30)
+  ctl(numCaption() === 'value: 5 · buffer: 5 · valid', 'InputNumber type "5" re-validates', numCaption())
+  const stepBtns = stepper.querySelectorAll('.n-input__suffix .n-button')
+  ctl(stepBtns.length === 2, 'InputNumber renders the two suffix stepper buttons', `${stepBtns.length}`)
+  ovlClick(stepBtns[1]); await ovlSleep(30) // [minus, add] — Right placement
+  ctl(numCaption() === 'value: 6 · buffer: — · valid', 'InputNumber add button steps +1 and clears the buffer', numCaption())
+  ctl(numInput.value === '6', 'InputNumber input re-derives from value ("6") after add', numInput.value)
+  ovlClick(stepBtns[0]); await ovlSleep(30)
+  ctl(numCaption() === 'value: 5 · buffer: — · valid', 'InputNumber minus button steps −1', numCaption())
+  s2FireInput(numInput, '50'); await ovlSleep(30)
+  ctl(numCaption() === 'value: 5 · buffer: 50 · invalid', 'InputNumber out-of-range "50" keeps value, invalid (inputUpdate no-op)', numCaption())
+  ctl(numInput.value === '50', 'InputNumber input mirrors the raw buffer ("50")', numInput.value)
+  ovlClick(s2q('#live-input-number-commit')); await ovlSleep(30)
+  ctl(numCaption() === 'value: 10 · buffer: — · valid', 'InputNumber commit of valid out-of-range CLAMPS to max (deriveValueFromDisplayedValue, doUpdateIfValid)', numCaption())
+  ctl(numInput.value === '10', 'InputNumber input mirrors the clamped value ("10")', numInput.value)
+  ovlClick(stepBtns[1]); await ovlSleep(30) // add at max: button renders disabled, no listener
+  ctl(numCaption() === 'value: 10 · buffer: — · valid', 'InputNumber add at max is disabled — click is a no-op', numCaption())
+
+  // -- Switch --
+  const sw = s2q('#live-switch-toggle .n-switch')
+  ctl(!!sw, 'Switch host rendered')
+  ctl(s2RowText(s2q('#live-switch-toggle')).trim() === 'off', 'Switch caption starts off', s2RowText(s2q('#live-switch-toggle')))
+  ovlClick(sw); await ovlSleep(30)
+  ctl(s2RowText(s2q('#live-switch-toggle')).trim() === 'on', 'Switch click → caption on', s2RowText(s2q('#live-switch-toggle')))
+  ovlClick(sw); await ovlSleep(30)
+  ctl(s2RowText(s2q('#live-switch-toggle')).trim() === 'off', 'Switch click again → caption off', s2RowText(s2q('#live-switch-toggle')))
+
+  // -- Checkbox (group + indeterminate master) --
+  ctl(!!s2q('#live-checkbox-master .n-checkbox'), 'Checkbox master rendered')
+  ctl(/checked: 1\/3 · master indeterminate/.test(s2RowText(s2q('#live-checkbox-master'))), 'Checkbox initial checked: 1/3 · master indeterminate (init [on,off,off])', s2RowText(s2q('#live-checkbox-master')))
+  ovlClick(s2q('#live-checkbox-item-1 .n-checkbox')); await ovlSleep(30)
+  ctl(/checked: 2\/3 · master indeterminate/.test(s2RowText(s2q('#live-checkbox-master'))), 'Checkbox item-1 click → checked: 2/3 · master indeterminate', s2RowText(s2q('#live-checkbox-master')))
+  ovlClick(s2q('#live-checkbox-master .n-checkbox')); await ovlSleep(30)
+  ctl(/checked: 3\/3(?! ·)/.test(s2RowText(s2q('#live-checkbox-master'))), 'Checkbox master click → checked: 3/3, indeterminate flag gone', s2RowText(s2q('#live-checkbox-master')))
+  ovlClick(s2q('#live-checkbox-item-1 .n-checkbox')); await ovlSleep(30)
+  ctl(/checked: 2\/3 · master indeterminate/.test(s2RowText(s2q('#live-checkbox-master'))), 'Checkbox one item off → master indeterminate again', s2RowText(s2q('#live-checkbox-master')))
+
+  // -- Radio --
+  const gzRadio = s2qa('#live-radio-group .n-radio').find((r) => s2Norm(r.textContent).trim() === 'Guangzhou')
+  ctl(!!gzRadio, 'Radio group renders the gz choice')
+  ctl(/picked: —/.test(s2RowText(s2q('#live-radio-group'))), 'Radio caption starts picked: —', s2RowText(s2q('#live-radio-group')))
+  ovlClick(gzRadio); await ovlSleep(30)
+  ctl(/picked: gz/.test(s2RowText(s2q('#live-radio-group'))), 'Radio gz click → picked: gz', s2RowText(s2q('#live-radio-group')))
+
+  // -- Rate --
+  const rateRow = () => s2RowText(s2q('#live-rate'))
+  ctl(!!s2q('#live-rate'), 'Rate host rendered')
+  ctl(/hovered: — · committed: —/.test(rateRow()), 'Rate caption starts hovered: — · committed: —', rateRow())
+  ovlClick(s2q('#live-rate-hover-plus')); await ovlSleep(30)
+  ctl(/hovered: 0\.5/.test(rateRow()), 'Rate hover +½ → hovered: 0.5', rateRow())
+  ovlClick(s2q('#live-rate-hover-plus')); await ovlSleep(30)
+  ctl(/hovered: 1/.test(rateRow()), 'Rate hover +½ again → hovered: 1', rateRow())
+  const thirdStar = s2qa('#live-rate .n-rate__item')[2]
+  ovlClick(thirdStar); await ovlSleep(30)
+  ctl(/committed: 3/.test(rateRow()), 'Rate 3rd star click → committed: 3 (onSelect index+1)', rateRow())
+  ovlClick(s2q('#live-rate-hover-clear')); await ovlSleep(30)
+  ctl(/hovered: — · committed: 3/.test(rateRow()), 'Rate clear hover → hovered: —, commit persists', rateRow())
+
+  // -- Slider single --
+  const sliderRow = () => s2RowText(s2q('#live-slider-plus'))
+  ctl(/40 \(40%\)/.test(sliderRow()), 'Slider single starts 40 (40%)', sliderRow())
+  ovlClick(s2q('#live-slider-plus')); await ovlSleep(30)
+  ctl(/41 \(41%\)/.test(sliderRow()), 'Slider +1 → 41 (41%)', sliderRow())
+  ovlClick(s2q('#live-slider-minus')); await ovlSleep(30)
+  ovlClick(s2q('#live-slider-minus')); await ovlSleep(30)
+  ctl(/39 \(39%\)/.test(sliderRow()), 'Slider −1 ×2 → 39 (39%)', sliderRow())
+
+  // -- Slider range (marks snap) --
+  const rangeRow = () => s2RowText(s2q('#live-range-lo-plus'))
+  ctl(/20 – 60/.test(rangeRow()), 'Slider range starts 20 – 60', rangeRow())
+  ovlClick(s2q('#live-range-lo-plus')); await ovlSleep(30)
+  ctl(/21 – 60/.test(rangeRow()), 'Slider range lo+ → 21 – 60 (Step 1 ±1; markValues are sanitize candidates, not a snap)', rangeRow())
+  ovlClick(s2q('#live-range-hi-minus')); await ovlSleep(30)
+  ctl(/21 – 59/.test(rangeRow()), 'Slider range hi− → 21 – 59', rangeRow())
+
+  // -- InputOtp --
+  const otpRow = () => s2RowText(s2q('#live-input-otp-reset'))
+  const otpInputs = () => s2qa('#live-input-otp input')
+  ctl(otpInputs().length === 6, 'InputOtp renders 6 slot inputs', `${otpInputs().length}`)
+  ctl(/0\/6 entered/.test(otpRow()), 'InputOtp caption starts 0/6 entered', otpRow())
+  s2FireInput(otpInputs()[0], '5'); await ovlSleep(30)
+  ctl(/1\/6 entered/.test(otpRow()), 'InputOtp digit in slot 0 → 1/6 entered (focus advance is caller-owned)', otpRow())
+  ovlClick(s2q('#live-input-otp-mask')); await ovlSleep(30)
+  ctl(otpInputs()[0].type === 'password', 'InputOtp mask toggle switches slots to type=password', otpInputs()[0].type)
+  ovlClick(s2q('#live-input-otp-reset')); await ovlSleep(30)
+  ctl(/0\/6 entered/.test(otpRow()), 'InputOtp reset → 0/6 entered', otpRow())
+} catch (e) {
+  domChecks.push({ name: 'LIVE/CTL driver error', ok: false, detail: String((e && e.stack) || e) })
+}
+
+try {
+  const mot = s2Ok('LIVE/MOT')
+  console.log('Live 2 / Motion')
+
+  const car = s2q('#live-carousel-auto')
+  mot(!!car, 'Carousel host rendered')
+  // FIRST: autoplay off — the 3s clock would advance the slide under us
+  const autoplaySwitch = nearestPreceding('.n-switch', null, car)
+  ovlClick(autoplaySwitch); await ovlSleep(30)
+  const caption = () => s2LeafText(/^slide \d+ \/ 4 · real \d+/) || ''
+  const parseSlide = () => {
+    const m = caption().match(/^slide (\d+) \/ 4 · real (\d+)/)
+    return m ? parseInt(m[1], 10) : null
+  }
+
+  // -- caption sanity + arrows --
+  mot(/slide \d+ \/ 4 · real \d+/.test(caption()), 'Carousel caption matches "slide n / 4 · real r"', caption())
+  const s0 = parseSlide()
+  const arrows = s2qa('#live-carousel-auto .n-carousel__arrow')
+  mot(arrows.length === 2, 'Carousel renders the arrow pair (.n-carousel__arrow)', `${arrows.length}`)
+  ovlClick(arrows[1]); await ovlSleep(30) // [backward, forward]
+  const s1 = parseSlide()
+  mot(s1 === (s0 === 4 ? 1 : s0 + 1), 'Carousel forward arrow → slide +1 (mod 4, loop on)', `was ${s0}, now ${s1}`)
+  mot(/· moved \d+ → \d+/.test(caption()), 'Carousel indexChange announce appears ("· moved a → b")', caption())
+  s2FireTransitionEnd(s2q('#live-carousel-auto .n-carousel__slides')); await ovlSleep(20)
+  ovlClick(arrows[0]); await ovlSleep(30)
+  mot(parseSlide() === s0, 'Carousel backward arrow → slide back', `now ${parseSlide()}, expected ${s0}`)
+
+  // -- dots --
+  const dots = s2qa('#live-carousel-auto .n-carousel__dot')
+  mot(dots.length === 4, 'Carousel renders 4 line dots (.n-carousel__dot)', `${dots.length}`)
+  s2FireTransitionEnd(s2q('#live-carousel-auto .n-carousel__slides')); await ovlSleep(20)
+  ovlClick(dots[1]); await ovlSleep(30)
+  mot(parseSlide() === 2, 'Carousel 2nd dot click → slide 2', `now ${parseSlide()}`)
+
+  // -- wheel (first-nonzero axis must carry |d| ≥ 10; needs !inTransition) --
+  s2FireTransitionEnd(s2q('#live-carousel-auto .n-carousel__slides')); await ovlSleep(20)
+  s2FireWheel(car, { deltaX: 40, deltaY: 0 }); await ovlSleep(30)
+  mot(parseSlide() === 3, 'Carousel wheel deltaX +40 → next (slide 3)', `now ${parseSlide()}`)
+  s2FireTransitionEnd(s2q('#live-carousel-auto .n-carousel__slides')); await ovlSleep(20)
+  s2FireWheel(car, { deltaX: -40, deltaY: 0 }); await ovlSleep(30)
+  mot(parseSlide() === 2, 'Carousel wheel deltaX −40 → prev (slide 2)', `now ${parseSlide()}`)
+
+  // -- hover pause --
+  ovlHover(car, 'mouseenter'); await ovlSleep(30)
+  mot(/· paused/.test(caption()), 'Carousel root mouseenter → caption gains "· paused"', caption())
+  ovlHover(car, 'mouseleave'); await ovlSleep(30)
+  mot(!/· paused/.test(caption()), 'Carousel root mouseleave → paused gone', caption())
+
+  // -- pointer drag (#live-carousel-drag) --
+  const dragCar = s2q('#live-carousel-drag')
+  mot(!!dragCar, 'Drag carousel host rendered')
+  const dragCaption = () => s2LeafText(/^drag offset /) || ''
+  s2Mouse(dragCar, 'mousedown', 400, 100); await ovlSleep(30)
+  s2Mouse(liveDoc, 'mousemove', 340, 100); await ovlSleep(20)
+  s2Mouse(liveDoc, 'mousemove', 280, 100); await ovlSleep(20)
+  s2Mouse(liveDoc, 'mousemove', 220, 100); await ovlSleep(50) // ≥1 DragTick (20ms) before up
+  mot(/dragging/.test(dragCaption()), 'Drag mid-gesture caption carries "· dragging"', dragCaption())
+  mot(/drag offset -\d+(\.\d+)? px/.test(dragCaption()), 'Drag mid-gesture offset is a non-zero negative delta', dragCaption())
+  s2Mouse(liveDoc, 'mouseup', 220, 100); await ovlSleep(30)
+  mot(!/dragging/.test(dragCaption()), 'Drag mouseup ends the drag (dragging flag gone)', dragCaption())
+  mot(/drag offset 0 px/.test(dragCaption()), 'Drag end resets the offset to 0 px', dragCaption())
+
+  // -- Log (scroll + load) --
+  const logEl = s2q('#live-log')
+  const logCaption = () => s2LeafText(/^scrollTop \d+ px · \d+ lines/) || ''
+  mot(!!logEl, 'Log host rendered')
+  mot(logCaption() === 'scrollTop 0 px · 12 lines', 'Log caption starts scrollTop 0 px · 12 lines', logCaption())
+  mot(!s2q('#live-log .n-log-loader'), 'Log loader unmounted while idle')
+  const logBtn = (label) => nearestPreceding('.n-button', (b) => s2Norm(b.textContent).trim() === label, logEl)
+  ovlClick(logBtn('Scroll up 120 px')); await ovlSleep(30)
+  mot(/· loading older…/.test(logCaption()), 'Log scroll-up at top → "· loading older…" (RequireMoreFrom Top)', logCaption())
+  mot(!!s2q('#live-log .n-log-loader'), 'Log loader mounts while pending (.n-log-loader)')
+  await ovlSleep(800) // 600ms flush tick
+  mot(logCaption() === 'scrollTop 0 px · 18 lines', 'Log older flush prepends 6 lines (18 lines), scrollTop unchanged', logCaption())
+  mot(!s2q('#live-log .n-log-loader'), 'Log loader unmounts after the flush')
+  ovlClick(logBtn('Scroll down 120 px')); await ovlSleep(30)
+  mot(!/loading newer…/.test(logCaption()), 'Log scroll-down from top (120 < 210 max) fires nothing yet', logCaption())
+  ovlClick(logBtn('Scroll down 120 px')); await ovlSleep(30)
+  mot(/· loading newer…/.test(logCaption()), 'Log second scroll-down clamps to bottom → "· loading newer…"', logCaption())
+  await ovlSleep(800)
+  mot(logCaption() === 'scrollTop 210 px · 24 lines', 'Log newer flush appends 6 lines (24 lines) at scrollTop 210', logCaption())
+  s2FireWheel(logEl, { deltaY: -300 }); await ovlSleep(30)
+  mot(/· loading older…/.test(logCaption()), 'Log wheel deltaY −300 from bottom → same RequireMoreFrom Top path', logCaption())
+  await ovlSleep(800)
+  mot(/30 lines/.test(logCaption()), 'Log wheel-triggered load flushes to 30 lines', logCaption())
+} catch (e) {
+  domChecks.push({ name: 'LIVE/MOT driver error', ok: false, detail: String((e && e.stack) || e) })
+}
+
+try {
+  const pick = s2Ok('LIVE/PICK')
+  console.log('Live 2 / Pickers')
+
+  // -- daterange trigger (the panel itself is unreachable — see phase header) --
+  const rangeHost = s2q('#live-daterange')
+  const rangeInputs = s2qa('#live-daterange input')
+  pick(!!rangeHost && rangeInputs.length === 2, 'Daterange trigger renders the Input pair')
+  const chip = () => {
+    const hits = [...liveDoc.querySelectorAll('div,span')]
+      .map((el) => s2Norm(el.textContent).trim())
+      .filter((t) => /^(unset|\d{13} → \d{13})( · selecting)?$/.test(t))
+    return hits.sort((a, b) => a.length - b.length)[0] || ''
+  }
+  pick(chip() === '1715299200000 → 1716163200000', 'Daterange chip prints the raw May 10–20 ms pair', chip())
+  pick(!s2q('#live-daterange-panel'), 'Daterange panel unmounted initially')
+  const rangeClear = s2q('#live-daterange .n-base-clear__clear[data-clear]')
+  pick(!!rangeClear, 'Daterange trigger clear affordance present over a value (.n-base-clear__clear)')
+  ovlClick(rangeClear); await ovlSleep(30)
+  pick(chip() === 'unset', 'Daterange trigger clear click commits Range Nothing (chip "unset")', chip())
+  pick(!s2q('#live-daterange .n-base-clear__clear[data-clear]'), 'Daterange empty pair hides the clear affordance (placeholder swap)')
+
+  // -- single date panel substitute (same port, same helpers; the daterange
+  //    panel cannot be opened from the DOM — pair inputs drop onFocus) --
+  const singleInput = s2q('#live-datepicker input')
+  pick(!!singleInput, 'Single DatePicker trigger input rendered')
+  s2FireFocus(singleInput); await ovlSleep(30)
+  const sPanel = s2q('#live-datepicker-panel')
+  pick(!!sPanel && !!sPanel.querySelector('.n-date-panel.n-date-panel--date'), 'Single DatePicker focus mounts the inline panel (.n-date-panel--date)')
+  const dayCell = (n) =>
+    s2qa('#live-datepicker-panel .n-date-panel-date')
+      .filter((el) => !el.classList.contains('n-date-panel-date--excluded'))
+      .find((el) => s2Norm(el.textContent).trim() === String(n))
+  ovlClick(dayCell(12)); await ovlSleep(30)
+  const singleChip = () => s2LeafText(/^committed: (unset|-?\d+)$/) || ''
+  pick(singleChip() === 'committed: 1715472000000', 'Single DatePicker day-12 click commits startOfDay UTC ts (2024-05-12)', singleChip())
+  pick(!s2q('#live-datepicker-panel'), 'Single DatePicker closes on date select (singleDateClick close for Date type)')
+  s2FireFocus(singleInput); await ovlSleep(30)
+  const acts = s2qa('#live-datepicker-panel .n-date-panel-actions .n-button').map((b) => s2Norm(b.textContent).trim())
+  pick(acts.includes('Clear') && acts.includes('Now'), 'Single DatePicker defaultActions Date+clearable renders Clear + Now', acts.join(','))
+  ovlClick(s2qa('#live-datepicker-panel .n-date-panel-actions .n-button').find((b) => s2Norm(b.textContent).trim() === 'Clear')); await ovlSleep(30)
+  pick(singleChip() === 'committed: unset', 'Single DatePicker panel Clear → onClear commits empty (chip "unset")', singleChip())
+  pick(!s2q('#live-datepicker-panel'), 'Single DatePicker panel Clear closes the panel')
+} catch (e) {
+  domChecks.push({ name: 'LIVE/PICK driver error', ok: false, detail: String((e && e.stack) || e) })
 }
 
 // --- report -----------------------------------------------------------------
