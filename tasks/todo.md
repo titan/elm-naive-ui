@@ -1,5 +1,30 @@
 # elm-naive-ui — batch todo (older closed trails below)
 
+## Live/* oracle audit round — CLOSED (1 commit, oracle lane + in-context fix)
+- [x] oracle — `tasks/recon/live-oracle.md` (oracle lane, worktree-less: read-only
+      specialist, report lands directly in untracked tasks/; brief
+      tasks/brief-live-oracle.md). Verdict: the showcase is HONEST as a port
+      showcase — every port helper that exists is used (stepValue,
+      inputUpdate, singleDateClick/dualDateClick, scrollEvents, provider
+      queue transforms…), no channel wired to a dead update, all
+      subscriptions gated, overlays start closed as the smoke asserts.
+      S×1 · D×9 · R×7; all 78 LIVE/OVR checks traced to real update branches.
+- [x] fix — `1f8502d` (S1: Live/Nav TabClose reassigned activeTab
+      unconditionally → closing a BACKGROUND tab moved the selection
+      (upstream addable.demo.vue guards `name === value`); guard added,
+      activeAfterClose unchanged. + [oracle D] docstring one-liners across
+      all six modules; 2 of the 9 D findings were already documented
+      in-module. Gate 8/8 — **4255/4255, 0 failures**, counts identical.)
+- TRAP learned: elm-format reflows the docstring bullet lists — run
+      `elm-format --yes examples/src/Live/` BEFORE the gate (step 8 fails
+      on the first edit otherwise).
+- R notes worth keeping: R5 ranks the next LIVE smoke promotion candidates
+      (Controls/InputNumber buffer/commit/invalid loop → Motion/Carousel
+      arrows/dots/wheel, drag needs the 20ms tick → Pickers/DatePicker
+      daterange two-click); R1 the six families' pure-update seam (no Cmd
+      anywhere) is the family contract — don't let a fixer "just add a Cmd";
+      R2 pick the clamp recipe when either page-size demo is next touched.
+
 ## Live smoke promotion — CLOSED (1 commit, lane + orchestrator review)
 - [x] `4aee081` (test(live/overlays): the Overlays lane's 78-assertion jsdom
       interaction smoke — a /tmp scratch that drove the compiled showcase app
@@ -62,11 +87,11 @@
 ## Trail outcome (for the next session)
 The showcase is now a real Elm app: 87 static sections (check-dom surface) + six
 Live/* interactive families covering all 53 channel-bearing components (56 demos
-total). The Overlays smoke promotion is DONE (top entry). Possible follow-ups,
-none queued: an oracle round over the six Live modules (semantics vs port
-contracts), promoting the OTHER five lanes' smokes the same way if they ever
-write any (only Overlays had one), splitting static sections into modules (they
-still live in one 5,880-line Main.elm).
+total). The Overlays smoke promotion is DONE (second entry). The oracle audit
+round over the six Live modules is DONE (top entry). Possible follow-ups,
+none queued: promoting the OTHER five lanes' smokes the same way if they ever
+write any (only Overlays had one — oracle R5 ranks the candidates), splitting
+static sections into modules (they still live in one 5,880-line Main.elm).
 
 ## README caller-supplied hljs/katex note — CLOSED (1 docs commit, the LAST optional item)
 - [x] docs — `884b60b` (one bullet in Notes / limitations: the port ships no JS —
