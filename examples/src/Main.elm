@@ -123,7 +123,7 @@ import NUI.Types as T
 import NUI.Typography as Typo
 import NUI.Upload as Upload
 import NUI.Watermark as Watermark
-import Showcase exposing (capitalize, chip, darkTheme, demoRow, purple, section, theme)
+import Showcase exposing (capitalize, chip, codeHljs, darkTheme, demoRow, fakeKatex, fakeKatexDisplay, purple, section, starIcon, theme)
 import Time
 
 
@@ -5613,38 +5613,6 @@ carouselSection =
         ]
 
 
-{-| A deterministic stand-in for highlight.js (the port never ships one): it
-recognises two languages and wraps each input in one token span.
--}
-codeHljs : Code.Hljs
-codeHljs =
-    let
-        tokenClass lang =
-            if lang == "elm" then
-                "hljs-string"
-
-            else
-                "hljs-keyword"
-    in
-    { getLanguage = \lang -> List.member lang [ "javascript", "elm" ]
-    , highlight = \code lang -> "<span class=\"" ++ tokenClass lang ++ "\">" ++ code ++ "</span>"
-    }
-
-
-{-| A deterministic stand-in for KaTeX's `renderToString` (inline shape).
--}
-fakeKatex : String -> String
-fakeKatex value =
-    "<span class=\"katex\"><span class=\"katex-mathml\">" ++ value ++ "</span></span>"
-
-
-{-| The `katex-display` shape (a block wrapper).
--}
-fakeKatexDisplay : String -> String
-fakeKatexDisplay value =
-    "<div class=\"katex-display\">" ++ value ++ "</div>"
-
-
 codeSection : Element msg
 codeSection =
     section "Code"
@@ -5860,25 +5828,3 @@ themeSection =
             , Switch.view purple { swD | value = True } []
             ]
         ]
-
-
-
--- HELPERS
-
-
-{-| A small inline SVG glyph for the icon showcase.
--}
-starIcon : Element msg
-starIcon =
-    Element.html
-        (Html.node "svg"
-            [ HA.attribute "viewBox" "0 0 24 24"
-            , HA.attribute "aria-hidden" "true"
-            ]
-            [ Html.node "path"
-                [ HA.attribute "fill" "currentColor"
-                , HA.attribute "d" "M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"
-                ]
-                []
-            ]
-        )

@@ -1,11 +1,16 @@
-module Showcase exposing (capitalize, chip, darkTheme, demoRow, purple, section, theme)
+module Showcase exposing (capitalize, chip, codeHljs, darkTheme, demoRow, fakeKatex, fakeKatexDisplay, purple, section, starIcon, theme)
 
-{-| Shared showcase chrome: the theme set and the section/demoRow scaffolding.
-Used by the static page (Main) and every Live/\* interactive family module, so
-live demos read exactly like the static ones.
+{-| Shared showcase chrome: the theme set, the section/demoRow scaffolding,
+and the cross-family fixtures (a fake highlight.js, fake katex closures, a
+star glyph) used by more than one section family. Used by the static page
+(Main / Sections/_) and every Live/_ interactive family module, so live
+demos read exactly like the static ones.
 -}
 
 import Element exposing (Element)
+import Html
+import Html.Attributes as HA
+import NUI.Code as Code
 import NUI.Divider as Divider
 import NUI.Tag as Tag
 import NUI.Theme as Theme exposing (Theme)
@@ -80,3 +85,57 @@ chip label =
 capitalize : String -> String
 capitalize s =
     String.toUpper (String.left 1 s) ++ String.dropLeft 1 s
+
+
+
+-- CROSS-FAMILY FIXTURES (moved from Main.elm — used by 2+ section families)
+
+
+{-| A small inline SVG glyph for the icon showcase (and the menu demos).
+-}
+starIcon : Element msg
+starIcon =
+    Element.html
+        (Html.node "svg"
+            [ HA.attribute "viewBox" "0 0 24 24"
+            , HA.attribute "aria-hidden" "true"
+            ]
+            [ Html.node "path"
+                [ HA.attribute "fill" "currentColor"
+                , HA.attribute "d" "M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"
+                ]
+                []
+            ]
+        )
+
+
+{-| A deterministic stand-in for highlight.js (the port never ships one): it
+recognises two languages and wraps each input in one token span.
+-}
+codeHljs : Code.Hljs
+codeHljs =
+    let
+        tokenClass lang =
+            if lang == "elm" then
+                "hljs-string"
+
+            else
+                "hljs-keyword"
+    in
+    { getLanguage = \lang -> List.member lang [ "javascript", "elm" ]
+    , highlight = \code lang -> "<span class=\"" ++ tokenClass lang ++ "\">" ++ code ++ "</span>"
+    }
+
+
+{-| A deterministic stand-in for KaTeX's `renderToString` (inline shape).
+-}
+fakeKatex : String -> String
+fakeKatex value =
+    "<span class=\"katex\"><span class=\"katex-mathml\">" ++ value ++ "</span></span>"
+
+
+{-| The `katex-display` shape (a block wrapper).
+-}
+fakeKatexDisplay : String -> String
+fakeKatexDisplay value =
+    "<div class=\"katex-display\">" ++ value ++ "</div>"
