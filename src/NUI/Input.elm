@@ -112,11 +112,10 @@ components' `NInput` invocations):
     when set — TimePicker passes `format.length + 4`). Never the textarea.
 
   - `onFocus` / `onBlur` — raw focus / blur events on the input / textarea
-    element. KNOWN GAP (smoke-found 2026-10): emitted in SINGLE mode only —
-    pair inputs carry `onInput` alone (`pairEvents`), while upstream binds
-    focus/blur on BOTH pair inputs (`Input.tsx:1289/1422`), so a pair
-    trigger wired like DatePicker's daterange can never hear a focus. Fix
-    by mirroring the single-mode attrs into `pairEvents` when next touched.
+    element; in pair mode BOTH inputs carry them (upstream `Input.tsx:1289` /
+    `:1422` binds focus/blur on each pair input — mirrored into `pairEvents`
+    2026-10 after the live smoke found a pair trigger wired like DatePicker's
+    daterange could never hear a focus).
 
   - pair mode — upstream `Input.tsx:1395-1465`. Set `pairValue = Just (
     start, end )` and the root gains `n-input--pair` and the body becomes
@@ -628,7 +627,8 @@ pairParts opts index =
 {-| The picker-trigger attributes for one side of the pair: the manual-activation
 `tabindex -1` (`Input.tsx:1410`), the inline `text-decoration`
 (`Input.tsx:1434`), the `size` attribute on input 1 only (`Input.tsx:1288`),
-and the `onInput` event tagged with the pair source.
+the `onInput` event tagged with the pair source, and the raw focus / blur
+events (upstream binds both on EVERY pair input, `Input.tsx:1289/1422`).
 -}
 pairTriggerAttrs : Options msg -> Int -> Maybe String -> List (Html.Attribute msg)
 pairTriggerAttrs opts index decoration =
@@ -654,9 +654,13 @@ pairTriggerAttrs opts index decoration =
         ++ pairEvents opts index
 
 
+{-| The pair's events: `onInput` tagged with the pair source, then the raw
+focus / blur events mirrored from single mode (upstream binds focus/blur on
+BOTH pair inputs regardless of the input handler, `Input.tsx:1289/1422`).
+-}
 pairEvents : Options msg -> Int -> List (Html.Attribute msg)
 pairEvents opts index =
-    case opts.onPairInput of
+    (case opts.onPairInput of
         Just toMsg ->
             let
                 ( a, b ) =
@@ -679,6 +683,21 @@ pairEvents opts index =
 
         Nothing ->
             []
+    )
+        ++ (case opts.onFocus of
+                Just m ->
+                    [ HE.onFocus m ]
+
+                Nothing ->
+                    []
+           )
+        ++ (case opts.onBlur of
+                Just m ->
+                    [ HE.onBlur m ]
+
+                Nothing ->
+                    []
+           )
 
 
 {-| The pair-only suffix — `div.n-input__suffix` renders iff `clearable` OR a

@@ -26,12 +26,12 @@ Oracle-round divergences (tasks/recon/live-oracle.md):
     `Single Nothing`** — sound, because the helper's `close` is type-only
     (closes for Date/Week/Year panels) and the demo discards the re-derived
     value; the reconstruction is just how the close flag is reached.
-  - [smoke note] **The daterange panel never opens from the DOM.** The demo's
-    only opener is `DpRangeFocused`, but NUI.Input's pair inputs carry
-    `onInput` alone (no `onFocus` — port gap, see Input.elm's KNOWN GAP), so
-    the channel has no listener in pair mode. The trigger pair, chip and
-    clear are live; the two-click `dualDateClick` flow is exercised on the
-    single-date panel (same DatePicker algebra) by the LIVE smoke.
+  - [smoke note — resolved 2026-10] **The daterange panel now opens from the
+    DOM.** `NUI.Input`'s pair inputs carry `onFocus`/`onBlur` (mirrored into
+    `pairEvents`, upstream `Input.tsx:1289/1422`), so `DpRangeFocused` fires
+    from either input; the LIVE smoke drives the full two-click
+    `dualDateClick` flow (day A → hover preview → day B → Confirm) here and
+    the single-date panel alongside it.
 
 -}
 

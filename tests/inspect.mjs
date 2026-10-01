@@ -12435,7 +12435,7 @@ try {
   const pick = s2Ok('LIVE/PICK')
   console.log('Live 2 / Pickers')
 
-  // -- daterange trigger (the panel itself is unreachable — see phase header) --
+  // -- daterange trigger --
   const rangeHost = s2q('#live-daterange')
   const rangeInputs = s2qa('#live-daterange input')
   pick(!!rangeHost && rangeInputs.length === 2, 'Daterange trigger renders the Input pair')
@@ -12453,8 +12453,39 @@ try {
   pick(chip() === 'unset', 'Daterange trigger clear click commits Range Nothing (chip "unset")', chip())
   pick(!s2q('#live-daterange .n-base-clear__clear[data-clear]'), 'Daterange empty pair hides the clear affordance (placeholder swap)')
 
-  // -- single date panel substitute (same port, same helpers; the daterange
-  //    panel cannot be opened from the DOM — pair inputs drop onFocus) --
+  // -- daterange panel — the Input pair-focus fix in action (onFocus now on
+  //    BOTH pair inputs, upstream Input.tsx:1289/1422): open → day A → hover
+  //    preview → day B → Confirm sanitizes + closes --
+  s2FireFocus(rangeInputs[0]); await ovlSleep(30)
+  const rPanel = s2q('#live-daterange-panel')
+  pick(!!rPanel && !!rPanel.querySelector('.n-date-panel.n-date-panel--daterange'), 'Daterange pair-input 1 focus mounts the panel (.n-date-panel--daterange)')
+  const rCals = s2qa('#live-daterange-panel .n-date-panel-calendar')
+  pick(rCals.length === 2, 'Daterange panel renders two calendars', String(rCals.length))
+  const rDay = (n) =>
+    [...rCals[0].querySelectorAll('.n-date-panel-date')]
+      .filter((el) => !el.classList.contains('n-date-panel-date--excluded'))
+      .find((el) => s2Norm(el.textContent).trim() === String(n))
+  s2Mouse(rDay(18), 'mouseenter', 0, 0); await ovlSleep(30)
+  pick(chip() === 'unset', 'Daterange hover before the first click is inert (dualHover gates on selecting)', chip())
+  ovlClick(rDay(12)); await ovlSleep(30)
+  pick(chip() === '1715472000000 → 1715472000000 · selecting', 'Daterange day-12 click starts the pair at both ends (· selecting)', chip())
+  s2Mouse(rDay(18), 'mouseenter', 0, 0); await ovlSleep(30)
+  pick(chip() === '1715472000000 → 1715990400000 · selecting', 'Daterange hover day-18 previews the end ts while selecting', chip())
+  ovlClick(rDay(18)); await ovlSleep(30)
+  pick(chip() === '1715472000000 → 1715990400000', 'Daterange day-18 click completes the pair (selecting gone)', chip())
+  pick(!!s2q('#live-daterange-panel'), 'Daterange panel stays open after the pair completes (closeOnSelect False)')
+  const rActions = s2qa('#live-daterange-panel .n-date-panel-actions .n-button').map((b) => s2Norm(b.textContent).trim())
+  pick(rActions.join(',') === 'Clear,Confirm', 'Daterange defaultActions renders Clear + Confirm', rActions.join(','))
+  ovlClick(s2qa('#live-daterange-panel .n-date-panel-actions .n-button').find((b) => s2Norm(b.textContent).trim() === 'Confirm')); await ovlSleep(30)
+  pick(chip() === '1715472000000 → 1715990400000', 'Daterange Confirm keeps the sanitized day pair (chip)', chip())
+  pick(!s2q('#live-daterange-panel'), 'Daterange Confirm closes the panel')
+  s2FireFocus(rangeInputs[1]); await ovlSleep(30)
+  pick(!!s2q('#live-daterange-panel'), 'Daterange pair-input 2 focus reopens the panel (both inputs carry onFocus)')
+  ovlClick(s2qa('#live-daterange-panel .n-date-panel-actions .n-button').find((b) => s2Norm(b.textContent).trim() === 'Confirm')); await ovlSleep(30)
+  pick(!s2q('#live-daterange-panel'), 'Daterange panel reclosed via Confirm')
+
+  // -- single date panel (the single-trigger focus path through the same
+  //    DatePicker port; complements the daterange flow above) --
   const singleInput = s2q('#live-datepicker input')
   pick(!!singleInput, 'Single DatePicker trigger input rendered')
   s2FireFocus(singleInput); await ovlSleep(30)
