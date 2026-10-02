@@ -1,5 +1,6 @@
 module NUI.Internal exposing
     ( TransitionPhase(..)
+    , applyVarOverrides
     , classIf
     , classes
     , cssVars
@@ -125,3 +126,30 @@ renderVars vars =
         |> List.filter (\( _, v ) -> v /= "initial" && not (String.isEmpty v))
         |> List.map (\( k, v ) -> k ++ ":" ++ v)
         |> String.join ";"
+
+
+{-| Naive UI's per-instance `builtinThemeOverrides` as a key/value patch over a
+component's resolved `--n-*` vars: an override whose key is already a var is
+swapped IN PLACE (position/order kept); an unknown key is appended at the END.
+`[]` leaves the variable list untouched.
+-}
+applyVarOverrides : List ( String, String ) -> List ( String, String ) -> List ( String, String )
+applyVarOverrides overrides base =
+    List.foldl
+        (\( key, value ) acc ->
+            if List.any (\( existingKey, _ ) -> existingKey == key) acc then
+                List.map
+                    (\( existingKey, existingValue ) ->
+                        if existingKey == key then
+                            ( key, value )
+
+                        else
+                            ( existingKey, existingValue )
+                    )
+                    acc
+
+            else
+                acc ++ [ ( key, value ) ]
+        )
+        base
+        overrides

@@ -526,7 +526,7 @@ cssVars theme opts v =
               )
             ]
     in
-    applyVarOverrides opts.varOverrides
+    I.applyVarOverrides opts.varOverrides
         ([ ( "--n-bezier", common.cubicBezierEaseInOut )
          , ( "--n-bezier-ease-out", common.cubicBezierEaseOut )
          , ( "--n-ripple-duration", v.rippleDuration )
@@ -538,32 +538,6 @@ cssVars theme opts v =
             ++ borderVars
             ++ sizeVars
         )
-
-
-{-| Naive UI's per-instance `builtinThemeOverrides`: an override whose key is
-already a button var is swapped IN PLACE (position/order kept); an unknown key
-is appended at the END. `[]` leaves the variable list untouched.
--}
-applyVarOverrides : List ( String, String ) -> List ( String, String ) -> List ( String, String )
-applyVarOverrides overrides base =
-    List.foldl
-        (\( key, value ) acc ->
-            if List.any (\( existingKey, _ ) -> existingKey == key) acc then
-                List.map
-                    (\( existingKey, existingValue ) ->
-                        if existingKey == key then
-                            ( key, value )
-
-                        else
-                            ( existingKey, existingValue )
-                    )
-                    acc
-
-            else
-                acc ++ [ ( key, value ) ]
-        )
-        base
-        overrides
 
 
 customColorVars : Maybe String -> List ( String, String )

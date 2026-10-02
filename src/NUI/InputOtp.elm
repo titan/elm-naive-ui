@@ -49,9 +49,10 @@ upstream fires and then swallows via a shallow-equality check.
 
 The children argument models upstream's typed default slot: element _i_
 replaces the built-in input of slot _i_ (pass `[]` for the built-in inputs).
-Note upstream zeroes each inner input's padding through
-`builtinThemeOverrides`; `NUI.Input` has no padding option, so the built-in
-slots render with its default padding until it gains one.
+Upstream zeroes each inner input's padding through `builtinThemeOverrides`;
+the built-in slots pass that to `NUI.Input.varOverrides`
+(`--n-padding-left/right: 0`) — children replacing a slot must do their own
+zeroing if they want the same 24–36px-cell geometry.
 
 -}
 
@@ -169,6 +170,17 @@ defaultItem theme opts index =
             , status = opts.status
             , disabled = opts.disabled
             , readonly = opts.readonly
+
+            -- Upstream zeroes every inner input's padding through its
+            -- `builtinThemeOverrides` ({ paddingTiny..paddingLarge: '0' },
+            -- InputOtp.tsx render); the slots are 24–36px wide, so the size's
+            -- default padding would leave the digit almost no content width.
+            -- The override lands on the resolved `--n-padding-left/right` —
+            -- the exact vars upstream's zeroed paddings produce.
+            , varOverrides =
+                [ ( "--n-padding-left", "0" )
+                , ( "--n-padding-right", "0" )
+                ]
         }
 
 

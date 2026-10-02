@@ -1653,6 +1653,20 @@ dTrue(
   !!otp && !!otpMaskEl && otpMaskEl.getAttribute('type') === 'password',
   otpMaskEl ? otpMaskEl.getAttribute('type') : 'missing'
 )
+const otpSlot = doc.querySelector('#live-input-otp .n-input-otp > .n-input')
+const otpSlotStyle = otpSlot ? otpSlot.getAttribute('style') || '' : ''
+dTrue(
+  'DOM: InputOtp slot input zeroes the padding (--n-padding-left:0, builtinThemeOverrides)',
+  !!otpSlot &&
+    otpSlotStyle.includes('--n-padding-left:0') &&
+    otpSlotStyle.includes('--n-padding-right:0'),
+  otpSlot ? otpSlotStyle : 'missing'
+)
+dTrue(
+  'DOM: InputOtp slot keeps the size vars untouched by the override (--n-height:34px medium)',
+  !!otpSlot && otpSlotStyle.includes('--n-height:34px'),
+  otpSlot ? otpSlotStyle : 'missing'
+)
 
 // DynamicTags ----------------------------------------------------------------
 const dt = doc.querySelector('#live-dynamic-tags .n-dynamic-tags')

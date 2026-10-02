@@ -60,6 +60,13 @@ UI's exact CSS.
 
 Three seams beyond the basic props:
 
+  - `varOverrides` — upstream's per-instance `builtinThemeOverrides` as a
+    key/value patch over the resolved `--n-*` vars (a known key is swapped
+    in place, an unknown one appended — `NUI.Button.varOverrides` is the
+    same seam); `NUI.InputOtp`'s slots use it for upstream's
+    `{ paddingTiny, …, paddingLarge: '0' }` zeroing (`InputOtp.tsx` render:
+    `--n-padding-left/right: 0`).
+
   - `autosize` — upstream `autosize: Boolean | {minRows?, maxRows?}`
     (`Input.tsx:89`); here `Bool` only. `True` emits `n-input--autosize`
     on the root and suppresses `n-input--resizable` (upstream
@@ -68,6 +75,7 @@ Three seams beyond the basic props:
     height measurement itself (`Input.tsx:339-375` — the minRows/maxRows
     math, `overflow` toggling) is runtime DOM sizing — caller-owned; the
     object form maps to the caller setting `rows` / CSS.
+
   - `loading` — upstream renders its `NBaseSuffix` spinner whenever the
     `loading` prop is set (`Input.tsx:1345-1352`); here `loading = True`.
     DOM (the `NUI.BaseSelection` suffix idiom): `div.n-base-loading
@@ -76,6 +84,7 @@ Three seams beyond the basic props:
     spinner svg. It renders inside `.n-input__suffix` — which now appears
     for loading alone too — in upstream order `[clear, loading, suffix
     slot]` (`internalLoadingBeforeSuffix` defaults true).
+
   - `inputAttributes` — upstream's `inputProps`: raw attributes onto the
     inner `<input>` / `<textarea>` element (upstream demos pass
     `autocomplete='disabled'`, `id`, `max`). The field-owned attributes
@@ -221,6 +230,7 @@ type alias Options msg =
     , pairTextDecoration : Maybe ( String, String )
     , separatorNode : Maybe (Element msg)
     , onPairInput : Maybe (( String, String ) -> PairSource -> msg)
+    , varOverrides : List ( String, String )
     , extraRootClasses : List String
     }
 
@@ -263,6 +273,7 @@ defaults =
     , pairTextDecoration = Nothing
     , separatorNode = Nothing
     , onPairInput = Nothing
+    , varOverrides = []
     , extraRootClasses = []
     }
 
@@ -292,7 +303,10 @@ view theme opts =
     in
     Element.row
         ([ I.classes (rootClasses opts isTextarea)
-         , I.cssVars (cssVars theme opts.size (InputTheme.vars theme))
+         , I.cssVars
+            (I.applyVarOverrides opts.varOverrides
+                (cssVars theme opts.size (InputTheme.vars theme))
+            )
          ]
             ++ passiveRootTabindex opts
         )
