@@ -483,13 +483,7 @@ carouselDemo theme model =
                 []
             , Element.text caption
             ]
-        , Element.el
-            [ Element.width (Element.px (round carSize.width))
-            , Element.height (Element.px (round carSize.height))
-            , Element.htmlAttribute
-                (HA.attribute "style" "overflow:hidden;border-radius:3px")
-            ]
-            (Carousel.view theme opts model.carousel slides)
+        , carouselBand carSize (Carousel.view theme opts model.carousel slides)
         ]
 
 
@@ -498,13 +492,7 @@ dragDemo theme model =
     Element.column [ Element.spacing 8 ]
         [ Element.text
             "Mousedown on the track, move, release — document listeners feed the port's dragStart / dragMove / dragEnd (flick included)."
-        , Element.el
-            [ Element.width (Element.px (round dragSize.width))
-            , Element.height (Element.px (round dragSize.height))
-            , Element.htmlAttribute
-                (HA.attribute "style" "overflow:hidden;border-radius:3px")
-            ]
-            (Carousel.view theme dragOpts model.drag slides)
+        , carouselBand dragSize (Carousel.view theme dragOpts model.drag slides)
         , Element.text
             ("drag offset "
                 ++ String.fromFloat model.drag.dragOffset
@@ -828,6 +816,37 @@ slides =
     , img "linear-gradient(135deg, #f0a020, #fcd68a)"
     , img "linear-gradient(135deg, #d03050, #e88080)"
     ]
+
+
+{-| The carousel viewport: a plain 640x260 band (`size`), clipped by
+`overflow: hidden` (the previous lane's fix — the off-band neighbour slides
+must stay clipped).
+
+The explicit `min-height` is load-bearing. elm-ui's column-child rule
+`.s.c > .s { min-height: min-content }` applies to this wrapper (a flex item
+of the demo's column) and makes it at least as tall as its content. The inner
+`n-carousel` is `height: 100%`, its slides too, and the 1:1 gradient `<img>`
+(`height: 100%` against an auto parent) resolves to its intrinsic square
+ratio — so min-content = 640, which BEATS the declared `height: 260px`
+(`height` loses to a larger `min-height`) and renders a 640x640 square.
+Pinning `min-height` to the band height lets the whole `height: 100%` chain
+resolve against the declared band instead of the image's intrinsic size.
+
+-}
+carouselBand : Carousel.Size -> Element Msg -> Element Msg
+carouselBand size content =
+    Element.el
+        [ Element.width (Element.px (round size.width))
+        , Element.height (Element.px (round size.height))
+        , Element.htmlAttribute
+            (HA.attribute "style"
+                ("overflow:hidden;border-radius:3px;min-height:"
+                    ++ String.fromInt (round size.height)
+                    ++ "px"
+                )
+            )
+        ]
+        content
 
 
 {-| Run one port step over the main carousel state and let the port's own

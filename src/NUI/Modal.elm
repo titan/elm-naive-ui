@@ -82,7 +82,11 @@ attributes, last one wins). `Card` composes `NUI.Card.view` with the
 `n-modal` class, `role="dialog"` and `aria-modal="true"` merged onto the card
 root (via Card's `extraClasses`/`attributes` seams) — start from
 `cardDefaults`: upstream spreads `{...cardBaseProps, ...dialogProps}` so the
-card is unbordered by default inside a modal. Either way the body phase class
+card is unbordered by default inside a modal. **Both presets wrap each child in
+`Element.paragraph`** — a bare elm-ui `Element.text` carries `white-space: pre`
+and a content-width box, so it never wraps and overflows the card/mask on one
+line; upstream's `n-modal` body is normal block flow (the `pre` belongs only to
+a `content-in-pre` variant). Either way the body phase class
 (`fade-in-scale-up-transition-*`) is forced **last** in the root class list
 (the house invariant, cf. `NUI.Dropdown`), after any caller-supplied
 `extraClasses`. `dialog`/`confirm` presets compose `NUI.Dialog` (see the
@@ -250,13 +254,21 @@ contentNode theme opts preset =
             -- caller `extraClasses` sit between `n-modal` and the phase class:
             -- the transition class stays LAST in the root class list (the house
             -- invariant, cf. `NUI.Dropdown`).
+            --
+            -- children ride in wrapping paragraphs, exactly like `Custom`: a
+            -- bare elm-ui `Element.text` carries `white-space: pre` (the `.s.t`
+            -- helper) and its `.s.t.wc.hc` box is content-width, so it never
+            -- wraps and overflows the card / mask on one unbreakable line (the
+            -- `n-modal` body is normal block flow upstream — the pre only
+            -- belongs to a `content-in-pre` variant). `Element.paragraph`
+            -- restores `white-space: normal` + `width: 100%` on the text.
             NUI.Card.view theme
                 { cardOpts
                     | extraClasses = "n-modal" :: (cardOpts.extraClasses ++ phases)
                     , attributes = ariaModal :: cardOpts.attributes
                     , role = Just "dialog"
                 }
-                children
+                (List.map (\child -> Element.paragraph [] [ child ]) children)
 
         Dialog dialogOpts ->
             dialogBody theme phases dialogOpts
