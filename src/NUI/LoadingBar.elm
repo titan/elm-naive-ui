@@ -71,10 +71,13 @@ renders exactly the DOM those mutations would have produced:
 `<Transition name="fade-in-transition" appear>` (LoadingBar.tsx:176-209); a
 hiding element only collapses once the `.8s` leave fade has finished, and
 `handleAfterLeave` then resets the flags (LoadingBar.tsx:125-127). The port
-computes the same condition from the state — `--starting` ⇔ upstream's
-`loading`, an enter phase ⇔ `entering` — and emits `display: none` exactly
-when upstream's `v-show` would apply it (hidden and no leave in flight). The
-fade phases themselves are caller-driven (the `NUI.BackTop` / `NUI.Spin`
+keeps the bar painted for EVERY status a started run can hold — `--starting`
+tweens, and `--finishing` / `--error` settle at `100%` (red for `--error`)
+— so a finished/errored run is visible at its final width; an enter/leave
+fade phase (upstream's `entering`, plus the leave hold) additionally keeps
+the container mounted mid-fade. `display: none` is emitted only for a
+not-started run, which `view` already renders as `Element.none`. The fade
+phases themselves are caller-driven (the `NUI.BackTop` / `NUI.Spin`
 precedent) — no timers live here:
 
   - on `start` (or an idle `error`), set `phase = Just I.EnterFrom` in the
@@ -83,8 +86,8 @@ precedent) — no timers live here:
   - on `finish` / `error`, set `phase = Just I.LeaveFrom` in the same update,
     advance to `I.LeaveActive` and clear after the `.8s` fade — that clear is
     the port's `handleAfterLeave`: it releases the finish/error no-op guard
-    and lets the view collapse the container to `display: none`. Leave
-    phases also keep the container mounted and visible mid-fade
+    (the container itself stays painted at `100%` — see Visibility). Leave
+    phases keep the container mounted and visible mid-fade
     (`I.isLeavePhase`, the `NUI.Spin` hold).
 
 **Divergences from upstream** (everything else is a faithful port):
@@ -100,6 +103,13 @@ precedent) — no timers live here:
     `n-loading-bar` class (no modifier, no `max-width`, transparent) before
     `start`'s callback lands — here `start` sets the status atomically, with
     the same (invisible) rendering.
+  - **A settled `--finishing` / `--error` run stays painted.** Upstream's
+    `v-show` retargets to `false` the moment `loading` clears (on
+    `finish` / `error`), so the bar survives only the `.8s` leave fade before
+    `handleAfterLeave` collapses it. The port has no collapse signal once the
+    caller clears the phase, so `isDisplayed` keeps a finished/errored run
+    visible at its final width — the frozen static demos (which call
+    `finish` / `error` with no phase) rely on it.
   - **`transitionDisabled` / `css=false`** — upstream's flag that keeps
     Vue's transition engine from fighting those imperative style writes
     (LoadingBar.tsx:34, 52-53, 183) — has no equivalent; the pure port has no
@@ -329,14 +339,28 @@ container theme opts state =
 
 
 {-| Upstream's `v-show` condition `loading || (!loading && entering)` — i.e.
-`loading || entering` (LoadingBar.tsx:209) — plus the `Transition` leave
-hold: the container keeps rendering visible while a leave fade is in flight
-and only collapses once it ends.
+`loading || entering` (LoadingBar.tsx:209) — generalised over the port's
+statuses: a started run paints its bar for EVERY status — a `--starting` run
+mid-tween, a settled `--finishing` at 100%, and a `--error` run at 100% in
+the error colour — and an enter/leave fade phase additionally holds the
+container mounted mid-fade. Upstream clears `loading` on `finish` / `error`
+and relies on the leave fade to keep the bar drawn until `handleAfterLeave`;
+the port has no such collapse signal once the caller clears the phase, so a
+finished/errored run stays painted at its final width (the frozen static
+demos call `finish` / `error` with no phase — see the divergence below).
+
+The container is therefore only collapsed for a run that has not started —
+and `view` already renders `Element.none` for that case.
+
 -}
 isDisplayed : State -> Bool
 isDisplayed state =
     state.status
         == Starting
+        || state.status
+        == Finishing
+        || state.status
+        == Erroring
         || isEnterPhase state.phase
         || isLeavingPhase state.phase
 

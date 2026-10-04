@@ -256,12 +256,29 @@ menuDefaults =
 {-| The bare `.n-mention` wrapper + the `NUI.Input` trigger, mapped per
 the module docstring (no `display: inline-flex` — the wrapper cssr is
 `width: 100%; z-index: auto; position: relative`).
+
+**Explicit-width seam.** The wrapper's cssr is `.nui-root.nui-root
+.n-mention { width: 100% }` (specificity 0,3,0), which beats elm-ui's
+own `Element.width (px n)` class on the same node (`.we.width-px-n`,
+0,1,0) — so an explicit trigger width `Element.width`ed onto `attributes`
+was silently dropped. The port therefore lands the caller's `attributes`
+on an OUTER elm-ui node and keeps the `n-mention` wrapper on the inner
+one: a caller width then sizes the outer node (no competing rule) and the
+inner `.n-mention` still fills it via its `width: 100%` rule, while the
+default (no caller width) fills the available width (`Element.width
+Element.fill` prepended — elm-ui reverses the attribute list and keeps the
+FIRST `Width` attribute it reaches, so a caller `Element.width` in
+`attributes` still wins over the default fill).
+
 -}
 view : Theme -> Options msg -> Element msg
 view theme opts =
     Element.el
-        ([ I.classes [ "n-mention" ] ] ++ opts.attributes)
-        (NUI.Input.view theme (inputOptions opts))
+        (Element.width Element.fill :: opts.attributes)
+        (Element.el
+            [ I.classes [ "n-mention" ] ]
+            (NUI.Input.view theme (inputOptions opts))
+        )
 
 
 {-| The trigger's options — `Options` onto `NUI.Input.Options` per the
