@@ -259,10 +259,16 @@ viewWithVars theme opts childrenVars children =
                    )
 
         stylePairs =
-            -- upstream styleRef: `[width?, …, cssVars]` — width first
+            -- upstream styleRef: `[width?, …, cssVars]` — width first. A fixed
+            -- width is also capped to the caller's `v-placement` wrapper: in
+            -- upstream the follower is shrink-to-fit (so its width *is* the
+            -- bubble's), but a static/flow mount — as in the showcase — would
+            -- otherwise let the bubble overhang the wrapper's box. A width-less
+            -- body already shrink-to-fits, so it needs no cap (and keeps the
+            -- pinned default-body style intact).
             (case opts.width of
                 Just w ->
-                    [ ( "width", w ) ]
+                    [ ( "width", w ), ( "max-width", "100%" ) ]
 
                 Nothing ->
                     []
