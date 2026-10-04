@@ -349,7 +349,7 @@ optionNodesFor theme opts flags activePath option =
 
         Divider divider ->
             [ Element.el
-                ([ I.classes [ "n-dropdown-divider" ] ] ++ divider.attributes)
+                ([ I.classes [ "n-dropdown-divider" ], fillWidth ] ++ divider.attributes)
                 Element.none
             ]
 
@@ -357,8 +357,17 @@ optionNodesFor theme opts flags activePath option =
             -- children ride in wrapping paragraphs: elm-ui text carries
             -- `white-space: pre` and would draw across the menu's border /
             -- shadow on one unbreakable line (the `NUI.Popover.bodyNodes`
-            -- note); upstream's render-option divs wrap at the menu width
-            [ Element.column custom.attributes
+            -- note); upstream's render-option divs wrap at the menu width.
+            -- The custom body also takes the option content inset (upstream's
+            -- render option is a bare `div` at the menu's padding box, which
+            -- leaves it flush-left in this static menu; the leaf/group rows
+            -- all start at the prefix column).
+            [ Element.column
+                (fillWidth
+                    :: Element.htmlAttribute
+                        (HA.style "padding-left" (customInset flags))
+                    :: custom.attributes
+                )
                 (List.map (\child -> Element.paragraph [] [ child ]) custom.children)
             ]
 
@@ -396,10 +405,11 @@ leafNode theme opts flags activePath leaf =
     in
     Element.column
         [ I.classes [ "n-dropdown-option" ]
+        , fillWidth
         , Element.htmlAttribute (HA.attribute "data-dropdown-option" "true")
         ]
         (Element.row
-            ([ I.classes bodyClasses ] ++ clickAttrs ++ leaf.attributes)
+            ([ I.classes bodyClasses, fillWidth ] ++ clickAttrs ++ leaf.attributes)
             [ prefixNode flags.showIcon False leaf.icon
             , labelNode leaf.label
             , suffixNode theme flags.hasSubmenu (leaf.children /= Nothing)
@@ -415,9 +425,13 @@ always-empty suffix.
 groupHeaderNode : Theme -> MenuFlags -> GroupOption msg -> Element msg
 groupHeaderNode theme flags group =
     Element.column
-        [ I.classes [ "n-dropdown-option" ] ]
+        [ I.classes [ "n-dropdown-option" ]
+        , fillWidth
+        ]
         [ Element.row
-            [ I.classes [ "n-dropdown-option-body", "n-dropdown-option-body--group" ] ]
+            [ I.classes [ "n-dropdown-option-body", "n-dropdown-option-body--group" ]
+            , fillWidth
+            ]
             [ prefixNode flags.showIcon True group.icon
             , labelNode group.label
             , suffixNode theme flags.hasSubmenu False
@@ -547,6 +561,36 @@ rawStyleAttr maybeStyle =
 
         Nothing ->
             []
+
+
+{-| elm-ui's `.s.c > .s.wc` sets `align-self: flex-start` on a width-content
+child of a column (and `.s.r > .s` gives row children `flex-basis: 0%`), so the
+option wrapper and its flex body collapse to content width — upstream renders
+both as plain full-width flex divs. Without this the label's inset and the
+suffix's right alignment zig-zag row by row.
+
+`Element.width Element.fill` (the elm-ui `wf` class) is the right seam: in a
+column parent it resolves to `width: 100%`, in a row parent to `flex-grow`,
+and — unlike an inline `style` — it never competes with the caller's
+`attributes` for the one `style` attribute a node can carry.
+
+-}
+fillWidth : Element.Attribute msg
+fillWidth =
+    Element.width Element.fill
+
+
+{-| The custom (`type: 'render'`) option's left content inset, mirroring the
+prefix column the leaf/group rows reserve (`--n-option-icon-prefix-width` when
+the menu shows icons — `menuFlags` is that menu-level flag).
+-}
+customInset : MenuFlags -> String
+customInset flags =
+    if flags.showIcon then
+        "var(--n-option-icon-prefix-width)"
+
+    else
+        "var(--n-option-prefix-width)"
 
 
 

@@ -294,6 +294,7 @@ view theme opts options =
             , inheritedDisabled = False
             , submenuAbove = False
             , groupDisabled = False
+            , showIcon = menuShowIcon options
             }
     in
     Element.column
@@ -301,6 +302,13 @@ view theme opts options =
             ([ "n-menu", "n-menu--" ++ modeName opts.mode ]
                 ++ I.classIf opts.collapsed "n-menu--collapsed"
             )
+
+         -- width fill (elm-ui class, NOT a second `HA.style`, so the root keeps
+         -- ONE style attribute in the pinned `Internal.renderVars` format):
+         -- elm-ui's `.s.c > .s.wc` sets `align-self: flex-start`, collapsing the
+         -- menu to its content width instead of filling its mount (upstream: a
+         -- block div). See `fillWidth` for the item/row family.
+         , Element.width Element.fill
          , I.cssVars (cssVars theme opts.inverted)
          , Element.htmlAttribute
             (HA.attribute "role" <|
@@ -326,6 +334,35 @@ modeName mode =
             "horizontal"
 
 
+{-| Whether the menu shows any icon at all — the flag `contentNode` uses to
+reserve the icon column on icon-less rows.
+
+Upstream `MenuOptionContent` renders its `__icon` cell only when the option
+has an icon (there is no menu-level flag), so a row without an icon lands its
+header one icon-column left of its icon-bearing siblings — invisible in
+upstream's docs (every row there carries an icon) but a real zig-zag in a
+mixed tree (`Cascader`/`About` next to icon rows). The port reserves the
+column whenever the menu contains an icon, so the text column aligns.
+
+-}
+menuShowIcon : List (Option msg) -> Bool
+menuShowIcon options =
+    List.any optionHasIcon options
+
+
+optionHasIcon : Option msg -> Bool
+optionHasIcon option =
+    case option of
+        Option leaf ->
+            leaf.icon /= Nothing || List.any optionHasIcon (Maybe.withDefault [] leaf.children)
+
+        Group group ->
+            List.any optionHasIcon group.children
+
+        Divider _ ->
+            False
+
+
 {-| What each recursive level knows — the explicit replacement of upstream's
 provide/inject chain (`use-menu-child`): the menu-level config, the selected
 path, and what the immediate parent (submenu or group) injected.
@@ -342,6 +379,7 @@ type alias Ctx msg =
     , inheritedDisabled : Bool
     , submenuAbove : Bool
     , groupDisabled : Bool
+    , showIcon : Bool
     }
 
 
@@ -373,7 +411,7 @@ itemNode ctx root option =
 
             else
                 Element.el
-                    ([ I.classes [ "n-menu-divider" ] ] ++ divider.attributes)
+                    ([ I.classes [ "n-menu-divider" ], fillWidth ] ++ divider.attributes)
                     Element.none
 
 
@@ -398,6 +436,7 @@ leafNode ctx root leaf =
     Element.el
         ([ I.classes [ "n-menu-item" ]
          , Element.htmlAttribute (HA.attribute "role" "menuitem")
+         , fillWidth
          ]
             ++ leaf.attributes
         )
@@ -450,6 +489,7 @@ submenuNode ctx root leaf children =
             Element.el
                 ([ I.classes [ "n-menu-item" ]
                  , Element.htmlAttribute (HA.attribute "role" "menuitem")
+                 , fillWidth
                  ]
                     ++ leaf.attributes
                 )
@@ -477,6 +517,7 @@ submenuNode ctx root leaf children =
                 [ Element.column
                     [ I.classes ([ "n-submenu-children" ] ++ transitionClasses ctx.opts)
                     , Element.htmlAttribute (HA.attribute "role" "menu")
+                    , fillWidth
                     ]
                     (List.map (\option -> itemNode childCtx False option) children)
                 ]
@@ -484,6 +525,7 @@ submenuNode ctx root leaf children =
     Element.column
         [ I.classes [ "n-submenu" ]
         , Element.htmlAttribute (HA.attribute "role" "menu")
+        , fillWidth
         , Element.htmlAttribute
             (HA.attribute "aria-expanded" <|
                 if submenuCollapsed then
@@ -527,11 +569,12 @@ groupNode ctx root group =
     Element.column
         [ I.classes [ "n-menu-item-group" ]
         , Element.htmlAttribute (HA.attribute "role" "group")
+        , fillWidth
         ]
         [ Element.row
-            ([ I.classes [ "n-menu-item-group-title" ] ] ++ group.attributes ++ paddingLeftAttr paddingLeft)
+            ([ I.classes [ "n-menu-item-group-title" ], fillWidth ] ++ group.attributes ++ paddingLeftAttr paddingLeft)
             titleChildren
-        , Element.column []
+        , Element.column [ fillWidth ]
             (List.map (\option -> itemNode childCtx False option) group.children)
         ]
 
@@ -554,6 +597,7 @@ contentNode ctx spec =
                 ++ I.classIf spec.disabled "n-menu-item-content--disabled"
             )
          , Element.htmlAttribute (HA.attribute "role" "none")
+         , fillWidth
          ]
             ++ paddingLeftAttr spec.paddingLeft
             ++ spec.onClick
@@ -584,19 +628,33 @@ iconNodes : Ctx msg -> ContentSpec msg -> List (Element msg)
 iconNodes ctx spec =
     case spec.icon of
         Just icon ->
-            [ Element.el
-                [ I.classes [ "n-menu-item-content__icon" ]
-                , Element.htmlAttribute (HA.attribute "role" "none")
-                , Element.htmlAttribute (HA.style "width" (px ctx.maxIconSize))
-                , Element.htmlAttribute (HA.style "height" (px ctx.maxIconSize))
-                , Element.htmlAttribute (HA.style "font-size" (px spec.activeIconSize))
-                , Element.htmlAttribute (HA.style "margin-right" (px spec.iconMarginRight))
-                ]
-                icon
-            ]
+            [ iconSlot ctx spec icon ]
 
         Nothing ->
-            []
+            -- reserve the icon column so the header aligns with icon-bearing
+            -- siblings (see `menuShowIcon`); not in collapsed mode, where the
+            -- centering arithmetic already assumes no icon cell
+            if ctx.showIcon && not spec.collapsed then
+                [ iconSlot ctx spec Element.none ]
+
+            else
+                []
+
+
+{-| The `n-menu-item-content__icon` cell (upstream's `iconStyle`: the max icon
+box, the active font-size and the inline margin).
+-}
+iconSlot : Ctx msg -> ContentSpec msg -> Element msg -> Element msg
+iconSlot ctx spec icon =
+    Element.el
+        [ I.classes [ "n-menu-item-content__icon" ]
+        , Element.htmlAttribute (HA.attribute "role" "none")
+        , Element.htmlAttribute (HA.style "width" (px ctx.maxIconSize))
+        , Element.htmlAttribute (HA.style "height" (px ctx.maxIconSize))
+        , Element.htmlAttribute (HA.style "font-size" (px spec.activeIconSize))
+        , Element.htmlAttribute (HA.style "margin-right" (px spec.iconMarginRight))
+        ]
+        icon
 
 
 headerNode : ContentSpec msg -> Element msg
@@ -675,6 +733,21 @@ paddingLeftAttr paddingLeft =
 
         Nothing ->
             []
+
+
+{-| elm-ui's `.s.c > .s.wc` (width-content child of a column) sets
+`align-self: flex-start`, and `.s.r > .s` gives row children `flex-basis: 0%`,
+so `.n-menu-item`, its content row, submenus and groups collapse to their
+content width. Upstream renders all of them as plain full-width divs, so the
+`::before` highlight spans the whole row and the grid's `auto 1fr auto`
+reaches the right edge. `Element.width Element.fill` restores the browser
+defaults (`.s.c > .s.wf -> width: 100%`, `.s.r > .s.wf -> flex-grow`), unlike
+an inline `align-self: stretch` which only stretches the cross axis (wrong
+under a row parent, and it would have to share the one `style` attribute).
+-}
+fillWidth : Element.Attribute msg
+fillWidth =
+    Element.width Element.fill
 
 
 selectAttrs : Ctx msg -> String -> Bool -> List (Element.Attribute msg)

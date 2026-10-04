@@ -84,12 +84,12 @@ view theme opts items =
     let
         headerEl =
             Maybe.map
-                (\h -> Element.row [ I.classes [ "n-list__header" ] ] [ h ])
+                (\h -> Element.row [ I.classes [ "n-list__header" ], fillWidth ] [ h ])
                 opts.header
 
         footerEl =
             Maybe.map
-                (\f -> Element.row [ I.classes [ "n-list__footer" ] ] [ f ])
+                (\f -> Element.row [ I.classes [ "n-list__footer" ], fillWidth ] [ f ])
                 opts.footer
     in
     Element.column
@@ -113,7 +113,9 @@ view theme opts items =
 renderItem : Options msg -> Item msg -> Element msg
 renderItem opts it =
     Element.row
-        [ I.classes [ "n-list-item" ] ]
+        [ I.classes [ "n-list-item" ]
+        , fillWidth
+        ]
         (List.filterMap identity
             [ Maybe.map
                 (\p -> Element.row [ I.classes [ "n-list-item__prefix" ] ] [ p ])
@@ -133,6 +135,19 @@ renderItem opts it =
                 Nothing
             ]
         )
+
+
+{-| elm-ui's `.s.c > .s.wc` sets `align-self: flex-start` on a width-content row
+child, so `.n-list-item` / `__header` / `__footer` collapse to their content
+width. Upstream renders `n-list-item` as a full-width flex row
+(`.n-list-item { display: flex }`), so restore the browser default and let the
+row span the list — otherwise the bordered shell's right edge only ever meets
+the content. `Element.width Element.fill` (the `wf` class) resolves to
+`width: 100%` under the `n-list` column.
+-}
+fillWidth : Element.Attribute msg
+fillWidth =
+    Element.width Element.fill
 
 
 {-| The list's `--n-*` custom properties (they do not depend on the options).

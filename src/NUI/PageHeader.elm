@@ -89,7 +89,9 @@ view theme opts children =
             if showBack || opts.avatar /= Nothing || showTitle || showSubtitle || showExtra then
                 Just
                     (Element.row
-                        [ I.classes [ "n-page-header" ] ]
+                        [ I.classes [ "n-page-header" ]
+                        , fillWidth
+                        ]
                         (Element.row
                             [ I.classes [ "n-page-header__main" ] ]
                             (List.filterMap identity
@@ -142,6 +144,19 @@ textEl className maybeText =
     Maybe.map
         (\t -> Element.el [ I.classes [ className ] ] (Element.text t))
         maybeText
+
+
+{-| The `n-page-header` flex row must span its wrapper so
+`justify-content: space-between` can push `n-page-header__extra` to the
+container's right edge (upstream's `__extra` is a sibling of `__main` on a
+plain full-width div). elm-ui's `.s.c > .s.wc` sets `align-self: flex-start`
+on a width-content child of a column, collapsing the row to its content and
+leaving `extra` abutting the subtitle; `Element.width Element.fill` (the `wf`
+class) resolves to `width: 100%` under the wrapper column.
+-}
+fillWidth : Element.Attribute msg
+fillWidth =
+    Element.width Element.fill
 
 
 backEl : Options msg -> Maybe (Element msg)
