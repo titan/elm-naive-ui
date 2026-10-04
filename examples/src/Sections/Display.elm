@@ -385,21 +385,48 @@ floatButtonSection =
                 [ Element.text "↑" ]
             ]
         , demoRow "Menu"
-            [ FloatButton.view theme
-                { floatButtonD
-                    | position = FloatButton.Relative
-                    , menuTrigger = Just FloatButton.Click
-                    , showMenu = True
-                    , menu =
-                        [ FloatButton.view theme
-                            { floatButtonD | position = FloatButton.Relative }
-                            [ Element.text "A" ]
-                        , FloatButton.view theme
-                            { floatButtonD | position = FloatButton.Relative }
-                            [ Element.text "B" ]
-                        ]
-                }
-                [ Element.text "+" ]
+            -- Resting state (showMenu = False): the body icon shows and the
+            -- close glyph stays hidden until the menu opens. A second demo
+            -- renders the open state in a non-clipping box so the popped menu
+            -- (absolutely positioned above the button) is visible.
+            [ Element.column [ Element.spacing 24 ]
+                [ FloatButton.view theme
+                    { floatButtonD
+                        | position = FloatButton.Relative
+                        , menuTrigger = Just FloatButton.Click
+                        , showMenu = False
+                        , menu =
+                            [ FloatButton.view theme
+                                { floatButtonD | position = FloatButton.Relative }
+                                [ Element.text "A" ]
+                            , FloatButton.view theme
+                                { floatButtonD | position = FloatButton.Relative }
+                                [ Element.text "B" ]
+                            ]
+                    }
+                    [ Element.text "+" ]
+                , Element.el
+                    [ Element.paddingEach { top = 160, bottom = 20, left = 20, right = 20 }
+                    , Element.htmlAttribute
+                        (HA.attribute "style" "position:relative;background:#fff")
+                    ]
+                    (FloatButton.view theme
+                        { floatButtonD
+                            | position = FloatButton.Relative
+                            , menuTrigger = Just FloatButton.Click
+                            , showMenu = True
+                            , menu =
+                                [ FloatButton.view theme
+                                    { floatButtonD | position = FloatButton.Relative }
+                                    [ Element.text "A" ]
+                                , FloatButton.view theme
+                                    { floatButtonD | position = FloatButton.Relative }
+                                    [ Element.text "B" ]
+                                ]
+                        }
+                        [ Element.text "+" ]
+                    )
+                ]
             ]
         ]
 

@@ -323,7 +323,7 @@ avatarSection =
                 , { src = "Eve" }
                 ]
             , AvatarGroup.view theme
-                { agD | vertical = True, size = Just Avatar.Medium }
+                { agD | size = Just Avatar.Medium }
                 [ { src = "https://07akioni.oss-cn-beijing.aliyuncs.com/07akioni.jpeg" }
                 , { src = "https://picsum.photos/id/1/100/100" }
                 , { src = "https://picsum.photos/id/2/100/100" }

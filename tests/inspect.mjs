@@ -2871,8 +2871,8 @@ dEq(
   styleAt(doc.querySelector('#live-loading-bar-finishing .n-loading-bar'))
 )
 dEq(
-  'DOM: LoadingBar finishing container is display:none (no leave phase)',
-  'display:none',
+  'DOM: LoadingBar finishing container is displayed (display gate includes Finishing)',
+  '',
   styleAt(lbFinishing)
 )
 
@@ -2887,8 +2887,8 @@ dEq(
   styleAt(doc.querySelector('#live-loading-bar-erroring .n-loading-bar'))
 )
 dEq(
-  'DOM: LoadingBar erroring container is display:none',
-  'display:none',
+  'DOM: LoadingBar erroring container is displayed (display gate includes Erroring)',
+  '',
   styleAt(doc.querySelector('#live-loading-bar-erroring .n-loading-bar-container'))
 )
 dEq(
@@ -2897,8 +2897,8 @@ dEq(
   styleAt(doc.querySelector('#live-loading-bar-idle-error .n-loading-bar'))
 )
 dEq(
-  'DOM: LoadingBar idle-error container is display:none (no enter phase set)',
-  'display:none',
+  'DOM: LoadingBar idle-error container is displayed (started-error run paints)',
+  '',
   styleAt(doc.querySelector('#live-loading-bar-idle-error .n-loading-bar-container'))
 )
 
@@ -2944,8 +2944,8 @@ dEq(
 )
 const lbCustomError = doc.querySelector('#live-loading-bar-custom-error .n-loading-bar-container')
 dEq(
-  'DOM: LoadingBar containerStyle passthrough after display:none when hidden',
-  'display:none;position:relative;margin-bottom:8px;',
+  'DOM: LoadingBar containerStyle passthrough while displayed (no display:none prefix)',
+  'position:relative;margin-bottom:8px;',
   styleAt(lbCustomError)
 )
 dEq(
