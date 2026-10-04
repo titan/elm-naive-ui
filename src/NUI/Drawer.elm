@@ -245,12 +245,17 @@ showMaskOn mask =
     mask /= Hidden
 
 
-{-| The `div role="none"` host (upstream keeps it so the drawer has a stable
-anchor) wrapping the whole body tree — the outer render gate. It is filled to
-the container and made `position:relative` so `.n-drawer`'s edge offsets
-always resolve against an exactly-sized positioned node (upstream is static
-and resolves against the container — identical geometry, but robust against
-intermediate elm-ui height-content wrappers).
+{-| The unclassed `div role="none"` host (upstream keeps it so the drawer has
+a stable anchor) wrapping the whole body tree — the outer render gate.
+
+It fills the container: upstream's host is a plain block div inside the
+inset-0 `.n-drawer-container` and the absolute `.n-drawer` (`left: 0; right:
+0` / `top: 0; bottom: 0` per placement) anchors through it at the container's
+full size. The port's elm-ui host carries `position: relative` (the `.s`
+class), making IT the containing block — at content width it collapses to
+zero and takes the edge-anchored panel with it (top/bottom placements render
+a zero-width panel). `width/height fill` restores the upstream geometry.
+
 -}
 bodyNode : Theme -> Options msg -> Scrollbar.Options msg -> List (Element msg) -> Maybe (Element msg)
 bodyNode theme opts scrollbarBase children =
@@ -260,12 +265,13 @@ bodyNode theme opts scrollbarBase children =
                 [ roleAttr "none"
 
                 -- Exactly-sized positioned node: `.n-drawer`'s edge offsets
-                -- must resolve against a box the size of the container, not
-                -- against whatever elm-ui wrapper geometry sits in between.
+                -- must resolve against a box the size of the container (the
+                -- elm-ui `.s` class already sets position:relative; the
+                -- explicit inline declaration keeps it robust if the bridge
+                -- ever drops that class).
+                , Element.htmlAttribute (HA.attribute "style" "position:relative")
                 , Element.width Element.fill
                 , Element.height Element.fill
-                , Element.htmlAttribute
-                    (HA.attribute "style" "position:relative")
                 ]
                 (drawerNode theme opts scrollbarBase children)
             )
@@ -330,16 +336,24 @@ resizeTriggerNode opts =
 {-| The content seam: a plain wrapper div (native, the default — no scrollbar
 node, unlike `NUI.Modal`) or `NUI.Scrollbar` carrying the wrapper class on its
 content. Upstream string-concats `"n-drawer-content-wrapper " + contentClass`.
+
+The native wrapper's inline style prepends `min-height: 0`: elm-ui column
+children carry `min-height: min-content`, which would stop the wrapper from
+shrinking to the panel's (height-constrained) size and push the footer past
+the panel edge over the mask. The CSS pair
+`.n-drawer.n-drawer--native-scrollbar .n-drawer-content-wrapper`
+(`height: 100%` + `overflow: auto`) does the rest — upstream's plain divs have
+no min-height to fight (the port's bridge restores only `flex-basis`).
+
 -}
 contentWrapper : Theme -> Options msg -> Scrollbar.Options msg -> List (Element msg) -> Element msg
 contentWrapper theme opts scrollbarBase children =
     if opts.nativeScrollbar then
         Element.column
-            ([ I.classes ("n-drawer-content-wrapper" :: extraClass opts.contentClass)
-             , roleAttr "none"
-             ]
-                ++ rawStyleAttr opts.contentStyle
-            )
+            [ I.classes ("n-drawer-content-wrapper" :: extraClass opts.contentClass)
+            , roleAttr "none"
+            , Element.htmlAttribute (HA.attribute "style" (mergedStyle opts.contentStyle))
+            ]
             children
 
     else
@@ -353,6 +367,23 @@ contentWrapper theme opts scrollbarBase children =
                 , contentStyle = opts.contentStyle
             }
             children
+
+
+{-| The port's `min-height: 0` + the caller's style fragment verbatim after it
+(one `style` attribute; the caller's declarations win, the spread convention).
+-}
+mergedStyle : Maybe String -> String
+mergedStyle maybeStyle =
+    case maybeStyle of
+        Just style ->
+            if String.isEmpty style then
+                "min-height:0"
+
+            else
+                "min-height:0;" ++ style
+
+        Nothing ->
+            "min-height:0"
 
 
 {-| Upstream's axis selection: left/right size `width`, top/bottom `height`
@@ -424,16 +455,6 @@ extraClass maybeClass =
 
             else
                 [ c ]
-
-        Nothing ->
-            []
-
-
-rawStyleAttr : Maybe String -> List (Element.Attribute msg)
-rawStyleAttr maybeStyle =
-    case maybeStyle of
-        Just style ->
-            [ Element.htmlAttribute (HA.attribute "style" style) ]
 
         Nothing ->
             []

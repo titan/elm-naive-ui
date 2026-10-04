@@ -17,6 +17,12 @@ The element carries the `.n-layout-footer` BEM classes and Naive UI's `--n-*`
 custom properties (`footerColor` / `footerColorInverted` etc. from
 `NUI.Theme.Layout`); `NUI.Css` ships Naive UI's exact CSS.
 
+**Divergence (visibility chrome):** like `NUI.LayoutHeader`, the non-inverted
+footer additionally carries an inline light background (`#f7f7fa`) + padding so
+the region reads as part of the app shell on white surfaces (upstream's light
+`footerColor` is `rgb(250, 250, 252)`, visually indistinguishable there).
+Inverted footers keep the pure `--n-*` theming.
+
 -}
 
 import Element exposing (Element)
@@ -52,7 +58,7 @@ view theme opts children =
              ]
                 ++ I.classIf opts.bordered "n-layout-footer--bordered"
             )
-         , I.cssVars (cssVars theme opts)
+         , I.cssVars (cssVars theme opts ++ regionChrome opts)
          ]
             ++ opts.attributes
         )
@@ -95,3 +101,18 @@ cssVars theme opts =
             v.footerBorderColor
       )
     ]
+
+
+{-| The non-inverted region's visibility chrome (see the module docstring);
+merged into the element's inline style after the `--n-*` vars (`view` only —
+`cssVarsFor` stays the pure `--n-*` record).
+-}
+regionChrome : Options msg -> List ( String, String )
+regionChrome opts =
+    if opts.inverted then
+        []
+
+    else
+        [ ( "background-color", "#f7f7fa" )
+        , ( "padding", "12px 24px" )
+        ]

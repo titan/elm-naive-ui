@@ -365,6 +365,13 @@ pressAttr msg =
             []
 
 
+{-| One slot child in a wrapping paragraph (see `contentNode`).
+-}
+wrapSlot : Element msg -> Element msg
+wrapSlot child =
+    Element.paragraph [] [ child ]
+
+
 {-| The kind icon — `i.n-base-icon.n-dialog__icon`, glyph = caller `icon`
 else `iconRenderMap[type]` (Default/Primary degrade to the Info glyph).
 -}
@@ -398,7 +405,7 @@ titleNode : Options msg -> Element msg
 titleNode opts =
     Element.row
         ([ I.classes [ "n-dialog__title" ] ] ++ opts.titleAttributes)
-        (List.filterMap identity [ iconInTitle opts, opts.title ])
+        (List.filterMap identity [ iconInTitle opts, Maybe.map wrapSlot opts.title ])
 
 
 iconInTitle : Options msg -> Maybe (Element msg)
@@ -410,9 +417,14 @@ iconInTitle opts =
         Nothing
 
 
+{-| The content renders as a wrapping paragraph: elm-ui text carries
+`white-space: pre` (the `.t` class), so a bare `Element.text` body would
+render on one unbreakable line and clip at the card edge — upstream's plain
+div wraps at the dialog width (the `NUI.Popover.bodyNodes` precedent).
+-}
 contentNode : Options msg -> Element msg
 contentNode opts =
-    Element.el
+    Element.paragraph
         ([ I.classes
             ("n-dialog__content"
                 :: I.classIf (not (hasAction opts)) "n-dialog__content--last"
@@ -420,7 +432,7 @@ contentNode opts =
          ]
             ++ opts.contentAttributes
         )
-        (Maybe.withDefault Element.none opts.content)
+        (Maybe.withDefault [] (Maybe.map (\c -> [ c ]) opts.content))
 
 
 hasAction : Options msg -> Bool
@@ -444,7 +456,7 @@ actionNode theme opts =
                 ([ I.classes [ "n-dialog__action" ] ] ++ opts.actionAttributes)
                 (case opts.action of
                     Just children ->
-                        children
+                        List.map wrapSlot children
 
                     Nothing ->
                         List.filterMap identity

@@ -27,6 +27,16 @@ tooltip and cursor-measurement behavior is not reproduced.
 
 Countdown-style measurement aside, Ellipsis declares **no** `--n-*` variables.
 
+**Divergence (single-line clamp):** upstream's single-line mode relies on
+`text-overflow: ellipsis` with `white-space: nowrap` inheriting into the slot
+text. elm-ui wraps every text child in its own `div.t` and its stylesheet pins
+`.s.p .t { white-space: normal }` there, so the inherited `nowrap` never
+reaches the text and the paragraph wraps out to four lines. This port also
+emits `-webkit-line-clamp: 1` (+ the `-webkit-inline-box` display the clamp
+needs) for the same end state — one line, ellipsis glyph — through the same
+mechanism the multi-line rows already use (which the `.t` wrapper cannot
+defeat).
+
 -}
 
 import Element exposing (Element)
@@ -73,7 +83,11 @@ view _ opts children =
                 [ ( "-webkit-line-clamp", String.fromInt (Maybe.withDefault 0 opts.lineClamp) ) ]
 
             else
-                [ ( "text-overflow", "ellipsis" ) ]
+                [ ( "text-overflow", "ellipsis" )
+                , ( "display", "-webkit-inline-box" )
+                , ( "-webkit-box-orient", "vertical" )
+                , ( "-webkit-line-clamp", "1" )
+                ]
 
         clickAttrs =
             if opts.expandOnClick then

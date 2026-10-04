@@ -48,7 +48,7 @@ import NUI.Tag as Tag
 import NUI.Thing as Thing
 import NUI.Types as T
 import NUI.Typography as Typo
-import Showcase exposing (capitalize, chip, demoRow, purple, section, starIcon, theme)
+import Showcase exposing (capitalize, chip, demoRow, fillWidth, purple, section, starIcon, theme)
 
 
 
@@ -239,17 +239,31 @@ tagSection =
 alertSection : Element msg
 alertSection =
     section "Alert" "Inline messages." <|
-        [ Alert.view theme alertD [ Element.text "A default alert." ]
-        , Alert.view theme
-            { alertD | kind = T.Info, title = Just "Info" }
-            [ Element.text "With a title and icon." ]
-        , Alert.view theme
-            { alertD | kind = T.Success, title = Just "Success", closable = True }
-            [ Element.text "Closable alert." ]
-        , Alert.view theme { alertD | kind = T.Warning } [ Element.text "A warning." ]
-        , Alert.view theme
-            { alertD | kind = T.Error, bordered = False }
-            [ Element.text "Borderless error." ]
+        [ demoRow "Default (no icon — the Default kind reserves no gutter)"
+            [ fillWidth
+                (Alert.view theme
+                    { alertD | showIcon = False }
+                    [ Element.text "A default alert." ]
+                )
+            ]
+        , demoRow "Kinds · title · closable"
+            [ fillWidth
+                (Alert.view theme
+                    { alertD | kind = T.Info, title = Just "Info" }
+                    [ Element.text "With a title and icon." ]
+                )
+            , fillWidth
+                (Alert.view theme
+                    { alertD | kind = T.Success, title = Just "Success", closable = True }
+                    [ Element.text "Closable alert." ]
+                )
+            , fillWidth (Alert.view theme { alertD | kind = T.Warning } [ Element.text "A warning." ])
+            , fillWidth
+                (Alert.view theme
+                    { alertD | kind = T.Error, bordered = False }
+                    [ Element.text "Borderless error." ]
+                )
+            ]
         ]
 
 
@@ -448,16 +462,18 @@ resultSection =
                     []
                 )
             ]
-        , Element.el [ Element.width (Element.px 340) ]
-            (Result.view theme
-                { resultD
-                    | status = Result.Code404
-                    , title = Just "404"
-                    , description = Just "The page you are looking for does not exist."
-                    , footer = Just (Button.view theme btn [ Element.text "Back home" ])
-                }
-                [ Element.text "Custom content can fill the default slot." ]
-            )
+        , demoRow "404 · custom content"
+            [ Element.el [ Element.width (Element.px 340) ]
+                (Result.view theme
+                    { resultD
+                        | status = Result.Code404
+                        , title = Just "404"
+                        , description = Just "The page you are looking for does not exist."
+                        , footer = Just (Button.view theme btn [ Element.text "Back home" ])
+                    }
+                    [ Element.text "Custom content can fill the default slot." ]
+                )
+            ]
         ]
 
 
@@ -548,21 +564,27 @@ thingSection =
 ellipsisSection : Element msg
 ellipsisSection =
     section "Ellipsis" "Truncated text (the expand state is caller-owned)." <|
-        [ Element.el [ Element.width (Element.px 220) ]
-            (Ellipsis.view theme
-                ellipsisD
-                [ Element.text "A very long single line of text that gets cut off with an ellipsis character." ]
-            )
-        , Element.el [ Element.width (Element.px 220) ]
-            (Ellipsis.view theme
-                { ellipsisD | lineClamp = Just 2 }
-                [ Element.text "Line clamping caps this paragraph at two lines and hides the remaining text behind a trailing ellipsis." ]
-            )
-        , Element.el [ Element.width (Element.px 220) ]
-            (Ellipsis.view theme
-                { ellipsisD | lineClamp = Just 2, expandOnClick = True }
-                [ Element.text "A clickable two-line clamp. The caller toggles `expanded`." ]
-            )
+        [ demoRow "Single line"
+            [ Element.el [ Element.width (Element.px 220) ]
+                (Ellipsis.view theme
+                    ellipsisD
+                    [ Element.text "A very long single line of text that gets cut off with an ellipsis character." ]
+                )
+            ]
+        , demoRow "Line clamp 2"
+            [ Element.el [ Element.width (Element.px 220) ]
+                (Ellipsis.view theme
+                    { ellipsisD | lineClamp = Just 2 }
+                    [ Element.text "Line clamping caps this paragraph at two lines and hides the remaining text behind a trailing ellipsis." ]
+                )
+            ]
+        , demoRow "Expand on click"
+            [ Element.el [ Element.width (Element.px 220) ]
+                (Ellipsis.view theme
+                    { ellipsisD | lineClamp = Just 2, expandOnClick = True }
+                    [ Element.text "A clickable two-line clamp. The caller toggles `expanded`." ]
+                )
+            ]
         ]
 
 
@@ -617,15 +639,19 @@ rtlSection =
     <|
         [ demoRow "Alert"
             [ Element.el [ Element.width (Element.px 340) ]
-                (Alert.view theme
-                    { alertD | rtl = True, kind = T.Info, title = Just "معلومة" }
-                    [ Element.text "تنبيه من اليمين إلى اليسار." ]
+                (fillWidth
+                    (Alert.view theme
+                        { alertD | rtl = True, kind = T.Info, title = Just "معلومة" }
+                        [ Element.text "تنبيه من اليمين إلى اليسار." ]
+                    )
                 )
             ]
         , demoRow "Components"
             [ Button.view theme { btn | rtl = True, kind = T.Primary } [ Element.text "Button" ]
             , Tag.view theme { tagD | rtl = True, kind = T.Primary } [ Element.text "Tag" ]
-            , Badge.view theme { badgeD | rtl = True, value = Just (Badge.Number 5) } [ Element.text "Mail" ]
+            , Badge.view theme
+                { badgeD | rtl = True, value = Just (Badge.Number 5) }
+                [ Button.view theme { btn | rtl = True, kind = T.Primary } [ Element.text "Mail" ] ]
             , Space.view theme
                 { spaceD | rtl = True }
                 [ Element.text "One", Element.text "Two", Element.text "Three" ]
@@ -640,12 +666,12 @@ themeSection =
     <|
         [ demoRow "Default primary"
             [ Button.view theme { btn | kind = T.Primary } [ Element.text "Primary" ]
-            , Tag.view theme { tagD | kind = T.Primary, bordered = False } [ Element.text "Tag" ]
+            , Tag.view theme { tagD | kind = T.Primary } [ Element.text "Tag" ]
             , Switch.view theme { swD | value = True } []
             ]
         , demoRow "setPrimary \"#7c3aed\""
             [ Button.view purple { btn | kind = T.Primary } [ Element.text "Primary" ]
-            , Tag.view purple { tagD | kind = T.Primary, bordered = False } [ Element.text "Tag" ]
+            , Tag.view purple { tagD | kind = T.Primary } [ Element.text "Tag" ]
             , Switch.view purple { swD | value = True } []
             ]
         ]

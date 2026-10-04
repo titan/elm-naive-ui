@@ -131,14 +131,16 @@ buttonSection =
             ]
         , Element.el [ Element.width (Element.px 320) ]
             (Button.view theme { btn | block = True } [ Element.text "Block" ])
-        , demoRow "Group"
+        , demoRow "Group (horizontal)"
             [ ButtonGroup.view theme
                 ButtonGroup.defaults
                 [ Button.view theme { btn | kind = T.Primary } [ Element.text "Left" ]
                 , Button.view theme { btn | kind = T.Primary } [ Element.text "Middle" ]
                 , Button.view theme { btn | kind = T.Primary } [ Element.text "Right" ]
                 ]
-            , ButtonGroup.view theme
+            ]
+        , demoRow "Group (vertical)"
+            [ ButtonGroup.view theme
                 { bgD | vertical = True }
                 [ Button.view theme btn [ Element.text "Top" ]
                 , Button.view theme btn [ Element.text "Bottom" ]
@@ -154,7 +156,7 @@ inputSection =
             [ Element.el [ Element.width (Element.px 220) ]
                 (Input.view theme { inputD | placeholder = Just "Placeholder" })
             , Element.el [ Element.width (Element.px 220) ]
-                (Input.view theme { inputD | value = "Hello", round = True })
+                (Input.view theme { inputD | value = "Hello" })
             ]
         , demoRow "Statuses"
             [ Element.el [ Element.width (Element.px 220) ]

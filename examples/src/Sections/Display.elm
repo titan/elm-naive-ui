@@ -187,16 +187,20 @@ gridItem =
 breadcrumbSection : Element msg
 breadcrumbSection =
     section "Breadcrumb" "Navigation trails." <|
-        [ Breadcrumb.view theme
-            bcD
-            [ { bcItem | href = Just "/", content = [ Element.text "Home" ] }
-            , { bcItem | href = Just "/library", content = [ Element.text "Library" ] }
-            , { bcItem | content = [ Element.text "Data" ] }
+        [ demoRow "Default"
+            [ Breadcrumb.view theme
+                bcD
+                [ { bcItem | href = Just "/", content = [ Element.text "Home" ] }
+                , { bcItem | href = Just "/library", content = [ Element.text "Library" ] }
+                , { bcItem | content = [ Element.text "Data" ] }
+                ]
             ]
-        , Breadcrumb.view theme
-            { bcD | separator = "›" }
-            [ { bcItem | separator = Just "›", href = Just "/", content = [ Element.text "Root" ] }
-            , { bcItem | separator = Just "›", content = [ Element.text "Leaf" ] }
+        , demoRow "Custom separator (per item)"
+            [ Breadcrumb.view theme
+                { bcD | separator = "›" }
+                [ { bcItem | separator = Just "›", href = Just "/", content = [ Element.text "Root" ] }
+                , { bcItem | separator = Just "›", content = [ Element.text "Leaf" ] }
+                ]
             ]
         ]
 
@@ -278,18 +282,26 @@ flexSection =
     section "Flex"
         "Naive UI's flexbox primitive — an inline flex container (no stylesheet rule; the layout is inline `display`/`gap`)."
     <|
-        [ Flex.view theme
-            flexD
-            [ chip "One", chip "Two", chip "Three" ]
-        , Flex.view theme
-            { flexD | justify = Flex.SpaceBetween, size = Flex.Number 16 }
-            [ chip "Left", chip "Right" ]
-        , Flex.view theme
-            { flexD | direction = Flex.Vertical, size = Flex.Number 8, align = Just Flex.Center }
-            [ chip "Top", chip "Middle", chip "Bottom" ]
-        , Flex.view theme
-            { flexD | inline = True, size = Flex.Number2 4 12, reverse = True }
-            [ chip "A", chip "B", chip "C" ]
+        [ demoRow "Gap"
+            [ Flex.view theme
+                flexD
+                [ chip "One", chip "Two", chip "Three" ]
+            ]
+        , demoRow "Justify · space-between"
+            [ Flex.view theme
+                { flexD | justify = Flex.SpaceBetween, size = Flex.Number 16 }
+                [ chip "Left", chip "Right" ]
+            ]
+        , demoRow "Vertical · centered"
+            [ Flex.view theme
+                { flexD | direction = Flex.Vertical, size = Flex.Number 8, align = Just Flex.Center }
+                [ chip "Top", chip "Middle", chip "Bottom" ]
+            ]
+        , demoRow "Inline · reversed"
+            [ Flex.view theme
+                { flexD | inline = True, size = Flex.Number2 4 12, reverse = True }
+                [ chip "A", chip "B", chip "C" ]
+            ]
         ]
 
 
@@ -298,25 +310,29 @@ gridSection =
     section "Grid"
         "A 24-column CSS grid (inline `display:grid`, no stylesheet rule); span/offset and the responsive collapse algorithm are caller-driven."
     <|
-        [ Grid.view
-            { gridD | cols = Grid.Number 12, xGap = Grid.Number 16, yGap = Grid.Number 16 }
-            [ { gridItem | span = Grid.Number 6, content = [ chip "span 6" ] }
-            , { gridItem | span = Grid.Number 6, content = [ chip "span 6" ] }
-            , { gridItem | span = Grid.Number 4, content = [ chip "span 4" ] }
-            , { gridItem | span = Grid.Number 8, content = [ chip "span 8" ] }
+        [ demoRow "Spans (12-col tracks)"
+            [ Grid.view
+                { gridD | cols = Grid.Number 12, xGap = Grid.Number 16, yGap = Grid.Number 16 }
+                [ { gridItem | span = Grid.Number 6, content = [ chip "span 6" ] }
+                , { gridItem | span = Grid.Number 6, content = [ chip "span 6" ] }
+                , { gridItem | span = Grid.Number 4, content = [ chip "span 4" ] }
+                , { gridItem | span = Grid.Number 8, content = [ chip "span 8" ] }
+                ]
             ]
-        , Grid.view
-            { gridD
-                | cols = Grid.Number 12
-                , xGap = Grid.Number 12
-                , collapsed = True
-                , collapsedRows = 1
-            }
-            [ { gridItem | span = Grid.Number 4, content = [ chip "4" ] }
-            , { gridItem | span = Grid.Number 4, content = [ chip "4" ] }
-            , { gridItem | span = Grid.Number 4, content = [ chip "4" ] }
-            , { gridItem | span = Grid.Number 4, content = [ chip "hidden" ] }
-            , { gridItem | suffix = True, content = [ Element.text "…" ] }
+        , demoRow "Collapsed (responsive overflow → suffix rest)"
+            [ Grid.view
+                { gridD
+                    | cols = Grid.Number 12
+                    , xGap = Grid.Number 12
+                    , collapsed = True
+                    , collapsedRows = 1
+                }
+                [ { gridItem | span = Grid.Number 4, content = [ chip "4" ] }
+                , { gridItem | span = Grid.Number 4, content = [ chip "4" ] }
+                , { gridItem | span = Grid.Number 4, content = [ chip "4" ] }
+                , { gridItem | span = Grid.Number 4, content = [ chip "hidden" ] }
+                , { gridItem | suffix = True, content = [ Element.text "…" ] }
+                ]
             ]
         ]
 
@@ -391,43 +407,49 @@ floatButtonSection =
 layoutSection : Element msg
 layoutSection =
     section "Layout" "App shell — header, sider, content and footer (the sider's collapsed state is caller-owned)." <|
-        [ Element.el [ Element.width Element.fill ]
-            (Layout.view theme
-                layD
-                [ LayoutHeader.view theme { lhD | bordered = True } [ Element.text "Header" ]
-                , Layout.view theme
+        [ demoRow "Basic (header · sider · content · footer)"
+            [ Element.el [ Element.width Element.fill ]
+                (Layout.view theme
+                    layD
+                    [ LayoutHeader.view theme { lhD | bordered = True } [ Element.text "Header" ]
+                    , Layout.view theme
+                        { layD | hasSider = True }
+                        [ LayoutSider.view theme
+                            { lsD | bordered = True, showTrigger = LayoutSider.ArrowCircle }
+                            [ Element.text "Sider" ]
+                        , Layout.content theme layD [ Element.text "Content" ]
+                        ]
+                    , LayoutFooter.view theme { lfD | bordered = True } [ Element.text "Footer" ]
+                    ]
+                )
+            ]
+        , demoRow "Collapsed sider (right placement · bar trigger)"
+            [ Element.el [ Element.width Element.fill ]
+                (Layout.view theme
                     { layD | hasSider = True }
                     [ LayoutSider.view theme
-                        { lsD | bordered = True, showTrigger = LayoutSider.ArrowCircle }
-                        [ Element.text "Sider" ]
+                        { lsD
+                            | collapsed = True
+                            , width = "200px"
+                            , collapsedWidth = "48px"
+                            , showCollapsedContent = True
+                            , showTrigger = LayoutSider.Bar
+                            , placement = LayoutSider.Right
+                        }
+                        [ Element.text "Collapsed" ]
                     , Layout.content theme layD [ Element.text "Content" ]
                     ]
-                , LayoutFooter.view theme { lfD | bordered = True } [ Element.text "Footer" ]
-                ]
-            )
-        , Element.el [ Element.width Element.fill ]
-            (Layout.view theme
-                { layD | hasSider = True }
-                [ LayoutSider.view theme
-                    { lsD
-                        | collapsed = True
-                        , width = "200px"
-                        , collapsedWidth = "48px"
-                        , showCollapsedContent = True
-                        , showTrigger = LayoutSider.Bar
-                        , placement = LayoutSider.Right
-                    }
-                    [ Element.text "Collapsed" ]
-                , Layout.content theme layD [ Element.text "Content" ]
-                ]
-            )
-        , Element.el [ Element.width Element.fill ]
-            (Layout.view theme
-                { layD | embedded = True }
-                [ LayoutHeader.view theme lhD [ Element.text "Embedded header" ]
-                , Layout.content theme layD [ Element.text "Embedded content" ]
-                ]
-            )
+                )
+            ]
+        , demoRow "Embedded (inset shell)"
+            [ Element.el [ Element.width Element.fill ]
+                (Layout.view theme
+                    { layD | embedded = True }
+                    [ LayoutHeader.view theme lhD [ Element.text "Embedded header" ]
+                    , Layout.content theme layD [ Element.text "Embedded content" ]
+                    ]
+                )
+            ]
         ]
 
 
@@ -560,7 +582,11 @@ scrollbarSection =
                 )
             ]
         , demoRow "Both rails (x-scrollable)"
-            [ Element.el [ Element.height (Element.px 120), Element.width Element.fill ]
+            -- a fixed-px cell (not `width fill`): a fill cell keeps
+            -- `flex-basis: 0%` + `min-width: auto`, and the nowrap content's
+            -- min-content inflates the cell to content width instead of
+            -- letting the scroll container clip it
+            [ Element.el [ Element.height (Element.px 120), Element.width (Element.px 460) ]
                 (Scrollbar.view theme
                     { scrollbarD
                         | xScrollable = True
@@ -569,8 +595,10 @@ scrollbarSection =
                         , showXBar = True
                         , xBarStyle = Just "width:80px;left:0"
                     }
+                    -- a long nowrap line so the row genuinely overflows and
+                    -- the horizontal thumb has something to thumb
                     [ Element.el [ Element.htmlAttribute (HA.attribute "style" "white-space:nowrap") ]
-                        (Element.text scrollbarCopy)
+                        (Element.text (scrollbarCopy ++ "  " ++ scrollbarCopy))
                     ]
                 )
             ]
@@ -578,12 +606,14 @@ scrollbarSection =
             [ Element.el [ Element.height (Element.px 100), Element.width Element.fill ]
                 (Scrollbar.view theme
                     { scrollbarD | yPlacement = Scrollbar.Left }
-                    [ Element.text scrollbarCopy ]
+                    [ Element.paragraph [] [ Element.text scrollbarCopy ] ]
                 )
-            , Element.el [ Element.height (Element.px 100), Element.width Element.fill ]
+            , Element.el [ Element.height (Element.px 100), Element.width (Element.px 460) ]
                 (Scrollbar.view theme
                     { scrollbarD | xScrollable = True, xPlacement = Scrollbar.Top }
-                    [ Element.text scrollbarCopy ]
+                    [ Element.el [ Element.htmlAttribute (HA.attribute "style" "white-space:nowrap") ]
+                        (Element.text scrollbarCopy)
+                    ]
                 )
             ]
         ]
@@ -599,20 +629,34 @@ watermarkSection =
     section "Watermark"
         "Naive UI's watermark — the `div.n-watermark-container` (the `--selectable` / `--global-rotate` / `--fullscreen` modifiers; bare overlay when fullscreen without global rotation) wrapping the content plus the tiled `div.n-watermark` overlay (`background-size` tiling, the `cross` offset pair, the `max(142vh, 142vw)` rotated positioning, `z-index` handoff between the two nodes). The tile itself is upstream's canvas `toDataURL` seam, rebuilt purely: an SVG of the canvas dimensions — one `<text>` per line with the full font stack — base64-encoded in-library; `image` is referenced directly instead of re-rasterised. No `--n-*` vars — the theme's single `fontFamily` feeds the tile's font fallback."
     <|
-        [ demoRow "Basic · default 32×32 tile"
+        [ demoRow "Basic · upstream demo tile (192×128, cross)"
             [ Watermark.view theme
-                { watermarkD | content = Just "Naive UI" }
+                { watermarkD
+                    | content = Just "Naive UI"
+                    , width = 192
+                    , height = 128
+                    , fontSize = 16
+                    , lineHeight = 16
+                    , xOffset = 12
+                    , yOffset = 28
+                    , rotate = -15
+                    , cross = True
+                }
                 [ watermarkedText ]
             ]
         , demoRow "Two lines · centered · gaps · cross"
             [ Watermark.view theme
                 { watermarkD
                     | content = Just "elm-naive-ui\nwatermark"
-                    , width = 120
-                    , height = 44
+                    , width = 192
+                    , height = 128
                     , xGap = 32
                     , yGap = 32
+                    , fontSize = 16
                     , lineHeight = 20
+                    , xOffset = 12
+                    , yOffset = 28
+                    , rotate = -15
                     , textAlign = Watermark.Center
                     , cross = True
                 }
@@ -622,13 +666,15 @@ watermarkSection =
             [ Watermark.view theme
                 { watermarkD
                     | content = Just "Seemly"
-                    , width = 100
-                    , height = 32
-                    , fontSize = 18
+                    , width = 160
+                    , height = 64
+                    , fontSize = 16
                     , fontWeight = 700
                     , fontStyle = "italic"
                     , fontColor = "rgba(0, 128, 0, .45)"
-                    , rotate = -20
+                    , rotate = -15
+                    , xOffset = 12
+                    , yOffset = 28
                     , debug = True
                     , selectable = False
                 }
@@ -638,6 +684,10 @@ watermarkSection =
             [ Watermark.view theme
                 { watermarkD
                     | content = Just "45°"
+                    , width = 96
+                    , height = 32
+                    , fontSize = 16
+                    , lineHeight = 16
                     , globalRotate = 45
                 }
                 [ watermarkedText ]

@@ -636,7 +636,6 @@ mentionSection =
                             | value = "@710"
                             , attributes = [ Element.width (Element.px 220) ]
                         }
-                    , chip "prefix \"@\" · separator \" \" — the splice is caller-owned"
                     , Mention.menu theme
                         { mnMenuD | attributes = [ Element.width (Element.px 220) ] }
                         mentionOptions

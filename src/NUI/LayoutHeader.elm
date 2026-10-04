@@ -17,6 +17,13 @@ The element carries the `.n-layout-header` BEM classes and Naive UI's `--n-*`
 custom properties (`headerColor` / `headerColorInverted` etc. from
 `NUI.Theme.Layout`); `NUI.Css` ships Naive UI's exact CSS.
 
+**Divergence (visibility chrome):** upstream's light theme paints a header
+`#fff` (cardColor) — invisible on the white surfaces the layout demo sits on
+(upstream's own docs demos paper over this with a demo `<style>` block). This
+port instead emits a light region background (`#f7f7fa`) plus padding inline
+on the non-inverted header, so the app-shell structure is self-evident without
+caller CSS. Inverted headers keep the pure `--n-*` theming.
+
 -}
 
 import Element exposing (Element)
@@ -52,7 +59,7 @@ view theme opts children =
              ]
                 ++ I.classIf opts.bordered "n-layout-header--bordered"
             )
-         , I.cssVars (cssVars theme opts)
+         , I.cssVars (cssVars theme opts ++ regionChrome opts)
          ]
             ++ opts.attributes
         )
@@ -95,3 +102,18 @@ cssVars theme opts =
             v.headerBorderColor
       )
     ]
+
+
+{-| The non-inverted region's visibility chrome (see the module docstring):
+a light background + padding, merged into the element's inline style after
+the `--n-*` vars (`view` only — `cssVarsFor` stays the pure `--n-*` record).
+-}
+regionChrome : Options msg -> List ( String, String )
+regionChrome opts =
+    if opts.inverted then
+        []
+
+    else
+        [ ( "background-color", "#f7f7fa" )
+        , ( "padding", "12px 24px" )
+        ]

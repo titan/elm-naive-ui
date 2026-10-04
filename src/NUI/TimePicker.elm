@@ -653,6 +653,7 @@ itemNode active disabled click label =
                 ++ I.classIf active "n-time-picker-col__item--active"
                 ++ I.classIf disabled "n-time-picker-col__item--disabled"
             )
+            :: Element.width Element.fill
             :: (if active then
                     [ Element.htmlAttribute (HA.attribute "data-active" "") ]
 

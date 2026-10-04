@@ -71,7 +71,14 @@ to the inverse architecture — upstream provides
 **Presets.** `Custom` wraps your content in a port-owned `div.n-modal`
 (upstream clones the caller's root vnode and merges the class onto it — Elm
 elements cannot be cloned; the extra wrapper is visually identical because the
-`.n-modal` rules land on it). `Card` composes `NUI.Card.view` with the
+`.n-modal` rules land on it). The Custom wrapper is TWO nodes: the port-owned
+`.n-modal` shell — which also inlines `flex-shrink: 1; min-width: 0`, since
+elm-ui nodes carry `flex-shrink: 0` and would hold an auto-width custom body
+at its max-content size, spilling past the scroll content's box (upstream's
+plain div keeps the flex default) — and an inner carrier column receiving
+the caller's `attributes`: a caller `style` attribute on the shell itself
+would clobber the port's geometry declarations (duplicate `style`
+attributes, last one wins). `Card` composes `NUI.Card.view` with the
 `n-modal` class, `role="dialog"` and `aria-modal="true"` merged onto the card
 root (via Card's `extraClasses`/`attributes` seams) — start from
 `cardDefaults`: upstream spreads `{...cardBaseProps, ...dialogProps}` so the
@@ -215,9 +222,29 @@ contentNode theme opts preset =
     in
     case preset of
         Custom attrs children ->
+            -- two layers: the port-owned `.n-modal` shell and the caller's
+            -- attribute carrier. The shell inlines `flex-shrink: 1;
+            -- min-width: 0` — elm-ui nodes carry `flex-shrink: 0` (the `.s`
+            -- class), so an auto-width custom body holds its max-content width
+            -- and spills past the scroll content's box; upstream's plain div
+            -- keeps the flex default (shrink 1) and lets the mask/viewport
+            -- bound it. The declarations cannot ride the caller's node: a
+            -- caller `style` attribute would clobber them (duplicate style
+            -- attributes, last wins), so the shell owns geometry and the
+            -- caller's attrs (styles included) land on the inner column —
+            -- visually identical, the `NUI.Card` styleAttr merge precedent
+            -- turned inside out.
+            --
+            -- children ride in wrapping paragraphs: elm-ui text carries
+            -- `white-space: pre` and would overflow the mask/cell on one
+            -- unbreakable line (the `NUI.Popover.bodyNodes` note).
             Element.column
-                (I.classes ("n-modal" :: phases) :: attrs)
-                children
+                [ I.classes ("n-modal" :: phases)
+                , Element.htmlAttribute (HA.attribute "style" "flex-shrink:1;min-width:0")
+                ]
+                [ Element.column attrs
+                    (List.map (\child -> Element.paragraph [] [ child ]) children)
+                ]
 
         Card cardOpts children ->
             -- caller `extraClasses` sit between `n-modal` and the phase class:

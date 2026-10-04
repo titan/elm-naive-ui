@@ -364,12 +364,22 @@ listColumn theme opts d side =
 
             else
                 []
+
+        {- `Element.width fill`: elm-ui's static alignment classes set
+           `align-items: flex-start` on the list column, and Naive UI's CSS
+           declares no `align-items` to override it (upstream relies on the
+           stretch default) — without an explicit width the body collapses to
+           0px and the list renders empty.
+        -}
+        bodyColumn =
+            Element.column
+                [ I.classes [ "n-transfer-list-body" ], Element.width Element.fill ]
+                (filterNode ++ [ flexContainer theme opts d side ])
     in
     Element.column
         [ I.classes [ "n-transfer-list", sideClass ] ]
         (headerNode theme opts d side
-            :: Element.column [ I.classes [ "n-transfer-list-body" ] ]
-                (filterNode ++ [ flexContainer theme opts d side ])
+            :: bodyColumn
             :: List.singleton (Element.el [ I.classes [ "n-transfer-list__border" ] ] Element.none)
         )
 
@@ -463,7 +473,7 @@ headerNode theme opts d side =
                 T.Tiny
     in
     Element.row
-        [ I.classes [ "n-transfer-list-header" ] ]
+        [ I.classes [ "n-transfer-list-header" ], Element.width Element.fill ]
         (titleEl
             ++ buttonEl
             ++ [ Element.el [ I.classes [ "n-transfer-list-header__extra" ] ] (Element.text extraText) ]
@@ -505,7 +515,7 @@ filterInput theme opts side =
             Input.defaults
     in
     Element.el
-        [ I.classes [ "n-transfer-filter" ] ]
+        [ I.classes [ "n-transfer-filter" ], Element.width Element.fill ]
         (Input.view theme
             { input
                 | value = pattern
@@ -526,7 +536,7 @@ filterInput theme opts side =
 flexContainer : Theme -> Options msg -> Derived -> Side -> Element msg
 flexContainer theme opts d side =
     Element.el
-        [ I.classes [ "n-transfer-list-flex-container" ] ]
+        [ I.classes [ "n-transfer-list-flex-container" ], Element.width Element.fill ]
         (case renderListNode opts d side of
             Just custom ->
                 Scrollbar.view theme Scrollbar.defaults [ custom ]
@@ -666,6 +676,7 @@ itemNode theme opts d side option =
                 ++ I.classIf itemDisabled "n-transfer-list-item--disabled"
                 ++ [ sideClass ]
             )
+         , Element.width Element.fill
          ]
             ++ clickAttr
         )

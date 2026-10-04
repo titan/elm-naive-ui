@@ -52,6 +52,23 @@ Length props are strings that must carry their own unit (`"272px"`, `"20%"`);
 upstream's `formatLength` turns bare numbers into `px`, so write `272` as
 `"272px"`.
 
+**Divergences (visibility chrome + collapsed clipping):**
+
+  - The non-inverted sider carries an inline light background (`#fafafc`) plus
+    a default scroll-container padding, so the region reads as part of the app
+    shell on white surfaces (upstream's light `siderColor` is `#fff`; its docs
+    demos paper over that with demo CSS). Inverted siders keep the pure
+    `--n-*` theming.
+  - In `ByTransform` collapse mode upstream keeps `min-width: width` on the
+    scroll container while the root collapses to `collapsedWidth` — and since
+    nothing clips (the sider root has no `overflow: hidden`; the toggle bar
+    deliberately lives at `right: -28px`), the still-full-width content paints
+    past the collapsed sider over the neighbouring content. This port clamps
+    the container's `min-width` to `collapsedWidth` once collapsed, so the
+    content clips at the sider boundary instead. (The pure port renders end
+    states, so the transition-reflow the `min-width` existed for does not
+    apply.)
+
 -}
 
 import Element exposing (Element)
@@ -138,6 +155,7 @@ view theme opts children =
         ([ I.classes (siderClasses opts)
          , I.cssVars
             (cssVars theme opts
+                ++ regionChrome opts
                 ++ [ ( "max-width", maxWidthOf opts )
                    , ( "width", opts.width )
                    ]
@@ -197,6 +215,7 @@ scrollContainer opts children =
             )
         , I.cssVars
             (scrollContainerStyle opts
+                ++ containerChrome
                 ++ [ ( "overflow", "auto" ) ]
                 ++ opts.contentStyle
             )
@@ -204,11 +223,26 @@ scrollContainer opts children =
         children
 
 
+{-| The scroll container's default padding (see the module docstring);
+`contentStyle` pairs land after it, so a caller's own padding wins.
+-}
+containerChrome : List ( String, String )
+containerChrome =
+    [ ( "padding", "12px 24px" ) ]
+
+
 scrollContainerStyle : Options msg -> List ( String, String )
 scrollContainerStyle opts =
     case opts.collapseMode of
         ByTransform ->
-            [ ( "min-width", opts.width ) ]
+            [ ( "min-width"
+              , if opts.collapsed then
+                    opts.collapsedWidth
+
+                else
+                    opts.width
+              )
+            ]
 
         ByWidth ->
             []
@@ -321,6 +355,19 @@ cssVars theme opts =
                 , ( "--n-toggle-button-icon-color", v.siderToggleButtonIconColor )
                 ]
            )
+
+
+{-| The non-inverted region's visibility chrome (see the module docstring):
+a light background on the root, merged after the `--n-*` vars (`view` only —
+`cssVarsFor` stays the pure `--n-*` record).
+-}
+regionChrome : Options msg -> List ( String, String )
+regionChrome opts =
+    if opts.inverted then
+        []
+
+    else
+        [ ( "background-color", "#fafafc" ) ]
 
 
 

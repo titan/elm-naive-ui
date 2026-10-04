@@ -1269,8 +1269,8 @@ dTrue(
 )
 const splitPane1 = doc.querySelector('#live-split .n-split-pane-1')
 dTrue(
-  'DOM: Split pane 1 flex = calc(40% - 1.2px)',
-  !!splitPane1 && (splitPane1.getAttribute('style') || '').includes('calc(40% - 1.2px)'),
+  'DOM: Split pane 1 flex = calc(40% - 2.4px)',
+  !!splitPane1 && (splitPane1.getAttribute('style') || '').includes('calc(40% - 2.4px)'),
   splitPane1 ? splitPane1.getAttribute('style') : 'missing'
 )
 dTrue(
@@ -5365,11 +5365,14 @@ dTrue(
     : 'rule missing'
 )
 
-// Custom wrapper: n-modal + caller attrs passthrough
+// Custom wrapper: n-modal shell + the caller attrs on the inner carrier
+// (the shell's inline flex-shrink/min-width would be clobbered by a caller
+// `style` attribute on the same node — duplicate style attrs, last wins)
 dTrue(
-  'DOM: Modal Custom wrapper carries class n-modal and the caller attribute (id) alongside',
+  'DOM: Modal Custom shell carries n-modal; caller attribute (id) rides the inner carrier',
   hasCls(mCustomContent, 'n-modal') &&
-    mCustomContent.getAttribute('id') === 'modal-custom-content' &&
+    !!mCustomContent.firstElementChild &&
+    mCustomContent.firstElementChild.getAttribute('id') === 'modal-custom-content' &&
     tagOf(mCustomContent) === 'DIV',
   clsOf(mCustomContent)
 )
@@ -5829,8 +5832,8 @@ dEq(
   })()
 )
 dEq(
-  'DOM: Drawer native contentStyle lands on the plain wrapper',
-  'color:orange',
+  'DOM: Drawer native contentStyle lands on the plain wrapper (port min-height:0 first)',
+  'min-height:0;color:orange',
   (() => {
     const w = doc.querySelector('#live-drawer-contentclass .n-drawer-content-wrapper')
     return w ? w.getAttribute('style') : null
@@ -5949,16 +5952,16 @@ dTrue(
 // native body: bodyClass/bodyStyle land on .n-drawer-body; bodyContent* on the wrapper
 const drFull = doc.querySelector('#live-drawer-content-full')
 dEq(
-  'DOM: DrawerContent native body carries n-drawer-body + bodyClass + bodyStyle',
-  'hc s c wc ct cl n-drawer-body body-x|color:red',
+  'DOM: DrawerContent native body carries n-drawer-body + bodyClass + bodyStyle (port min-height:0 first)',
+  'hc s c wc ct cl n-drawer-body body-x|min-height:0;color:red',
   (() => {
     const b = drFull ? drFull.querySelector('.n-drawer-body') : null
     return b ? clsOf(b) + '|' + b.getAttribute('style') : null
   })()
 )
 dEq(
-  'DOM: DrawerContent native body content wrapper carries the class + style',
-  'n-drawer-body-content-wrapper bodyc-x|color:blue',
+  'DOM: DrawerContent native body content wrapper carries the class + style (port min-height:0 first)',
+  'n-drawer-body-content-wrapper bodyc-x|min-height:0;color:blue',
   (() => {
     const w = drFull ? drFull.querySelector('.n-drawer-body-content-wrapper') : null
     return w

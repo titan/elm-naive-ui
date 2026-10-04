@@ -483,7 +483,13 @@ carouselDemo theme model =
                 []
             , Element.text caption
             ]
-        , Carousel.view theme opts model.carousel slides
+        , Element.el
+            [ Element.width (Element.px (round carSize.width))
+            , Element.height (Element.px (round carSize.height))
+            , Element.htmlAttribute
+                (HA.attribute "style" "overflow:hidden;border-radius:3px")
+            ]
+            (Carousel.view theme opts model.carousel slides)
         ]
 
 
@@ -492,7 +498,13 @@ dragDemo theme model =
     Element.column [ Element.spacing 8 ]
         [ Element.text
             "Mousedown on the track, move, release — document listeners feed the port's dragStart / dragMove / dragEnd (flick included)."
-        , Carousel.view theme dragOpts model.drag slides
+        , Element.el
+            [ Element.width (Element.px (round dragSize.width))
+            , Element.height (Element.px (round dragSize.height))
+            , Element.htmlAttribute
+                (HA.attribute "style" "overflow:hidden;border-radius:3px")
+            ]
+            (Carousel.view theme dragOpts model.drag slides)
         , Element.text
             ("drag offset "
                 ++ String.fromFloat model.drag.dragOffset

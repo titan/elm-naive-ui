@@ -31,6 +31,11 @@ Empty also accepts a `huge` size, so it keeps its own `Size` instead of
 `NUI.Types.Size` (and Naive UI renders no size class on the root — the size
 only feeds `--n-icon-size` / `--n-font-size`).
 
+The root fills its parent's width: upstream's `.n-empty` is a block-level flex
+column (`align-items: center`), so the icon/description centre inside whatever
+width the mount provides — a content-sized elm-ui root would hug the left edge
+instead (the `.n-empty__icon` would left-align the whole placeholder).
+
 -}
 
 import Element exposing (Element)
@@ -81,7 +86,10 @@ view theme opts children =
     let
         iconEl =
             if opts.showIcon then
-                [ Element.el [ I.classes [ "n-empty__icon" ] ] (iconContent opts.icon) ]
+                [ Element.el
+                    [ I.classes [ "n-empty__icon" ], centerSelf ]
+                    (iconContent opts.icon)
+                ]
 
             else
                 []
@@ -96,7 +104,7 @@ view theme opts children =
         descriptionEl =
             if opts.showDescription then
                 [ Element.paragraph
-                    [ I.classes [ "n-empty__description" ], Element.spacing 0 ]
+                    [ I.classes [ "n-empty__description" ], Element.spacing 0, shrinkWrap ]
                     descriptionChildren
                 ]
 
@@ -106,18 +114,36 @@ view theme opts children =
         extraEl =
             case opts.extra of
                 Just e ->
-                    [ Element.el [ I.classes [ "n-empty__extra" ] ] e ]
+                    [ Element.el [ I.classes [ "n-empty__extra" ], shrinkWrap ] e ]
 
                 Nothing ->
                     []
     in
     Element.column
-        ([ I.classes [ "n-empty" ]
-         , I.cssVars (cssVarsFor theme opts)
-         ]
-            ++ opts.attributes
+        (Element.width Element.fill
+            :: I.classes [ "n-empty" ]
+            :: I.cssVars (cssVarsFor theme opts)
+            :: opts.attributes
         )
         (iconEl ++ descriptionEl ++ extraEl)
+
+
+{-| The `.n-empty` root centers its flex items (`align-items: center`), but
+every elm-ui child carries a sizing class with its own `align-self` (the
+content-width wrapper pins `flex-start`, the paragraph's width-fill stretches)
+— a direct `align-self`/`width` on the item beats the parent's alignment, so
+the slots must opt back in inline. `shrinkWrap` restores upstream's
+content-sized, centered description/extra box (`width: fit-content` clamps at
+the root's width, exactly like a shrink-to-fit flex item).
+-}
+centerSelf : Element.Attribute msg
+centerSelf =
+    I.cssVars [ ( "align-self", "center" ) ]
+
+
+shrinkWrap : Element.Attribute msg
+shrinkWrap =
+    I.cssVars [ ( "align-self", "center" ), ( "width", "fit-content" ) ]
 
 
 {-| A provided `icon` replaces the `n-base-icon` wrapper entirely (Naive UI's

@@ -8,6 +8,7 @@ module Showcase exposing
     , demoRow
     , fakeKatex
     , fakeKatexDisplay
+    , fillWidth
     , purple
     , section
     , sectionId
@@ -43,6 +44,8 @@ import NUI.Code as Code
 import NUI.Tag as Tag
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Typography as Typo
+import Svg
+import Svg.Attributes as SA
 
 
 
@@ -137,7 +140,10 @@ sectionId title =
     "sec-" ++ dashed
 
 
-{-| A titled, anchor-addressable block: heading, description, examples.
+{-| A titled, anchor-addressable block: heading, description, examples. The
+description is held to a ~720px reading measure — the content column is
+~1000px wide and full-measure paragraphs (Notification, Menu, Modal…) read
+as a wall of text.
 -}
 section : String -> String -> List (Element msg) -> Element msg
 section title desc examples =
@@ -148,7 +154,9 @@ section title desc examples =
         , Element.htmlAttribute (HA.class "sc-sec")
         ]
         [ Typo.h3 theme typ [ Element.text title ]
-        , Typo.text theme { typ | depth = Just 3 } [ Element.text desc ]
+        , Element.el
+            [ Element.width (Element.maximum 720 Element.fill) ]
+            (Typo.text theme { typ | depth = Just 3 } [ Element.text desc ])
         , Element.column [ Element.spacing 20, Element.width Element.fill ] examples
         ]
 
@@ -219,6 +227,25 @@ chip label =
     Tag.view theme { tagD | bordered = False } [ Element.text label ]
 
 
+{-| Stretches a content-sized component to the full width of its container.
+elm-ui children don't inherit the parent's width (an `Element.column` root
+like `NUI.Alert`'s shrink-wraps inside a flex parent), while a 1fr grid
+track sizes the subtree to the column — how the upstream block-level
+component behaves in the DOM.
+-}
+fillWidth : Element msg -> Element msg
+fillWidth content =
+    Element.el
+        [ Element.width Element.fill
+        , Element.htmlAttribute
+            (HA.attribute
+                "style"
+                "display:grid;grid-template-columns:minmax(0,1fr)"
+            )
+        ]
+        content
+
+
 capitalize : String -> String
 capitalize s =
     String.toUpper (String.left 1 s) ++ String.dropLeft 1 s
@@ -229,17 +256,20 @@ capitalize s =
 
 
 {-| A small inline SVG glyph for the icon showcase (and the menu demos).
+Built with `elm/svg` — `Svg.*` nodes carry the SVG namespace; the previous
+`Html.node "svg"` fixture rendered in the HTML namespace, which browsers
+draw as an unknown element (the icon spaces were reserved but blank).
 -}
 starIcon : Element msg
 starIcon =
     Element.html
-        (Html.node "svg"
-            [ HA.attribute "viewBox" "0 0 24 24"
+        (Svg.svg
+            [ SA.viewBox "0 0 24 24"
             , HA.attribute "aria-hidden" "true"
             ]
-            [ Html.node "path"
-                [ HA.attribute "fill" "currentColor"
-                , HA.attribute "d" "M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"
+            [ Svg.path
+                [ SA.fill "currentColor"
+                , SA.d "M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"
                 ]
                 []
             ]

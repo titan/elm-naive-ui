@@ -620,7 +620,12 @@ dtColumns =
             }
 
         addressCol =
-            { colD | key = "address", title = "Address", view = \p -> Element.text p.address }
+            { colD
+                | key = "address"
+                , title = "Address"
+                , width = Just 320
+                , view = \p -> Element.text p.address
+            }
     in
     [ selection, nameCol, ageCol, addressCol ]
 
@@ -678,7 +683,7 @@ dataTableDemo theme model =
         btn =
             Button.defaults
     in
-    Element.column [ Element.spacing 10, Element.width (Element.px 620) ]
+    Element.column [ Element.spacing 10, Element.width (Element.px 780) ]
         [ DataTable.view theme opts
         , Element.row
             [ Element.spacing 6 ]

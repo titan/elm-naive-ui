@@ -51,7 +51,10 @@ The caller owns the items; nothing is measured or looked up.
     `__content`. Every applicable CSS rule resolves identically, so the two are
     render-equivalent; the flat sibling form is simply easier to build on elm-ui.
   - The root is an elm-ui column whose children fill the width (`NUI.Card` precedent); Naive
-    UI sets no `display` on `.n-descriptions`.
+    UI sets no `display` on `.n-descriptions`. The root itself also fills its parent —
+    `.n-descriptions-table` is `width: 100%`, and a content-sized root would shrink the
+    table back down (labels concatenating with no column tracks), which is not what
+    upstream's block `div` root does.
 
 -}
 
@@ -347,7 +350,11 @@ view theme opts items =
                 (Element.html (table column opts items rows))
     in
     Element.column
-        (I.classes (rootClasses opts) :: I.cssVars (cssVars theme opts) :: [])
+        (Element.width Element.fill
+            :: I.classes (rootClasses opts)
+            :: I.cssVars (cssVars theme opts)
+            :: []
+        )
         (List.filterMap identity [ headerEl, Just wrapperEl ])
 
 

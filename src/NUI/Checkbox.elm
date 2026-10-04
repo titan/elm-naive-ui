@@ -85,29 +85,41 @@ view theme opts label =
         hasLabel =
             not (List.isEmpty label)
 
-        box =
-            Element.el
-                [ I.classes [ "n-checkbox-box" ] ]
-                (Element.row []
-                    [ Element.el
-                        [ I.classes [ "n-checkbox-icon" ] ]
-                        (if opts.indeterminate then
-                            lineMark
+        {- Upstream's exact DOM: the wrapper holds a raw `&nbsp;` text node
+           (which gives the wrapper its line-height height) and the box; the
+           box holds exactly ONE absolutely-positioned icon container —
+           `indeterminate ? lineMark : checkMark` (`Checkbox.tsx:391-401`;
+           the pair swaps through the keyed `NIconSwitchTransition` at
+           runtime) — before the border. One container per mark is also what
+           keeps the indeterminate dash on exactly the same x as the
+           checkmark: two svgs in one row-flex container would sit side by
+           side, not overlapped.
 
-                         else
-                            checkMark
-                        )
-                    , Element.el
-                        [ I.classes [ "n-checkbox-box__border" ] ]
-                        Element.none
-                    ]
-                )
-
+           This is raw `Html`, not elm-ui elements: elm-ui's `.s` helper class
+           sets `position: relative` on every element wrapper, and an
+           intermediate positioned div between `.n-checkbox-box` and its
+           `inset: 0` border / 1px-inset icon would become their containing
+           block — collapsing the border to a 0-height (2px border-only) strip
+           and the icon with it.
+        -}
         boxWrapper =
-            Element.el
-                [ I.classes [ "n-checkbox-box-wrapper" ] ]
-                (Element.row []
-                    [ Element.text "\u{00A0}", box ]
+            Element.html
+                (Html.div [ HA.class "n-checkbox-box-wrapper" ]
+                    [ Html.text "\u{00A0}"
+                    , Html.div [ HA.class "n-checkbox-box" ]
+                        [ -- upstream's at-rest order: the icon container
+                          -- (exactly one — `indeterminate ? line : check`,
+                          -- `Checkbox.tsx:391-401`) before the border.
+                          Html.div [ HA.class "n-checkbox-icon" ]
+                            [ if opts.indeterminate then
+                                lineMark
+
+                              else
+                                checkMark
+                            ]
+                        , Html.div [ HA.class "n-checkbox-box__border" ] []
+                        ]
+                    ]
                 )
 
         labelEl =
@@ -247,9 +259,10 @@ fontSizeOf size v =
             v.fontSizeLarge
 
 
-{-| `renderCheckMark()` — the `.check-icon` svg, animated by Naive UI's CSS.
+{-| `renderCheckMark()` — the `.check-icon` svg, shown by Naive UI's CSS while
+checked (otherwise faded/scaled out — the markup always carries both marks).
 -}
-checkMark : Element msg
+checkMark : Html.Html msg
 checkMark =
     mark "check-icon"
         "0 0 64 64"
@@ -258,22 +271,20 @@ checkMark =
 
 {-| `renderLineMark()` — the `.line-icon` svg shown while `indeterminate`.
 -}
-lineMark : Element msg
+lineMark : Html.Html msg
 lineMark =
     mark "line-icon"
         "0 0 100 100"
         "M80.2,55.5H21.4c-2.8,0-5.1-2.5-5.1-5.5l0,0c0-3,2.3-5.5,5.1-5.5h58.7c2.8,0,5.1,2.5,5.1,5.5l0,0C85.2,53.1,82.9,55.5,80.2,55.5z"
 
 
-mark : String -> String -> String -> Element msg
+mark : String -> String -> String -> Html.Html msg
 mark iconClass viewBox path =
-    Element.html
-        (Svg.node "svg"
-            -- SA.class, not HA.class: the svg renders in the SVG namespace
-            -- (Svg.node), where a `className` property fact throws — Svg's
-            -- class is a plain `class` attribute.
-            [ SA.class iconClass
-            , HA.attribute "viewBox" viewBox
-            ]
-            [ Svg.node "path" [ HA.attribute "d" path ] [] ]
-        )
+    Svg.node "svg"
+        -- SA.class, not HA.class: the svg renders in the SVG namespace
+        -- (Svg.node), where a `className` property fact throws — Svg's
+        -- class is a plain `class` attribute.
+        [ SA.class iconClass
+        , HA.attribute "viewBox" viewBox
+        ]
+        [ Svg.node "path" [ HA.attribute "d" path ] [] ]

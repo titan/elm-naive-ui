@@ -346,7 +346,7 @@ view theme opts =
 
     else
         Element.column
-            (rootAttributes theme opts)
+            (Element.width Element.fill :: rootAttributes theme opts)
             (if visible == [] then
                 [ emptyNode theme opts ]
 
@@ -544,7 +544,7 @@ rowNode theme opts state flat =
                     []
     in
     Element.el
-        [ I.classes [ "n-tree-node-wrapper" ] ]
+        [ I.classes [ "n-tree-node-wrapper" ], Element.width Element.fill ]
         (Element.row
             ([ I.classes
                 ([ "n-tree-node" ]
@@ -556,6 +556,12 @@ rowNode theme opts state flat =
                     ++ I.classIf selectable "n-tree-node--selectable"
                     ++ I.classIf clickable "n-tree-node--clickable"
                 )
+
+             -- Upstream's wrapper/node divs are blocks that fill the
+             -- tree width, so `--block-line`'s full-row highlight spans
+             -- the panel; elm-ui's alignment classes would shrink the
+             -- row to its content otherwise.
+             , Element.width Element.fill
              ]
                 ++ (if opts.internalScrollable then
                         [ Element.htmlAttribute (HA.attribute "data-key" ("s-" ++ key)) ]
@@ -606,18 +612,40 @@ indentNodes opts flat =
         List.map
             (\ancestorIsLast ->
                 Element.el
-                    [ I.classes
+                    ([ I.classes
                         ([ "n-tree-node-indent" ]
                             ++ I.classIf (not ancestorIsLast) "n-tree-node-indent--show-line"
                         )
-                    ]
+                     ]
+                        ++ indentFillAttrs opts
+                    )
                     (indentWidth opts)
             )
             (List.reverse flat.parentIsLast)
 
     else
         List.repeat flat.level
-            (Element.el [ I.classes [ "n-tree-node-indent" ] ] (indentWidth opts))
+            (Element.el
+                ([ I.classes [ "n-tree-node-indent" ] ] ++ indentFillAttrs opts)
+                (indentWidth opts)
+            )
+
+
+{-| The indents must span the full row height: the `--show-line` guide
+lines are `::before`/`::after` pseudo-elements sized by `top`/`bottom`
+offsets against the indent's own box (they overshoot into the wrapper
+padding via the negative `--n-line-offset-*` vars). Upstream the indent
+divs stretch to the flex row's height; elm-ui's alignment classes would
+collapse them to their empty inner div's 0 height, leaving the guides as
+broken fragments.
+-}
+indentFillAttrs : Options msg -> List (Element.Attribute msg)
+indentFillAttrs opts =
+    if opts.showLine then
+        [ Element.height Element.fill ]
+
+    else
+        []
 
 
 {-| The `showLine` leaf's indent — replaces the switcher entirely
@@ -626,12 +654,14 @@ indentNodes opts flat =
 leafIndentNode : Options msg -> FlatNode msg -> Element.Element msg
 leafIndentNode opts flat =
     Element.el
-        [ I.classes
+        ([ I.classes
             ([ "n-tree-node-indent", "n-tree-node-indent--show-line" ]
                 ++ I.classIf flat.isLeaf "n-tree-node-indent--is-leaf"
                 ++ I.classIf flat.isLastChild "n-tree-node-indent--last-child"
             )
-        ]
+         ]
+            ++ indentFillAttrs opts
+        )
         (indentWidth opts)
 
 

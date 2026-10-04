@@ -354,7 +354,13 @@ optionNodesFor theme opts flags activePath option =
             ]
 
         Custom custom ->
-            [ Element.column custom.attributes custom.children ]
+            -- children ride in wrapping paragraphs: elm-ui text carries
+            -- `white-space: pre` and would draw across the menu's border /
+            -- shadow on one unbreakable line (the `NUI.Popover.bodyNodes`
+            -- note); upstream's render-option divs wrap at the menu width
+            [ Element.column custom.attributes
+                (List.map (\child -> Element.paragraph [] [ child ]) custom.children)
+            ]
 
 
 {-| One selectable row: the wrapper (with the `data-dropdown-option` test

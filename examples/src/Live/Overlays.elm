@@ -55,6 +55,7 @@ import NUI.Switch as Switch
 import NUI.Theme exposing (Theme)
 import NUI.Tooltip as Tooltip
 import NUI.Types as T
+import NUI.Typography as Typo
 import Showcase exposing (chip, demoRow)
 
 
@@ -729,7 +730,7 @@ view theme model =
                         )
 
                 else
-                    Element.none
+                    overlayHint "modal unmounted — the fixed tree mounts on open (displayDirective: if)"
             , chip model.modalOutcome
             ]
         , demoRow "Drawer · placement picker" <|
@@ -952,6 +953,27 @@ overlayCell id content =
             )
         ]
         content
+
+
+{-| What an unmounted overlay cell shows instead of empty gray: a muted
+placeholder naming the mount point, so the cell reads as a preview host.
+-}
+overlayHint : String -> Element msg
+overlayHint text =
+    let
+        typ =
+            Typo.defaults
+    in
+    Element.el
+        [ Element.width Element.fill
+        , Element.height Element.fill
+        , Element.htmlAttribute
+            (HA.attribute
+                "style"
+                "display:flex;align-items:center;justify-content:center;text-align:center;padding:0 24px;color:#909399;font-size:12px"
+            )
+        ]
+        (Typo.text Showcase.theme { typ | depth = Just 3, size = Just 12 } [ Element.text text ])
 
 
 {-| The simulated outside-click seam: stops card-inner clicks from bubbling

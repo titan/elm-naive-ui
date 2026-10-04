@@ -321,11 +321,17 @@ leafOption key label =
 
 modalHost : List (Element.Attribute msg) -> Element msg -> Element msg
 modalHost attrs content =
+    -- `Element.width`/`height` (NOT raw style): elm-ui's `we` companion
+    -- class is what restores `flex-basis: auto` for a row child — a raw
+    -- `style="width:…"` leaves `flex-basis: 0%` in force and the host
+    -- collapses to its 2px border, taking the fixed preview tree with it.
     Element.el
-        ([ Element.htmlAttribute
+        ([ Element.width (Element.px 320)
+         , Element.height (Element.px 210)
+         , Element.htmlAttribute
             (HA.attribute
                 "style"
-                "position:relative;transform:translate(0,0);height:210px;width:320px;overflow:hidden;border:1px solid #efeff5;background:#fafafc"
+                "position:relative;transform:translate(0,0);overflow:hidden;border:1px solid #efeff5;background:#fafafc"
             )
          ]
             ++ attrs
@@ -353,7 +359,13 @@ imageD =
 
 imageLogo : String
 imageLogo =
-    "https://www.naiveui.com/assets/naivelogo.93278402.svg"
+    -- An inline SVG (a green plate + white disc stand-in for upstream's
+    -- naivelogo), not the naiveui.com asset: the remote SVG is
+    -- hotlink-blocked in some environments and every consumer of this
+    -- constant (object-fit / placeholder / lazy / preview / group cells,
+    -- the fallback demo) reads as a broken image when it 404s. A data URI
+    -- always loads.
+    "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20200%20150'%3E%3Crect%20width='200'%20height='150'%20fill='%2318a058'/%3E%3Ccircle%20cx='100'%20cy='75'%20r='40'%20fill='%23ffffff'/%3E%3C/svg%3E"
 
 
 previewD : ImagePreview.Options msg

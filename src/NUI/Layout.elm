@@ -43,6 +43,13 @@ content line up in a row.
 The root is an elm-ui element where upstream uses a plain block `div`; Naive
 UI's rules declare every load-bearing property, so the result renders the same.
 
+**Divergence (content padding):** upstream's docs demos pass
+`content-style="padding: 24px;"` to every `n-layout-content` / sider; callers
+that copy those demos verbatim get an unpadded wall of text otherwise. This
+port merges a default `padding: 12px 24px` into `content`'s scroll container
+(`view` stays untouched) — a caller's own `contentStyle` pairs land later in
+the same declaration block and win.
+
 -}
 
 import Element exposing (Element)
@@ -119,20 +126,32 @@ layoutView isContent theme opts children =
          ]
             ++ opts.attributes
         )
-        (scrollContainer opts children)
+        (scrollContainer isContent opts children)
 
 
 {-| The native scroll container. Upstream also binds `onScroll` here; its
 `contentStyle` and the `hasSider` inline styles are merged into one inline
 style, later pairs winning, exactly like Vue's style-array merge.
 -}
-scrollContainer : Options msg -> List (Element msg) -> Element msg
-scrollContainer opts children =
+scrollContainer : Bool -> Options msg -> List (Element msg) -> Element msg
+scrollContainer isContent opts children =
     Element.column
         [ I.classes [ "n-layout-scroll-container" ]
-        , I.cssVars (opts.contentStyle ++ hasSiderStyle opts.hasSider)
+        , I.cssVars (contentPadding isContent ++ opts.contentStyle ++ hasSiderStyle opts.hasSider)
         ]
         children
+
+
+{-| `content`'s default padding (see the module docstring); `view` renders
+without one, matching upstream's bare `n-layout`.
+-}
+contentPadding : Bool -> List ( String, String )
+contentPadding isContent =
+    if isContent then
+        [ ( "padding", "12px 24px" ) ]
+
+    else
+        []
 
 
 {-| Naive UI's `hasSiderStyle`, applied inline to the scroll container.

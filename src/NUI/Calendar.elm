@@ -172,12 +172,13 @@ view theme opts =
     Element.column
         ([ I.classes [ "n-calendar" ]
          , I.cssVars (cssVarsFor theme)
+         , Element.width Element.fill
          ]
             ++ opts.attributes
         )
         [ headerEl theme opts
         , Element.row
-            [ I.classes [ "n-calendar-dates" ] ]
+            [ I.classes [ "n-calendar-dates" ], Element.width Element.fill ]
             (List.indexedMap (cellEl opts) (grid opts))
         ]
 
@@ -194,7 +195,7 @@ headerEl theme opts =
                     Element.text (opts.locale.title opts.panel)
     in
     Element.row
-        [ I.classes [ "n-calendar-header" ] ]
+        [ I.classes [ "n-calendar-header" ], Element.width Element.fill ]
         [ Element.el [ I.classes [ "n-calendar-header__title" ] ] titleContent
         , Element.row
             [ I.classes [ "n-calendar-header__extra" ] ]
@@ -337,7 +338,7 @@ cellEl opts index cell =
                     []
     in
     Element.column
-        (I.classes classes :: click)
+        (I.classes classes :: Element.height Element.fill :: click)
         (Element.row
             [ I.classes [ "n-calendar-date" ] ]
             (dateNode

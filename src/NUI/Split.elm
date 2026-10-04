@@ -31,6 +31,12 @@ wrapper, trigger) and the computed `flex` / trigger-size styles match upstream.
 `primaryColorHover`) and its dark theme omits `self`, so this module reads them
 from `theme.common` directly rather than from a generated theme module.
 
+**Divergences (visibility chrome):** the panes carry a default light border
+(`1px solid #efeff5`, overridable through `pane1Style` / `pane2Style`), and the
+default `resizeTriggerSize` is `6` (upstream: `3`) — upstream's docs demos sit
+on white surfaces where a 3px light-grey bar reads as missing; 6px keeps the
+drag seam visible while staying a hairline.
+
 -}
 
 import Element exposing (Element)
@@ -72,7 +78,7 @@ defaults : Options msg
 defaults =
     { direction = Horizontal
     , size = Ratio 0.5
-    , resizeTriggerSize = 3
+    , resizeTriggerSize = 6
     , disabled = False
     , dragging = False
     , pane1 = []
@@ -82,6 +88,14 @@ defaults =
     , resizeTrigger = Nothing
     , attributes = []
     }
+
+
+{-| The panes' default border (see the module docstring) — first in the merged
+style list so a caller's `pane1Style` / `pane2Style` wins the declaration.
+-}
+paneChrome : List ( String, String )
+paneChrome =
+    [ ( "border", "1px solid #efeff5" ) ]
 
 
 view : Theme -> Options msg -> Element msg
@@ -161,14 +175,14 @@ view theme opts =
         )
         (Element.column
             [ I.classes [ "n-split-pane-1" ]
-            , I.cssVars (firstPaneStyle ++ opts.pane1Style)
+            , I.cssVars (paneChrome ++ firstPaneStyle ++ opts.pane1Style)
             ]
             opts.pane1
             :: triggerWrapper
             ++ [ Element.column
-                    ([ I.classes [ "n-split-pane-2" ] ]
-                        ++ maybeStyle opts.pane2Style
-                    )
+                    [ I.classes [ "n-split-pane-2" ]
+                    , I.cssVars (paneChrome ++ opts.pane2Style)
+                    ]
                     opts.pane2
                ]
         )
@@ -182,15 +196,6 @@ directionClass direction =
 
         Vertical ->
             "vertical"
-
-
-maybeStyle : List ( String, String ) -> List (Element.Attribute msg)
-maybeStyle pairs =
-    if List.isEmpty pairs then
-        []
-
-    else
-        [ I.cssVars pairs ]
 
 
 {-| The split's `--n-*` custom properties (they do not depend on the options).

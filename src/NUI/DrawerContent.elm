@@ -102,6 +102,15 @@ defaults =
     }
 
 
+{-| Upstream renders `.n-drawer-content` with `height: 100%; display: flex;
+flex-direction: column` and `.n-drawer-body` with `flex: 1 0 0; overflow:
+hidden` — the footer stays anchored and the body absorbs the remaining panel
+height. The port's elm-ui nodes carry `min-height: min-content` (the `.s.c >
+.s` rule; the bridge restores only `flex-basis`), which blocks every level
+from shrinking and pushes the footer past a height-constrained panel edge.
+The inline `min-height: 0` (port-first, caller style after — the caller wins)
+restores upstream's sizing on the native path.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     Element.column
@@ -110,6 +119,7 @@ view theme opts children =
                 :: I.classIf opts.nativeScrollbar "n-drawer-content--native-scrollbar"
             )
         , roleAttr "none"
+        , Element.htmlAttribute (HA.attribute "style" (minHeightStyle Nothing))
         ]
         (List.filterMap identity
             [ headerNode opts
@@ -139,7 +149,13 @@ headerNode opts =
                             , roleAttr "heading"
                             , Element.htmlAttribute (HA.attribute "aria-level" "1")
                             ]
-                            [ Maybe.withDefault Element.none (orElse opts.header opts.title) ]
+                            -- the title/header rides in a wrapping paragraph:
+                            -- elm-ui text carries `white-space: pre` and would
+                            -- overflow the panel on one unbreakable line (the
+                            -- `NUI.Popover.bodyNodes` note)
+                            [ Maybe.withDefault Element.none
+                                (Maybe.map (\t -> Element.paragraph [] [ t ]) (orElse opts.header opts.title))
+                            ]
                         )
                     , if opts.closable then
                         Just (closeButton opts.onClose)
@@ -156,24 +172,27 @@ headerNode opts =
 
 {-| The body: plain divs (native, the default) or `NUI.Scrollbar` carrying
 `n-drawer-body` on its root. The default slot lands inside
-`.n-drawer-body-content-wrapper` either way.
+`.n-drawer-body-content-wrapper` either way — in wrapping paragraphs (the
+`white-space: pre` note on `view`).
 -}
 bodyNode : Theme -> Options msg -> List (Element msg) -> Element msg
 bodyNode theme opts children =
+    let
+        wrapped =
+            List.map (\child -> Element.paragraph [] [ child ]) children
+    in
     if opts.nativeScrollbar then
         Element.column
-            ([ I.classes ("n-drawer-body" :: extraClass opts.bodyClass)
-             , roleAttr "none"
-             ]
-                ++ rawStyleAttr opts.bodyStyle
-            )
+            [ I.classes ("n-drawer-body" :: extraClass opts.bodyClass)
+            , roleAttr "none"
+            , Element.htmlAttribute (HA.attribute "style" (minHeightStyle opts.bodyStyle))
+            ]
             [ Element.column
-                ([ I.classes ("n-drawer-body-content-wrapper" :: extraClass opts.bodyContentClass)
-                 , roleAttr "none"
-                 ]
-                    ++ rawStyleAttr opts.bodyContentStyle
-                )
-                children
+                [ I.classes ("n-drawer-body-content-wrapper" :: extraClass opts.bodyContentClass)
+                , roleAttr "none"
+                , Element.htmlAttribute (HA.attribute "style" (minHeightStyle opts.bodyContentStyle))
+                ]
+                wrapped
             ]
 
     else
@@ -191,7 +210,7 @@ bodyNode theme opts children =
                         )
                 , contentStyle = opts.bodyContentStyle
             }
-            children
+            wrapped
 
 
 footerNode : Options msg -> Maybe (Element msg)
@@ -204,9 +223,26 @@ footerNode opts =
                  ]
                     ++ rawStyleAttr opts.footerStyle
                 )
-                [ f ]
+                [ Element.paragraph [] [ f ] ]
         )
         opts.footer
+
+
+{-| The port's `min-height: 0` merged with the caller's style fragment (one
+`style` attribute, the caller's declarations last — see `view`).
+-}
+minHeightStyle : Maybe String -> String
+minHeightStyle maybeStyle =
+    case maybeStyle of
+        Just style ->
+            if String.isEmpty style then
+                "min-height:0"
+
+            else
+                "min-height:0;" ++ style
+
+        Nothing ->
+            "min-height:0"
 
 
 orElse : Maybe a -> Maybe a -> Maybe a

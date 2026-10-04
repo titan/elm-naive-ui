@@ -654,7 +654,12 @@ view : Theme -> Options msg -> Element msg
 view theme opts =
     Element.row
         ([ I.classes [ "n-image-preview-container" ]
-         , I.cssVars (cssVars theme)
+         , -- `height: 100%` rides the same inline style as the vars (two
+           -- `style` attributes would clobber): upstream's fixed container
+           -- stretches by `inset: 0` alone, but elm-ui's height-content
+           -- helper class is the only height declaration left standing
+           -- (Naive UI declares none), collapsing the container to 0.
+           I.cssVars (cssVars theme ++ [ ( "height", "100%" ) ])
          ]
             ++ opts.attributes
         )

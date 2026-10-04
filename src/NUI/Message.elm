@@ -406,22 +406,85 @@ containerClasses state =
         ++ extraClass state.containerClass
 
 
-{-| The raw `containerStyle` fragment, verbatim on the container's `style`
-(upstream `style={this.containerStyle}`; absent when unset — the
-`NUI.Scrollbar` empty-fragment rule).
+{-| The container's single `style` attribute: the port's per-placement
+`align-items` (and `justify-content: flex-end` for the bottom placements —
+upstream's own container CSS values) inline, then the caller's
+`containerStyle` fragment verbatim (upstream `style={this.containerStyle}`;
+the caller's declarations win, the spread convention).
+
+Why inline: elm-ui's default column-alignment classes (`.s.c.cl`, `align-items:
+flex-start`) tie on specificity with the scoped `.n-message-container` base
+rule and beat it on cascade order — pinning every message to the container's
+left edge. Inline declarations cannot be tie-broken, so the upstream CSS
+contract (top: centred; top-left: start; \*-right/bottom: end) holds whichever
+sheet lands last.
+
 -}
 containerStyleAttr : State msg -> List (Element.Attribute msg)
 containerStyleAttr state =
+    [ Element.htmlAttribute
+        (HA.attribute "style" (portContainerStyle state ++ callerContainerStyle state))
+    ]
+
+
+portContainerStyle : State msg -> String
+portContainerStyle state =
+    let
+        alignItemsValue =
+            case state.placement of
+                Top ->
+                    "center"
+
+                TopLeft ->
+                    "flex-start"
+
+                TopRight ->
+                    "flex-end"
+
+                Bottom ->
+                    "center"
+
+                BottomLeft ->
+                    "flex-start"
+
+                BottomRight ->
+                    "flex-end"
+
+        justifyContent =
+            case state.placement of
+                Top ->
+                    ""
+
+                TopLeft ->
+                    ""
+
+                TopRight ->
+                    ""
+
+                Bottom ->
+                    ";justify-content:flex-end"
+
+                BottomLeft ->
+                    ";justify-content:flex-end"
+
+                BottomRight ->
+                    ";justify-content:flex-end"
+    in
+    "align-items:" ++ alignItemsValue ++ justifyContent
+
+
+callerContainerStyle : State msg -> String
+callerContainerStyle state =
     case state.containerStyle of
         Just style ->
             if String.isEmpty style then
-                []
+                ""
 
             else
-                [ Element.htmlAttribute (HA.attribute "style" style) ]
+                ";" ++ style
 
         Nothing ->
-            []
+            ""
 
 
 {-| One environment: `div.n-message-wrapper` — the `Transition`'s child, so
@@ -461,13 +524,30 @@ messageNode state it =
              ]
                 ++ I.classIf state.rtl "n-message--rtl"
             )
+        , Element.htmlAttribute
+            -- let the box shrink inside its wrapper: elm-ui nodes carry
+            -- `flex-shrink: 0` + auto min-width (the `.s` class), so a long
+            -- message holds its max-content width and spills past the
+            -- container — upstream's plain div keeps the flex default
+            -- (shrink 1) and the content wraps at the container's edge
+            -- (max-width: var(--n-max-width) still caps it above)
+            (HA.attribute "style" "flex-shrink:1;min-width:0")
         ]
         (List.filterMap identity
             [ iconWrapper it
             , Just
-                (Element.el
-                    [ I.classes [ "n-message__content" ] ]
-                    (Element.text it.options.content)
+                (Element.paragraph
+                    [ I.classes [ "n-message__content" ]
+                    , Element.htmlAttribute
+                        -- let the content shrink inside the `.n-message` row:
+                        -- elm-ui nodes carry `flex-shrink: 0` + auto min-width
+                        -- (the `.s` class), so a long word would hold its full
+                        -- width and spill past the message box — upstream's
+                        -- plain div keeps the flex default (shrink 1) and the
+                        -- paragraph's `overflow-wrap: break-word` splits it
+                        (HA.attribute "style" "min-width:0;flex-shrink:1")
+                    ]
+                    [ Element.text it.options.content ]
                 )
             , closeButton state it
             ]

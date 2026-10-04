@@ -18,7 +18,6 @@ check-dom gate reads this surface).
 -}
 
 import Element exposing (Element)
-import Html
 import Html.Attributes as HA
 import NUI.Card as Card
 import NUI.Dialog as Dialog
@@ -36,6 +35,8 @@ import NUI.Popover as Popover
 import NUI.Tooltip as Tooltip
 import NUI.Types as T
 import Showcase exposing (darkTheme, demoRow, section, theme)
+import Svg
+import Svg.Attributes as SA
 
 
 lbD : LoadingBar.Options msg
@@ -481,17 +482,16 @@ demoLeaf key label =
 demoIcon : Element msg
 demoIcon =
     Element.html
-        (Html.node "svg"
-            [ HA.attribute "viewBox" "0 0 512 512"
-            , HA.attribute "fill" "none"
-            , HA.attribute "xmlns" "http://www.w3.org/2000/svg"
+        (Svg.svg
+            [ SA.viewBox "0 0 512 512"
+            , SA.fill "none"
             ]
-            [ Html.node "circle"
-                [ HA.attribute "cx" "256"
-                , HA.attribute "cy" "256"
-                , HA.attribute "r" "208"
-                , HA.attribute "stroke" "currentColor"
-                , HA.attribute "stroke-width" "32"
+            [ Svg.circle
+                [ SA.cx "256"
+                , SA.cy "256"
+                , SA.r "208"
+                , SA.stroke "currentColor"
+                , SA.strokeWidth "32"
                 ]
                 []
             ]

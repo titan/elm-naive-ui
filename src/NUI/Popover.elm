@@ -288,6 +288,14 @@ viewWithVars theme opts childrenVars children =
 {-| The body's leading children: the header / content / footer structure (or its
 scrollable variant). Each is one `Html` node kept a direct child of the root so
 the `n-popover > n-scrollbar` rule holds.
+
+Every slot child is wrapped in an `Element.paragraph` before embedding: elm-ui
+text nodes carry `white-space: pre` (the `.t` class), so a bare `Element.text`
+body would render on one unbreakable line and overflow the bubble. Inside a
+paragraph, elm-ui's own `.s.p .t { display: inline; white-space: normal }`
+rules restore HTML text flow — bodies wrap within the bubble exactly like
+upstream's plain-div slots (the `NUI.Alert` / `NUI.Empty` precedent).
+
 -}
 bodyNodes : Theme -> Options msg -> List (Element msg) -> Bool -> List (Element msg)
 bodyNodes theme opts children hasHeaderOrFooter =
@@ -296,7 +304,7 @@ bodyNodes theme opts children hasHeaderOrFooter =
             headerNode =
                 case opts.header of
                     Just header ->
-                        [ slotNode "n-popover__header" opts.headerClass opts.headerStyle [ embedChild header ] ]
+                        [ slotNode "n-popover__header" opts.headerClass opts.headerStyle [ embedChild (wrapSlot header) ] ]
 
                     Nothing ->
                         []
@@ -308,12 +316,12 @@ bodyNodes theme opts children hasHeaderOrFooter =
                     []
 
                 else
-                    [ slotNode "n-popover__content" opts.contentClass opts.contentStyle (List.map embedChild children) ]
+                    [ slotNode "n-popover__content" opts.contentClass opts.contentStyle (List.map (embedChild << wrapSlot) children) ]
 
             footerNode =
                 case opts.footer of
                     Just footer ->
-                        [ slotNode "n-popover__footer" opts.footerClass opts.footerStyle [ embedChild footer ] ]
+                        [ slotNode "n-popover__footer" opts.footerClass opts.footerStyle [ embedChild (wrapSlot footer) ] ]
 
                     Nothing ->
                         []
@@ -333,11 +341,18 @@ bodyNodes theme opts children hasHeaderOrFooter =
         [ scrollbarChild theme
             (Just ("n-popover__content" :: extraClass opts.contentClass))
             opts.contentStyle
-            children
+            (List.map wrapSlot children)
         ]
 
     else
-        [ Element.html (slotNode "n-popover__content" opts.contentClass opts.contentStyle (List.map embedChild children)) ]
+        [ Element.html (slotNode "n-popover__content" opts.contentClass opts.contentStyle (List.map (embedChild << wrapSlot) children)) ]
+
+
+{-| One slot child in a wrapping paragraph (see `bodyNodes`).
+-}
+wrapSlot : Element msg -> Element msg
+wrapSlot child =
+    Element.paragraph [] [ child ]
 
 
 {-| The `n-scrollbar` wrapper upstream renders around the body when `scrollable`.

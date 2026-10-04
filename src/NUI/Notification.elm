@@ -638,9 +638,15 @@ mainNode options =
         )
 
 
+{-| The header/description rows render as wrapping paragraphs: elm-ui text
+carries `white-space: pre` (the `.t` class), so a long title would render on
+one unbreakable line and clip at the card's `overflow: hidden` edge —
+upstream's plain divs wrap at the card width (the `NUI.Popover.bodyNodes`
+precedent).
+-}
 headerNode : String -> String -> Element msg
 headerNode class text =
-    Element.el [ I.classes [ class ] ] (Element.text text)
+    Element.paragraph [ I.classes [ class ] ] [ Element.text text ]
 
 
 {-| Upstream renders the content inside a literal `<pre>` — whitespace bytes
@@ -660,9 +666,9 @@ footerNode options =
                 (List.filterMap identity
                     [ Maybe.map
                         (\meta ->
-                            Element.el
+                            Element.paragraph
                                 [ I.classes [ "n-notification-main-footer__meta" ] ]
-                                (Element.text meta)
+                                [ Element.text meta ]
                         )
                         (truthy options.meta)
                     , Maybe.map

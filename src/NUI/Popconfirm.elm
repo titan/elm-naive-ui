@@ -147,7 +147,9 @@ panelNode theme opts children =
 
 {-| The body — `div.n-popconfirm__body` (flex row) only while the icon or
 content exists (upstream `resolveWrappedSlot`); the icon sits first/left,
-content after it.
+content after it. Content children ride in wrapping paragraphs — elm-ui text
+carries `white-space: pre` and would overflow the bubble on one unbreakable
+line (the `NUI.Popover.bodyNodes` note; upstream's plain-div slots wrap).
 -}
 bodyNode : Options msg -> List (Element msg) -> Maybe (Element msg)
 bodyNode opts children =
@@ -155,7 +157,9 @@ bodyNode opts children =
         Just
             (Element.row
                 [ I.classes [ "n-popconfirm__body" ] ]
-                (List.filterMap identity [ iconNode opts ] ++ children)
+                (List.filterMap identity [ iconNode opts ]
+                    ++ List.map (\child -> Element.paragraph [] [ child ]) children
+                )
             )
 
     else
@@ -196,7 +200,8 @@ actionNode theme opts =
         [ I.classes [ "n-popconfirm__action" ] ]
         (case opts.action of
             Just els ->
-                els
+                -- slot children in wrapping paragraphs (the `bodyNode` note)
+                List.map (\el -> Element.paragraph [] [ el ]) els
 
             Nothing ->
                 List.filterMap identity
