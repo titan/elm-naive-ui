@@ -290,6 +290,12 @@ viewPair theme opts =
 {-| The root: `div.n-dynamic-input` (`--rtl` modifier when `rtl`) carrying the
 action-margin vars. Upstream renders the Create button when the value is not
 an array or empty — a list is always an array here, so just empty.
+
+The root sets `width fill`: upstream's `.n-dynamic-input` is a block `div` that
+fills its mount (the `block` Create button and the `flex: 1` preset input are
+sized off that width), while an elm-ui `column` defaults to `width shrink`, so
+the whole control would shrink-wrap its widest row.
+
 -}
 viewItems :
     Theme
@@ -300,7 +306,8 @@ viewItems :
     -> Element msg
 viewItems theme opts value defaultItem presetEl =
     Element.column
-        [ I.classes (rootClasses opts)
+        [ Element.width Element.fill
+        , I.classes (rootClasses opts)
         , I.cssVars (cssVarsFor theme)
         ]
         (if List.isEmpty value then

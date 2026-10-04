@@ -85,38 +85,34 @@ dynamicInputSection =
     section "DynamicInput"
         "A list of values, each row an input (or key / value pair) with add / remove / sort actions. Pure list core: `insertAt` / `removeAt` / `moveUp` / `moveDown`, guarded by `min` / `max`."
     <|
+        -- The component fills its mount (`width fill` on the root), so the demos
+        -- mount it directly in the card — a fixed-px wrapper left the dashed
+        -- "+ Create" button spanning only that wrapper, not the full card.
         [ demoRow "Preset: input"
-            [ Element.el [ Element.width (Element.px 440) ]
-                (DynamicInput.viewInput theme
-                    { diD
-                        | value = [ "Alice", "Bob", "Cindy" ]
-                        , placeholder = Just "Name"
-                    }
-                )
+            [ DynamicInput.viewInput theme
+                { diD
+                    | value = [ "Alice", "Bob", "Cindy" ]
+                    , placeholder = Just "Name"
+                }
             ]
         , demoRow "Preset: pair"
-            [ Element.el [ Element.width (Element.px 520) ]
-                (DynamicInput.viewPair theme
-                    { diPairD
-                        | value = [ ( "Name", "Naive UI" ), ( "Author", "07akioni" ) ]
-                        , keyPlaceholder = Just "Key"
-                        , valuePlaceholder = Just "Value"
-                    }
-                )
+            [ DynamicInput.viewPair theme
+                { diPairD
+                    | value = [ ( "Name", "Naive UI" ), ( "Author", "07akioni" ) ]
+                    , keyPlaceholder = Just "Key"
+                    , valuePlaceholder = Just "Value"
+                }
             ]
         , demoRow "Max + sort buttons"
-            [ Element.el [ Element.width (Element.px 440) ]
-                (DynamicInput.viewInput theme
-                    { diD
-                        | value = [ "Only", "Three" ]
-                        , max = Just 3
-                        , showSortButton = True
-                    }
-                )
+            [ DynamicInput.viewInput theme
+                { diD
+                    | value = [ "Only", "Three" ]
+                    , max = Just 3
+                    , showSortButton = True
+                }
             ]
         , demoRow "Empty (Create button)"
-            [ Element.el [ Element.width (Element.px 440) ]
-                (DynamicInput.viewInput theme { diD | value = [] })
+            [ DynamicInput.viewInput theme { diD | value = [] }
             ]
         ]
 
@@ -886,21 +882,19 @@ dataTableSection =
                     , summaryPlacement = DataTable.SummaryTop
                 }
             ]
-        , demoRow "Merge cells (row 0 · colspan 3 / rowspan 2)"
+
+        -- Merge cells (the docs' merge-cell shape): a vertical merge on Name
+        -- (row 0 spans rows 0–1) plus a horizontal merge on Age (row 0 spans the
+        -- Age + Address tracks). The merged tracks land on Address / the Name
+        -- row-span, so every row still paints its own Age cell and no row is
+        -- left with zero cells (the old colspan=3 across the Age track swallowed
+        -- Age for both spanned rows and blanked row 1 completely).
+        , demoRow "Merge cells (row 0 · colspan 2 / rowspan 2)"
             [ DataTable.view theme
                 { dtD
                     | columns =
                         [ { nameCol
-                            | colSpan =
-                                Just
-                                    (\_ rowIndex ->
-                                        if rowIndex == 0 then
-                                            3
-
-                                        else
-                                            1
-                                    )
-                            , rowSpan =
+                            | rowSpan =
                                 Just
                                     (\_ rowIndex ->
                                         if rowIndex == 0 then
@@ -910,7 +904,18 @@ dataTableSection =
                                             1
                                     )
                           }
-                        , ageCol
+                        , { ageCol
+                            | colSpan =
+                                Just
+                                    (\_ rowIndex ->
+                                        if rowIndex == 0 then
+                                            2
+
+                                        else
+                                            1
+                                    )
+                          }
+                        , addressCol
                         ]
                     , data = people
                     , rowKey = .name

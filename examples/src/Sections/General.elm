@@ -27,6 +27,7 @@ surface).
 -}
 
 import Element exposing (Element)
+import Html.Attributes as HA
 import NUI.Alert as Alert
 import NUI.Avatar as Avatar
 import NUI.AvatarGroup as AvatarGroup
@@ -423,13 +424,29 @@ badgeSection =
 
 emptySection : Element msg
 emptySection =
+    let
+        -- The demo card's own `Element.padding 20` is dropped by elm-ui (its
+        -- spacing-reduction emits the reduced `pad-*` class without a matching
+        -- rule), so the card computes `padding: 0` and the placeholder reads as
+        -- top-cramped. Restore the intended breather inline, independent of the
+        -- shared card chrome.
+        cell content =
+            Element.el
+                [ Element.width Element.fill
+                , Element.htmlAttribute (HA.attribute "style" "padding:24px 0")
+                ]
+                content
+    in
     section "Empty" "Placeholder for empty states." <|
+        -- The component hits `width fill` on its own root (upstream's `.n-empty`
+        -- is a block flex column), so the demos mount it directly in the demo
+        -- card — a fixed-px wrapper would pin the centred content to the card's
+        -- left edge. The Sizes pair keeps two fixed measures (so the scales are
+        -- comparable) but centres the pair as a unit in a full-width row.
         [ demoRow "Default"
-            [ Element.el [ Element.width (Element.px 240) ]
-                (Empty.view theme emptyD [])
-            ]
+            [ cell (Empty.view theme emptyD []) ]
         , demoRow "Description & extra"
-            [ Element.el [ Element.width (Element.px 240) ]
+            [ cell
                 (Empty.view theme
                     { emptyD
                         | description = Just "Nothing here yet."
@@ -439,10 +456,19 @@ emptySection =
                 )
             ]
         , demoRow "Sizes"
-            [ Element.el [ Element.width (Element.px 150) ]
-                (Empty.view theme { emptyD | size = Empty.Small, description = Just "Small" } [])
-            , Element.el [ Element.width (Element.px 260) ]
-                (Empty.view theme { emptyD | size = Empty.Large, description = Just "Large" } [])
+            [ Element.row
+                [ Element.width Element.fill
+                , Element.htmlAttribute
+                    (HA.attribute
+                        "style"
+                        "justify-content:center;align-items:flex-end;gap:48px;padding:24px 0"
+                    )
+                ]
+                [ Element.el [ Element.width (Element.px 150) ]
+                    (Empty.view theme { emptyD | size = Empty.Small, description = Just "Small" } [])
+                , Element.el [ Element.width (Element.px 260) ]
+                    (Empty.view theme { emptyD | size = Empty.Large, description = Just "Large" } [])
+                ]
             ]
         ]
 

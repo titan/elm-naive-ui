@@ -63,9 +63,18 @@ view theme opts children =
         hasTitle =
             not (List.isEmpty children)
 
+        -- `.n-divider__line` is `width: 100%` and relies on the browser's
+        -- default `flex-shrink: 1` to share the row with the title. elm-ui's
+        -- `.s { flex-shrink: 0 }` (one class selector, and Naive UI declares no
+        -- `flex-shrink` here) freezes both lines at 100% instead, overflowing
+        -- the flex row so the title is pushed past the right edge — only the
+        -- LEFT placement survives (its left line is pinned to 28px). Restore
+        -- the shrink so every placement renders line–title–line.
         line modifier =
             Element.el
-                [ I.classes [ "n-divider__line", "n-divider__line--" ++ modifier ] ]
+                [ I.classes [ "n-divider__line", "n-divider__line--" ++ modifier ]
+                , I.cssVars [ ( "flex-shrink", "1" ) ]
+                ]
                 Element.none
 
         title =
