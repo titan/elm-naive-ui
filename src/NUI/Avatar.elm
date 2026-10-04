@@ -16,12 +16,23 @@ module NUI.Avatar exposing
     NUI.Avatar.view theme NUI.Avatar.defaults [ Element.text "N" ]
 
 Text children are centered the way Naive UI's `fitTextTransform` does after its
-initial measurement (the measurement-driven downscale of oversized text is not
-reproduced).
+initial measurement. Upstream then _scales_ oversized text down to fit the tile
+(a runtime measurement we cannot take in a pure view), so this port instead lets
+a text avatar grow to fit its label: the tile is `min-width` its configured size
+and `width` its content, so `Rounded` renders on one line inside a slightly wider
+tile rather than clipped edge-to-edge mid-glyph (short labels — `T`, `A`, `+3` —
+stay exactly the configured square).
+
+A `src` image renders as a CSS `background-image` tile rather than an `<img>`:
+a failed load then falls back to the avatar's own colour tile (upstream's
+`renderFallback` / `fallback-src` behaviour) instead of leaking the browser's
+broken-image glyph. Loaded images look identical (stretched to fill, matching
+upstream's `.n-avatar img { width/height: 100% }`).
 
 -}
 
 import Element exposing (Element)
+import Html
 import Html.Attributes as HA
 import NUI.Internal as I
 import NUI.Theme exposing (Theme)
@@ -79,8 +90,11 @@ view theme opts children =
             if not (List.isEmpty children) then
                 [ Element.row
                     [ I.classes [ "n-avatar__text" ]
-                    , Element.htmlAttribute
-                        (HA.style "transform" "translateX(-50%) translateY(-50%)")
+                    , Element.htmlAttribute (HA.style "position" "static")
+                    , Element.htmlAttribute (HA.style "left" "auto")
+                    , Element.htmlAttribute (HA.style "top" "auto")
+                    , Element.htmlAttribute (HA.style "transform" "none")
+                    , Element.htmlAttribute (HA.style "white-space" "nowrap")
                     ]
                     children
                 ]
@@ -88,12 +102,12 @@ view theme opts children =
             else
                 case opts.src of
                     Just src ->
-                        [ Element.image
-                            [ I.classes [ "n-avatar__img" ]
-                            , Element.htmlAttribute (HA.style "width" "100%")
-                            , Element.htmlAttribute (HA.style "height" "100%")
-                            ]
-                            { src = src, description = "" }
+                        [ Element.html <|
+                            Html.div
+                                [ HA.class "n-avatar__img"
+                                , HA.attribute "style" (imageStyle src)
+                                ]
+                                []
                         ]
 
                     Nothing ->
@@ -120,6 +134,16 @@ view theme opts children =
             , ( "--n-color-popover", Maybe.withDefault v.colorPopover opts.color )
             , ( "--n-bezier", theme.common.cubicBezierEaseInOut )
             , ( "--n-merged-size", "var(--n-avatar-size-override, " ++ height ++ ")" )
+
+            -- Upstream keeps the avatar a fixed square and scales the text down
+            -- (a runtime measurement). Without that measurement, let a text
+            -- avatar grow to fit instead: `width` its content, `min-width` the
+            -- configured size, both children centred. A short label therefore
+            -- stays the exact square; a longer one widens rather than clipping.
+            , ( "width", "max-content" )
+            , ( "min-width", "var(--n-merged-size)" )
+            , ( "justify-content", "center" )
+            , ( "align-items", "center" )
             ]
     in
     Element.row
@@ -151,3 +175,16 @@ heightOf size v =
 
         Number n ->
             String.fromInt n ++ "px"
+
+
+{-| A `src` image as a CSS background tile: on a failed load nothing paints but
+the avatar's own `--n-merged-color` (upstream's fallback), rather than the
+broken-image glyph an empty `<img>` would leak. `background-size: 100% 100%`
+reproduces upstream's `.n-avatar img { width: 100%; height: 100% }` (the default
+stretch fit).
+-}
+imageStyle : String -> String
+imageStyle src =
+    "width:100%;height:100%;background-image:url(\""
+        ++ src
+        ++ "\");background-size:100% 100%;background-position:center;background-repeat:no-repeat"

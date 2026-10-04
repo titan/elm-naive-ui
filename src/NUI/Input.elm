@@ -176,8 +176,13 @@ type InputType
     | Textarea
 
 
-{-| Naive UI's form validation `status`. Only `warning` / `error` change the
-look (exactly like Naive UI, whose CSS has no `success` rules either).
+{-| Naive UI's form validation `status` (`success` | `warning` | `error`).
+Upstream's input cssr only renders `warning` / `error` (`input.cssr.ts:349`,
+`['warning', 'error'].map(...)`) — a `success` input emits
+`n-input--success-status` but no rule targets it, so it falls back to the default
+gray border. The port closes that gap in-component (`statusVars`): the
+`success` status rebinds the same resting / hover / focus border vars the base
+rules read to the success family, so the border turns green without new CSS.
 -}
 type Status
     = Success
@@ -305,7 +310,9 @@ view theme opts =
         ([ I.classes (rootClasses opts isTextarea)
          , I.cssVars
             (I.applyVarOverrides opts.varOverrides
-                (cssVars theme opts.size (InputTheme.vars theme))
+                (I.applyVarOverrides (statusVars theme opts.status)
+                    (cssVars theme opts.size (InputTheme.vars theme))
+                )
             )
          ]
             ++ passiveRootTabindex opts
@@ -1117,6 +1124,29 @@ statusClass s =
 
         Error ->
             "error"
+
+
+{-| Upstream's input stylesheet styles `warning` / `error` status only
+(`input.cssr.ts:349`); `success` has no rules, so upstream's own
+`n-input--success-status` falls back to the default gray border. The port fills
+that gap by rebinding the three vars the base `n-input__border` /
+`n-input__state-border` rules read (`--n-border` for rest, `--n-border-hover` /
+`--n-border-focus` for the interactive states) to the success colour family —
+the border turns the same green Naive UI uses for `success` elsewhere
+(`theme.common.successColor` = `#18a058` light / `#63e2b7` dark) with no new CSS.
+Every other status leaves the vars untouched.
+-}
+statusVars : Theme -> Maybe Status -> List ( String, String )
+statusVars theme maybeStatus =
+    case maybeStatus of
+        Just Success ->
+            [ ( "--n-border", "1px solid " ++ theme.common.successColor )
+            , ( "--n-border-hover", "1px solid " ++ theme.common.successColorHover )
+            , ( "--n-border-focus", "1px solid " ++ theme.common.successColorHover )
+            ]
+
+        _ ->
+            []
 
 
 {-| A faithful port of `Input.tsx`'s `cssVarsRef` (including the warning /
