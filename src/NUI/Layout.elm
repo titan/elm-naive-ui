@@ -41,7 +41,11 @@ content line up in a row.
   - `useReactivated` scroll restore — the caller owns scroll state.
 
 The root is an elm-ui element where upstream uses a plain block `div`; Naive
-UI's rules declare every load-bearing property, so the result renders the same.
+UI's rules declare every load-bearing property, so the result renders the same
+— except for width: an elm-ui `el` defaults to `width shrink` (the `wc` class
+pins `align-self: flex-start`), which would shrink-wrap the shell inside a
+flex parent, so `view` / `content` explicitly set `width fill` (the block-div
+`n-layout` fills its mount).
 
 **Divergence (content padding):** upstream's docs demos pass
 `content-style="padding: 24px;"` to every `n-layout-content` / sider; callers
@@ -116,7 +120,8 @@ content theme opts children =
 layoutView : Bool -> Theme -> Options msg -> List (Element msg) -> Element msg
 layoutView isContent theme opts children =
     Element.el
-        ([ I.classes
+        ([ Element.width Element.fill
+         , I.classes
             (I.classIf isContent "n-layout-content"
                 ++ [ "n-layout"
                    , "n-layout--" ++ positionClass opts.position ++ "-positioned"
@@ -132,11 +137,19 @@ layoutView isContent theme opts children =
 {-| The native scroll container. Upstream also binds `onScroll` here; its
 `contentStyle` and the `hasSider` inline styles are merged into one inline
 style, later pairs winning, exactly like Vue's style-array merge.
+
+The container also sets `width fill`: upstream's `.n-layout-scroll-container`
+is a plain block `div` inside a block `.n-layout`, so it spans the shell; here
+the root is an elm-ui column (`display:flex`), where a default `width shrink`
+column child pins `align-self: flex-start` and shrink-wraps — which in turn
+capped the header / footer `width: 100%` resolution.
+
 -}
 scrollContainer : Bool -> Options msg -> List (Element msg) -> Element msg
 scrollContainer isContent opts children =
     Element.column
-        [ I.classes [ "n-layout-scroll-container" ]
+        [ Element.width Element.fill
+        , I.classes [ "n-layout-scroll-container" ]
         , I.cssVars (contentPadding isContent ++ opts.contentStyle ++ hasSiderStyle opts.hasSider)
         ]
         children

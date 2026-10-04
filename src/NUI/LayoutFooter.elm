@@ -23,6 +23,12 @@ the region reads as part of the app shell on white surfaces (upstream's light
 `footerColor` is `rgb(250, 250, 252)`, visually indistinguishable there).
 Inverted footers keep the pure `--n-*` theming.
 
+**Divergence (width):** the root sets `width fill`. Upstream's `.n-layout-footer`
+is a block `div` (implicitly full width) — unlike `.n-layout-header` it declares
+no `width`, so an elm-ui `column` (which defaults to `width shrink`) would
+shrink-wrap the strip to its content and leave it narrower than the header it
+sits under.
+
 -}
 
 import Element exposing (Element)
@@ -52,7 +58,8 @@ defaults =
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     Element.column
-        ([ I.classes
+        ([ Element.width Element.fill
+         , I.classes
             ([ "n-layout-footer"
              , "n-layout-footer--" ++ positionClass opts.position ++ "-positioned"
              ]

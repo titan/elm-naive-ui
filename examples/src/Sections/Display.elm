@@ -427,17 +427,23 @@ layoutSection =
             [ Element.el [ Element.width Element.fill ]
                 (Layout.view theme
                     { layD | hasSider = True }
-                    [ LayoutSider.view theme
+                    [ -- Content first so the sider paints on the right (upstream's
+                      -- collapse-right demo orders the pair this way).
+                      -- `showCollapsedContent = False` hides the label when
+                      -- collapsed instead of clipping it to a stray fragment
+                      -- inside the 48px bar (the upstream show-sider-content
+                      -- demo's setting).
+                      Layout.content theme layD [ Element.text "Content" ]
+                    , LayoutSider.view theme
                         { lsD
                             | collapsed = True
                             , width = "200px"
                             , collapsedWidth = "48px"
-                            , showCollapsedContent = True
+                            , showCollapsedContent = False
                             , showTrigger = LayoutSider.Bar
                             , placement = LayoutSider.Right
                         }
                         [ Element.text "Collapsed" ]
-                    , Layout.content theme layD [ Element.text "Content" ]
                     ]
                 )
             ]
