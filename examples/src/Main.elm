@@ -496,6 +496,7 @@ sidebar isActive =
     Element.el
         [ Element.width (Element.px 224)
         , Element.alignTop
+        , Element.htmlAttribute (HA.id "nui-sidebar")
         , Element.htmlAttribute
             (HA.attribute
                 "style"

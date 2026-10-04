@@ -178,9 +178,12 @@ demoRow label items =
         ]
         [ Element.wrappedRow
             [ Element.spacing 16
-            , Element.padding 20
             , Element.width Element.fill
-            , Element.htmlAttribute (HA.attribute "style" "overflow-x:auto")
+            , Element.htmlAttribute
+                (HA.attribute
+                    "style"
+                    "overflow-x:auto;padding:20px"
+                )
             ]
             items
         , footerBar label
