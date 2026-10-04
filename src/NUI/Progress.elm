@@ -66,6 +66,16 @@ raw-string alternative is not. `Circle` / `Dashboard` accept `railStyle` but
 ignore it, exactly as upstream (`Circle.tsx` declares the prop and never
 applies it). `railStyles` is indexed per ring, paired with `railColors`.
 
+**Why the inline `width: 100%` on the graph wrappers.** Upstream's graph
+divs are plain blocks — the rail fills its parent and the circle svg fills
+the 120px `--circle` root by the svg default `width: 100%` + viewBox aspect
+ratio. Here every wrapper is an elm-ui element: `flex-basis: auto` items in a
+`display: flex` parent size to their content (0 for the empty rail / a
+viewBox-only svg), and `.s > .wc { align-self: flex-start }` stops the
+cross-axis stretch. The inline widths restore the upstream block chain
+(graph → graph-line → rail, graph → graph-circle → svg) so the rail spans
+full width and the ring renders at the root's size.
+
 -}
 
 import Bitwise
@@ -386,7 +396,8 @@ line opts children =
                 ([ I.classes [ "n-progress-graph-line-rail" ] ]
                     ++ styleAttribute
                         (mergeStyles
-                            (optional "background-color" opts.railColor
+                            ([ ( "width", "100%" ) ]
+                                ++ optional "background-color" opts.railColor
                                 ++ optional "height" heightLen
                                 ++ optional "border-radius" railRadius
                             )
@@ -401,6 +412,7 @@ line opts children =
                     [ "n-progress-graph-line"
                     , "n-progress-graph-line--indicator-" ++ placementName opts.indicatorPlacement
                     ]
+                , Element.htmlAttribute (HA.style "width" "100%")
                 ]
                 rail
 
@@ -442,7 +454,10 @@ circle opts children =
         graphCircle =
             Element.el
                 ([ I.classes [ "n-progress-graph-circle" ] ]
-                    ++ styleAttribute (transformPairs (Maybe.withDefault 0 opts.gapOffsetDegree))
+                    ++ styleAttribute
+                        (( "width", "100%" )
+                            :: transformPairs (Maybe.withDefault 0 opts.gapOffsetDegree)
+                        )
                 )
                 (Element.html (circleSvg opts gapDegree))
 
@@ -450,6 +465,7 @@ circle opts children =
             Element.el
                 [ I.classes [ "n-progress-graph" ]
                 , Element.htmlAttribute (HA.attribute "aria-hidden" "true")
+                , Element.htmlAttribute (HA.style "width" "100%")
                 ]
                 graphCircle
 
@@ -511,7 +527,7 @@ circleSvg opts gapDegree =
                 []
     in
     Svg.svg
-        [ SvgA.viewBox ("0 0 " ++ size ++ " " ++ size) ]
+        [ SvgA.viewBox ("0 0 " ++ size ++ " " ++ size), SvgA.style "width:100%" ]
         (circleGradientDefs opts
             ++ [ Svg.g [] [ railPath ]
                , Svg.g [] [ fillPath ]
@@ -602,13 +618,16 @@ multipleCircle opts children =
     let
         graphCircle =
             Element.el
-                [ I.classes [ "n-progress-graph-circle" ] ]
+                [ I.classes [ "n-progress-graph-circle" ]
+                , Element.htmlAttribute (HA.style "width" "100%")
+                ]
                 (Element.html (multipleCircleSvg opts))
 
         graph =
             Element.el
                 [ I.classes [ "n-progress-graph" ]
                 , Element.htmlAttribute (HA.attribute "aria-hidden" "true")
+                , Element.htmlAttribute (HA.style "width" "100%")
                 ]
                 graphCircle
 
@@ -636,7 +655,7 @@ multipleCircleSvg opts =
             String.fromFloat opts.viewBoxWidth
     in
     Svg.svg
-        [ SvgA.viewBox ("0 0 " ++ size ++ " " ++ size) ]
+        [ SvgA.viewBox ("0 0 " ++ size ++ " " ++ size), SvgA.style "width:100%" ]
         (multipleCircleDefs opts
             :: List.indexedMap (multipleCircleRings opts) opts.percentages
         )
@@ -773,6 +792,10 @@ multipleIndicator children =
     Element.el
         [ Element.htmlAttribute (HA.style "flex-basis" "auto")
         , Element.htmlAttribute (HA.style "line-height" "inherit")
+
+        -- same as `indicatorNode`: keep the wrapper out of the positioning
+        -- chain so `.n-progress-text` anchors to `.n-progress-content`.
+        , Element.htmlAttribute (HA.style "position" "static")
         ]
         (Element.row
             [ I.classes [ "n-progress-text" ] ]
@@ -1043,6 +1066,12 @@ indicatorNode isCircle opts children =
         Element.el
             [ Element.htmlAttribute (HA.style "flex-basis" "auto")
             , Element.htmlAttribute (HA.style "line-height" "inherit")
+
+            -- elm-ui's `.s { position: relative }` would make this host the
+            -- offset parent of the absolutely-centred `.n-progress-custom-content`
+            -- at zero size; upstream's wrapper is an unpositioned plain div, so
+            -- the content anchors to `.n-progress-content` (position: relative).
+            , Element.htmlAttribute (HA.style "position" "static")
             ]
             (customContent children)
 

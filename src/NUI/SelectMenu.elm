@@ -472,16 +472,18 @@ optionNode opts grouped leaf =
 
         checkmark =
             if selected && opts.showCheckmark then
-                [ checkmarkNode opts.checkmarkTransition ]
+                [ checkmarkHtml opts.checkmarkTransition ]
 
             else
                 []
     in
     Element.row
         ([ I.classes rowClasses ] ++ clickAttrs ++ leaf.attributes)
-        [ Element.row
-            [ I.classes [ "n-base-select-option__content" ] ]
-            (Element.text leaf.label :: checkmark)
+        [ Element.html
+            (Html.div
+                [ HA.class "n-base-select-option__content" ]
+                (Html.text leaf.label :: checkmark)
+            )
         ]
 
 
@@ -517,27 +519,29 @@ isSelected multiple value optionValue =
 {-| The selected option's checkmark — the same node for single and multiple
 mode: `i.n-base-icon.n-base-select-option__check` around the Checkmark svg.
 `Just phase` adds the `fade-in-scale-up-transition` phase class; `Nothing`
-mounts it settled (no transition class).
+mounts it settled (no transition class). Raw `Html`: the cssr positions
+the check absolutely (`right: calc(var(--n-option-padding-right) - 4px)`)
+against the option ROW — an elm-ui `__content` wrapper would carry
+`.s { position: relative }`, and the check would anchor to the
+shrink-wrapped content cell instead, landing on top of the label's tail.
 -}
-checkmarkNode : Maybe I.TransitionPhase -> Element msg
-checkmarkNode maybePhase =
-    Element.html
-        (Html.i
-            [ HA.class
-                (String.join " "
-                    ([ "n-base-icon", "n-base-select-option__check" ]
-                        ++ (case maybePhase of
-                                Just phase ->
-                                    [ I.transitionClass "fade-in-scale-up-transition" phase ]
+checkmarkHtml : Maybe I.TransitionPhase -> Html.Html msg
+checkmarkHtml maybePhase =
+    Html.i
+        [ HA.class
+            (String.join " "
+                ([ "n-base-icon", "n-base-select-option__check" ]
+                    ++ (case maybePhase of
+                            Just phase ->
+                                [ I.transitionClass "fade-in-scale-up-transition" phase ]
 
-                                Nothing ->
-                                    []
-                           )
-                    )
+                            Nothing ->
+                                []
+                       )
                 )
-            ]
-            [ checkmarkIcon ]
-        )
+            )
+        ]
+        [ checkmarkIcon ]
 
 
 {-| Upstream `CheckmarkIcon` (`_internal/icons/Checkmark.tsx`) — viewBox

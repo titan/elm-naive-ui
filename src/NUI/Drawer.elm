@@ -245,15 +245,28 @@ showMaskOn mask =
     mask /= Hidden
 
 
-{-| The unclassed `div role="none"` host (upstream keeps it so the drawer has
-a stable anchor) wrapping the whole body tree — the outer render gate.
+{-| The `div role="none"` host (upstream keeps it so the drawer has a stable
+anchor) wrapping the whole body tree — the outer render gate. It is filled to
+the container and made `position:relative` so `.n-drawer`'s edge offsets
+always resolve against an exactly-sized positioned node (upstream is static
+and resolves against the container — identical geometry, but robust against
+intermediate elm-ui height-content wrappers).
 -}
 bodyNode : Theme -> Options msg -> Scrollbar.Options msg -> List (Element msg) -> Maybe (Element msg)
 bodyNode theme opts scrollbarBase children =
     if opts.show || leaving opts.bodyTransition then
         Just
             (Element.el
-                [ roleAttr "none" ]
+                [ roleAttr "none"
+
+                -- Exactly-sized positioned node: `.n-drawer`'s edge offsets
+                -- must resolve against a box the size of the container, not
+                -- against whatever elm-ui wrapper geometry sits in between.
+                , Element.width Element.fill
+                , Element.height Element.fill
+                , Element.htmlAttribute
+                    (HA.attribute "style" "position:relative")
+                ]
                 (drawerNode theme opts scrollbarBase children)
             )
 

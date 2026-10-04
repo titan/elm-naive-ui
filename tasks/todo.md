@@ -1,5 +1,38 @@
 # elm-naive-ui — batch todo (older closed trails below)
 
+## Input OTP slot padding — CLOSED (1 commit, in-context fix)
+- [x] fix — `7d60da5` (user report “example 中 Input OTP 显示效果很有问题”: digits
+crammed into a sliver of each 24–36px cell. Upstream zeroes every inner NInput's
+padding via builtinThemeOverrides `{paddingTiny..Large: '0'}` (InputOtp.tsx render);
+port had no equivalent → medium slots rendered --n-padding-left/right 12px on a
+30px cell = 6px content width for a 14px digit. NUI.Input gains the `varOverrides`
+seam (Button's builtinThemeOverrides port, default-off []); InputOtp.defaultItem
+passes `--n-padding-left/right: 0` — the exact vars upstream's zeroed paddings
+resolve to. `applyVarOverrides` promoted Button-private → NUI.Internal (Button
+re-pointed, byte-identical). +2 DOM probes (zeroed pair + --n-height:34px
+untouched). Gate 8/8 — **4370/4370, 0 failures**.)
+- Note: headless Chromium is currently UNLAUNCHABLE in this env (GPU process
+launch failed error_code=1002 → FATAL, all flag matrixes incl. swiftshader /
+no-zygote / single-process; `/proc` restricted). Worked Oct 2 ~00:00, dead by
+16:50. Visual verification of this fix rode on DOM probes + gate instead; the
+uncommitted chrome WIP below still needs an eyeball pass when the browser env
+recovers.
+
+## UNCOMMITTED WIP in worktree (from the dead 2026-10-02 morning session, NOT in any commit)
+- Decision (user, 2026-10-02): **commit only after browser env recovers + visual
+  re-verification** — recheck script staged at `/tmp/otp-visual-check.sh`
+  (launches CDP chromium, screenshots #sec-input-otp + the live OTP row, dumps
+  slot geometry; run it, eyeball, then commit as `showcase(chrome): scrollspy
+  robustness + drawer container geometry`).
+- `examples/src/Main.elm` — scrollspy rework (sectionYs Dict never blanked,
+  120ms viewport tick + 2s position refresh + resize, active-change scrolls
+  the sidebar rail, first-section fallback at page top). Built + gate-green.
+- `src/NUI/Drawer.elm` — bodyNode fills the container + position:relative so
+  .n-drawer edge offsets resolve against an exactly-sized positioned node
+  (elm-ui wrapper robustness; deliberate deviation from brief-chrome-design's
+  “fix in the DEMO” after live measurement). Built + gate-green but NOT
+  visually re-verified (browser died before the recheck).
+
 ## Input pair onFocus/onBlur port gap — CLOSED (1 commit, in-context fix + promotion)
 - [x] fix + promote — `7aac65f` (`pairEvents` mirrors the single-mode focus/blur
       attrs onto BOTH pair inputs, emitted regardless of onPairInput exactly as

@@ -54,11 +54,20 @@ only when a handle is picked) and arrow-key stepping are the caller's
 `attributes` seam (`stepValue` carries the math).
 
 **The popover seam.** Upstream teleports the value indicator through
-`VBinder/VFollower` (`fade-in-scale-up` transition). The port renders the
-indicator inline under its handle-wrapper — the positioned/teleported
-wrapper is the caller's (`NUI.Popover` conventions). `tooltip` gates the
-indicator; `showTooltip` is the persistent non-range override (upstream's
+`VBinder/VFollower` (`fade-in-scale-up` transition). The port anchors the
+indicator to the handle wrapper itself — absolutely positioned against the
+handle (the placement's side + centring transform, one margin offset from the
+CSS `--{placement}` rule) — the positioned/teleported wrapper remains the
+caller's (`NUI.Popover` conventions). `tooltip` gates the indicator;
+`showTooltip` is the persistent non-range override (upstream's
 `enabled = showTooltip && !range` is the follower seam).
+
+**The rail anchor.** Upstream's fill/dots/handles/marks are absolutely
+positioned DIRECT children of `.n-slider-rail` (its `position: relative`
+makes it the containing block). The port renders them exactly so — any
+intermediate wrapper would become the offset parent itself (elm-ui's
+`.s { position: relative }`) at zero content width and collapse every
+percentage offset inside it.
 
 **Divergences from upstream (documented):**
 
@@ -273,11 +282,14 @@ mousedownAttrs opts =
 
 railNode : Ctx msg -> Element msg
 railNode ctx =
-    Element.el
+    -- the fill / dots / handles / marks are `position: absolute` against
+    -- `.n-slider-rail` (its own `position: relative`), so they must be
+    -- DIRECT children of the rail. An intermediate elm-ui column would
+    -- become the offset parent instead (elm-ui's `.s { position: relative }`)
+    -- at zero content width, collapsing every percentage offset inside it.
+    Element.column
         [ I.classes [ "n-slider-rail" ] ]
-        (Element.column []
-            (fillNode ctx :: dotsNode ctx ++ [ handlesNode ctx ] ++ marksNode ctx)
-        )
+        (fillNode ctx :: dotsNode ctx ++ [ handlesNode ctx ] ++ marksNode ctx)
 
 
 
@@ -334,6 +346,12 @@ fillNode ctx =
                     )
                     (pct span)
                 )
+
+            -- elm-ui's `.s > .wc { align-self: flex-start }` defeats the
+            -- abs-pos `top: 0; bottom: 0` stretch in the rail's flex column
+            -- (the fill would collapse to height 0); `auto` restores the
+            -- browser default the upstream plain div relies on.
+            , Element.htmlAttribute (HA.style "align-self" "auto")
             ]
             Element.none
 
@@ -542,7 +560,10 @@ isShowTooltip opts index =
 
 
 {-| The inline indicator — the positioned/teleported wrapper is the
-caller's (`NUI.Popover` seam); the port renders it under the handle.
+caller's (`NUI.Popover` seam); the port anchors it to the handle wrapper
+itself: absolutely placed against the handle (upstream's VBinder centres
+the follower on the handle), offset one `--placement` margin (the CSS
+`--top/--right/--bottom/--left` margins upstream adds on the indicator).
 -}
 indicatorNode : Ctx msg -> Float -> Element msg
 indicatorNode ctx value =
@@ -559,13 +580,56 @@ indicatorNode ctx value =
                     Popover.Top
                 )
                 opts.placement
+
+        -- upstream teleports the follower to the handle's box; the inline
+        -- equivalent anchors the indicator to the wrapper (position:absolute
+        -- from the CSS makes it the containing block) with the placement's
+        -- side + centring transform.
+        positionPairs =
+            case mergedPlacement of
+                Popover.Top ->
+                    [ ( "position", "absolute" ), ( "bottom", "100%" ), ( "left", "50%" ), ( "transform", "translateX(-50%)" ) ]
+
+                Popover.Bottom ->
+                    [ ( "position", "absolute" ), ( "top", "100%" ), ( "left", "50%" ), ( "transform", "translateX(-50%)" ) ]
+
+                Popover.Left ->
+                    [ ( "position", "absolute" ), ( "right", "100%" ), ( "top", "50%" ), ( "transform", "translateY(-50%)" ) ]
+
+                Popover.Right ->
+                    [ ( "position", "absolute" ), ( "left", "100%" ), ( "top", "50%" ), ( "transform", "translateY(-50%)" ) ]
+
+                Popover.TopStart ->
+                    [ ( "position", "absolute" ), ( "bottom", "100%" ), ( "left", "50%" ), ( "transform", "translateX(-50%)" ) ]
+
+                Popover.TopEnd ->
+                    [ ( "position", "absolute" ), ( "bottom", "100%" ), ( "left", "50%" ), ( "transform", "translateX(-50%)" ) ]
+
+                Popover.BottomStart ->
+                    [ ( "position", "absolute" ), ( "top", "100%" ), ( "left", "50%" ), ( "transform", "translateX(-50%)" ) ]
+
+                Popover.BottomEnd ->
+                    [ ( "position", "absolute" ), ( "top", "100%" ), ( "left", "50%" ), ( "transform", "translateX(-50%)" ) ]
+
+                Popover.LeftStart ->
+                    [ ( "position", "absolute" ), ( "right", "100%" ), ( "top", "50%" ), ( "transform", "translateY(-50%)" ) ]
+
+                Popover.LeftEnd ->
+                    [ ( "position", "absolute" ), ( "right", "100%" ), ( "top", "50%" ), ( "transform", "translateY(-50%)" ) ]
+
+                Popover.RightStart ->
+                    [ ( "position", "absolute" ), ( "left", "100%" ), ( "top", "50%" ), ( "transform", "translateY(-50%)" ) ]
+
+                Popover.RightEnd ->
+                    [ ( "position", "absolute" ), ( "left", "100%" ), ( "top", "50%" ), ( "transform", "translateY(-50%)" ) ]
     in
     Element.el
         [ I.classes
             [ "n-slider-handle-indicator"
             , "n-slider-handle-indicator--" ++ Popover.placementName mergedPlacement
             ]
-        , I.cssVars (indicatorCssVars ctx.theme)
+        , Element.htmlAttribute
+            (HA.attribute "style" (I.renderVars (indicatorCssVars ctx.theme ++ positionPairs)))
         ]
         (Element.text <|
             case opts.formatTooltip of

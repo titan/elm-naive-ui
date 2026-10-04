@@ -9650,7 +9650,29 @@ color: var(--n-item-text-color-error);}.nui-root.nui-root .n-upload-file-list .n
   white-space: nowrap;
 }
 
-/* 4. Heatmap loading keyframes (port-added)
+/* 4. `flex-shrink` (input wrapper)
+ *
+ *   .s { flex-shrink: 0 }
+ *
+ * Upstream's `.n-input-wrapper` is a plain div: the browser default
+ * `flex-shrink: 1` lets it collapse into a width-capped `.n-input`
+ * (InputOtp's `--n-input-width` 24–36px slots), where `overflow: hidden` and
+ * `.n-input__input-el { width: 100%; min-width: 0 }` re-fit the inner input and
+ * center the character. The port renders the wrapper as an elm-ui row, and
+ * elm-ui's `.s { flex-shrink: 0 }` (one class selector) wins because Naive UI's
+ * wrapper rules only declare `flex-grow` — the wrapper then keeps the `<input>`'s
+ * intrinsic ~174px width, and the centered digit lands outside the visible slot.
+ *
+ * This must stay targeted (unlike rules 1–2): Naive UI DOES declare `flex-shrink`
+ * elsewhere (`.n-base-clear`, suffix/prefix…), some on 3-selector scoped roots
+ * that a blanket `[class^="n-"]` rule would tie and, being later in the file,
+ * wrongly beat. A 4-selector rule touches only the one element upstream relies on.
+ */
+.nui-root.nui-root .n-input .n-input-wrapper {
+  flex-shrink: 1;
+}
+
+/* 5. Heatmap loading keyframes (port-added)
  *
  * Upstream mounts this stylesheet at runtime (src/heatmap/src/animationStyle.ts):
  * a `heatmap-loading-<hash>` class whose name hashes the two loading colors, plus

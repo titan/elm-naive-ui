@@ -39,8 +39,14 @@ owns the active `value` (like `NUI.Form` / `NUI.Descriptions`).
     `Top`/`Bottom` the port renders `n-tabs-nav-scroll-wrapper > n-tabs-nav-scroll-content`
     directly; for `Left`/`Right` it keeps naive-ui's own `n-tabs-nav-y-scroll` wrapper.
   - The scroll buttons (`TabsButton` / `n-tabs-scroll-button`) are omitted (JS overflow).
-  - `.n-tabs-bar` is rendered empty and the segment `.n-tabs-capsule` carries only the
-    empty dummy tab — upstream positions both from JS (`transform` / width).
+  - `.n-tabs-bar` and the segment `.n-tabs-capsule` are positioned by upstream
+    JS (`updateBarStyle` / `updateSegmentPosition` measure the active tab at
+    runtime). The port inlines a pure-CSS equivalent: the bar rides inside the
+    active tab (`position: relative` + `left/top: 0; width/height: 100%` —
+    exactly the box upstream measures), and the capsule gets
+    `width/height: calc(…)/count` + `translate(calc(3px + i * 100%), 3px)`
+    (segment wrappers are equal-width `flex-grow` items). No transition of
+    either between tabs (upstream animates `left`/`transform`).
   - `animated` only toggles the `n-tabs-pane-wrapper` markup; the enter/leave transition
     is not driven (the caller-driven-transition precedent, cf. Form's fade-down).
   - `displayDirective`: `'show:lazy'` is not ported — `ShowIf` (only the active pane) and
@@ -738,17 +744,56 @@ navContent opts tabs =
         [ nonSegmentNav opts tabs ]
 
 
-{-| The segment rail: the empty capsule dummy plus the tab wrappers (Tabs.tsx:1122-1178).
+{-| The segment rail: the capsule dummy plus the tab wrappers (Tabs.tsx:1122-1178).
+The capsule is highlighted by a pure-CSS equivalent of upstream's
+`updateSegmentPosition` (width/height/`translate(offsetLeft, offsetTop)` from
+JS): segment tab wrappers are `flex-basis: 0; flex-grow: 1` with a `0` gap,
+so every tab is exactly `(100% - 2*3px rail padding) / count` wide at offset
+`3px + i * width` — and `translate` percentages resolve against the capsule's
+own (already equal) box, giving `translate(calc(3px + i * 100%), 3px)`.
+With no active tab the capsule stays unsized (upstream leaves it wherever JS
+last placed it — initially invisible).
 -}
 segmentRail : Options msg -> List (Tab msg) -> Html msg
 segmentRail opts tabs =
     Html.div
         [ HA.class "n-tabs-rail" ]
         (Html.div
-            [ HA.class "n-tabs-capsule" ]
+            ([ HA.class "n-tabs-capsule" ] ++ capsuleStyle opts tabs)
             [ Html.div [ HA.class "n-tabs-wrapper" ] [ Html.div [ HA.class "n-tabs-tab" ] [] ] ]
             :: tabWrappers opts True (List.indexedMap Tuple.pair tabs)
         )
+
+
+capsuleStyle : Options msg -> List (Tab msg) -> List (Html.Attribute msg)
+capsuleStyle opts tabs =
+    let
+        count =
+            List.length tabs
+
+        activeIndex =
+            List.indexedMap Tuple.pair tabs
+                |> List.filter (\( _, tab ) -> tab.name == opts.value)
+                |> List.head
+                |> Maybe.map Tuple.first
+    in
+    case activeIndex of
+        Just index ->
+            if count > 0 then
+                [ HA.attribute "style"
+                    ("width:calc((100% - 6px)/"
+                        ++ String.fromInt count
+                        ++ ");height:calc(100% - 6px);transform:translate(calc(3px + "
+                        ++ String.fromInt index
+                        ++ " * 100%), 3px)"
+                    )
+                ]
+
+            else
+                []
+
+        Nothing ->
+            []
 
 
 nonSegmentNav : Options msg -> List (Tab msg) -> Html msg
@@ -761,6 +806,33 @@ nonSegmentNav opts tabs =
                 (wrapperNode opts tabs :: padNode opts)
             )
         ]
+
+
+{-| The moving bar element. Upstream emits it as an empty sibling at the end
+of `n-tabs-wrapper` and positions it from JS (`updateBarStyle`:
+`left/max-width` = the active tab's `offsetLeft/offsetWidth`, `width: 8192px`).
+The port has no measurement seam, so the bar rides INSIDE the active tab
+(`position: relative` on the tab), where `left: 0; width: 100%` is exactly
+the active tab's box — the same geometry upstream measures, without JS.
+Card type renders no bar (upstream `isCard ? null : …`).
+-}
+barEl : Options msg -> Bool -> Html msg
+barEl opts tabDisabled =
+    Html.div
+        [ HA.class (String.join " " ("n-tabs-bar" :: I.classIf tabDisabled "n-tabs-bar--disabled"))
+        , HA.attribute "style"
+            (case resolvedPlacement opts of
+                Left ->
+                    "top:0;height:100%"
+
+                Right ->
+                    "top:0;height:100%"
+
+                _ ->
+                    "left:0;width:100%"
+            )
+        ]
+        []
 
 
 {-| The empty `n-tabs-pad` appended to the scroll content for `Card` (Tabs.tsx:1091); it
@@ -799,7 +871,6 @@ wrapperNode opts tabs =
             ++ tabWrappers opts False (List.indexedMap Tuple.pair tabs)
             ++ addNode opts (List.length tabs)
             ++ rightPadding opts
-            ++ barNode opts
         )
 
 
@@ -876,17 +947,6 @@ paddingDiv style =
     Html.div [ HA.class "n-tabs-scroll-padding", HA.attribute "style" style ] []
 
 
-{-| The moving bar element (non-`Card`); upstream sizes it from JS.
--}
-barNode : Options msg -> List (Html msg)
-barNode opts =
-    if opts.type_ == Card then
-        []
-
-    else
-        [ Html.div [ HA.class "n-tabs-bar" ] [] ]
-
-
 addNode : Options msg -> Int -> List (Html msg)
 addNode opts tabCount =
     if opts.addable && opts.type_ == Card then
@@ -947,6 +1007,26 @@ leftPadded opts segment index =
 
 tabNode : Options msg -> Tab msg -> Html msg
 tabNode opts tab =
+    let
+        -- line/bar: the active tab hosts the moving bar (`barEl`), so it
+        -- needs a positioning context (upstream's tabs carry none — the
+        -- JS-positioned sibling bar is what the port inlines here).
+        hostBar =
+            (opts.type_ == Line || opts.type_ == Bar) && tab.name == opts.value
+
+        styleValue =
+            String.join ";"
+                (List.filter (not << String.isEmpty)
+                    (Maybe.withDefault "" opts.tabStyle
+                        :: (if hostBar then
+                                [ "position:relative" ]
+
+                            else
+                                []
+                           )
+                    )
+                )
+    in
     Html.div
         ([ HA.class (String.join " " (tabClasses opts tab))
          , HA.attribute "data-name" tab.name
@@ -957,11 +1037,22 @@ tabNode opts tab =
                 else
                     []
                )
-            ++ tabStyleAttr opts
+            ++ (if String.isEmpty styleValue then
+                    []
+
+                else
+                    [ HA.attribute "style" styleValue ]
+               )
             ++ activateAttrs opts tab
         )
         (Html.span [ HA.class "n-tabs-tab__label" ] [ embedChild tab.label ]
             :: closeNode opts tab
+            ++ (if hostBar then
+                    [ barEl opts tab.disabled ]
+
+                else
+                    []
+               )
         )
 
 
@@ -974,16 +1065,6 @@ tabClasses opts tab =
         , I.classIf (mergedClosable opts tab) "n-tabs-tab--closable"
         , extraClass opts.tabClass
         ]
-
-
-tabStyleAttr : Options msg -> List (Html.Attribute msg)
-tabStyleAttr opts =
-    case opts.tabStyle of
-        Just style ->
-            [ HA.attribute "style" style ]
-
-        Nothing ->
-            []
 
 
 {-| `closable` per tab wins over the parent (Tab.tsx:38-44).
@@ -1072,7 +1153,13 @@ addTabNode opts leftPad =
                         )
                      , HA.attribute "data-name" "__addable"
                      ]
-                        ++ tabStyleAttr opts
+                        ++ (case opts.tabStyle of
+                                Just style ->
+                                    [ HA.attribute "style" style ]
+
+                                Nothing ->
+                                    []
+                           )
                         ++ onAddAttr opts
                     )
                     [ Html.span [ HA.class "n-tabs-tab__label" ]

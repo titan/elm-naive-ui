@@ -159,7 +159,17 @@ renderStep theme opts index it =
             Element.column
                 [ I.classes [ "n-step-content" ] ]
                 (Element.row
-                    [ I.classes [ "n-step-content-header" ] ]
+                    [ I.classes [ "n-step-content-header" ]
+
+                    -- upstream's header is a block-level div inside the
+                    -- block `.n-step-content`, so it spans the step's full
+                    -- width and the splitor's `flex: 1` fills the title's
+                    -- remaining space. elm-ui rows are width-content, and
+                    -- `.s > .wc { align-self: flex-start }` keeps the header
+                    -- at content width — restoring `width: 100%` brings the
+                    -- connector line back.
+                    , Element.htmlAttribute (HA.style "width" "100%")
+                    ]
                     (Element.el
                         [ I.classes [ "n-step-content-header__title" ] ]
                         (Maybe.withDefault Element.none (Maybe.map Element.text it.title))

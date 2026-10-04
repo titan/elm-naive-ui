@@ -226,8 +226,8 @@ view theme opts =
         )
         (bodyNodes theme opts
             ++ (if opts.bordered then
-                    [ emptyEl "n-base-selection__border"
-                    , emptyEl "n-base-selection__state-border"
+                    [ borderEl "n-base-selection__border"
+                    , borderEl "n-base-selection__state-border"
                     ]
 
                 else
@@ -438,42 +438,61 @@ onPatternInputAttrs opts =
 {-| `n-base-selection-label__render-label` — the selected label shown over
 the input while a selection exists at rest (upstream's renderTag /
 renderLabel hooks become the plain label string here).
+
+The border / overlay decorations render as raw `Html` (the `NUI.Input`
+`inputArea` idiom): upstream they are plain divs, and an elm-ui wrapper
+would carry the `.s`-family helper classes — `.s { position: relative }`
+and the `.s.e > .wc { align-self: flex-start }` / `.s.c > .wc` items —
+which break exactly the geometry the cssr relies on (the absolute
+stretch of `top: 0; bottom: 0` collapses to content height, and the
+overlay's `align-items: center` is overridden for its inner cell, pinning
+the placeholder to the top edge where the border line strikes it).
+
 -}
 renderLabelOverlayNode : String -> Element msg
 renderLabelOverlayNode label =
-    Element.el
-        [ I.classes [ "n-base-selection-label__render-label", "n-base-selection-overlay" ] ]
-        (Element.el
-            [ I.classes [ "n-base-selection-overlay__wrapper" ] ]
-            (Element.text label)
+    Element.html
+        (Html.div
+            [ HA.class "n-base-selection-label__render-label n-base-selection-overlay" ]
+            [ Html.div
+                [ HA.class "n-base-selection-overlay__wrapper" ]
+                [ Html.text label ]
+            ]
         )
 
 
 {-| The filterable placeholder overlay — the `__wrapper` cell (not
 `__inner`) holding upstream `filterablePlaceholder`: the selected label
-while one exists, else the placeholder text.
+while one exists, else the placeholder text. Raw `Html` (see
+`renderLabelOverlayNode`).
 -}
 filterablePlaceholderOverlayNode : Options msg -> Element msg
 filterablePlaceholderOverlayNode opts =
-    Element.el
-        [ I.classes [ "n-base-selection-placeholder", "n-base-selection-overlay" ] ]
-        (Element.el
-            [ I.classes [ "n-base-selection-overlay__wrapper" ] ]
-            (Element.text (Maybe.withDefault opts.placeholder opts.selectedLabel))
+    Element.html
+        (Html.div
+            [ HA.class "n-base-selection-placeholder n-base-selection-overlay" ]
+            [ Html.div
+                [ HA.class "n-base-selection-overlay__wrapper" ]
+                [ Html.text (Maybe.withDefault opts.placeholder opts.selectedLabel) ]
+            ]
         )
 
 
 {-| The placeholder overlay with its `__inner` cell — the non-filterable
 single and the multiple variants (the filterable single uses the
-`__wrapper` cell instead).
+`__wrapper` cell instead). Raw `Html` (see `renderLabelOverlayNode`):
+the multiple variant sits directly under the root column, where the
+`.s.c > .wc` flex-item rule would collapse its absolute stretch.
 -}
 placeholderOverlayNode : String -> Element msg
 placeholderOverlayNode placeholder =
-    Element.el
-        [ I.classes [ "n-base-selection-placeholder", "n-base-selection-overlay" ] ]
-        (Element.el
-            [ I.classes [ "n-base-selection-placeholder__inner" ] ]
-            (Element.text placeholder)
+    Element.html
+        (Html.div
+            [ HA.class "n-base-selection-placeholder n-base-selection-overlay" ]
+            [ Html.div
+                [ HA.class "n-base-selection-placeholder__inner" ]
+                [ Html.text placeholder ]
+            ]
         )
 
 
@@ -706,9 +725,17 @@ arrowNode opts =
         )
 
 
-emptyEl : String -> Element msg
-emptyEl c =
-    Element.el [ I.classes [ c ] ] Element.none
+{-| One of the two absolutely positioned border decorations (`.n-base-selection__border`,
+`.n-base-selection__state-border`) — raw `Html` (see `renderLabelOverlayNode`
+for why): the cssr stretches them with `top: 0; right: 0; bottom: 0;
+left: 0`, and the elm-ui column-child flex rule (`.s.c > .wc {
+align-self: flex-start }`) collapses that stretch to a content-height
+sliver, drawing the border as a lone top line instead of a full box
+(the focus / active state-border included).
+-}
+borderEl : String -> Element msg
+borderEl c =
+    Element.html (Html.div [ HA.class c ] [])
 
 
 

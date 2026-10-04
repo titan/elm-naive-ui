@@ -10,16 +10,23 @@ component family. This module is the harness: app state, docs-style page
 chrome (sticky top bar + sidebar nav + content column) and the ordered body
 list.
 
-The sidebar is a real scrollspy: a `Time.every` tick batches
-`Browser.Dom.getElement` over every section id (derived from the title by
-`Showcase.sectionId` — the same function `Showcase.section` uses for the
-anchor ids), and the deepest section above the scroll offset becomes the
-active nav item. No ports — the tasks are plain Elm.
+The sidebar is a real scrollspy: section tops are sampled into a dict that is
+never blanked (on init, on resize, and a slow 2s refresh — document-space
+positions don't change as the page scrolls, so a starved or missed batch can
+only delay the spy, never erase it), the scroll offset rides a cheap 120ms
+`getViewport` read (`Browser.Events` ships no onScroll), and the deepest
+section above the 140px line becomes the active nav item — falling back to
+the first section at the very top of the page. When the active item changes,
+the sidebar rail scrolls it into view (the rail is internally scrollable, so
+mid-page sections would otherwise be highlighted but off-screen). No ports —
+the tasks are plain Elm.
 
 -}
 
 import Browser
 import Browser.Dom
+import Browser.Events
+import Dict exposing (Dict)
 import Element exposing (Element)
 import Element.Background as Bg
 import Element.Border as Border
@@ -42,7 +49,7 @@ import Sections.Nav exposing (anchorSection, backTopSection, collapseSection, me
 import Sections.Overlays exposing (dialogSection, drawerSection, dropdownSection, loadingBarSection, messageSection, modalSection, notificationSection, popconfirmSection, popoverSection, tooltipSection)
 import Sections.Pickers exposing (autoCompleteSection, cascaderSection, colorPickerSection, datePickerSection, mentionSection, popselectSection, selectSection, timePickerSection, treeSelectSection)
 import Showcase exposing (chromeCss, section, sectionId, theme)
-import Task
+import Task exposing (Task)
 import Time
 
 
@@ -58,8 +65,9 @@ type alias Model =
     , nav : Live.Nav.Model
     , data : Live.Data.Model
     , motion : Live.Motion.Model
-    , spyYs : List ( String, Float )
-    , spyVp : Maybe Float
+    , sectionYs : Dict String Float
+    , scrollY : Float
+    , prevActive : Maybe String
     }
 
 
@@ -71,8 +79,9 @@ init =
     , nav = Live.Nav.init
     , data = Live.Data.init
     , motion = Live.Motion.init
-    , spyYs = []
-    , spyVp = Nothing
+    , sectionYs = Dict.empty
+    , scrollY = 0
+    , prevActive = Nothing
     }
 
 
@@ -83,9 +92,11 @@ type Msg
     | NavMsg Live.Nav.Msg
     | DataMsg Live.Data.Msg
     | MotionMsg Live.Motion.Msg
-    | SpyRequest
-    | SpyY String Float
-    | SpyVp Float
+    | SamplePositions
+    | SectionY String Float
+    | ScrollY Float
+    | ViewportTick
+    | NoOp
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -109,39 +120,51 @@ update msg model =
         MotionMsg m ->
             ( { model | motion = Live.Motion.update m model.motion }, Cmd.none )
 
-        SpyRequest ->
-            ( { model | spyYs = [], spyVp = Nothing }
-            , Cmd.batch (spyViewport :: List.map spySample navSectionIds)
-            )
+        SamplePositions ->
+            ( model, samplePositions )
 
-        SpyY id y ->
-            ( { model | spyYs = ( id, y ) :: model.spyYs }, Cmd.none )
+        SectionY id y ->
+            withSpy { model | sectionYs = Dict.insert id y model.sectionYs }
 
-        SpyVp vp ->
-            ( { model | spyVp = Just vp }, Cmd.none )
+        ScrollY top ->
+            withSpy { model | scrollY = top }
+
+        ViewportTick ->
+            ( model, sampleViewport )
+
+        NoOp ->
+            ( model, Cmd.none )
 
 
 {-| One parallel DOM read per section (each is its own rAF-gated task — a
-`Task.sequence` of them would need one frame per link, i.e. 93 frames per
-tick; batched, every pending read resolves in a single frame and Elm folds
-the 93 messages into one render). `Browser.Dom.getElement`'s `element.y` is
-measured scroll-independent (document y), so the viewport offset rides
-alongside and the view subtracts it.
+`Task.sequence` of them would need one frame per link; batched, every pending
+read resolves in a single frame and Elm folds the messages into one render).
+`Browser.Dom.getElement`'s `element.y` is measured scroll-independent
+(document y), so the samples stay valid while the page scrolls and a missed
+or starved batch can only delay the spy, never blank it.
 -}
-spySample : String -> Cmd Msg
-spySample id =
+samplePositions : Cmd Msg
+samplePositions =
+    Cmd.batch (List.map sampleSection navSectionIds)
+
+
+sampleSection : String -> Cmd Msg
+sampleSection id =
     Browser.Dom.getElement id
         |> Task.map (.element >> .y)
         |> Task.onError (\_ -> Task.succeed (1 / 0))
-        |> Task.perform (SpyY id)
+        |> Task.perform (SectionY id)
 
 
-spyViewport : Cmd Msg
-spyViewport =
+{-| The window's scroll offset — one cheap read per tick (positions are the
+expensive part and they don't ride this clock).
+-}
+sampleViewport : Cmd Msg
+sampleViewport =
     Browser.Dom.getViewport
         |> Task.map .viewport
         |> Task.map .y
-        |> Task.perform SpyVp
+        |> Task.perform ScrollY
 
 
 subscriptions : Model -> Sub Msg
@@ -153,7 +176,9 @@ subscriptions model =
         , Sub.map NavMsg (Live.Nav.subscriptions model.nav)
         , Sub.map DataMsg (Live.Data.subscriptions model.data)
         , Sub.map MotionMsg (Live.Motion.subscriptions model.motion)
-        , Time.every 350 (\_ -> SpyRequest)
+        , Browser.Events.onResize (\_ _ -> SamplePositions)
+        , Time.every 120 (\_ -> ViewportTick)
+        , Time.every 2000 (\_ -> SamplePositions)
         ]
 
 
@@ -162,9 +187,7 @@ main =
     Browser.element
         { init =
             \() ->
-                ( init
-                , Cmd.batch (List.map spySample navSectionIds)
-                )
+                ( init, Cmd.batch [ samplePositions, sampleViewport ] )
         , view = \model -> Css.layout [] (page model)
         , update = update
         , subscriptions = subscriptions
@@ -338,39 +361,87 @@ page model =
                 [ Element.width Element.fill
                 , Element.alignTop
                 ]
-                [ sidebar (sectionActive (activeSection model.spyYs model.spyVp))
+                [ sidebar (sectionActive (activeSection model.sectionYs model.scrollY))
                 , content model
                 ]
             ]
         )
 
 
-{-| The deepest section whose top has scrolled past the offset (viewport y
-from the element's document y minus the viewport offset) — the one the reader
-is looking at. `Nothing` until both reads of the current tick have landed.
+{-| Recompute the active section and, when it changed, scroll the sidebar rail
+so the active link is on screen (the rail is internally scrollable — without
+this, mid-page sections would highlight off-screen). The rail/link reads run
+in the same frame, so the sticky rail's scroll-dependent offset cancels out.
 -}
-activeSection : List ( String, Float ) -> Maybe Float -> Maybe String
-activeSection ys vp =
-    case vp of
+withSpy : Model -> ( Model, Cmd Msg )
+withSpy model =
+    let
+        active =
+            activeSection model.sectionYs model.scrollY
+    in
+    if active == model.prevActive then
+        ( model, Cmd.none )
+
+    else
+        ( { model | prevActive = active }, scrollSidebar active )
+
+
+{-| Bring the active nav link ~120px below the rail's top: read the link's and
+rail's document y in one batch (their shared sticky offset cancels in the
+difference), add the rail's current scroll, then set the rail's scrollTop.
+-}
+scrollSidebar : Maybe String -> Cmd Msg
+scrollSidebar maybeActive =
+    case maybeActive of
         Nothing ->
-            Nothing
+            Cmd.none
 
-        Just v ->
-            List.foldl
-                (\( id, y ) best ->
-                    let
-                        rel =
-                            y - v
-                    in
-                    if rel <= 140 && (best == Nothing || (Maybe.map Tuple.second best |> Maybe.withDefault 0) <= rel) then
-                        Just ( id, rel )
-
-                    else
-                        best
+        Just id ->
+            Task.attempt (\_ -> NoOp)
+                (Task.map3
+                    (\linkY railY rail -> linkY - railY + rail.viewport.y - 120)
+                    (elemY ("navlink-" ++ id))
+                    (elemY "nui-sidebar")
+                    (Browser.Dom.getViewportOf "nui-sidebar")
+                    |> Task.andThen
+                        (\top -> Browser.Dom.setViewportOf "nui-sidebar" 0 (max 0 top))
                 )
-                Nothing
-                ys
-                |> Maybe.map Tuple.first
+
+
+elemY : String -> Task Browser.Dom.Error Float
+elemY domId =
+    Browser.Dom.getElement domId
+        |> Task.map (.element >> .y)
+
+
+{-| The deepest section whose top sits above the 140px line (viewport y from
+document y minus scroll offset) — the one the reader is looking at. Falls back
+to the first section at the very top of the page, where nothing has crossed
+the line yet.
+-}
+activeSection : Dict String Float -> Float -> Maybe String
+activeSection ys v =
+    let
+        deeper ( id, rel ) best =
+            if rel <= 140 && (best == Nothing || (Maybe.map Tuple.second best |> Maybe.withDefault 0) <= rel) then
+                Just ( id, rel )
+
+            else
+                best
+
+        candidates =
+            List.filterMap
+                (\id ->
+                    Maybe.map (\y -> ( id, y - v )) (Dict.get id ys)
+                )
+                navSectionIds
+    in
+    case List.foldl deeper Nothing candidates of
+        Just ( id, _ ) ->
+            Just id
+
+        Nothing ->
+            List.head navSectionIds
 
 
 {-| True when this section id is the scrollspy's active one.
@@ -428,6 +499,7 @@ sidebar isActive =
     Element.el
         [ Element.width (Element.px 224)
         , Element.alignTop
+        , Element.htmlAttribute (HA.id "nui-sidebar")
         , Element.htmlAttribute
             (HA.attribute
                 "style"
@@ -466,6 +538,7 @@ navItem isActive title =
             , Element.paddingXY 10 4
             , Border.rounded 3
             , Font.size 13
+            , Element.htmlAttribute (HA.id ("navlink-" ++ id))
             , Element.mouseOver [ Font.color accentColor ]
             ]
 
