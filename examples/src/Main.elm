@@ -1,23 +1,25 @@
 module Main exposing (main)
 
-{-| Showcase page for elm-naive-ui: every component, rendered by the library.
+{-| Showcase page for elm-naive-ui: every component, rendered by the library
+— and interactive in place.
 
-The 87 static sections live in the Sections/\* family modules (moved verbatim
-from here — that surface feeds the check-dom gate, so it must keep rendering
-every root). Interactivity lives in the Live/\* family modules (own
-Model/Msg/update each, spliced in via Element.map) — one real update loop per
-component family. This module is the harness: app state, docs-style page
-chrome (sticky top bar + sidebar nav + content column) and the ordered body
-list.
+Each family module (Sections/_.elm) owns its own Model/Msg/update loop
+(caller-owned state per the port's contract) and exposes both a `sections`
+function (the live family body — static rows plus live demo rows) and the
+legacy per-section exports. This module is the harness: app state (one field
+per family), docs-style page chrome (sticky top bar + sidebar nav + content
+column) and the ordered body list. The former dedicated "Live · _" sections
+are gone — their update loops and demo rows were merged into the per-family
+modules verbatim (same #live-\* ids, same captions).
 
 The sidebar is a real scrollspy: a `Time.every` tick re-reads every
 section id (derived from the title by `Showcase.sectionId` — the same
 function `Showcase.section` uses for the anchor ids) plus the viewport
 offset, and the deepest section above the activation line becomes the
 active nav item. Reads UPSERT into the model (a tick never wipes the map),
-so the highlight survives page growth — the Live·Log demo appends rows
-while you scroll — and every section is re-measured live each tick. No
-ports — the tasks are plain Elm.
+so the highlight survives page growth — the Log demo appends rows while you
+scroll — and every section is re-measured live each tick. No ports — the
+tasks are plain Elm.
 
 -}
 
@@ -28,23 +30,17 @@ import Element.Background as Bg
 import Element.Border as Border
 import Element.Font as Font
 import Html.Attributes as HA
-import Live.Controls
-import Live.Data
-import Live.Motion
-import Live.Nav
-import Live.Overlays
-import Live.Pickers
 import NUI.Css as Css
 import NUI.Typography as Typo
-import Sections.Controls exposing (buttonSection, inputNumberSection, inputOtpSection, inputSection, rateSection, selectionSection, sliderSection)
-import Sections.Data exposing (calendarSection, dataTableSection, dynamicInputSection, dynamicTagsSection, imagePreviewSection, imageSection, tableSection, transferSection, treeSection, uploadSection)
-import Sections.Display exposing (affixSection, breadcrumbSection, codeSection, descriptionsSection, equationSection, flexSection, floatButtonGroupSection, floatButtonSection, gridSection, heatmapSection, layoutSection, listSection, pageHeaderSection, qrCodeSection, scrollbarSection, timelineSection, watermarkSection)
-import Sections.General exposing (alertSection, avatarSection, badgeSection, cardSection, dividerSection, ellipsisSection, emptySection, gradientTextSection, highlightSection, iconSection, resultSection, rtlSection, spaceSection, statisticSection, tagSection, themeSection, thingSection, typographySection)
-import Sections.Motion exposing (carouselSection, countdownSection, logSection, marqueeSection, numberAnimationSection, progressSection, skeletonSection, spinSection)
-import Sections.Nav exposing (anchorSection, backTopSection, collapseSection, menuSection, paginationSection, splitSection, stepsSection, tabsSection)
-import Sections.Overlays exposing (dialogSection, drawerSection, dropdownSection, loadingBarSection, messageSection, modalSection, notificationSection, popconfirmSection, popoverSection, tooltipSection)
-import Sections.Pickers exposing (autoCompleteSection, cascaderSection, colorPickerSection, datePickerSection, mentionSection, popselectSection, selectSection, timePickerSection, treeSelectSection)
-import Showcase exposing (chromeCss, section, sectionId, theme)
+import Sections.Controls
+import Sections.Data
+import Sections.Display
+import Sections.General
+import Sections.Motion
+import Sections.Nav
+import Sections.Overlays
+import Sections.Pickers
+import Showcase exposing (chromeCss, sectionId, theme)
 import Task exposing (Task)
 import Time
 
@@ -55,12 +51,14 @@ import Time
 
 
 type alias Model =
-    { controls : Live.Controls.Model
-    , pickers : Live.Pickers.Model
-    , overlays : Live.Overlays.Model
-    , nav : Live.Nav.Model
-    , data : Live.Data.Model
-    , motion : Live.Motion.Model
+    { general : Sections.General.Model
+    , controls : Sections.Controls.Model
+    , data : Sections.Data.Model
+    , display : Sections.Display.Model
+    , nav : Sections.Nav.Model
+    , overlays : Sections.Overlays.Model
+    , pickers : Sections.Pickers.Model
+    , motion : Sections.Motion.Model
     , spyYs : List ( String, Float )
     , spyVp : Maybe Float
     , prevActive : Maybe String
@@ -69,12 +67,14 @@ type alias Model =
 
 init : Model
 init =
-    { controls = Live.Controls.init
-    , pickers = Live.Pickers.init
-    , overlays = Live.Overlays.init
-    , nav = Live.Nav.init
-    , data = Live.Data.init
-    , motion = Live.Motion.init
+    { general = Sections.General.init
+    , controls = Sections.Controls.init
+    , data = Sections.Data.init
+    , display = Sections.Display.init
+    , nav = Sections.Nav.init
+    , overlays = Sections.Overlays.init
+    , pickers = Sections.Pickers.init
+    , motion = Sections.Motion.init
     , spyYs = []
     , spyVp = Nothing
     , prevActive = Nothing
@@ -82,12 +82,14 @@ init =
 
 
 type Msg
-    = ControlsMsg Live.Controls.Msg
-    | PickersMsg Live.Pickers.Msg
-    | OverlaysMsg Live.Overlays.Msg
-    | NavMsg Live.Nav.Msg
-    | DataMsg Live.Data.Msg
-    | MotionMsg Live.Motion.Msg
+    = GeneralMsg Sections.General.Msg
+    | ControlsMsg Sections.Controls.Msg
+    | DataMsg Sections.Data.Msg
+    | DisplayMsg Sections.Display.Msg
+    | NavMsg Sections.Nav.Msg
+    | OverlaysMsg Sections.Overlays.Msg
+    | PickersMsg Sections.Pickers.Msg
+    | MotionMsg Sections.Motion.Msg
     | SpyRequest
     | SpyY String Float
     | SpyVp Float
@@ -97,27 +99,33 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        GeneralMsg m ->
+            ( { model | general = Sections.General.update m model.general }, Cmd.none )
+
         ControlsMsg m ->
-            ( { model | controls = Live.Controls.update m model.controls }, Cmd.none )
+            ( { model | controls = Sections.Controls.update m model.controls }, Cmd.none )
+
+        DataMsg m ->
+            ( { model | data = Sections.Data.update m model.data }, Cmd.none )
+
+        DisplayMsg m ->
+            ( { model | display = Sections.Display.update m model.display }, Cmd.none )
+
+        NavMsg m ->
+            ( { model | nav = Sections.Nav.update m model.nav }, Cmd.none )
+
+        OverlaysMsg m ->
+            ( { model | overlays = Sections.Overlays.update m model.overlays }, Cmd.none )
 
         PickersMsg m ->
             let
                 ( nextPickers, pickersCmd ) =
-                    Live.Pickers.update m model.pickers
+                    Sections.Pickers.update m model.pickers
             in
             ( { model | pickers = nextPickers }, Cmd.map PickersMsg pickersCmd )
 
-        OverlaysMsg m ->
-            ( { model | overlays = Live.Overlays.update m model.overlays }, Cmd.none )
-
-        NavMsg m ->
-            ( { model | nav = Live.Nav.update m model.nav }, Cmd.none )
-
-        DataMsg m ->
-            ( { model | data = Live.Data.update m model.data }, Cmd.none )
-
         MotionMsg m ->
-            ( { model | motion = Live.Motion.update m model.motion }, Cmd.none )
+            ( { model | motion = Sections.Motion.update m model.motion }, Cmd.none )
 
         SpyRequest ->
             -- No wipe: the previous tick's map stays live while the new
@@ -170,12 +178,14 @@ spyViewport =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ Sub.map ControlsMsg (Live.Controls.subscriptions model.controls)
-        , Sub.map PickersMsg (Live.Pickers.subscriptions model.pickers)
-        , Sub.map OverlaysMsg (Live.Overlays.subscriptions model.overlays)
-        , Sub.map NavMsg (Live.Nav.subscriptions model.nav)
-        , Sub.map DataMsg (Live.Data.subscriptions model.data)
-        , Sub.map MotionMsg (Live.Motion.subscriptions model.motion)
+        [ Sub.map GeneralMsg (Sections.General.subscriptions model.general)
+        , Sub.map ControlsMsg (Sections.Controls.subscriptions model.controls)
+        , Sub.map DataMsg (Sections.Data.subscriptions model.data)
+        , Sub.map DisplayMsg (Sections.Display.subscriptions model.display)
+        , Sub.map NavMsg (Sections.Nav.subscriptions model.nav)
+        , Sub.map OverlaysMsg (Sections.Overlays.subscriptions model.overlays)
+        , Sub.map PickersMsg (Sections.Pickers.subscriptions model.pickers)
+        , Sub.map MotionMsg (Sections.Motion.subscriptions model.motion)
         , Time.every 350 (\_ -> SpyRequest)
         ]
 
@@ -310,15 +320,6 @@ navGroups =
         , "Number Animation"
         , "Carousel"
         , "Log"
-        ]
-      )
-    , ( "Live"
-      , [ "Live · Controls"
-        , "Live · Pickers"
-        , "Live · Overlays"
-        , "Live · Nav"
-        , "Live · Data"
-        , "Live · Motion"
         ]
       )
     ]
@@ -588,113 +589,19 @@ hero =
 {-| The ordered body — EXACTLY `navGroups` order (family by family, title by
 title), so the sidebar reads top-to-bottom as the page scrolls. The order is
 load-bearing for navigation: keep the two lists in sync when adding a
-section (93 entries, 1:1 — every section has exactly one sidebar entry).
+section (87 entries, 1:1 — every section has exactly one sidebar entry).
+Each family body comes from its module's `sections` (static rows + live
+rows in place).
 -}
 body : Model -> List (Element Msg)
 body model =
-    [ typographySection
-    , tagSection
-    , alertSection
-    , dividerSection
-    , avatarSection
-    , cardSection
-    , spaceSection
-    , badgeSection
-    , emptySection
-    , resultSection
-    , gradientTextSection
-    , statisticSection
-    , thingSection
-    , ellipsisSection
-    , iconSection
-    , highlightSection
-    , rtlSection
-    , themeSection
-    , buttonSection
-    , inputSection
-    , inputOtpSection
-    , inputNumberSection
-    , selectionSection
-    , rateSection
-    , sliderSection
-    , dynamicTagsSection
-    , calendarSection
-    , dynamicInputSection
-    , tableSection
-    , treeSection
-    , imageSection
-    , imagePreviewSection
-    , dataTableSection
-    , transferSection
-    , uploadSection
-    , breadcrumbSection
-    , timelineSection
-    , listSection
-    , pageHeaderSection
-    , affixSection
-    , flexSection
-    , gridSection
-    , qrCodeSection
-    , floatButtonSection
-    , layoutSection
-    , floatButtonGroupSection
-    , heatmapSection
-    , descriptionsSection
-    , scrollbarSection
-    , watermarkSection
-    , codeSection
-    , equationSection
-    , paginationSection
-    , splitSection
-    , stepsSection
-    , backTopSection
-    , collapseSection
-    , tabsSection
-    , menuSection
-    , anchorSection
-    , loadingBarSection
-    , popoverSection
-    , popconfirmSection
-    , tooltipSection
-    , dropdownSection
-    , messageSection
-    , notificationSection
-    , modalSection
-    , drawerSection
-    , dialogSection
-    , selectSection
-    , popselectSection
-    , cascaderSection
-    , treeSelectSection
-    , autoCompleteSection
-    , mentionSection
-    , datePickerSection
-    , timePickerSection
-    , colorPickerSection
-    , progressSection
-    , skeletonSection
-    , spinSection
-    , marqueeSection
-    , countdownSection
-    , numberAnimationSection
-    , carouselSection
-    , logSection
-    , section "Live · Controls"
-        "A real update loop: Button, Input, InputNumber, Switch, Checkbox, Radio, Rate, Slider, InputOtp — state in the model, every channel one Msg."
-        [ Element.map ControlsMsg (Live.Controls.view theme model.controls) ]
-    , section "Live · Pickers"
-        "A real update loop: Select, Popselect, Cascader, TreeSelect, AutoComplete, Mention, DatePicker, TimePicker, ColorPicker — open state and values in the model."
-        [ Element.map PickersMsg (Live.Pickers.view theme model.pickers) ]
-    , section "Live · Overlays"
-        "A real update loop: Dropdown, Popover, Tooltip, Popconfirm, Modal, Drawer, Dialog, Message, Notification, LoadingBar — open/queue state in the model."
-        [ Element.map OverlaysMsg (Live.Overlays.view theme model.overlays) ]
-    , section "Live · Nav"
-        "A real update loop: Tabs, Collapse, Menu, Pagination, Steps, Anchor, BackTop, Split — active/expanded state in the model."
-        [ Element.map NavMsg (Live.Nav.view theme model.nav) ]
-    , section "Live · Data"
-        "A real update loop: Table, DataTable, Tree, Transfer, Calendar, Image preview, Upload, DynamicInput, DynamicTags, Form — selection and list state in the model."
-        [ Element.map DataMsg (Live.Data.view theme model.data) ]
-    , section "Live · Motion"
-        "A real update loop: Carousel (autoplay clock + arrows + drag), Log (scroll load), Countdown, NumberAnimation, Progress, Spin, Skeleton, Marquee — time-driven state."
-        [ Element.map MotionMsg (Live.Motion.view theme model.motion) ]
-    ]
+    List.concat
+        [ List.map (Element.map GeneralMsg) (Sections.General.sections model.general)
+        , List.map (Element.map ControlsMsg) (Sections.Controls.sections model.controls)
+        , List.map (Element.map DataMsg) (Sections.Data.sections model.data)
+        , List.map (Element.map DisplayMsg) (Sections.Display.sections model.display)
+        , List.map (Element.map NavMsg) (Sections.Nav.sections model.nav)
+        , List.map (Element.map OverlaysMsg) (Sections.Overlays.sections model.overlays)
+        , List.map (Element.map PickersMsg) (Sections.Pickers.sections model.pickers)
+        , List.map (Element.map MotionMsg) (Sections.Motion.sections model.motion)
+        ]
