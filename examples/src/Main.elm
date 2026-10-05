@@ -101,7 +101,11 @@ update msg model =
             ( { model | controls = Live.Controls.update m model.controls }, Cmd.none )
 
         PickersMsg m ->
-            ( { model | pickers = Live.Pickers.update m model.pickers }, Cmd.none )
+            let
+                ( nextPickers, pickersCmd ) =
+                    Live.Pickers.update m model.pickers
+            in
+            ( { model | pickers = nextPickers }, Cmd.map PickersMsg pickersCmd )
 
         OverlaysMsg m ->
             ( { model | overlays = Live.Overlays.update m model.overlays }, Cmd.none )
@@ -581,92 +585,99 @@ hero =
         ]
 
 
+{-| The ordered body — EXACTLY `navGroups` order (family by family, title by
+title), so the sidebar reads top-to-bottom as the page scrolls. The order is
+load-bearing for navigation: keep the two lists in sync when adding a
+section (93 entries, 1:1 — every section has exactly one sidebar entry).
+-}
 body : Model -> List (Element Msg)
 body model =
     [ typographySection
-    , buttonSection
     , tagSection
     , alertSection
-    , inputSection
-    , inputOtpSection
-    , dynamicTagsSection
-    , calendarSection
-    , paginationSection
-    , inputNumberSection
-    , selectionSection
     , dividerSection
     , avatarSection
     , cardSection
     , spaceSection
     , badgeSection
     , emptySection
-    , progressSection
     , resultSection
-    , skeletonSection
-    , spinSection
     , gradientTextSection
     , statisticSection
+    , thingSection
+    , ellipsisSection
+    , iconSection
+    , highlightSection
+    , rtlSection
+    , themeSection
+    , buttonSection
+    , inputSection
+    , inputOtpSection
+    , inputNumberSection
+    , selectionSection
+    , rateSection
+    , sliderSection
+    , dynamicTagsSection
+    , calendarSection
+    , dynamicInputSection
+    , tableSection
+    , treeSection
+    , imageSection
+    , imagePreviewSection
+    , dataTableSection
+    , transferSection
+    , uploadSection
     , breadcrumbSection
     , timelineSection
-    , thingSection
-    , marqueeSection
     , listSection
     , pageHeaderSection
     , affixSection
-    , countdownSection
-    , splitSection
-    , layoutSection
     , flexSection
     , gridSection
-    , stepsSection
-    , ellipsisSection
-    , backTopSection
     , qrCodeSection
-    , collapseSection
-    , rateSection
     , floatButtonSection
+    , layoutSection
     , floatButtonGroupSection
-    , iconSection
-    , highlightSection
-    , numberAnimationSection
     , heatmapSection
-    , loadingBarSection
-    , dynamicInputSection
     , descriptionsSection
-    , tabsSection
     , scrollbarSection
+    , watermarkSection
+    , codeSection
+    , equationSection
+    , paginationSection
+    , splitSection
+    , stepsSection
+    , backTopSection
+    , collapseSection
+    , tabsSection
+    , menuSection
+    , anchorSection
+    , loadingBarSection
     , popoverSection
     , popconfirmSection
-    , popselectSection
-    , selectSection
-    , cascaderSection
-    , treeSection
-    , tableSection
-    , watermarkSection
-    , autoCompleteSection
-    , mentionSection
     , tooltipSection
     , dropdownSection
-    , menuSection
-    , sliderSection
-    , imageSection
-    , imagePreviewSection
     , messageSection
     , notificationSection
     , modalSection
     , drawerSection
     , dialogSection
-    , dataTableSection
-    , anchorSection
-    , transferSection
+    , selectSection
+    , popselectSection
+    , cascaderSection
     , treeSelectSection
-    , timePickerSection
+    , autoCompleteSection
+    , mentionSection
     , datePickerSection
+    , timePickerSection
     , colorPickerSection
-    , uploadSection
+    , progressSection
+    , skeletonSection
+    , spinSection
+    , marqueeSection
+    , countdownSection
+    , numberAnimationSection
     , carouselSection
-    , codeSection
-    , equationSection
     , logSection
     , section "Live · Controls"
         "A real update loop: Button, Input, InputNumber, Switch, Checkbox, Radio, Rate, Slider, InputOtp — state in the model, every channel one Msg."
@@ -686,6 +697,4 @@ body model =
     , section "Live · Motion"
         "A real update loop: Carousel (autoplay clock + arrows + drag), Log (scroll load), Countdown, NumberAnimation, Progress, Spin, Skeleton, Marquee — time-driven state."
         [ Element.map MotionMsg (Live.Motion.view theme model.motion) ]
-    , rtlSection
-    , themeSection
     ]

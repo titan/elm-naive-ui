@@ -66,7 +66,9 @@ Visible units follow the format string exactly as upstream
   - The scroll-to-active `scrollTimer` (`TimePicker.tsx:657-676`) measures the
     active item's `offsetTop` and scrolls each column — DOM geometry, no
     static effect. `data-active` rides the active item (`NUI.Scrollbar`'s
-    position is caller-owned via `yBarStyle`).
+    position is caller-owned via `yBarStyle`), and the `colContainerIds` seam
+    puts inert `id`s on the visible columns' `n-scrollbar-container` divs so
+    the caller can drive that scroll with `Browser.Dom.setViewportOf`.
   - The IANA `timeZone` prop is replaced by `zone : Time.Zone` (caller
     supplied; `Time.utc` by default). `formatValue` / `parseInput` take it
     explicitly.
@@ -171,6 +173,7 @@ type alias Options msg =
     , now : Time.Posix
     , transition : Maybe I.TransitionPhase
     , iconNode : Maybe (Element msg)
+    , colContainerIds : Maybe { hour : String, minute : String, second : String, period : String }
     }
 
 
@@ -213,6 +216,7 @@ defaultOptions =
     , now = Time.millisToPosix 0
     , transition = Nothing
     , iconNode = Nothing
+    , colContainerIds = Nothing
     }
 
 
@@ -438,16 +442,38 @@ colsNode theme opts =
 
 
 {-| One column — `div.n-time-picker-col` (+ `--invalid` / `--transition-disabled`
-in upstream's per-column declaration order) wrapping the scrollbar body.
+in upstream's per-column declaration order) wrapping the scrollbar body. When
+`colContainerIds` carries an id for this column, it lands on the scrollbar's
+scrolling container so the caller can drive the upstream scroll-to-active
+(`scrollTimer`, `TimePicker.tsx:657-676`) with `Browser.Dom.setViewportOf`.
 -}
-colNode : Theme -> List String -> List (Element msg) -> Element msg
-colNode theme colClasses items =
+colNode : Theme -> Maybe String -> List String -> List (Element msg) -> Element msg
+colNode theme containerId colClasses items =
+    let
+        d =
+            Scrollbar.defaults
+
+        scrollbarOpts =
+            case containerId of
+                Just id ->
+                    { d | containerAttributes = [ HA.id id ] }
+
+                Nothing ->
+                    d
+    in
     Element.el
         [ I.classes colClasses ]
         (Scrollbar.view theme
-            Scrollbar.defaults
+            scrollbarOpts
             [ Element.column [] (items ++ [ paddingNode ]) ]
         )
+
+
+{-| The id `colContainerIds` carries for a column, if set.
+-}
+colContainerId : Options msg -> ({ hour : String, minute : String, second : String, period : String } -> String) -> Maybe String
+colContainerId opts pick =
+    Maybe.map pick opts.colContainerIds
 
 
 paddingNode : Element msg
@@ -469,6 +495,7 @@ transitionDisabled opts =
 hourCol : Theme -> Options msg -> Element msg
 hourCol theme opts =
     colNode theme
+        (colContainerId opts .hour)
         ([ "n-time-picker-col" ]
             ++ I.classIf (isHourInvalid opts) "n-time-picker-col--invalid"
             ++ I.classIf (transitionDisabled opts) "n-time-picker-col--transition-disabled"
@@ -482,6 +509,7 @@ hourCol theme opts =
 minuteCol : Theme -> Options msg -> Element msg
 minuteCol theme opts =
     colNode theme
+        (colContainerId opts .minute)
         ([ "n-time-picker-col" ]
             ++ I.classIf (transitionDisabled opts) "n-time-picker-col--transition-disabled"
             ++ I.classIf (isMinuteInvalid opts) "n-time-picker-col--invalid"
@@ -494,6 +522,7 @@ minuteCol theme opts =
 secondCol : Theme -> Options msg -> Element msg
 secondCol theme opts =
     colNode theme
+        (colContainerId opts .second)
         ([ "n-time-picker-col" ]
             ++ I.classIf (isSecondInvalid opts) "n-time-picker-col--invalid"
             ++ I.classIf (transitionDisabled opts) "n-time-picker-col--transition-disabled"
@@ -507,6 +536,7 @@ secondCol theme opts =
 periodCol : Theme -> Options msg -> Element msg
 periodCol theme opts =
     colNode theme
+        (colContainerId opts .period)
         ([ "n-time-picker-col" ]
             ++ I.classIf (transitionDisabled opts) "n-time-picker-col--transition-disabled"
         )

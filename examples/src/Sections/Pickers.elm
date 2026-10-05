@@ -937,7 +937,7 @@ colorPickerSection =
             ColorPicker.defaultOptions
 
         pair opts =
-            Element.column [ Element.spacing 8, Element.width Element.fill ]
+            Element.column [ Element.spacing 8, Element.width (Element.px 240) ]
                 [ ColorPicker.view theme opts
                 , Element.el [ Element.width (Element.px 240) ] (ColorPicker.panel theme opts)
                 ]

@@ -35,16 +35,20 @@ Oracle-round divergences (tasks/recon/live-oracle.md):
 
 -}
 
+import Browser.Dom
+import Browser.Events
 import Element exposing (Element)
 import Element.Border as Border
 import Element.Events
 import Html.Attributes as HA
+import Json.Decode
 import NUI.AutoComplete as AutoComplete
 import NUI.Button as Button
 import NUI.Cascader as Cascader
 import NUI.ColorPicker as ColorPicker
 import NUI.DatePicker as DatePicker
 import NUI.Input as Input
+import NUI.Internal.Color as Color
 import NUI.Mention as Mention
 import NUI.Popselect as Popselect
 import NUI.Select as Select
@@ -55,6 +59,7 @@ import NUI.Tree as Tree
 import NUI.TreeSelect as TreeSelect
 import NUI.Types as T
 import Showcase exposing (chip, demoRow)
+import Task
 import Time
 
 
@@ -98,6 +103,8 @@ type alias Model =
     , cpMode : ColorPicker.Mode
     , cpUndo : List (Maybe String)
     , cpRedo : List (Maybe String)
+    , cpDrag : Maybe ColorPicker.PointerArea
+    , cpUnitText : Maybe String
     }
 
 
@@ -138,6 +145,8 @@ init =
     , cpMode = Maybe.withDefault ColorPicker.Hex (ColorPicker.getModeFromValue (Just cpSeed))
     , cpUndo = []
     , cpRedo = []
+    , cpDrag = Nothing
+    , cpUnitText = Nothing
     }
 
 
@@ -185,6 +194,7 @@ type Msg
     | TpConfirmed
     | TpCleared
     | TpClosed
+    | TpScrolled
     | CpOpened
     | CpValueUpdated (Maybe String)
     | CpModeChanged ColorPicker.Mode
@@ -192,10 +202,33 @@ type Msg
     | CpCleared
     | CpUndone
     | CpRedone
+    | CpDragStarted ColorPicker.PointerArea
+    | CpDragMove Int Int
+    | CpDragApply Int Int { width : Float, height : Float, left : Float, bottom : Float }
+    | CpDragEnd
+    | CpUnitTyped Int String
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
+    case msg of
+        TpFocused ->
+            -- upstream scrollTimer: each visible column scrolls its
+            -- [data-active] item to the top (scrollTo offsetTop). The
+            -- columns' scroll containers carry ids via colContainerIds,
+            -- and the item offsets are index * item-height — both known
+            -- without a DOM read (the item height is the theme's 34px).
+            ( { model | tpShow = True }, tpScrollToActive model )
+
+        CpDragMove x y ->
+            cpDragMove x y model
+
+        _ ->
+            ( updatePure msg model, Cmd.none )
+
+
+updatePure : Msg -> Model -> Model
+updatePure msg model =
     case msg of
         ToggleSelectSingle ->
             { model | selOpen = not model.selOpen }
@@ -405,6 +438,11 @@ update msg model =
         TpFocused ->
             { model | tpShow = True }
 
+        TpScrolled ->
+            -- the scroll command's ack; nothing to change (the DOM move is
+            -- the point — upstream scrollTimer's scrollTop set)
+            model
+
         TpValueSet value ->
             -- column item clicks (and Now, via snapNow) keep the panel open
             { model | tpValue = value }
@@ -421,7 +459,25 @@ update msg model =
         CpOpened ->
             -- the trigger emits onUpdateShow True; the draft re-syncs to the
             -- committed value on open
-            { model | cpShow = True, cpDraft = model.cpValue }
+            { model | cpShow = True, cpDraft = model.cpValue, cpUnitText = Nothing }
+
+        CpDragStarted area ->
+            -- upstream binds document mousemove/mouseup on mousedown; here
+            -- the subscription pair below drives the move/end while the
+            -- drag flag is set
+            { model | cpDrag = Just area }
+
+        CpDragMove _ _ ->
+            model
+
+        CpDragApply x y rect ->
+            cpDragApply x y rect model
+
+        CpDragEnd ->
+            { model | cpDrag = Nothing }
+
+        CpUnitTyped index raw ->
+            cpUnitTyped index raw model
 
         CpValueUpdated value ->
             { model | cpDraft = value }
@@ -476,8 +532,297 @@ update msg model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.none
+subscriptions model =
+    case model.cpDrag of
+        Just _ ->
+            -- upstream binds document mousemove + mouseup while a drag is
+            -- live (Pallete.tsx:34-52 etc.); Browser.Events mirrors that pair
+            Sub.batch
+                [ Browser.Events.onMouseMove (moveDecoder CpDragMove)
+                , Browser.Events.onMouseUp (Json.Decode.succeed CpDragEnd)
+                ]
+
+        Nothing ->
+            Sub.none
+
+
+moveDecoder : (Int -> Int -> Msg) -> Json.Decode.Decoder Msg
+moveDecoder toMsg =
+    Json.Decode.map2 toMsg
+        (Json.Decode.field "clientX" Json.Decode.int)
+        (Json.Decode.field "clientY" Json.Decode.int)
+
+
+{-| Upstream `scrollTimer` — each visible column's scroll container jumps so
+the `[data-active]` item sits at the top (scrollTop = offsetTop). The item
+offsets are index × item-height (34px, the theme var), computed from the
+value; the containers are addressed by the `colContainerIds` seam.
+-}
+tpScrollToActive : Model -> Cmd Msg
+tpScrollToActive model =
+    let
+        itemHeight =
+            34
+
+        hour =
+            model.tpValue |> Maybe.map (\ms -> Time.toHour Time.utc (Time.millisToPosix ms)) |> Maybe.withDefault 0
+
+        minute =
+            model.tpValue |> Maybe.map (\ms -> Time.toMinute Time.utc (Time.millisToPosix ms)) |> Maybe.withDefault 0
+
+        second =
+            model.tpValue |> Maybe.map (\ms -> Time.toSecond Time.utc (Time.millisToPosix ms)) |> Maybe.withDefault 0
+
+        scrollTo id top =
+            Task.attempt (\_ -> TpScrolled) (Browser.Dom.setViewportOf id 0 top)
+    in
+    Cmd.batch
+        [ scrollTo "live-tp-col-hour" (toFloat hour * itemHeight)
+        , scrollTo "live-tp-col-minute" (toFloat minute * itemHeight)
+        , scrollTo "live-tp-col-second" (toFloat second * itemHeight)
+        ]
+
+
+{-| One drag move: read the dragged surface's rect, run the port's geometry
+helper against the document-space pointer, convert the result to the
+panel's displayed mode. The rect read is async, so the move is carried as a
+command-issued update (Task.perform against the current pointer).
+-}
+cpDragMove : Int -> Int -> Model -> ( Model, Cmd Msg )
+cpDragMove x y model =
+    case model.cpDrag of
+        Nothing ->
+            ( model, Cmd.none )
+
+        Just area ->
+            ( model
+            , case areaId area of
+                Just id ->
+                    Browser.Dom.getElement id
+                        |> Task.attempt
+                            (\result ->
+                                case result of
+                                    Ok el ->
+                                        CpDragApply x y { width = el.element.width, height = el.element.height, left = el.element.x, bottom = el.element.y + el.element.height }
+
+                                    Err _ ->
+                                        CpDragMove 0 0
+                            )
+
+                Nothing ->
+                    Cmd.none
+            )
+
+
+areaId : ColorPicker.PointerArea -> Maybe String
+areaId area =
+    case area of
+        ColorPicker.PaletteArea ->
+            Just "live-cp-palette"
+
+        ColorPicker.HueArea ->
+            Just "live-cp-hue"
+
+        ColorPicker.AlphaArea ->
+            Just "live-cp-alpha"
+
+
+{-| The geometry commit: `svFromPoint` / `hueFromPoint` / `alphaFromPoint`
+against the freshly-read rect, converted into the displayed mode. The
+pointer coordinates are viewport-relative (Browser.Events) and the rect
+from `getElement` is scroll-independent document-space, so the viewport's
+scroll offset is added to the pointer first.
+-}
+cpDragApply :
+    Int
+    -> Int
+    -> { width : Float, height : Float, left : Float, bottom : Float }
+    -> Model
+    -> Model
+cpDragApply x y rect model =
+    case model.cpDrag of
+        Nothing ->
+            model
+
+        Just area ->
+            let
+                nextValue =
+                    case area of
+                        ColorPicker.PaletteArea ->
+                            let
+                                { s, v } =
+                                    ColorPicker.svFromPoint rect { x = toFloat x, y = toFloat y }
+
+                                base =
+                                    Maybe.withDefault { h = 0, s = 100, v = 100 } (Color.hsvaOf model.cpDraft |> Maybe.map (\c -> { h = c.h, s = c.s, v = c.v }))
+
+                                alpha =
+                                    Maybe.map .a (Color.hsvaOf model.cpDraft) |> Maybe.withDefault 1
+                            in
+                            ColorPicker.convertColor
+                                (Color.toHsvaString (Color.hsvWithAlpha alpha { s = s, v = v, h = base.h }))
+                                model.cpMode
+                                (ColorPicker.getModeFromValue model.cpDraft)
+
+                        ColorPicker.HueArea ->
+                            let
+                                hue =
+                                    ColorPicker.hueFromPoint { width = rect.width, left = rect.left } (toFloat x)
+
+                                base =
+                                    Maybe.withDefault { h = toFloat hue, s = 100, v = 100 } (Color.hsvaOf model.cpDraft |> Maybe.map (\c -> { h = c.h, s = c.s, v = c.v }))
+
+                                alpha =
+                                    Maybe.map .a (Color.hsvaOf model.cpDraft) |> Maybe.withDefault 1
+                            in
+                            ColorPicker.convertColor
+                                (Color.toHsvaString (Color.hsvWithAlpha alpha { base | h = toFloat hue }))
+                                model.cpMode
+                                (ColorPicker.getModeFromValue model.cpDraft)
+
+                        ColorPicker.AlphaArea ->
+                            let
+                                a =
+                                    ColorPicker.alphaFromPoint { width = rect.width, left = rect.left } (toFloat x)
+
+                                base =
+                                    Color.hsvaOf model.cpDraft |> Maybe.withDefault (Color.hsvWithAlpha 1 { h = 0, s = 100, v = 100 })
+                            in
+                            ColorPicker.convertColor
+                                (Color.toHsvaString { base | a = a })
+                                model.cpMode
+                                (ColorPicker.getModeFromValue model.cpDraft)
+            in
+            { model | cpDraft = nextValue, cpUnitText = Nothing }
+
+
+{-| One unit input keystroke — upstream `ColorInputUnit` parses per-unit
+(`normalizeHexaUnit` for HEX, `normalizeRgbUnit` / `normalizeHueUnit` /
+`normalizeSlvUnit` for the channels, `normalizeAlphaUnit` for A). The port
+commits per keystroke (divergence 8), so a complete parse updates the draft
+immediately; an incomplete parse keeps the raw text in `cpUnitText` and the
+input echoes it (the panel's value stays the last good colour).
+-}
+cpUnitTyped : Int -> String -> Model -> Model
+cpUnitTyped index raw model =
+    let
+        parsed : Maybe (Maybe String)
+        parsed =
+            case model.cpMode of
+                ColorPicker.Hex ->
+                    if ColorPicker.normalizeHexaUnit raw then
+                        Just (ColorPicker.convertColor (String.toUpper raw) model.cpMode Nothing)
+
+                    else
+                        Nothing
+
+                _ ->
+                    let
+                        labels =
+                            unitLabels model
+
+                        label =
+                            List.head (List.drop index labels)
+
+                        baseHSV =
+                            Maybe.withDefault (Color.hsvWithAlpha 1 { h = 0, s = 100, v = 100 }) (Color.hsvaOf model.cpDraft)
+
+                        alpha =
+                            Maybe.map .a (Color.hsvaOf model.cpDraft) |> Maybe.withDefault 1
+                    in
+                    case label of
+                        Just "A" ->
+                            ColorPicker.normalizeAlphaUnit raw
+                                |> Maybe.map (\a -> ColorPicker.convertColor (Color.toHsvaString { baseHSV | a = a }) model.cpMode Nothing)
+
+                        Just "H" ->
+                            ColorPicker.normalizeHueUnit raw
+                                |> Maybe.map (\h -> ColorPicker.convertColor (Color.toHsvaString (Color.hsvWithAlpha alpha { h = toFloat h, s = baseHSV.s, v = baseHSV.v })) model.cpMode Nothing)
+
+                        Just "S" ->
+                            ColorPicker.normalizeSlvUnit raw
+                                |> Maybe.map (\s -> ColorPicker.convertColor (Color.toHsvaString (Color.hsvWithAlpha alpha { h = baseHSV.h, s = toFloat s, v = baseHSV.v })) model.cpMode Nothing)
+
+                        Just "V" ->
+                            ColorPicker.normalizeSlvUnit raw
+                                |> Maybe.map (\v -> ColorPicker.convertColor (Color.toHsvaString (Color.hsvWithAlpha alpha { h = baseHSV.h, s = baseHSV.s, v = toFloat v })) model.cpMode Nothing)
+
+                        Just "R" ->
+                            channelSet model (\c -> { c | r = channel raw })
+
+                        Just "G" ->
+                            channelSet model (\c -> { c | g = channel raw })
+
+                        Just "B" ->
+                            channelSet model (\c -> { c | b = channel raw })
+
+                        Just "L" ->
+                            lightnessSet model raw
+
+                        _ ->
+                            Nothing
+    in
+    case parsed of
+        Just (Just value) ->
+            { model | cpDraft = Just value, cpUnitText = Nothing }
+
+        _ ->
+            { model | cpUnitText = Just raw }
+
+
+unitLabels : Model -> List String
+unitLabels model =
+    let
+        base =
+            case model.cpMode of
+                ColorPicker.Rgb ->
+                    [ "R", "G", "B" ]
+
+                ColorPicker.Hsl ->
+                    [ "H", "S", "L" ]
+
+                ColorPicker.Hsv ->
+                    [ "H", "S", "V" ]
+
+                ColorPicker.Hex ->
+                    []
+    in
+    base ++ [ "A" ]
+
+
+channel : String -> Float
+channel raw =
+    ColorPicker.normalizeRgbUnit raw
+        |> Maybe.map toFloat
+        |> Maybe.withDefault 0
+
+
+channelSet : Model -> (Color.RGBA -> Color.RGBA) -> Maybe (Maybe String)
+channelSet model set =
+    Maybe.map
+        (\c ->
+            ColorPicker.convertColor
+                (Color.toRgbaString (set c))
+                model.cpMode
+                Nothing
+        )
+        (Color.rgbaOf model.cpDraft)
+
+
+lightnessSet : Model -> String -> Maybe (Maybe String)
+lightnessSet model raw =
+    ColorPicker.normalizeSlvUnit raw
+        |> Maybe.andThen
+            (\l ->
+                Maybe.map
+                    (\c ->
+                        ColorPicker.convertColor
+                            (Color.toHslaString { c | l = toFloat l })
+                            model.cpMode
+                            Nothing
+                    )
+                    (Color.hslaOf model.cpDraft)
+            )
 
 
 
@@ -909,6 +1254,13 @@ tpOpts model =
         , placeholder = "Pick time"
         , inputReadonly = True
         , actions = [ TimePicker.Clear, TimePicker.Now, TimePicker.Confirm ]
+        , colContainerIds =
+            Just
+                { hour = "live-tp-col-hour"
+                , minute = "live-tp-col-minute"
+                , second = "live-tp-col-second"
+                , period = "live-tp-col-period"
+                }
         , onFocus = Just TpFocused
         , onClear = Just TpCleared
         , onConfirm = Just TpConfirmed
@@ -937,6 +1289,15 @@ cpPanelOpts model =
         , internalActions = Just [ ColorPicker.UndoAction, ColorPicker.RedoAction ]
         , undoable = not (List.isEmpty model.cpUndo)
         , redoable = not (List.isEmpty model.cpRedo)
+        , attributes = [ HA.id "live-cp-panel" ]
+        , pointerAreaIds =
+            Just
+                { palette = "live-cp-palette"
+                , hue = "live-cp-hue"
+                , alpha = "live-cp-alpha"
+                }
+        , onMousedown = Just CpDragStarted
+        , onUnitInput = Just (\i raw -> CpUnitTyped i raw)
         , onUpdateValue = Just CpValueUpdated
         , onUpdateMode = Just CpModeChanged
         , onConfirm = Just CpConfirmed

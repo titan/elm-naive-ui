@@ -72,7 +72,23 @@
   flex-shrink: 1;
 }
 
-/* 5. Heatmap loading keyframes (port-added)
+/* 5. Select-menu ambient font-size (port-added)
+ *
+ * Upstream's `.n-base-select-group-header` sizes itself with `.93em` off the
+ * menu root, which in a Vue app inherits the document's 14px body font. Under
+ * elm-ui the menu root is an `Element` inside the caller's tree, so it
+ * inherits whatever ambient `Font.size` the caller set (this showcase's demo
+ * rows run 20px) — the `.93em` header then blows up to 18.6px.
+ *
+ * Pinning the menu root to the option font size reproduces upstream's
+ * computed result under any ambient (options already carry the var directly,
+ * so they are unaffected):
+ */
+.nui-root.nui-root .n-base-select-menu {
+  font-size: var(--n-option-font-size);
+}
+
+/* 6. Heatmap loading keyframes (port-added)
  *
  * Upstream mounts this stylesheet at runtime (src/heatmap/src/animationStyle.ts):
  * a `heatmap-loading-<hash>` class whose name hashes the two loading colors, plus

@@ -78,45 +78,61 @@ when set, else the committed value on `onUpdateValue`) and the caller closes.
     the port instead appends the house inert focus-detector sentinel as the
     panel's last child (`DatePicker.elm:1303-1305`) and leaves closing to the
     caller.
+
 2.  **named-colour swatches.** Upstream resolves a bare colour name with a
     canvas (`ColorPickerSwatches.tsx:20-26`); the port uses the static 149-entry
     seemly table (`NUI.Internal.Color`), so CSS _system_ colours that a canvas
     could resolve fall back to `'#000000'`, and a name resolves to that table's
     hex form (e.g. `red` → `#F00`) rather than a canvas' `#ff0000`.
+
 3.  **undo/redo stack is caller-owned.** Upstream keeps `undoStackRef`/
     `valueIndexRef` as runtime state (`ColorPicker.tsx:322-324, 518-530`); the
     port takes `undoable`/`redoable` flags and `onUndo`/`onRedo` msgs.
+
 4.  **`normalizeHue` clamps `360 → 359`** (upstream `utils.ts:99` vs seemly
     `roundDeg`'s `360 → 0`). Kept as-is; both live in `NUI.Internal.Color`.
+
 5.  The cssr header comment (`styles/index.cssr.ts:5-13`) lists only 9 vars —
     it omits `--n-border`; the port emits all 10 (the actual `cssVarsRef` set).
+
 6.  Upstream's `slots.default` is declared but never read (`ColorPicker.tsx:
     143`); it has no port counterpart.
+
 7.  **No pointer-drag wiring in the view.** Upstream binds document
     `mousemove`/`mouseup` on `mousedown` and reads `getBoundingClientRect`
-    (`Pallete.tsx:34-52`, `HueSlider.tsx:36-60`, `AlphaSlider.tsx:35-58`); the
-    port emits a bare `onMousedown PointerArea` signal (the `NUI.Slider`
+    (`Pallete.tsx:34-52`, `HueSlider.tsx:36-60`, `AlphaSlider.tsx:35-58`);
+    the port emits a bare `onMousedown PointerArea` signal (the `NUI.Slider`
     `onMousedown` precedent) and exports the pure geometry (`svFromPoint`,
     `hueFromPoint`, `alphaFromPoint`) for the caller to run against a rect.
+    The `pointerAreaIds` seam puts inert `id`s on the three drag surfaces so
+    the caller can read those rects with `Browser.Dom.getElement`, and the
+    panel-root `attributes` seam (raw `Html` attributes, appended after the
+    component's own) carries e.g. an `id` for the whole panel.
+
 8.  **Unit inputs commit on input, not on change.** Upstream `ColorInputUnit`
     parses on `change`/blur (`ColorInputUnit.tsx:112-163`); the port's embedded
     `NInput` has no change seam, so `onUnitInput index raw` fires per keystroke
     and the caller normalizes with the exported unit normalizers.
+
 9.  **`padding: 0 4px` on the unit inputs is unreachable.** Upstream passes
     `builtinThemeOverrides.inputThemeOverrides` (`ColorInputUnit.tsx:58-60`) to
     the embedded `NInput`; the port adds no `Input.elm` seam, so the units use
     the input's default padding.
+
 10. **panel `ondragstart` `preventDefault` is not ported** (`ColorPicker.tsx`
     `renderPanel`): `elm/html` cannot `preventDefault` without a message seam.
+
 11. **Swatch keyboard select (Enter) is not ported** (`ColorPickerSwatches.tsx:
     94-97`); `elm/html` has no `onKeyDown`, and a decoder seam would need a
     no-op message. Swatches stay clickable and focusable.
+
 12. **Upstream's `onComplete` has no port option.** Upstream fires it after a
     drag mouse-up and after an input commit (`ColorPicker.tsx` `handleComplete`);
     both moments are caller-owned here (drag runs via `onMousedown` + the pure
     geometry helpers, input commits via `onUnitInput`), so the caller fires its
     own complete — an option the panel could never trigger would be dead
     config.
+
 13. **Displayed H/α/S/V are value-derived per render.** Upstream keeps
     `displayedHueRef`/`displayedAlphaRef`/`displayedSvRef` resynced to the
     parsed value on change (`ColorPicker.tsx:322-324, 531-545`); the port
@@ -125,20 +141,25 @@ when set, else the committed value on `onUpdateValue`) and the caller closes.
     = Rgb` matches upstream's computed default only while `value` is unset —
     with a `value`, upstream derives the mode from it (`ColorPicker.tsx:
     234-236`), so set `displayedMode` alongside `value`.
+
 14. **Peer theme overrides are not plumbed.** Upstream threads
     `mergedTheme.peers.Input`/`peers.Button` into the embedded unit inputs and
     action buttons (`ColorInputUnit.tsx:155-156`); the port reads
     `NUI.Theme.Input`/`NUI.Theme.Button` directly (the `NUI.DatePicker`
     precedent).
+
 15. **The panel root carries `tabindex 0`** (house overlay convention,
     `DatePicker.elm:1145`, pairing with 1); upstream `renderPanel` has none.
+
 16. **The trigger colour layer omits the empty `background-color`** upstream
     always emits when the value is mode-less (`backgroundColor: hsla ? … : ''`,
     `ColorPickerTrigger.tsx:47-55`) — visual no-op, the attribute string
     differs.
+
 17. **`getWCAGContrast` exposes only the default-args form**
     (`contrastColor = [255, 255, 255]`, `level = 'AA'`; `utils.ts:58-61`) —
     the only call site (the trigger label) uses the defaults.
+
 18. **`deriveDefaultValue`'s `__DEV__` warn is dropped** (`utils.ts:38-39`) —
     a dev-only `console.warn`, no-op in production.
 
@@ -254,6 +275,8 @@ type alias Options msg =
     , renderLabel : Maybe (String -> Element msg)
     , customTrigger : Maybe (Element msg)
     , actionSlot : Maybe (Element msg)
+    , attributes : List (Html.Attribute msg)
+    , pointerAreaIds : Maybe { palette : String, hue : String, alpha : String }
     , onUpdateValue : Maybe (Maybe String -> msg)
     , onConfirm : Maybe (Maybe String -> msg)
     , onClear : Maybe msg
@@ -287,6 +310,8 @@ defaultOptions =
     , renderLabel = Nothing
     , customTrigger = Nothing
     , actionSlot = Nothing
+    , attributes = []
+    , pointerAreaIds = Nothing
     , onUpdateValue = Nothing
     , onConfirm = Nothing
     , onClear = Nothing
@@ -539,10 +564,12 @@ panel : Theme -> Options msg -> Element msg
 panel theme opts =
     Element.html <|
         Html.div
-            [ HA.class (String.join " " (panelClasses opts))
-            , HA.tabindex 0
-            , HA.attribute "style" (I.renderVars (styleVars theme opts.size))
-            ]
+            ([ HA.class (String.join " " (panelClasses opts))
+             , HA.tabindex 0
+             , HA.attribute "style" (I.renderVars (styleVars theme opts.size))
+             ]
+                ++ opts.attributes
+            )
             ([ Html.div [ HA.class "n-color-picker-control" ]
                 (palette opts ++ preview opts ++ colorInput theme opts ++ swatches opts)
              ]
@@ -616,7 +643,10 @@ palette opts =
                     []
     in
     [ Html.div
-        ([ HA.class "n-color-picker-pallete" ] ++ mousedownAttr opts PaletteArea)
+        ([ HA.class "n-color-picker-pallete" ]
+            ++ pointerAreaIdAttr opts .palette
+            ++ mousedownAttr opts PaletteArea
+        )
         ([ Html.div
             [ HA.class "n-color-picker-pallete__layer"
             , HA.attribute "style"
@@ -671,6 +701,7 @@ hueSlider opts =
         ]
         [ Html.div
             ([ HA.attribute "style" "box-shadow:inset 0 0 2px 0 rgba(0, 0, 0, .24);box-sizing:border-box;background-image:linear-gradient(90deg,red,#ff0 16.66%,#0f0 33.33%,#0ff 50%,#00f 66.66%,#f0f 83.33%,red);height:12px;border-radius:6px;position:relative" ]
+                ++ pointerAreaIdAttr opts .hue
                 ++ mousedownAttr opts HueArea
             )
             [ Html.div
@@ -756,6 +787,7 @@ alphaSlider opts =
              , HA.style "height" "12px"
              , HA.style "border-radius" "6px"
              ]
+                ++ pointerAreaIdAttr opts .alpha
                 ++ mousedownAttr opts AlphaArea
             )
             ([ Html.div
@@ -1193,6 +1225,20 @@ mousedownAttr opts area =
     case opts.onMousedown of
         Just f ->
             [ HE.onMouseDown (f area) ]
+
+        Nothing ->
+            []
+
+
+{-| The `pointerAreaIds` seam — an inert `id` on a drag surface so the caller
+can read its rect (`Browser.Dom.getElement`) for the exported geometry
+helpers. See module docstring divergence 7.
+-}
+pointerAreaIdAttr : Options msg -> ({ palette : String, hue : String, alpha : String } -> String) -> List (Html.Attribute msg)
+pointerAreaIdAttr opts pick =
+    case Maybe.map pick opts.pointerAreaIds of
+        Just id ->
+            [ HA.id id ]
 
         Nothing ->
             []

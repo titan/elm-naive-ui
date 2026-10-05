@@ -330,8 +330,19 @@ update msg model =
 
         -- Countdown · live clock
         ClockTick now ->
+            let
+                next =
+                    max 0 (model.countdown - round (sinceMs model.clockLast now))
+            in
+            -- a showcase countdown never reads "dead": at zero the 90 s
+            -- window restarts (a stopped 00:00:00 looks broken, not live)
             { model
-                | countdown = max 0 (model.countdown - round (sinceMs model.clockLast now))
+                | countdown =
+                    if next == 0 then
+                        90000
+
+                    else
+                        next
                 , clockLast = Just (Time.posixToMillis now)
             }
 

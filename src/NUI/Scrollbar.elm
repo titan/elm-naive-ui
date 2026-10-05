@@ -67,7 +67,12 @@ the scrollbar root — `NUI.DrawerContent`'s non-native body uses it for the
     (`scrollable = false` renders the slot bare upstream; wrapper
     components branch before calling `view`). The
     `container` prop (a caller-owned scroll element) is not reproduced: the built-in
-    `n-scrollbar-container` / `n-scrollbar-content` are always rendered.
+    `n-scrollbar-container` / `n-scrollbar-content` are always rendered. When the caller
+    needs to drive the container's scroll imperatively (upstream's `scrollTo` instance
+    method — e.g. `NUI.TimePicker`'s scroll-to-active), `containerAttributes` puts
+    attributes (an `id`) on the scrolling `n-scrollbar-container` div so
+    `Browser.Dom.setViewportOf` can address it; the container's own classes and
+    structure stay upstream's.
 
 -}
 
@@ -109,6 +114,7 @@ type alias Options msg =
     , rootStyle : Maybe String
     , yRailStyle : Maybe String
     , xRailStyle : Maybe String
+    , containerAttributes : List (Html.Attribute msg)
     , extraClasses : List String
     , attributes : List (Element.Attribute msg)
     }
@@ -131,6 +137,7 @@ defaults =
     , rootStyle = Nothing
     , yRailStyle = Nothing
     , xRailStyle = Nothing
+    , containerAttributes = []
     , extraClasses = []
     , attributes = []
     }
@@ -182,9 +189,11 @@ the layout — upstream renders the slot straight into the content div).
 containerNode : Options msg -> List (Element msg) -> Html.Html msg
 containerNode opts children =
     Html.div
-        [ HA.class "n-scrollbar-container"
-        , HA.attribute "role" "none"
-        ]
+        ([ HA.class "n-scrollbar-container"
+         , HA.attribute "role" "none"
+         ]
+            ++ opts.containerAttributes
+        )
         [ Html.div
             ([ HA.class (String.join " " ("n-scrollbar-content" :: extraClass opts.contentClass))
              , HA.attribute "role" "none"
