@@ -1,5 +1,7 @@
 module Sections.General exposing
-    ( alertSection
+    ( Model
+    , Msg
+    , alertSection
     , avatarSection
     , badgeSection
     , cardSection
@@ -9,21 +11,33 @@ module Sections.General exposing
     , gradientTextSection
     , highlightSection
     , iconSection
+    , init
     , resultSection
     , rtlSection
+    , sections
     , spaceSection
     , statisticSection
+    , subscriptions
     , tagSection
     , themeSection
     , thingSection
     , typographySection
+    , update
     )
 
-{-| Static showcase sections for the general family (typography, tag, alert,
-divider, avatar, card, space, badge, empty, result, gradient text, statistic,
-thing, icon, highlight, ellipsis, RTL, theme), moved verbatim from Main.elm —
-the rendered DOM must stay byte-identical (the check-dom gate reads this
-surface).
+{-| General family sections: typography, tag, alert, divider, avatar, card,
+space, badge, empty, result, gradient text, statistic, thing, icon,
+highlight, ellipsis, RTL, theme.
+
+The static rows moved verbatim from Main.elm — that surface feeds the
+check-dom gate, so every root keeps rendering exactly as before. The live
+demo rows run a real update loop owned by this module: the port's caller-
+owned channels (Tag's onClose/onCheck, Alert's onClose, Ellipsis's
+expanded/onToggle) drive real model state. Most of this family is
+non-interactive by design (Divider, Avatar, Space, GradientText, Statistic,
+Thing, Icon, Highlight render fixed content); those sections keep their
+static form.
+
 -}
 
 import Element exposing (Element)
@@ -50,6 +64,71 @@ import NUI.Thing as Thing
 import NUI.Types as T
 import NUI.Typography as Typo
 import Showcase exposing (capitalize, chip, demoRow, fillWidth, purple, section, starIcon, theme)
+
+
+
+-- MODEL (one field per caller-owned bit of interactive state)
+
+
+type alias Model =
+    { tags : List String
+    , tagChecked : Bool
+    , alertsClosed : List String
+    , ellipsisExpanded : Bool
+    }
+
+
+init : Model
+init =
+    { tags = [ "Elm", "Naive UI", "elm-ui" ]
+    , tagChecked = True
+    , alertsClosed = []
+    , ellipsisExpanded = False
+    }
+
+
+
+-- UPDATE (one case per channel)
+
+
+type Msg
+    = TagClosed String
+    | TagChecked Bool
+    | TagAdd
+    | AlertClosed String
+    | AlertReset
+    | EllipsisToggled
+
+
+update : Msg -> Model -> Model
+update msg model =
+    case msg of
+        TagClosed name ->
+            { model | tags = List.filter ((/=) name) model.tags }
+
+        TagChecked on ->
+            { model | tagChecked = on }
+
+        TagAdd ->
+            let
+                name =
+                    "Tag " ++ String.fromInt (List.length model.tags + 1)
+            in
+            { model | tags = model.tags ++ [ name ] }
+
+        AlertClosed key ->
+            { model | alertsClosed = key :: model.alertsClosed }
+
+        AlertReset ->
+            { model | alertsClosed = [] }
+
+        EllipsisToggled ->
+            { model | ellipsisExpanded = not model.ellipsisExpanded }
+
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Sub.none
 
 
 
@@ -218,54 +297,171 @@ typographySection =
         ]
 
 
+tagRows : List (Element msg)
+tagRows =
+    [ demoRow "Types"
+        (List.map
+            (\k -> Tag.view theme { tagD | kind = k } [ Element.text (capitalize (T.kindClass k)) ])
+            [ T.Default, T.Primary, T.Info, T.Success, T.Warning, T.Error ]
+        )
+    , demoRow "Shapes & states"
+        [ Tag.view theme { tagD | round = True } [ Element.text "Round" ]
+        , Tag.view theme { tagD | bordered = False } [ Element.text "Filled" ]
+        , Tag.view theme { tagD | kind = T.Primary, strong = True } [ Element.text "Strong" ]
+        , Tag.view theme { tagD | closable = True } [ Element.text "Closable" ]
+        , Tag.view theme { tagD | kind = T.Success, checkable = True, checked = True } [ Element.text "Checked" ]
+        , Tag.view theme { tagD | disabled = True } [ Element.text "Disabled" ]
+        ]
+    ]
+
+
 tagSection : Element msg
 tagSection =
-    section "Tag" "Compact labels, with optional close and check states." <|
-        [ demoRow "Types"
+    section "Tag" "Compact labels, with optional close and check states." tagRows
+
+
+{-| Live: `#secf-tag-add` — the close × and the checkable toggle drive real
+model state (onClose / onCheck are the port's caller-owned channels).
+-}
+tagLiveRow : Model -> Element Msg
+tagLiveRow model =
+    demoRow "Tag · close / check / add (live)"
+        [ Element.row [ Element.spacing 8 ]
             (List.map
-                (\k -> Tag.view theme { tagD | kind = k } [ Element.text (capitalize (T.kindClass k)) ])
-                [ T.Default, T.Primary, T.Info, T.Success, T.Warning, T.Error ]
+                (\name ->
+                    Tag.view theme
+                        { tagD
+                            | closable = True
+                            , onClose = Just (TagClosed name)
+                        }
+                        [ Element.text name ]
+                )
+                model.tags
             )
-        , demoRow "Shapes & states"
-            [ Tag.view theme { tagD | round = True } [ Element.text "Round" ]
-            , Tag.view theme { tagD | bordered = False } [ Element.text "Filled" ]
-            , Tag.view theme { tagD | kind = T.Primary, strong = True } [ Element.text "Strong" ]
-            , Tag.view theme { tagD | closable = True } [ Element.text "Closable" ]
-            , Tag.view theme { tagD | kind = T.Success, checkable = True, checked = True } [ Element.text "Checked" ]
-            , Tag.view theme { tagD | disabled = True } [ Element.text "Disabled" ]
-            ]
+        , Button.view theme
+            { btn
+                | size = T.Small
+                , onPress = Just TagAdd
+                , attributes = [ Element.htmlAttribute (HA.id "secf-tag-add") ]
+            }
+            [ Element.text "Add tag" ]
+        , Tag.view theme
+            { tagD
+                | checkable = True
+                , checked = model.tagChecked
+                , onCheck = Just TagChecked
+            }
+            [ Element.text "Check me" ]
+        , Element.text
+            (String.fromInt (List.length model.tags)
+                ++ " tags · checked: "
+                ++ (if model.tagChecked then
+                        "yes"
+
+                    else
+                        "no"
+                   )
+            )
         ]
+
+
+tagLiveSection : Model -> Element Msg
+tagLiveSection model =
+    section "Tag"
+        "Compact labels, with optional close and check states."
+        (tagRows ++ [ tagLiveRow model ])
+
+
+alertRows : List (Element msg)
+alertRows =
+    [ demoRow "Default (no icon — the Default kind reserves no gutter)"
+        [ fillWidth
+            (Alert.view theme
+                { alertD | showIcon = False }
+                [ Element.text "A default alert." ]
+            )
+        ]
+    , demoRow "Kinds · title · closable"
+        [ fillWidth
+            (Alert.view theme
+                { alertD | kind = T.Info, title = Just "Info" }
+                [ Element.text "With a title and icon." ]
+            )
+        , fillWidth
+            (Alert.view theme
+                { alertD | kind = T.Success, title = Just "Success", closable = True }
+                [ Element.text "Closable alert." ]
+            )
+        , fillWidth (Alert.view theme { alertD | kind = T.Warning } [ Element.text "A warning." ])
+        , fillWidth
+            (Alert.view theme
+                { alertD | kind = T.Error, bordered = False }
+                [ Element.text "Borderless error." ]
+            )
+        ]
+    ]
 
 
 alertSection : Element msg
 alertSection =
-    section "Alert" "Inline messages." <|
-        [ demoRow "Default (no icon — the Default kind reserves no gutter)"
-            [ fillWidth
-                (Alert.view theme
-                    { alertD | showIcon = False }
-                    [ Element.text "A default alert." ]
+    section "Alert" "Inline messages." alertRows
+
+
+{-| Live: `#secf-alert-reset` — each closable alert really leaves the DOM when
+its × is clicked (onClose is the port's caller-owned channel).
+-}
+alertLiveRow : Model -> Element Msg
+alertLiveRow model =
+    demoRow "Alert · closable (live)"
+        ([ Button.view theme
+            { btn
+                | size = T.Small
+                , onPress = Just AlertReset
+                , attributes = [ Element.htmlAttribute (HA.id "secf-alert-reset") ]
+            }
+            [ Element.text "Reset alerts" ]
+         , Element.text
+            (if List.isEmpty model.alertsClosed then
+                "all shown"
+
+             else
+                String.fromInt (List.length model.alertsClosed) ++ " dismissed"
+            )
+         ]
+            ++ List.filterMap
+                (\( key, view ) ->
+                    if List.member key model.alertsClosed then
+                        Nothing
+
+                    else
+                        Just (fillWidth view)
                 )
-            ]
-        , demoRow "Kinds · title · closable"
-            [ fillWidth
-                (Alert.view theme
-                    { alertD | kind = T.Info, title = Just "Info" }
-                    [ Element.text "With a title and icon." ]
-                )
-            , fillWidth
-                (Alert.view theme
-                    { alertD | kind = T.Success, title = Just "Success", closable = True }
-                    [ Element.text "Closable alert." ]
-                )
-            , fillWidth (Alert.view theme { alertD | kind = T.Warning } [ Element.text "A warning." ])
-            , fillWidth
-                (Alert.view theme
-                    { alertD | kind = T.Error, bordered = False }
-                    [ Element.text "Borderless error." ]
-                )
-            ]
-        ]
+                [ ( "info"
+                  , Alert.view theme
+                        { alertD
+                            | kind = T.Info
+                            , title = Just "Dismissible"
+                            , closable = True
+                            , onClose = Just (AlertClosed "info")
+                        }
+                        [ Element.text "Click the × — this alert unmounts until Reset." ]
+                  )
+                , ( "warning"
+                  , Alert.view theme
+                        { alertD
+                            | kind = T.Warning
+                            , closable = True
+                            , onClose = Just (AlertClosed "warning")
+                        }
+                        [ Element.text "Same channel, no title." ]
+                  )
+                ]
+        )
+
+
+alertLiveSection : Model -> Element Msg
+alertLiveSection model =
+    section "Alert" "Inline messages." (alertRows ++ [ alertLiveRow model ])
 
 
 dividerSection : Element msg
@@ -587,31 +783,68 @@ thingSection =
         ]
 
 
+ellipsisRows : List (Element msg)
+ellipsisRows =
+    [ demoRow "Single line"
+        [ Element.el [ Element.width (Element.px 220) ]
+            (Ellipsis.view theme
+                ellipsisD
+                [ Element.text "A very long single line of text that gets cut off with an ellipsis character." ]
+            )
+        ]
+    , demoRow "Line clamp 2"
+        [ Element.el [ Element.width (Element.px 220) ]
+            (Ellipsis.view theme
+                { ellipsisD | lineClamp = Just 2 }
+                [ Element.text "Line clamping caps this paragraph at two lines and hides the remaining text behind a trailing ellipsis." ]
+            )
+        ]
+    , demoRow "Expand on click"
+        [ Element.el [ Element.width (Element.px 220) ]
+            (Ellipsis.view theme
+                { ellipsisD | lineClamp = Just 2, expandOnClick = True }
+                [ Element.text "A clickable two-line clamp. The caller toggles `expanded`." ]
+            )
+        ]
+    ]
+
+
 ellipsisSection : Element msg
 ellipsisSection =
-    section "Ellipsis" "Truncated text (the expand state is caller-owned)." <|
-        [ demoRow "Single line"
-            [ Element.el [ Element.width (Element.px 220) ]
-                (Ellipsis.view theme
-                    ellipsisD
-                    [ Element.text "A very long single line of text that gets cut off with an ellipsis character." ]
-                )
-            ]
-        , demoRow "Line clamp 2"
-            [ Element.el [ Element.width (Element.px 220) ]
-                (Ellipsis.view theme
-                    { ellipsisD | lineClamp = Just 2 }
-                    [ Element.text "Line clamping caps this paragraph at two lines and hides the remaining text behind a trailing ellipsis." ]
-                )
-            ]
-        , demoRow "Expand on click"
-            [ Element.el [ Element.width (Element.px 220) ]
-                (Ellipsis.view theme
-                    { ellipsisD | lineClamp = Just 2, expandOnClick = True }
-                    [ Element.text "A clickable two-line clamp. The caller toggles `expanded`." ]
-                )
-            ]
+    section "Ellipsis" "Truncated text (the expand state is caller-owned)." ellipsisRows
+
+
+{-| Live: the expand/collapse click toggles real model state (the expanded
+flag is the port's caller-owned seam).
+-}
+ellipsisLiveRow : Model -> Element Msg
+ellipsisLiveRow model =
+    demoRow "Ellipsis · expand toggle (live)"
+        [ Element.el [ Element.width (Element.px 220) ]
+            (Ellipsis.view theme
+                { ellipsisD
+                    | lineClamp = Just 2
+                    , expandOnClick = True
+                    , expanded = model.ellipsisExpanded
+                    , onToggle = Just EllipsisToggled
+                }
+                [ Element.text "Click this clamped paragraph to expand it — the expanded flag lives in the model, so the state survives re-renders." ]
+            )
+        , Element.text
+            (if model.ellipsisExpanded then
+                "expanded"
+
+             else
+                "clamped"
+            )
         ]
+
+
+ellipsisLiveSection : Model -> Element Msg
+ellipsisLiveSection model =
+    section "Ellipsis"
+        "Truncated text (the expand state is caller-owned)."
+        (ellipsisRows ++ [ ellipsisLiveRow model ])
 
 
 iconSection : Element msg
@@ -701,3 +934,30 @@ themeSection =
             , Switch.view purple { swD | value = True } []
             ]
         ]
+
+
+
+-- FAMILY BODY (Main.body order; live variants where live demos exist)
+
+
+sections : Model -> List (Element Msg)
+sections model =
+    [ typographySection
+    , tagLiveSection model
+    , alertLiveSection model
+    , dividerSection
+    , avatarSection
+    , cardSection
+    , spaceSection
+    , badgeSection
+    , emptySection
+    , resultSection
+    , gradientTextSection
+    , statisticSection
+    , thingSection
+    , ellipsisLiveSection model
+    , iconSection
+    , highlightSection
+    , rtlSection
+    , themeSection
+    ]
