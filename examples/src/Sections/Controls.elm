@@ -1,17 +1,43 @@
 module Sections.Controls exposing
-    ( buttonSection
+    ( Model
+    , Msg
+    , buttonSection
+    , init
     , inputNumberSection
     , inputOtpSection
     , inputSection
     , rateSection
+    , sections
     , selectionSection
     , sliderSection
+    , subscriptions
+    , update
     )
 
-{-| Static showcase sections for the Controls family (Button, Input, Input OTP,
-Input Number, Checkbox · Switch · Radio, Rate, Slider), moved verbatim from
-Main.elm — the rendered DOM must stay byte-identical (the check-dom gate reads
-this surface).
+{-| Controls family sections: Button, Input, Input OTP, Input Number,
+Checkbox · Switch · Radio, Rate, Slider.
+
+The static rows moved verbatim from Main.elm — that surface feeds the
+check-dom gate, so every root keeps rendering exactly as before. The live
+demo rows (moved verbatim from Live/Controls.elm — same demoRow labels,
+same `#live-*` ids) run a real update loop owned by this module: caller-
+owned state per the port's contract (the component renders whatever the
+model says; every channel feeds one Msg constructor). Where the port ships
+the interaction algebra as pure helpers, update uses those instead of
+re-deriving semantics (`InputNumber.inputUpdate` /
+`deriveValueFromDisplayedValue`, `Slider.stepValue`).
+
+Oracle-round divergences (tasks/recon/live-oracle.md):
+
+  - [oracle D] **Rate hover is button-simulated** — upstream's hover preview
+    is pointer-position algebra inside the port's rendering seam; the demo's
+    ±½ buttons drive the same `hoverValue` field the port reads.
+  - [oracle D] **Range handles can cross** — stepping "lo +" past `hi`
+    produces `lo > hi` (upstream swaps handle identity on crossing); the
+    port ships no range-ordering helper — drag runtime is caller-owned by
+    contract — and the render self-heals (the fill spans min..max of the
+    arrified value).
+
 -}
 
 import Element exposing (Element)
@@ -26,8 +52,267 @@ import NUI.Radio as Radio
 import NUI.Rate as Rate
 import NUI.Slider as Slider
 import NUI.Switch as Switch
+import NUI.Theme exposing (Theme)
 import NUI.Types as T
 import Showcase exposing (capitalize, demoRow, section, theme)
+
+
+
+-- MODEL (one field per caller-owned bit of component state)
+
+
+type alias Model =
+    { presses : Int
+    , inputText : String
+    , inputFocused : Bool
+    , pair : ( String, String )
+    , pairSource : Maybe Input.PairSource
+    , numberValue : Maybe Float
+    , numberBuffer : Maybe String
+    , switchOn : Bool
+    , checks : List Bool
+    , city : Maybe String
+    , rateValue : Maybe Float
+    , rateHover : Maybe Float
+    , slider : Float
+    , sliderActive : Int
+    , sliderHover : Int
+    , sliderDragging : Bool
+    , range : ( Float, Float )
+    , rangeActive : Int
+    , rangeHover : Int
+    , rangeDragging : Bool
+    , otp : List String
+    , otpMasked : Bool
+    }
+
+
+init : Model
+init =
+    { presses = 0
+    , inputText = ""
+    , inputFocused = False
+    , pair = ( "", "" )
+    , pairSource = Nothing
+    , numberValue = Just 3
+    , numberBuffer = Nothing
+    , switchOn = False
+    , checks = [ True, False, False ]
+    , city = Nothing
+    , rateValue = Nothing
+    , rateHover = Nothing
+    , slider = 40
+    , sliderActive = -1
+    , sliderHover = -1
+    , sliderDragging = False
+    , range = ( 20, 60 )
+    , rangeActive = -1
+    , rangeHover = -1
+    , rangeDragging = False
+    , otp = []
+    , otpMasked = False
+    }
+
+
+
+-- UPDATE (one case per channel; component semantics come from the port)
+
+
+type Msg
+    = Press
+    | ResetPresses
+    | InputChanged String
+    | InputFocused
+    | InputBlurred
+    | PairInput String String Input.PairSource
+    | NumberInput String
+    | NumberChanged (Maybe Float)
+    | NumberCommit
+    | SwitchToggled Bool
+    | CheckItem Int Bool
+    | CheckMaster Bool
+    | RadioPicked String
+    | RateSelected Float
+    | RateNudge Float
+    | RatePreviewClear
+    | SliderStep Int
+    | SliderMousedown
+    | SliderFocus
+    | SliderBlur
+    | SliderEnter
+    | SliderLeave
+    | RangeStep Int Int
+    | RangeMousedown
+    | RangeFocus Int
+    | RangeBlur Int
+    | RangeEnter Int
+    | RangeLeave Int
+    | OtpChanged (List String)
+    | OtpReset
+    | OtpMaskToggled
+
+
+update : Msg -> Model -> Model
+update msg model =
+    case msg of
+        Press ->
+            { model | presses = model.presses + 1 }
+
+        ResetPresses ->
+            { model | presses = 0 }
+
+        InputChanged raw ->
+            { model | inputText = raw }
+
+        InputFocused ->
+            { model | inputFocused = True }
+
+        InputBlurred ->
+            { model | inputFocused = False }
+
+        PairInput first second source ->
+            { model | pair = ( first, second ), pairSource = Just source }
+
+        NumberInput raw ->
+            -- the port's handleUpdateDisplayedValue: keep the raw buffer,
+            -- live-sync value when the option allows it
+            { model
+                | numberBuffer = Just raw
+                , numberValue =
+                    case InputNumber.inputUpdate (numberOptions model) raw of
+                        Just updated ->
+                            updated
+
+                        Nothing ->
+                            model.numberValue
+            }
+
+        NumberChanged payload ->
+            -- add / minus buttons (via addUpdate / minusUpdate inside view)
+            { model | numberValue = payload, numberBuffer = Nothing }
+
+        NumberCommit ->
+            -- the caller-owned blur / Enter commit, verbatim upstream args
+            case
+                InputNumber.deriveValueFromDisplayedValue
+                    (InputNumber.contextOf (numberOptions model))
+                    { offset = 0, doUpdateIfValid = True, fixPrecision = True, isInputing = False }
+            of
+                InputNumber.NumberValue v ->
+                    { model | numberValue = Just v, numberBuffer = Nothing }
+
+                InputNumber.NullValue ->
+                    { model | numberValue = Nothing, numberBuffer = Nothing }
+
+                InputNumber.InvalidValue ->
+                    model
+
+        SwitchToggled on ->
+            { model | switchOn = on }
+
+        CheckItem index on ->
+            { model
+                | checks =
+                    List.indexedMap
+                        (\i c ->
+                            if i == index then
+                                on
+
+                            else
+                                c
+                        )
+                        model.checks
+            }
+
+        CheckMaster on ->
+            { model | checks = List.map (always on) model.checks }
+
+        RadioPicked value ->
+            { model | city = Just value }
+
+        RateSelected value ->
+            { model | rateValue = Just value }
+
+        RateNudge delta ->
+            let
+                base =
+                    Maybe.withDefault (Maybe.withDefault 0 model.rateValue) model.rateHover
+            in
+            { model | rateHover = Just (clamp 0 5 (base + delta)) }
+
+        RatePreviewClear ->
+            { model | rateHover = Nothing }
+
+        SliderStep ratio ->
+            { model | slider = Slider.stepValue singleConfig model.slider ratio }
+
+        SliderMousedown ->
+            { model | sliderDragging = True, sliderActive = 0 }
+
+        SliderFocus ->
+            { model | sliderActive = 0 }
+
+        SliderBlur ->
+            { model | sliderActive = -1, sliderDragging = False }
+
+        SliderEnter ->
+            { model | sliderHover = 0 }
+
+        SliderLeave ->
+            { model | sliderHover = -1 }
+
+        RangeStep index ratio ->
+            let
+                ( lo, hi ) =
+                    model.range
+
+                next =
+                    Slider.stepValue rangeConfig
+                        (if index == 0 then
+                            lo
+
+                         else
+                            hi
+                        )
+                        ratio
+            in
+            { model
+                | range =
+                    if index == 0 then
+                        ( next, hi )
+
+                    else
+                        ( lo, next )
+            }
+
+        RangeMousedown ->
+            { model | rangeDragging = True, rangeActive = 0 }
+
+        RangeFocus index ->
+            { model | rangeActive = index }
+
+        RangeBlur _ ->
+            { model | rangeActive = -1, rangeDragging = False }
+
+        RangeEnter index ->
+            { model | rangeHover = index }
+
+        RangeLeave _ ->
+            { model | rangeHover = -1 }
+
+        OtpChanged value ->
+            { model | otp = value }
+
+        OtpReset ->
+            { model | otp = [] }
+
+        OtpMaskToggled ->
+            { model | otpMasked = not model.otpMasked }
+
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Sub.none
 
 
 
@@ -84,6 +369,221 @@ bgD =
     ButtonGroup.defaults
 
 
+sliderD : Slider.Options msg
+sliderD =
+    Slider.defaults
+
+
+
+-- OPTIONS BUILDERS (live demos)
+
+
+numberOptions : Model -> InputNumber.Options Msg
+numberOptions model =
+    { inD
+        | value = model.numberValue
+        , displayedValue = model.numberBuffer
+        , min = Just 0
+        , max = Just 10
+        , step = 1
+        , placeholder = Just "0 – 10"
+        , onChange = Just NumberChanged
+        , onInput = Just NumberInput
+        , attributes = [ Element.htmlAttribute (HA.id "live-input-number-stepper") ]
+    }
+
+
+rateOptions : Model -> Rate.Options Msg
+rateOptions model =
+    { rateD
+        | value = model.rateValue
+        , hoverValue = model.rateHover
+        , allowHalf = True
+        , onSelect = Just RateSelected
+        , attributes = [ Element.htmlAttribute (HA.id "live-rate") ]
+    }
+
+
+sliderOptions : Model -> Slider.Options Msg
+sliderOptions model =
+    { sliderD
+        | value = [ model.slider ]
+        , activeIndex = model.sliderActive
+        , hoverIndex = model.sliderHover
+        , dragging = model.sliderDragging
+        , onMousedown = Just SliderMousedown
+        , onHandleFocus = Just (\_ -> SliderFocus)
+        , onHandleBlur = Just (\_ -> SliderBlur)
+        , onHandleMouseEnter = Just (\_ -> SliderEnter)
+        , onHandleMouseLeave = Just (\_ -> SliderLeave)
+        , attributes = [ Element.htmlAttribute (HA.id "live-slider-single") ]
+    }
+
+
+rangeOptions : Model -> Slider.Options Msg
+rangeOptions model =
+    { sliderD
+        | range = True
+        , value = [ Tuple.first model.range, Tuple.second model.range ]
+        , marks = rangeMarks
+        , activeIndex = model.rangeActive
+        , hoverIndex = model.rangeHover
+        , dragging = model.rangeDragging
+        , onMousedown = Just RangeMousedown
+        , onHandleFocus = Just RangeFocus
+        , onHandleBlur = Just RangeBlur
+        , onHandleMouseEnter = Just RangeEnter
+        , onHandleMouseLeave = Just RangeLeave
+        , attributes = [ Element.htmlAttribute (HA.id "live-slider-range") ]
+    }
+
+
+otpOptions : Model -> InputOtp.Options Msg
+otpOptions model =
+    { iotpD
+        | value = model.otp
+        , length = 6
+        , allowInput = Just (\char _ _ -> String.all Char.isDigit char)
+        , mask = model.otpMasked
+        , onUpdateValue = Just OtpChanged
+        , attributes = [ Element.htmlAttribute (HA.id "live-input-otp") ]
+    }
+
+
+singleConfig : { step : Slider.Step, min : Float, max : Float, markValues : List Float }
+singleConfig =
+    { step = Slider.Step 1
+    , min = 0
+    , max = 100
+    , markValues = []
+    }
+
+
+rangeConfig : { step : Slider.Step, min : Float, max : Float, markValues : List Float }
+rangeConfig =
+    { step = Slider.Step 1
+    , min = 0
+    , max = 100
+    , markValues = List.map .value rangeMarks
+    }
+
+
+rangeMarks : List Slider.Mark
+rangeMarks =
+    [ { value = 0, label = "0" }
+    , { value = 25, label = "25" }
+    , { value = 50, label = "50" }
+    , { value = 75, label = "75" }
+    , { value = 100, label = "100" }
+    ]
+
+
+sliderMarks : List Slider.Mark
+sliderMarks =
+    [ { value = 34, label = "34" }
+    , { value = 75, label = "75" }
+    ]
+
+
+
+-- VIEW HELPERS
+
+
+{-| The indeterminate read the master computes in its own model: some but
+not all of the items checked.
+-}
+masterIndeterminate : Model -> Bool
+masterIndeterminate model =
+    List.any identity model.checks && not (List.all identity model.checks)
+
+
+itemCheckbox : Theme -> Model -> Int -> Bool -> Element Msg
+itemCheckbox theme model index checked =
+    Element.el [ Element.htmlAttribute (HA.id ("live-checkbox-item-" ++ String.fromInt index)) ]
+        (Checkbox.view theme
+            { cbD | checked = checked, onCheck = Just (CheckItem index) }
+            [ Element.text (itemLabel index) ]
+        )
+
+
+itemLabel : Int -> String
+itemLabel index =
+    case index of
+        0 ->
+            "Elm"
+
+        1 ->
+            "Naive UI"
+
+        _ ->
+            "elm-ui"
+
+
+smallButton : Theme -> String -> String -> Msg -> Element Msg
+smallButton theme id label msg =
+    Button.view theme
+        { btn
+            | size = T.Small
+            , onPress = Just msg
+            , attributes = [ Element.htmlAttribute (HA.id id) ]
+        }
+        [ Element.text label ]
+
+
+numberCaption : Model -> String
+numberCaption model =
+    "value: "
+        ++ maybeFloat model.numberValue
+        ++ " · buffer: "
+        ++ Maybe.withDefault "—" model.numberBuffer
+        ++ " · "
+        ++ (if InputNumber.displayedValueInvalid (InputNumber.contextOf (numberOptions model)) then
+                "invalid"
+
+            else
+                "valid"
+           )
+
+
+otpCaption : Model -> String
+otpCaption model =
+    let
+        filled =
+            List.length (List.filter (not << String.isEmpty) model.otp)
+    in
+    if List.length model.otp == 6 && filled == 6 then
+        "complete: " ++ String.concat model.otp
+
+    else
+        String.fromInt filled ++ "/6 entered"
+
+
+maybeFloat : Maybe Float -> String
+maybeFloat value =
+    case value of
+        Nothing ->
+            "—"
+
+        Just v ->
+            String.fromFloat v
+
+
+pairSourceName : Maybe Input.PairSource -> String
+pairSourceName source =
+    case source of
+        Just Input.PairFirst ->
+            "first"
+
+        Just Input.PairSecond ->
+            "second"
+
+        Just Input.PairClear ->
+            "clear"
+
+        Nothing ->
+            "—"
+
+
 {-| A plain demo cell for a standalone `.n-dialog` body (no fixed tree to
 confine — just a sized box; the block body fills it).
 -}
@@ -98,182 +598,520 @@ cell content =
 
 
 
--- SECTIONS
+-- SECTIONS (static rows verbatim; live variants append the live demo rows)
+
+
+buttonRows : List (Element msg)
+buttonRows =
+    [ demoRow "Sizes"
+        [ Button.view theme { btn | size = T.Tiny } [ Element.text "Tiny" ]
+        , Button.view theme { btn | size = T.Small } [ Element.text "Small" ]
+        , Button.view theme { btn | size = T.Medium } [ Element.text "Medium" ]
+        , Button.view theme { btn | size = T.Large } [ Element.text "Large" ]
+        ]
+    , demoRow "Types"
+        (List.map
+            (\k -> Button.view theme { btn | kind = k } [ Element.text (capitalize (T.kindClass k)) ])
+            [ T.Default, T.Primary, T.Info, T.Success, T.Warning, T.Error ]
+        )
+    , demoRow "Variants"
+        [ Button.view theme { btn | kind = T.Primary, variant = Button.Secondary } [ Element.text "Secondary" ]
+        , Button.view theme { btn | kind = T.Primary, variant = Button.Tertiary } [ Element.text "Tertiary" ]
+        , Button.view theme { btn | kind = T.Primary, variant = Button.Quaternary } [ Element.text "Quaternary" ]
+        , Button.view theme { btn | kind = T.Primary, variant = Button.Text } [ Element.text "Text" ]
+        ]
+    , demoRow "Shapes & states"
+        [ Button.view theme { btn | round = True } [ Element.text "Round" ]
+        , Button.view theme { btn | circle = True } [ Element.text "C" ]
+        , Button.view theme { btn | dashed = True } [ Element.text "Dashed" ]
+        , Button.view theme { btn | kind = T.Primary, ghost = True } [ Element.text "Ghost" ]
+        , Button.view theme { btn | disabled = True } [ Element.text "Disabled" ]
+        , Button.view theme { btn | loading = True } [ Element.text "Loading" ]
+        ]
+    , Element.el [ Element.width (Element.px 320) ]
+        (Button.view theme { btn | block = True } [ Element.text "Block" ])
+    , demoRow "Group (horizontal)"
+        [ ButtonGroup.view theme
+            ButtonGroup.defaults
+            [ Button.view theme { btn | kind = T.Primary } [ Element.text "Left" ]
+            , Button.view theme { btn | kind = T.Primary } [ Element.text "Middle" ]
+            , Button.view theme { btn | kind = T.Primary } [ Element.text "Right" ]
+            ]
+        ]
+    , demoRow "Group (vertical)"
+        [ ButtonGroup.view theme
+            { bgD | vertical = True }
+            [ Button.view theme btn [ Element.text "Top" ]
+            , Button.view theme btn [ Element.text "Bottom" ]
+            ]
+        ]
+    ]
 
 
 buttonSection : Element msg
 buttonSection =
-    section "Button" "Sizes, types, variants and shapes." <|
-        [ demoRow "Sizes"
-            [ Button.view theme { btn | size = T.Tiny } [ Element.text "Tiny" ]
-            , Button.view theme { btn | size = T.Small } [ Element.text "Small" ]
-            , Button.view theme { btn | size = T.Medium } [ Element.text "Medium" ]
-            , Button.view theme { btn | size = T.Large } [ Element.text "Large" ]
-            ]
-        , demoRow "Types"
-            (List.map
-                (\k -> Button.view theme { btn | kind = k } [ Element.text (capitalize (T.kindClass k)) ])
-                [ T.Default, T.Primary, T.Info, T.Success, T.Warning, T.Error ]
-            )
-        , demoRow "Variants"
-            [ Button.view theme { btn | kind = T.Primary, variant = Button.Secondary } [ Element.text "Secondary" ]
-            , Button.view theme { btn | kind = T.Primary, variant = Button.Tertiary } [ Element.text "Tertiary" ]
-            , Button.view theme { btn | kind = T.Primary, variant = Button.Quaternary } [ Element.text "Quaternary" ]
-            , Button.view theme { btn | kind = T.Primary, variant = Button.Text } [ Element.text "Text" ]
-            ]
-        , demoRow "Shapes & states"
-            [ Button.view theme { btn | round = True } [ Element.text "Round" ]
-            , Button.view theme { btn | circle = True } [ Element.text "C" ]
-            , Button.view theme { btn | dashed = True } [ Element.text "Dashed" ]
-            , Button.view theme { btn | kind = T.Primary, ghost = True } [ Element.text "Ghost" ]
-            , Button.view theme { btn | disabled = True } [ Element.text "Disabled" ]
-            , Button.view theme { btn | loading = True } [ Element.text "Loading" ]
-            ]
-        , Element.el [ Element.width (Element.px 320) ]
-            (Button.view theme { btn | block = True } [ Element.text "Block" ])
-        , demoRow "Group (horizontal)"
-            [ ButtonGroup.view theme
-                ButtonGroup.defaults
-                [ Button.view theme { btn | kind = T.Primary } [ Element.text "Left" ]
-                , Button.view theme { btn | kind = T.Primary } [ Element.text "Middle" ]
-                , Button.view theme { btn | kind = T.Primary } [ Element.text "Right" ]
-                ]
-            ]
-        , demoRow "Group (vertical)"
-            [ ButtonGroup.view theme
-                { bgD | vertical = True }
-                [ Button.view theme btn [ Element.text "Top" ]
-                , Button.view theme btn [ Element.text "Bottom" ]
-                ]
-            ]
+    section "Button" "Sizes, types, variants and shapes." buttonRows
+
+
+{-| Live: `#live-button-counter` / `#live-button-reset`.
+-}
+buttonPressRow : Model -> Element Msg
+buttonPressRow model =
+    demoRow "Button · press counter"
+        [ Button.view theme
+            { btn
+                | kind = T.Primary
+                , onPress = Just Press
+                , attributes = [ Element.htmlAttribute (HA.id "live-button-counter") ]
+            }
+            [ Element.text ("Pressed " ++ String.fromInt model.presses ++ " times") ]
+        , Button.view theme
+            { btn
+                | onPress = Just ResetPresses
+                , attributes = [ Element.htmlAttribute (HA.id "live-button-reset") ]
+            }
+            [ Element.text "Reset" ]
         ]
+
+
+buttonLiveSection : Model -> Element Msg
+buttonLiveSection model =
+    section "Button" "Sizes, types, variants and shapes." (buttonRows ++ [ buttonPressRow model ])
+
+
+inputRows : List (Element msg)
+inputRows =
+    [ demoRow "Basics"
+        [ Element.el [ Element.width (Element.px 220) ]
+            (Input.view theme { inputD | placeholder = Just "Placeholder" })
+        , Element.el [ Element.width (Element.px 220) ]
+            (Input.view theme { inputD | value = "Hello" })
+        ]
+    , demoRow "Statuses"
+        [ Element.el [ Element.width (Element.px 220) ]
+            (Input.view theme { inputD | value = "Success", status = Just Input.Success })
+        , Element.el [ Element.width (Element.px 220) ]
+            (Input.view theme { inputD | value = "Warning", status = Just Input.Warning })
+        , Element.el [ Element.width (Element.px 220) ]
+            (Input.view theme { inputD | value = "Error", status = Just Input.Error })
+        ]
+    , demoRow "States"
+        [ Element.el [ Element.width (Element.px 220) ]
+            (Input.view theme { inputD | value = "Disabled", disabled = True })
+        , Element.el [ Element.width (Element.px 220) ]
+            (Input.view theme { inputD | value = "Clearable", clearable = True })
+        ]
+    , Element.el [ Element.width (Element.px 440) ]
+        (Input.view theme
+            { inputD
+                | type_ = Input.Textarea
+                , rows = 3
+                , value = "A textarea.\nMultiple lines."
+            }
+        )
+    ]
 
 
 inputSection : Element msg
 inputSection =
-    section "Input" "Text fields, statuses and a textarea." <|
-        [ demoRow "Basics"
-            [ Element.el [ Element.width (Element.px 220) ]
-                (Input.view theme { inputD | placeholder = Just "Placeholder" })
-            , Element.el [ Element.width (Element.px 220) ]
-                (Input.view theme { inputD | value = "Hello" })
-            ]
-        , demoRow "Statuses"
-            [ Element.el [ Element.width (Element.px 220) ]
-                (Input.view theme { inputD | value = "Success", status = Just Input.Success })
-            , Element.el [ Element.width (Element.px 220) ]
-                (Input.view theme { inputD | value = "Warning", status = Just Input.Warning })
-            , Element.el [ Element.width (Element.px 220) ]
-                (Input.view theme { inputD | value = "Error", status = Just Input.Error })
-            ]
-        , demoRow "States"
-            [ Element.el [ Element.width (Element.px 220) ]
-                (Input.view theme { inputD | value = "Disabled", disabled = True })
-            , Element.el [ Element.width (Element.px 220) ]
-                (Input.view theme { inputD | value = "Clearable", clearable = True })
-            ]
-        , Element.el [ Element.width (Element.px 440) ]
-            (Input.view theme
+    section "Input" "Text fields, statuses and a textarea." inputRows
+
+
+{-| Live: `#live-input-controlled`.
+-}
+inputControlledRow : Model -> Element Msg
+inputControlledRow model =
+    demoRow "Input · controlled + clear"
+        [ Element.column [ Element.spacing 6, Element.width (Element.px 240) ]
+            [ Input.view theme
                 { inputD
-                    | type_ = Input.Textarea
-                    , rows = 3
-                    , value = "A textarea.\nMultiple lines."
+                    | value = model.inputText
+                    , onInput = Just InputChanged
+                    , onFocus = Just InputFocused
+                    , onBlur = Just InputBlurred
+                    , clearable = True
+                    , placeholder = Just "Type, then clear"
+                    , inputAttributes = [ HA.id "live-input-controlled" ]
                 }
-            )
+            , Element.text
+                ("value: \""
+                    ++ model.inputText
+                    ++ "\" · focus: "
+                    ++ (if model.inputFocused then
+                            "yes"
+
+                        else
+                            "no"
+                       )
+                )
+            ]
         ]
+
+
+{-| Live: the pair input (no own id — the caption is the observable).
+-}
+inputPairRow : Model -> Element Msg
+inputPairRow model =
+    demoRow "Input · pair (date-range-like)"
+        [ Element.column [ Element.spacing 6, Element.width (Element.px 320) ]
+            [ Input.view theme
+                { inputD
+                    | pairValue = Just model.pair
+                    , pairPlaceholder = Just ( "From", "To" )
+                    , separatorNode = Just (Element.text "→")
+                    , clearable = True
+                    , onPairInput = Just (\( first, second ) source -> PairInput first second source)
+                }
+            , Element.text ("pair: " ++ Tuple.first model.pair ++ " → " ++ Tuple.second model.pair ++ " · last edit: " ++ pairSourceName model.pairSource)
+            ]
+        ]
+
+
+inputLiveSection : Model -> Element Msg
+inputLiveSection model =
+    section "Input"
+        "Text fields, statuses and a textarea."
+        (inputRows ++ [ inputControlledRow model, inputPairRow model ])
+
+
+inputOtpRows : List (Element msg)
+inputOtpRows =
+    [ demoRow "Lengths & sizes"
+        [ InputOtp.view theme { iotpD | length = 4, value = [ "1", "2", "3", "4" ] } []
+        , InputOtp.view theme { iotpD | length = 6, size = InputOtp.Small, gap = Just (InputOtp.Px 6) } []
+        , InputOtp.view theme { iotpD | length = 6, mask = True } []
+        ]
+    , demoRow "RTL"
+        [ InputOtp.view theme { iotpD | rtl = True, length = 6, value = [ "8", "8", "8" ] } []
+        ]
+    ]
 
 
 inputOtpSection : Element msg
 inputOtpSection =
-    section "Input OTP" "One-time-code inputs (the value and focus are caller-owned)." <|
-        [ demoRow "Lengths & sizes"
-            [ InputOtp.view theme { iotpD | length = 4, value = [ "1", "2", "3", "4" ] } []
-            , InputOtp.view theme { iotpD | length = 6, size = InputOtp.Small, gap = Just (InputOtp.Px 6) } []
-            , InputOtp.view theme { iotpD | length = 6, mask = True } []
-            ]
-        , demoRow "RTL"
-            [ InputOtp.view theme { iotpD | rtl = True, length = 6, value = [ "8", "8", "8" ] } []
+    section "Input OTP" "One-time-code inputs (the value and focus are caller-owned)." inputOtpRows
+
+
+{-| Live: `#live-input-otp` / `#live-input-otp-reset` / `#live-input-otp-mask`.
+-}
+inputOtpCompletionRow : Model -> Element Msg
+inputOtpCompletionRow model =
+    demoRow "InputOtp · completion"
+        [ Element.column [ Element.spacing 8 ]
+            [ InputOtp.view theme (otpOptions model) []
+            , Element.row [ Element.spacing 8 ]
+                [ smallButton theme "live-input-otp-reset" "Reset" OtpReset
+                , smallButton theme "live-input-otp-mask" "Mask" OtpMaskToggled
+                , Element.text (otpCaption model)
+                ]
             ]
         ]
+
+
+inputOtpLiveSection : Model -> Element Msg
+inputOtpLiveSection model =
+    section "Input OTP"
+        "One-time-code inputs (the value and focus are caller-owned)."
+        (inputOtpRows ++ [ inputOtpCompletionRow model ])
+
+
+inputNumberRows : List (Element msg)
+inputNumberRows =
+    [ InputNumber.view theme { inD | value = Just 3 } []
+    , InputNumber.view theme
+        { inD
+            | value = Just 0.5
+            , min = Just 0
+            , max = Just 1
+            , step = 0.01
+            , precision = Just 2
+        }
+        []
+    , InputNumber.view theme { inD | value = Just 42, buttonPlacement = InputNumber.Both } []
+    , InputNumber.view theme { inD | value = Nothing, placeholder = Just "Enter a number" } []
+    , InputNumber.view theme { inD | value = Just 7, disabled = True } []
+    ]
 
 
 inputNumberSection : Element msg
 inputNumberSection =
-    section "Input Number" "Numeric entry (the text buffer is caller-owned)." <|
-        [ InputNumber.view theme { inD | value = Just 3 } []
-        , InputNumber.view theme
-            { inD
-                | value = Just 0.5
-                , min = Just 0
-                , max = Just 1
-                , step = 0.01
-                , precision = Just 2
+    section "Input Number" "Numeric entry (the text buffer is caller-owned)." inputNumberRows
+
+
+{-| Live: `#live-input-number-stepper` / `#live-input-number-commit`.
+-}
+inputNumberStepperRow : Model -> Element Msg
+inputNumberStepperRow model =
+    demoRow "InputNumber · stepper + commit"
+        [ InputNumber.view theme (numberOptions model) []
+        , Button.view theme
+            { btn
+                | size = T.Small
+                , onPress = Just NumberCommit
+                , attributes = [ Element.htmlAttribute (HA.id "live-input-number-commit") ]
             }
-            []
-        , InputNumber.view theme { inD | value = Just 42, buttonPlacement = InputNumber.Both } []
-        , InputNumber.view theme { inD | value = Nothing, placeholder = Just "Enter a number" } []
-        , InputNumber.view theme { inD | value = Just 7, disabled = True } []
+            [ Element.text "Commit" ]
+        , Element.text (numberCaption model)
         ]
+
+
+inputNumberLiveSection : Model -> Element Msg
+inputNumberLiveSection model =
+    section "Input Number"
+        "Numeric entry (the text buffer is caller-owned)."
+        (inputNumberRows ++ [ inputNumberStepperRow model ])
+
+
+selectionRows : List (Element msg)
+selectionRows =
+    [ demoRow "Checkbox"
+        [ Checkbox.view theme { cbD | checked = True } [ Element.text "Checked" ]
+        , Checkbox.view theme cbD [ Element.text "Unchecked" ]
+        , Checkbox.view theme { cbD | indeterminate = True } [ Element.text "Indeterminate" ]
+        , Checkbox.view theme { cbD | disabled = True, checked = True } [ Element.text "Disabled" ]
+        ]
+    , demoRow "Switch"
+        [ Switch.view theme { swD | value = False } []
+        , Switch.view theme { swD | value = True } []
+        , Switch.view theme { swD | value = True, loading = True } []
+        , Switch.view theme { swD | value = False, disabled = True } []
+        ]
+    , demoRow "Radio group"
+        [ Radio.group theme
+            { radioGD | value = Just "sh" }
+            [ Radio.choice "bj" "Beijing", Radio.choice "sh" "Shanghai", Radio.choice "gz" "Guangzhou" ]
+        ]
+    , demoRow "Radio button group"
+        [ Radio.group theme
+            { radioGD | value = Just "m" }
+            [ Radio.button "s" "Small", Radio.button "m" "Medium", Radio.button "l" "Large" ]
+        ]
+    , demoRow "Radio standalone"
+        [ Radio.view theme { radioD | checked = True } [ Element.text "Selected" ]
+        , Radio.view theme radioD [ Element.text "Unselected" ]
+        , Radio.view theme { radioD | disabled = True } [ Element.text "Disabled" ]
+        ]
+    ]
 
 
 selectionSection : Element msg
 selectionSection =
-    section "Checkbox · Switch · Radio" "Selection controls." <|
-        [ demoRow "Checkbox"
-            [ Checkbox.view theme { cbD | checked = True } [ Element.text "Checked" ]
-            , Checkbox.view theme cbD [ Element.text "Unchecked" ]
-            , Checkbox.view theme { cbD | indeterminate = True } [ Element.text "Indeterminate" ]
-            , Checkbox.view theme { cbD | disabled = True, checked = True } [ Element.text "Disabled" ]
-            ]
-        , demoRow "Switch"
-            [ Switch.view theme { swD | value = False } []
-            , Switch.view theme { swD | value = True } []
-            , Switch.view theme { swD | value = True, loading = True } []
-            , Switch.view theme { swD | value = False, disabled = True } []
-            ]
-        , demoRow "Radio group"
-            [ Radio.group theme
-                { radioGD | value = Just "sh" }
-                [ Radio.choice "bj" "Beijing", Radio.choice "sh" "Shanghai", Radio.choice "gz" "Guangzhou" ]
-            ]
-        , demoRow "Radio button group"
-            [ Radio.group theme
-                { radioGD | value = Just "m" }
-                [ Radio.button "s" "Small", Radio.button "m" "Medium", Radio.button "l" "Large" ]
-            ]
-        , demoRow "Radio standalone"
-            [ Radio.view theme { radioD | checked = True } [ Element.text "Selected" ]
-            , Radio.view theme radioD [ Element.text "Unselected" ]
-            , Radio.view theme { radioD | disabled = True } [ Element.text "Disabled" ]
+    section "Checkbox · Switch · Radio" "Selection controls." selectionRows
+
+
+{-| Live: `#live-switch-toggle` (caption read via the row's textContent —
+the switch and the caption stay the only children of the row body).
+-}
+switchToggleRow : Model -> Element Msg
+switchToggleRow model =
+    demoRow "Switch · toggle"
+        [ Element.el [ Element.htmlAttribute (HA.id "live-switch-toggle") ]
+            (Switch.view theme
+                { swD | value = model.switchOn, onChange = Just SwitchToggled }
+                []
+            )
+        , Element.text
+            (if model.switchOn then
+                "on"
+
+             else
+                "off"
+            )
+        ]
+
+
+{-| Live: `#live-checkbox-master` / `#live-checkbox-item-<i>` (generated).
+-}
+checkboxGroupRow : Model -> Element Msg
+checkboxGroupRow model =
+    demoRow "Checkbox · group + indeterminate master"
+        [ Element.column [ Element.spacing 8 ]
+            [ Element.el [ Element.htmlAttribute (HA.id "live-checkbox-master") ]
+                (Checkbox.view theme
+                    { cbD
+                        | checked = List.all identity model.checks
+                        , indeterminate = masterIndeterminate model
+                        , onCheck = Just CheckMaster
+                    }
+                    [ Element.text "Check all" ]
+                )
+            , Element.row [ Element.spacing 16 ]
+                (List.indexedMap (itemCheckbox theme model) model.checks)
+            , Element.text
+                ("checked: "
+                    ++ String.fromInt (List.length (List.filter identity model.checks))
+                    ++ "/"
+                    ++ String.fromInt (List.length model.checks)
+                    ++ (if masterIndeterminate model then
+                            " · master indeterminate"
+
+                        else
+                            ""
+                       )
+                )
             ]
         ]
+
+
+{-| Live: `#live-radio-group`.
+-}
+radioPickRow : Model -> Element Msg
+radioPickRow model =
+    demoRow "Radio.Group · pick one"
+        [ Radio.group theme
+            { radioGD
+                | value = model.city
+                , onChange = Just RadioPicked
+                , attributes = [ Element.htmlAttribute (HA.id "live-radio-group") ]
+            }
+            [ Radio.choice "bj" "Beijing"
+            , Radio.choice "sh" "Shanghai"
+            , Radio.choice "gz" "Guangzhou"
+            ]
+        , Element.text ("picked: " ++ Maybe.withDefault "—" model.city)
+        ]
+
+
+selectionLiveSection : Model -> Element Msg
+selectionLiveSection model =
+    section "Checkbox · Switch · Radio"
+        "Selection controls."
+        (selectionRows ++ [ switchToggleRow model, checkboxGroupRow model, radioPickRow model ])
+
+
+rateRows : List (Element msg)
+rateRows =
+    [ demoRow "Value"
+        [ Rate.view theme { rateD | value = Just 4 }
+        , Rate.view theme { rateD | value = Just 3, readonly = True }
+        , Rate.view theme { rateD | value = Just 2, color = Just "#f0a020" }
+        ]
+    , demoRow "Half & sizes"
+        [ Rate.view theme { rateD | allowHalf = True, value = Just 3.5 }
+        , Rate.view theme { rateD | size = Rate.Small, value = Just 5 }
+        , Rate.view theme { rateD | size = Rate.Large, value = Just 5 }
+        ]
+    ]
 
 
 rateSection : Element msg
 rateSection =
-    section "Rate" "Star ratings (the value and hover are caller-owned)." <|
-        [ demoRow "Value"
-            [ Rate.view theme { rateD | value = Just 4 }
-            , Rate.view theme { rateD | value = Just 3, readonly = True }
-            , Rate.view theme { rateD | value = Just 2, color = Just "#f0a020" }
-            ]
-        , demoRow "Half & sizes"
-            [ Rate.view theme { rateD | allowHalf = True, value = Just 3.5 }
-            , Rate.view theme { rateD | size = Rate.Small, value = Just 5 }
-            , Rate.view theme { rateD | size = Rate.Large, value = Just 5 }
-            ]
+    section "Rate" "Star ratings (the value and hover are caller-owned)." rateRows
+
+
+{-| Live: `#live-rate` / `#live-rate-hover-*` (hover preview is
+button-simulated — see the oracle note above).
+-}
+rateHoverRow : Model -> Element Msg
+rateHoverRow model =
+    demoRow "Rate · hover preview + commit"
+        [ Rate.view theme (rateOptions model)
+        , Button.view theme
+            { btn | size = T.Small, onPress = Just (RateNudge -0.5), attributes = [ Element.htmlAttribute (HA.id "live-rate-hover-minus") ] }
+            [ Element.text "hover −½" ]
+        , Button.view theme
+            { btn | size = T.Small, onPress = Just (RateNudge 0.5), attributes = [ Element.htmlAttribute (HA.id "live-rate-hover-plus") ] }
+            [ Element.text "hover +½" ]
+        , Button.view theme
+            { btn | size = T.Small, onPress = Just RatePreviewClear, attributes = [ Element.htmlAttribute (HA.id "live-rate-hover-clear") ] }
+            [ Element.text "clear hover" ]
+        , Element.text
+            ("hovered: "
+                ++ maybeFloat model.rateHover
+                ++ " · committed: "
+                ++ maybeFloat model.rateValue
+            )
         ]
 
 
-sliderD : Slider.Options msg
-sliderD =
-    Slider.defaults
+rateLiveSection : Model -> Element Msg
+rateLiveSection model =
+    section "Rate"
+        "Star ratings (the value and hover are caller-owned)."
+        (rateRows ++ [ rateHoverRow model ])
 
 
-sliderMarks : List Slider.Mark
-sliderMarks =
-    [ { value = 34, label = "34" }
-    , { value = 75, label = "75" }
+sliderRows : List (Element msg)
+sliderRows =
+    [ demoRow "Single + range (fixed state; marks feed dots/marks/snap)"
+        [ cell
+            (Element.el [ Element.width (Element.px 240) ]
+                (Slider.view theme
+                    { sliderD
+                        | value = [ 40 ]
+                        , marks = sliderMarks
+                    }
+                )
+            )
+        , cell
+            (Element.el [ Element.width (Element.px 240) ]
+                (Slider.view theme
+                    { sliderD
+                        | range = True
+                        , value = [ 24, 49 ]
+                        , marks = sliderMarks
+                    }
+                )
+            )
+        ]
+    , demoRow "Tooltip indicator (pinned via hoverIndex / drag) + disabled"
+        [ cell
+            (Element.el [ Element.width (Element.px 240) ]
+                (Slider.view theme
+                    { sliderD | value = [ 66 ], hoverIndex = 0, activeIndex = 0, dragging = True }
+                )
+            )
+        , cell
+            (Element.el [ Element.width (Element.px 240) ]
+                (Slider.view theme
+                    { sliderD
+                        | value = [ 12 ]
+                        , disabled = True
+                        , formatTooltip = Just (\v -> String.fromFloat v ++ "%")
+                    }
+                )
+            )
+        ]
+    , demoRow "Vertical + reverse (direction keys flip, dots still 34/75)"
+        [ cell
+            (Element.el [ Element.height (Element.px 220) ]
+                (Slider.view theme
+                    { sliderD
+                        | value = [ 77 ]
+                        , vertical = True
+                        , marks = sliderMarks
+                    }
+                )
+            )
+        , cell
+            (Element.el [ Element.height (Element.px 220) ]
+                (Slider.view theme
+                    { sliderD
+                        | value = [ 77 ]
+                        , vertical = True
+                        , reverse = True
+                        , marks = sliderMarks
+                    }
+                )
+            )
+        ]
+    , demoRow "Range snap (`step: 'mark'`) + >2 values (fill suppressed, dots inactive — upstream quirk)"
+        [ cell
+            (Element.el [ Element.width (Element.px 240) ]
+                (Slider.view theme
+                    { sliderD
+                        | range = True
+                        , value = [ 34, 75 ]
+                        , step = Slider.StepMarks
+                        , marks = sliderMarks
+                    }
+                )
+            )
+        , cell
+            (Element.el [ Element.width (Element.px 240) ]
+                (Slider.view theme { sliderD | range = True, value = [ 10, 50, 90 ], marks = sliderMarks })
+            )
+        ]
     ]
 
 
@@ -281,86 +1119,70 @@ sliderSection : Element msg
 sliderSection =
     section "Slider"
         "The rail/fill/handles numeric input (upstream `NSlider`). Drag is caller-owned runtime (`NUI.Split` precedent): `value`/`activeIndex`/`hoverIndex`/`dragging` in, discrete handle events + the root mousedown signal out; `pointerToValue`/`sanitizeValue`/`stepValue` carry the pointer→snap math. The value indicator renders inline (the teleported follower is the caller's popover seam)."
-    <|
-        [ demoRow "Single + range (fixed state; marks feed dots/marks/snap)"
-            [ cell
-                (Element.el [ Element.width (Element.px 240) ]
-                    (Slider.view theme
-                        { sliderD
-                            | value = [ 40 ]
-                            , marks = sliderMarks
-                        }
+        sliderRows
+
+
+{-| Live: `#live-slider-single` / `#live-slider-minus` / `#live-slider-plus`.
+-}
+sliderSingleRow : Model -> Element Msg
+sliderSingleRow model =
+    demoRow "Slider · single (hover/focus indicator + arrow-step algebra)"
+        [ Element.column [ Element.spacing 6, Element.width (Element.px 260) ]
+            [ Slider.view theme (sliderOptions model)
+            , Element.row [ Element.spacing 8 ]
+                [ smallButton theme "live-slider-minus" "−1" (SliderStep -1)
+                , smallButton theme "live-slider-plus" "+1" (SliderStep 1)
+                , Element.text
+                    (String.fromFloat model.slider
+                        ++ " ("
+                        ++ String.fromFloat (Slider.valueToPercentage 0 100 model.slider)
+                        ++ "%)"
                     )
-                )
-            , cell
-                (Element.el [ Element.width (Element.px 240) ]
-                    (Slider.view theme
-                        { sliderD
-                            | range = True
-                            , value = [ 24, 49 ]
-                            , marks = sliderMarks
-                        }
-                    )
-                )
-            ]
-        , demoRow "Tooltip indicator (pinned via hoverIndex / drag) + disabled"
-            [ cell
-                (Element.el [ Element.width (Element.px 240) ]
-                    (Slider.view theme
-                        { sliderD | value = [ 66 ], hoverIndex = 0, activeIndex = 0, dragging = True }
-                    )
-                )
-            , cell
-                (Element.el [ Element.width (Element.px 240) ]
-                    (Slider.view theme
-                        { sliderD
-                            | value = [ 12 ]
-                            , disabled = True
-                            , formatTooltip = Just (\v -> String.fromFloat v ++ "%")
-                        }
-                    )
-                )
-            ]
-        , demoRow "Vertical + reverse (direction keys flip, dots still 34/75)"
-            [ cell
-                (Element.el [ Element.height (Element.px 220) ]
-                    (Slider.view theme
-                        { sliderD
-                            | value = [ 77 ]
-                            , vertical = True
-                            , marks = sliderMarks
-                        }
-                    )
-                )
-            , cell
-                (Element.el [ Element.height (Element.px 220) ]
-                    (Slider.view theme
-                        { sliderD
-                            | value = [ 77 ]
-                            , vertical = True
-                            , reverse = True
-                            , marks = sliderMarks
-                        }
-                    )
-                )
-            ]
-        , demoRow "Range snap (`step: 'mark'`) + >2 values (fill suppressed, dots inactive — upstream quirk)"
-            [ cell
-                (Element.el [ Element.width (Element.px 240) ]
-                    (Slider.view theme
-                        { sliderD
-                            | range = True
-                            , value = [ 34, 75 ]
-                            , step = Slider.StepMarks
-                            , marks = sliderMarks
-                        }
-                    )
-                )
-            , cell
-                (Element.el [ Element.width (Element.px 240) ]
-                    (Slider.view theme
-                        { sliderD | range = True, value = [ 10, 50, 90 ], marks = sliderMarks }
-                    )
-                )
+                ]
             ]
         ]
+
+
+{-| Live: `#live-slider-range` / `#live-range-*` (per-handle steps; handles
+can cross — see the oracle note above).
+-}
+sliderRangeRow : Model -> Element Msg
+sliderRangeRow model =
+    demoRow "Slider · range (per-handle steps, marks snap)"
+        [ Element.column [ Element.spacing 6, Element.width (Element.px 260) ]
+            [ Slider.view theme (rangeOptions model)
+            , Element.row [ Element.spacing 8 ]
+                [ smallButton theme "live-range-lo-minus" "lo −" (RangeStep 0 -1)
+                , smallButton theme "live-range-lo-plus" "lo +" (RangeStep 0 1)
+                , smallButton theme "live-range-hi-minus" "hi −" (RangeStep 1 -1)
+                , smallButton theme "live-range-hi-plus" "hi +" (RangeStep 1 1)
+                , Element.text
+                    (String.fromFloat (Tuple.first model.range)
+                        ++ " – "
+                        ++ String.fromFloat (Tuple.second model.range)
+                    )
+                ]
+            ]
+        ]
+
+
+sliderLiveSection : Model -> Element Msg
+sliderLiveSection model =
+    section "Slider"
+        "The rail/fill/handles numeric input (upstream `NSlider`). Drag is caller-owned runtime (`NUI.Split` precedent): `value`/`activeIndex`/`hoverIndex`/`dragging` in, discrete handle events + the root mousedown signal out; `pointerToValue`/`sanitizeValue`/`stepValue` carry the pointer→snap math. The value indicator renders inline (the teleported follower is the caller's popover seam)."
+        (sliderRows ++ [ sliderSingleRow model, sliderRangeRow model ])
+
+
+{-| The family body in Main.body order — live variants where live demos
+exist, legacy sections elsewhere (here every section has a live variant).
+-}
+sections : Model -> List (Element Msg)
+sections model =
+    [ buttonLiveSection model
+    , inputLiveSection model
+    , inputOtpLiveSection model
+    , inputNumberLiveSection model
+    , selectionLiveSection model
+    , rateLiveSection model
+    , sliderLiveSection model
+    ]
