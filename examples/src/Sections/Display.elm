@@ -1,5 +1,7 @@
 module Sections.Display exposing
-    ( affixSection
+    ( Model
+    , Msg
+    , affixSection
     , breadcrumbSection
     , codeSection
     , descriptionsSection
@@ -9,18 +11,27 @@ module Sections.Display exposing
     , floatButtonSection
     , gridSection
     , heatmapSection
+    , init
     , layoutSection
     , listSection
     , pageHeaderSection
     , qrCodeSection
     , scrollbarSection
+    , sections
+    , subscriptions
     , timelineSection
+    , update
     , watermarkSection
     )
 
-{-| Static showcase sections for the Display family (layout and data display
-primitives), moved verbatim from Main.elm — the rendered DOM must stay
-byte-identical (the check-dom gate reads this surface).
+{-| Display family sections: layout and data display primitives.
+
+The static rows moved verbatim from Main.elm — that surface feeds the
+check-dom gate, so every root keeps rendering exactly as before. The live
+demo rows run a real update loop owned by this module (FloatButton's
+`onUpdateShowMenu` menu channel, PageHeader's `onBack`); the rest of this
+family is non-interactive by design and keeps its static form.
+
 -}
 
 import Element exposing (Element)
@@ -49,6 +60,47 @@ import NUI.Types as T
 import NUI.Watermark as Watermark
 import Showcase exposing (chip, codeHljs, demoBox, demoRow, fakeKatex, fakeKatexDisplay, section, theme)
 import Time
+
+
+
+-- MODEL (one field per caller-owned bit of interactive state)
+
+
+type alias Model =
+    { backClicks : Int
+    , floatMenuOpen : Bool
+    }
+
+
+init : Model
+init =
+    { backClicks = 0
+    , floatMenuOpen = False
+    }
+
+
+
+-- UPDATE (one case per channel)
+
+
+type Msg
+    = PageBack
+    | FloatMenuToggled Bool
+
+
+update : Msg -> Model -> Model
+update msg model =
+    case msg of
+        PageBack ->
+            { model | backClicks = model.backClicks + 1 }
+
+        FloatMenuToggled open ->
+            { model | floatMenuOpen = open }
+
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Sub.none
 
 
 
@@ -247,21 +299,54 @@ listSection =
         ]
 
 
+pageHeaderRows : List (Element msg)
+pageHeaderRows =
+    [ Element.el [ Element.width Element.fill ]
+        (PageHeader.view theme
+            { pageHeaderD
+                | title = Just "Page title"
+                , subtitle = Just "Second level"
+                , extra = Just "Extra"
+            }
+            [ Element.text "The page body sits below the header." ]
+        )
+    ]
+
+
 pageHeaderSection : Element msg
 pageHeaderSection =
     section "Page Header"
         "Title, subtitle and extra (pass `onBack` to add the back control)."
-    <|
+        pageHeaderRows
+
+
+{-| Live: `#secf-pageheader-back` — the back button counts real clicks
+(onBack is the port's caller-owned channel; Nothing hides the control).
+-}
+pageHeaderLiveRow : Model -> Element Msg
+pageHeaderLiveRow model =
+    demoRow "PageHeader · back clicks (live)"
         [ Element.el [ Element.width Element.fill ]
             (PageHeader.view theme
                 { pageHeaderD
-                    | title = Just "Page title"
-                    , subtitle = Just "Second level"
-                    , extra = Just "Extra"
+                    | title = Just "Detail page"
+                    , onBack = Just PageBack
                 }
-                [ Element.text "The page body sits below the header." ]
+                [ Element.text
+                    ("The back control fires onBack — "
+                        ++ String.fromInt model.backClicks
+                        ++ " click(s) so far."
+                    )
+                ]
             )
         ]
+
+
+pageHeaderLiveSection : Model -> Element Msg
+pageHeaderLiveSection model =
+    section "Page Header"
+        "Title, subtitle and extra (pass `onBack` to add the back control)."
+        (pageHeaderRows ++ [ pageHeaderLiveRow model ])
 
 
 affixSection : Element msg
@@ -365,36 +450,53 @@ qrCodeSection =
         ]
 
 
-floatButtonSection : Element msg
-floatButtonSection =
-    section "Float Button"
-        "A floating action button (position and offsets are caller-owned)."
-    <|
-        [ demoRow "Shapes & types"
-            [ FloatButton.view theme { floatButtonD | position = FloatButton.Relative } [ Element.text "+" ]
-            , FloatButton.view theme
-                { floatButtonD | position = FloatButton.Relative, shape = FloatButton.Square }
-                [ Element.text "S" ]
-            , FloatButton.view theme
-                { floatButtonD | position = FloatButton.Relative, type_ = FloatButton.Primary }
-                [ Element.text "+" ]
-            ]
-        , demoRow "Description"
+floatButtonRows : List (Element msg)
+floatButtonRows =
+    [ demoRow "Shapes & types"
+        [ FloatButton.view theme { floatButtonD | position = FloatButton.Relative } [ Element.text "+" ]
+        , FloatButton.view theme
+            { floatButtonD | position = FloatButton.Relative, shape = FloatButton.Square }
+            [ Element.text "S" ]
+        , FloatButton.view theme
+            { floatButtonD | position = FloatButton.Relative, type_ = FloatButton.Primary }
+            [ Element.text "+" ]
+        ]
+    , demoRow "Description"
+        [ FloatButton.view theme
+            { floatButtonD | position = FloatButton.Relative, description = Just (Element.text "Top") }
+            [ Element.text "↑" ]
+        ]
+    , demoRow "Menu"
+        -- Resting state (showMenu = False): the body icon shows and the
+        -- close glyph stays hidden until the menu opens. A second demo
+        -- renders the open state in a non-clipping box so the popped menu
+        -- (absolutely positioned above the button) is visible.
+        [ Element.column [ Element.spacing 24 ]
             [ FloatButton.view theme
-                { floatButtonD | position = FloatButton.Relative, description = Just (Element.text "Top") }
-                [ Element.text "↑" ]
-            ]
-        , demoRow "Menu"
-            -- Resting state (showMenu = False): the body icon shows and the
-            -- close glyph stays hidden until the menu opens. A second demo
-            -- renders the open state in a non-clipping box so the popped menu
-            -- (absolutely positioned above the button) is visible.
-            [ Element.column [ Element.spacing 24 ]
-                [ FloatButton.view theme
+                { floatButtonD
+                    | position = FloatButton.Relative
+                    , menuTrigger = Just FloatButton.Click
+                    , showMenu = False
+                    , menu =
+                        [ FloatButton.view theme
+                            { floatButtonD | position = FloatButton.Relative }
+                            [ Element.text "A" ]
+                        , FloatButton.view theme
+                            { floatButtonD | position = FloatButton.Relative }
+                            [ Element.text "B" ]
+                        ]
+                }
+                [ Element.text "+" ]
+            , Element.el
+                [ Element.paddingEach { top = 160, bottom = 20, left = 20, right = 20 }
+                , Element.htmlAttribute
+                    (HA.attribute "style" "position:relative;background:#fff")
+                ]
+                (FloatButton.view theme
                     { floatButtonD
                         | position = FloatButton.Relative
                         , menuTrigger = Just FloatButton.Click
-                        , showMenu = False
+                        , showMenu = True
                         , menu =
                             [ FloatButton.view theme
                                 { floatButtonD | position = FloatButton.Relative }
@@ -405,30 +507,68 @@ floatButtonSection =
                             ]
                     }
                     [ Element.text "+" ]
-                , Element.el
-                    [ Element.paddingEach { top = 160, bottom = 20, left = 20, right = 20 }
-                    , Element.htmlAttribute
-                        (HA.attribute "style" "position:relative;background:#fff")
-                    ]
-                    (FloatButton.view theme
-                        { floatButtonD
-                            | position = FloatButton.Relative
-                            , menuTrigger = Just FloatButton.Click
-                            , showMenu = True
-                            , menu =
-                                [ FloatButton.view theme
-                                    { floatButtonD | position = FloatButton.Relative }
-                                    [ Element.text "A" ]
-                                , FloatButton.view theme
-                                    { floatButtonD | position = FloatButton.Relative }
-                                    [ Element.text "B" ]
-                                ]
-                        }
-                        [ Element.text "+" ]
-                    )
-                ]
+                )
             ]
         ]
+    ]
+
+
+floatButtonSection : Element msg
+floatButtonSection =
+    section "Float Button"
+        "A floating action button (position and offsets are caller-owned)."
+        floatButtonRows
+
+
+{-| Live: `#secf-float-menu` — the click-triggered menu really opens/closes
+(showMenu is caller-owned; onUpdateShowMenu carries the toggle).
+-}
+floatButtonLiveRow : Model -> Element Msg
+floatButtonLiveRow model =
+    demoRow "FloatButton · click menu (live)"
+        [ Element.el
+            [ Element.paddingEach { top = 170, bottom = 20, left = 20, right = 20 }
+            , Element.htmlAttribute
+                (HA.attribute "style" "position:relative;background:#fff")
+            ]
+            (FloatButton.view theme
+                { floatButtonD
+                    | position = FloatButton.Relative
+                    , menuTrigger = Just FloatButton.Click
+                    , showMenu = model.floatMenuOpen
+                    , onUpdateShowMenu = Just FloatMenuToggled
+                    , menu =
+                        [ FloatButton.view theme
+                            { floatButtonD
+                                | position = FloatButton.Relative
+                                , description = Just (Element.text "Add")
+                            }
+                            [ Element.text "+" ]
+                        , FloatButton.view theme
+                            { floatButtonD
+                                | position = FloatButton.Relative
+                                , description = Just (Element.text "Edit")
+                            }
+                            [ Element.text "✎" ]
+                        ]
+                }
+                [ Element.text "+" ]
+            )
+        , Element.text
+            (if model.floatMenuOpen then
+                "menu open"
+
+             else
+                "menu closed"
+            )
+        ]
+
+
+floatButtonLiveSection : Model -> Element Msg
+floatButtonLiveSection model =
+    section "Float Button"
+        "A floating action button (position and offsets are caller-owned)."
+        (floatButtonRows ++ [ floatButtonLiveRow model ])
 
 
 layoutSection : Element msg
@@ -825,3 +965,29 @@ equationSection =
         , demoRow "No katex"
             [ Equation.view theme { equationD | value = "a^2 + b^2 = c^2" } ]
         ]
+
+
+
+-- FAMILY BODY (Main.body order; live variants where live demos exist)
+
+
+sections : Model -> List (Element Msg)
+sections model =
+    [ breadcrumbSection
+    , timelineSection
+    , listSection
+    , pageHeaderLiveSection model
+    , affixSection
+    , flexSection
+    , gridSection
+    , qrCodeSection
+    , floatButtonLiveSection model
+    , layoutSection
+    , floatButtonGroupSection
+    , heatmapSection
+    , descriptionsSection
+    , scrollbarSection
+    , watermarkSection
+    , codeSection
+    , equationSection
+    ]
