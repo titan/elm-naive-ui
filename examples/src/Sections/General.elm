@@ -33,10 +33,15 @@ The static rows moved verbatim from Main.elm — that surface feeds the
 check-dom gate, so every root keeps rendering exactly as before. The live
 demo rows run a real update loop owned by this module: the port's caller-
 owned channels (Tag's onClose/onCheck, Alert's onClose, Ellipsis's
-expanded/onToggle) drive real model state. Most of this family is
-non-interactive by design (Divider, Avatar, Space, GradientText, Statistic,
-Thing, Icon, Highlight render fixed content); those sections keep their
-static form.
+expanded/onToggle) drive real model state. Phase 2 wires the static rows'
+own channels to the same model — the Tag specimen's closable/checkable
+instances dismiss and check in place, the Alert "Kinds" row's closable
+success alert unmounts on ×, and the Ellipsis "Expand on click" row toggles
+the shared expanded flag (initial values equal the old literals, so the
+initial DOM is byte-identical). The rest of this family is non-interactive
+by design (Typography, Divider, Avatar, Card hover (CSS), Space, Badge,
+Empty, Result, GradientText, Statistic, Thing, Icon, Highlight, RTL render
+fixed content); those sections keep their static form.
 
 -}
 
@@ -73,8 +78,11 @@ import Showcase exposing (capitalize, chip, demoRow, fillWidth, purple, section,
 type alias Model =
     { tags : List String
     , tagChecked : Bool
+    , tagCheckedDemo : Bool
+    , tagClosableShown : Bool
     , alertsClosed : List String
     , ellipsisExpanded : Bool
+    , ellipsisDemoExpanded : Bool
     }
 
 
@@ -82,8 +90,11 @@ init : Model
 init =
     { tags = [ "Elm", "Naive UI", "elm-ui" ]
     , tagChecked = True
+    , tagCheckedDemo = True
+    , tagClosableShown = True
     , alertsClosed = []
     , ellipsisExpanded = False
+    , ellipsisDemoExpanded = False
     }
 
 
@@ -94,10 +105,13 @@ init =
 type Msg
     = TagClosed String
     | TagChecked Bool
+    | TagCheckedDemo Bool
+    | TagClosableClosed
     | TagAdd
     | AlertClosed String
     | AlertReset
     | EllipsisToggled
+    | EllipsisDemoToggled
 
 
 update : Msg -> Model -> Model
@@ -108,6 +122,12 @@ update msg model =
 
         TagChecked on ->
             { model | tagChecked = on }
+
+        TagCheckedDemo on ->
+            { model | tagCheckedDemo = on }
+
+        TagClosableClosed ->
+            { model | tagClosableShown = False }
 
         TagAdd ->
             let
@@ -124,6 +144,9 @@ update msg model =
 
         EllipsisToggled ->
             { model | ellipsisExpanded = not model.ellipsisExpanded }
+
+        EllipsisDemoToggled ->
+            { model | ellipsisDemoExpanded = not model.ellipsisDemoExpanded }
 
 
 subscriptions : Model -> Sub Msg
@@ -297,8 +320,8 @@ typographySection =
         ]
 
 
-tagRows : List (Element msg)
-tagRows =
+tagRows : Model -> List (Element Msg)
+tagRows model =
     [ demoRow "Types"
         (List.map
             (\k -> Tag.view theme { tagD | kind = k } [ Element.text (capitalize (T.kindClass k)) ])
@@ -308,16 +331,29 @@ tagRows =
         [ Tag.view theme { tagD | round = True } [ Element.text "Round" ]
         , Tag.view theme { tagD | bordered = False } [ Element.text "Filled" ]
         , Tag.view theme { tagD | kind = T.Primary, strong = True } [ Element.text "Strong" ]
-        , Tag.view theme { tagD | closable = True } [ Element.text "Closable" ]
-        , Tag.view theme { tagD | kind = T.Success, checkable = True, checked = True } [ Element.text "Checked" ]
+        , if model.tagClosableShown then
+            Tag.view theme
+                { tagD | closable = True, onClose = Just TagClosableClosed }
+                [ Element.text "Closable" ]
+
+          else
+            Element.none
+        , Tag.view theme
+            { tagD
+                | kind = T.Success
+                , checkable = True
+                , checked = model.tagCheckedDemo
+                , onCheck = Just TagCheckedDemo
+            }
+            [ Element.text "Checked" ]
         , Tag.view theme { tagD | disabled = True } [ Element.text "Disabled" ]
         ]
     ]
 
 
-tagSection : Element msg
-tagSection =
-    section "Tag" "Compact labels, with optional close and check states." tagRows
+tagSection : Model -> Element Msg
+tagSection model =
+    section "Tag" "Compact labels, with optional close and check states." (tagRows model)
 
 
 {-| Live: `#secf-tag-add` — the close × and the checkable toggle drive real
@@ -369,11 +405,11 @@ tagLiveSection : Model -> Element Msg
 tagLiveSection model =
     section "Tag"
         "Compact labels, with optional close and check states."
-        (tagRows ++ [ tagLiveRow model ])
+        (tagRows model ++ [ tagLiveRow model ])
 
 
-alertRows : List (Element msg)
-alertRows =
+alertRows : Model -> List (Element Msg)
+alertRows model =
     [ demoRow "Default (no icon — the Default kind reserves no gutter)"
         [ fillWidth
             (Alert.view theme
@@ -387,11 +423,20 @@ alertRows =
                 { alertD | kind = T.Info, title = Just "Info" }
                 [ Element.text "With a title and icon." ]
             )
-        , fillWidth
-            (Alert.view theme
-                { alertD | kind = T.Success, title = Just "Success", closable = True }
-                [ Element.text "Closable alert." ]
-            )
+        , if List.member "kinds-success" model.alertsClosed then
+            Element.none
+
+          else
+            fillWidth
+                (Alert.view theme
+                    { alertD
+                        | kind = T.Success
+                        , title = Just "Success"
+                        , closable = True
+                        , onClose = Just (AlertClosed "kinds-success")
+                    }
+                    [ Element.text "Closable alert." ]
+                )
         , fillWidth (Alert.view theme { alertD | kind = T.Warning } [ Element.text "A warning." ])
         , fillWidth
             (Alert.view theme
@@ -402,9 +447,9 @@ alertRows =
     ]
 
 
-alertSection : Element msg
-alertSection =
-    section "Alert" "Inline messages." alertRows
+alertSection : Model -> Element Msg
+alertSection model =
+    section "Alert" "Inline messages." (alertRows model)
 
 
 {-| Live: `#secf-alert-reset` — each closable alert really leaves the DOM when
@@ -461,7 +506,7 @@ alertLiveRow model =
 
 alertLiveSection : Model -> Element Msg
 alertLiveSection model =
-    section "Alert" "Inline messages." (alertRows ++ [ alertLiveRow model ])
+    section "Alert" "Inline messages." (alertRows model ++ [ alertLiveRow model ])
 
 
 dividerSection : Element msg
@@ -783,8 +828,8 @@ thingSection =
         ]
 
 
-ellipsisRows : List (Element msg)
-ellipsisRows =
+ellipsisRows : Model -> List (Element Msg)
+ellipsisRows model =
     [ demoRow "Single line"
         [ Element.el [ Element.width (Element.px 220) ]
             (Ellipsis.view theme
@@ -802,16 +847,21 @@ ellipsisRows =
     , demoRow "Expand on click"
         [ Element.el [ Element.width (Element.px 220) ]
             (Ellipsis.view theme
-                { ellipsisD | lineClamp = Just 2, expandOnClick = True }
+                { ellipsisD
+                    | lineClamp = Just 2
+                    , expandOnClick = True
+                    , expanded = model.ellipsisDemoExpanded
+                    , onToggle = Just EllipsisDemoToggled
+                }
                 [ Element.text "A clickable two-line clamp. The caller toggles `expanded`." ]
             )
         ]
     ]
 
 
-ellipsisSection : Element msg
-ellipsisSection =
-    section "Ellipsis" "Truncated text (the expand state is caller-owned)." ellipsisRows
+ellipsisSection : Model -> Element Msg
+ellipsisSection model =
+    section "Ellipsis" "Truncated text (the expand state is caller-owned)." (ellipsisRows model)
 
 
 {-| Live: the expand/collapse click toggles real model state (the expanded
@@ -844,7 +894,7 @@ ellipsisLiveSection : Model -> Element Msg
 ellipsisLiveSection model =
     section "Ellipsis"
         "Truncated text (the expand state is caller-owned)."
-        (ellipsisRows ++ [ ellipsisLiveRow model ])
+        (ellipsisRows model ++ [ ellipsisLiveRow model ])
 
 
 iconSection : Element msg

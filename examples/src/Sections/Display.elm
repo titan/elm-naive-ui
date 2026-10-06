@@ -29,8 +29,15 @@ module Sections.Display exposing
 The static rows moved verbatim from Main.elm — that surface feeds the
 check-dom gate, so every root keeps rendering exactly as before. The live
 demo rows run a real update loop owned by this module (FloatButton's
-`onUpdateShowMenu` menu channel, PageHeader's `onBack`); the rest of this
-family is non-interactive by design and keeps its static form.
+`onUpdateShowMenu` menu channel, PageHeader's `onBack`). Phase 2 wires the
+Layout "Basic" row's sider collapse trigger to the same model
+(`LayoutSider.onToggleCollapsed`; init keeps the expanded literal, so the
+initial DOM is byte-identical). The rest of this family is non-interactive
+by design: Breadcrumb/Timeline/List (no click channel exists — `clickable`
+is a class flag only)/PageHeader static row/Affix/Flex/Grid/QrCode/
+FloatButton "Menu" resting+open specimens (the live row covers the toggle)/
+FloatButtonGroup (no channels)/Heatmap/Descriptions/Scrollbar (no onScroll
+channel)/Watermark/Code/Equation keep their static form.
 
 -}
 
@@ -69,6 +76,7 @@ import Time
 type alias Model =
     { backClicks : Int
     , floatMenuOpen : Bool
+    , siderCollapsed : Bool
     }
 
 
@@ -76,6 +84,7 @@ init : Model
 init =
     { backClicks = 0
     , floatMenuOpen = False
+    , siderCollapsed = False
     }
 
 
@@ -86,6 +95,7 @@ init =
 type Msg
     = PageBack
     | FloatMenuToggled Bool
+    | SiderToggled Bool
 
 
 update : Msg -> Model -> Model
@@ -96,6 +106,9 @@ update msg model =
 
         FloatMenuToggled open ->
             { model | floatMenuOpen = open }
+
+        SiderToggled collapsed ->
+            { model | siderCollapsed = collapsed }
 
 
 subscriptions : Model -> Sub Msg
@@ -571,8 +584,8 @@ floatButtonLiveSection model =
         (floatButtonRows ++ [ floatButtonLiveRow model ])
 
 
-layoutSection : Element msg
-layoutSection =
+layoutSection : Model -> Element Msg
+layoutSection model =
     section "Layout" "App shell — header, sider, content and footer (the sider's collapsed state is caller-owned)." <|
         [ demoRow "Basic (header · sider · content · footer)"
             [ Element.el [ Element.width Element.fill ]
@@ -582,7 +595,12 @@ layoutSection =
                     , Layout.view theme
                         { layD | hasSider = True }
                         [ LayoutSider.view theme
-                            { lsD | bordered = True, showTrigger = LayoutSider.ArrowCircle }
+                            { lsD
+                                | bordered = True
+                                , showTrigger = LayoutSider.ArrowCircle
+                                , collapsed = model.siderCollapsed
+                                , onToggleCollapsed = Just SiderToggled
+                            }
                             [ Element.text "Sider" ]
                         , Layout.content theme layD [ Element.text "Content" ]
                         ]
@@ -982,7 +1000,7 @@ sections model =
     , gridSection
     , qrCodeSection
     , floatButtonLiveSection model
-    , layoutSection
+    , layoutSection model
     , floatButtonGroupSection
     , heatmapSection
     , descriptionsSection
