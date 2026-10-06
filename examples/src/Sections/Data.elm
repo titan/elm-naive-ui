@@ -115,6 +115,34 @@ type alias Model =
     , formAge : Maybe Float
     , formAgeFeedback : List Form.Feedback
     , formSubmitted : Maybe ( String, String )
+
+    -- phase-2: the static rows' own channels (init == the old literals)
+    , tagsSamples : List String
+    , tagsSmallSamples : List String
+    , tagsInputSamples : List String
+    , tagsInputDraft : String
+    , tagsInputShown : Bool
+    , calSamplesValue : Maybe Calendar.Date
+    , calSamplesPanel : Calendar.Panel
+    , stringsSamples : List String
+    , pairsSamples : List ( String, String )
+    , onlyThree : List String
+    , treeExpandedCheckable : List String
+    , treeExpandedMulti : List String
+    , treeExpandedLine : List String
+    , treeExpandedBlock : List String
+    , treeExpandedLoading : List String
+    , treeCheckedBasic : List String
+    , treeSelectedMulti : List String
+    , transferValue2 : List String
+    , transferValueLarge : List String
+    , transferValueAll : List String
+    , dtSortSample : List (DataTable.SortState Person)
+    , dtSortPageSample : List (DataTable.SortState Person)
+    , dtCheckedSelection : List String
+    , dtCheckedSingle : List String
+    , dtCheckedExtra : List String
+    , dtExpandedKeys : List String
     }
 
 
@@ -154,6 +182,32 @@ init =
     , formAge = Nothing
     , formAgeFeedback = []
     , formSubmitted = Nothing
+    , tagsSamples = [ "Naive UI", "Elm", "elm-ui" ]
+    , tagsSmallSamples = [ "small", "medium" ]
+    , tagsInputSamples = [ "one", "two" ]
+    , tagsInputDraft = "thr"
+    , tagsInputShown = True
+    , calSamplesValue = Just { year = 2024, month = 6, day = 20 }
+    , calSamplesPanel = { year = 2024, month = 6 }
+    , stringsSamples = [ "Alice", "Bob", "Cindy" ]
+    , pairsSamples = [ ( "Name", "Naive UI" ), ( "Author", "07akioni" ) ]
+    , onlyThree = [ "Only", "Three" ]
+    , treeExpandedCheckable = [ "beatles" ]
+    , treeExpandedMulti = [ "beatles" ]
+    , treeExpandedLine = [ "beatles", "stones" ]
+    , treeExpandedBlock = [ "beatles" ]
+    , treeExpandedLoading = [ "beatles", "stones" ]
+    , treeCheckedBasic = [ "drive", "nowhere" ]
+    , treeSelectedMulti = [ "drive", "exile" ]
+    , transferValue2 = [ "2" ]
+    , transferValueLarge = [ "1", "4" ]
+    , transferValueAll = [ "1", "2", "3", "4" ]
+    , dtSortSample = []
+    , dtSortPageSample = []
+    , dtCheckedSelection = [ "Jaime Whyte", "Boris Wuhrer" ]
+    , dtCheckedSingle = [ "Boris Wuhrer", "Jesse Tripps" ]
+    , dtCheckedExtra = [ "Terry Malany" ]
+    , dtExpandedKeys = [ "Boris Wuhrer" ]
     }
 
 
@@ -216,6 +270,34 @@ type Msg
     | FormNameBlur
     | FormAgeChange (Maybe Float)
     | FormSubmit
+      -- phase-2: the static rows' own channels
+    | TagsSamplesUpdate (List String)
+    | TagsSmallSamplesUpdate (List String)
+    | TagsInputSamplesUpdate (List String)
+    | TagsInputDraftInput String
+    | TagsInputConfirm
+    | TagsInputActivate
+    | CalSamplesPick Calendar.Date
+    | CalSamplesPanel Calendar.Panel
+    | StringsSamplesUpdate (List String)
+    | StringsSampleRemove Int
+    | PairsSamplesUpdate (List ( String, String ))
+    | PairsSampleRemove Int
+    | OnlyThreeUpdate (List String)
+    | OnlyThreeRemove Int
+    | SampleTreeNodeClick { key : String, check : Bool, select : Bool, expandedToggle : Msg }
+    | TreeExpandedCheckableToggle String
+    | TreeExpandedMultiToggle String
+    | TreeExpandedBlockToggle String
+    | TransferSamplesCheck (List String)
+    | TransferLargeCheck (List String)
+    | TransferAllCheck (List String)
+    | DtSortSampleChange (List (DataTable.SortState Person))
+    | DtSortPageSampleChange (List (DataTable.SortState Person))
+    | DtCheckedSelectionChange (List String) (List Person) (DataTable.CheckEmit Person)
+    | DtCheckedSingleChange (List String) (List Person) (DataTable.CheckEmit Person)
+    | DtCheckedExtraChange (List String) (List Person) (DataTable.CheckEmit Person)
+    | DtExpandedToggle (List String)
 
 
 update : Msg -> Model -> Model
@@ -514,6 +596,132 @@ update msg model =
                         model.formSubmitted
             }
 
+        TagsSamplesUpdate tags ->
+            { model | tagsSamples = tags }
+
+        TagsSmallSamplesUpdate tags ->
+            { model | tagsSmallSamples = tags }
+
+        TagsInputSamplesUpdate tags ->
+            { model | tagsInputSamples = tags }
+
+        TagsInputDraftInput draft ->
+            { model | tagsInputDraft = draft }
+
+        TagsInputConfirm ->
+            -- the header's documented confirm recipe
+            { model
+                | tagsInputSamples =
+                    if model.tagsInputDraft == "" then
+                        model.tagsInputSamples
+
+                    else
+                        model.tagsInputSamples ++ [ model.tagsInputDraft ]
+                , tagsInputShown = False
+                , tagsInputDraft = ""
+            }
+
+        TagsInputActivate ->
+            { model | tagsInputShown = True }
+
+        CalSamplesPick date ->
+            -- the header's recipe: an other-month pick also moves the panel
+            { model
+                | calSamplesValue = Just date
+                , calSamplesPanel =
+                    if Calendar.panelOf date /= model.calSamplesPanel then
+                        Calendar.panelOf date
+
+                    else
+                        model.calSamplesPanel
+            }
+
+        CalSamplesPanel panel ->
+            { model | calSamplesPanel = panel }
+
+        StringsSamplesUpdate strings ->
+            { model | stringsSamples = strings }
+
+        StringsSampleRemove index ->
+            { model | stringsSamples = DynamicInput.removeAt index model.stringsSamples }
+
+        PairsSamplesUpdate pairs ->
+            { model | pairsSamples = pairs }
+
+        PairsSampleRemove index ->
+            { model | pairsSamples = DynamicInput.removeAt index model.pairsSamples }
+
+        OnlyThreeUpdate strings ->
+            { model | onlyThree = strings }
+
+        OnlyThreeRemove index ->
+            { model | onlyThree = DynamicInput.removeAt index model.onlyThree }
+
+        SampleTreeNodeClick info ->
+            -- the three-fold node click of the live row's recipe; each row's
+            -- nodeProps closes over its own expanded-set toggle (the
+            -- per-instance sets differ — see the Model fields)
+            let
+                checked =
+                    if info.check then
+                        if List.member info.key (Tree.getCheckedKeys True Tree.All False model.treeCheckedBasic treeOptions).checkedKeys then
+                            Tree.uncheck True Tree.All False info.key model.treeCheckedBasic treeOptions
+
+                        else
+                            Tree.check True Tree.All False info.key model.treeCheckedBasic treeOptions
+
+                    else
+                        model.treeCheckedBasic
+
+                selected =
+                    if info.select then
+                        Tree.toggleSelect True True info.key model.treeSelectedMulti
+
+                    else
+                        model.treeSelectedMulti
+            in
+            update info.expandedToggle
+                { model
+                    | treeCheckedBasic = checked
+                    , treeSelectedMulti = selected
+                }
+
+        TreeExpandedCheckableToggle key ->
+            { model | treeExpandedCheckable = Tree.toggleExpand False treeOptions key model.treeExpandedCheckable }
+
+        TreeExpandedMultiToggle key ->
+            { model | treeExpandedMulti = Tree.toggleExpand False treeOptions key model.treeExpandedMulti }
+
+        TreeExpandedBlockToggle key ->
+            { model | treeExpandedBlock = Tree.toggleExpand False treeOptions key model.treeExpandedBlock }
+
+        TransferSamplesCheck value ->
+            { model | transferValue2 = value }
+
+        TransferLargeCheck value ->
+            { model | transferValueLarge = value }
+
+        TransferAllCheck value ->
+            { model | transferValueAll = value }
+
+        DtSortSampleChange states ->
+            { model | dtSortSample = states }
+
+        DtSortPageSampleChange states ->
+            { model | dtSortPageSample = states }
+
+        DtCheckedSelectionChange keys _ _ ->
+            { model | dtCheckedSelection = keys }
+
+        DtCheckedSingleChange keys _ _ ->
+            { model | dtCheckedSingle = keys }
+
+        DtCheckedExtraChange keys _ _ ->
+            { model | dtCheckedExtra = keys }
+
+        DtExpandedToggle keys ->
+            { model | dtExpandedKeys = keys }
+
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
@@ -767,29 +975,45 @@ tagsDemo theme model =
         ]
 
 
-dynamicTagsRows : List (Element msg)
-dynamicTagsRows =
+dynamicTagsRows : Model -> List (Element Msg)
+dynamicTagsRows model =
     [ demoRow "Tags"
         [ DynamicTags.view theme
-            { dtagsD | value = [ "Naive UI", "Elm", "elm-ui" ] }
+            { dtagsD
+                | value = model.tagsSamples
+                , onUpdateValue = Just TagsSamplesUpdate
+            }
             []
         , DynamicTags.view theme
-            { dtagsD | value = [ "small", "medium" ], size = T.Small, round = True }
+            { dtagsD
+                | value = model.tagsSmallSamples
+                , size = T.Small
+                , round = True
+                , onUpdateValue = Just TagsSmallSamplesUpdate
+            }
             []
         ]
     , demoRow "Input shown (caller owns the draft)"
         [ DynamicTags.view theme
-            { dtagsD | value = [ "one", "two" ], showInput = True, inputValue = "thr" }
+            { dtagsD
+                | value = model.tagsInputSamples
+                , showInput = model.tagsInputShown
+                , inputValue = model.tagsInputDraft
+                , onActivate = Just TagsInputActivate
+                , onInputValue = Just TagsInputDraftInput
+                , onConfirm = Just TagsInputConfirm
+                , onUpdateValue = Just TagsInputSamplesUpdate
+            }
             []
         ]
     ]
 
 
-dynamicTagsSection : Element msg
-dynamicTagsSection =
+dynamicTagsSection : Model -> Element Msg
+dynamicTagsSection model =
     section "Dynamic Tags"
         "Editable tag lists (the tags, input and draft are caller-owned)."
-        dynamicTagsRows
+        (dynamicTagsRows model)
 
 
 tagsLiveRow : Model -> Element Msg
@@ -801,7 +1025,7 @@ dynamicTagsLiveSection : Model -> Element Msg
 dynamicTagsLiveSection model =
     section "Dynamic Tags"
         "Editable tag lists (the tags, input and draft are caller-owned)."
-        (dynamicTagsRows ++ [ tagsLiveRow model ])
+        (dynamicTagsRows model ++ [ tagsLiveRow model ])
 
 
 
@@ -842,8 +1066,8 @@ calendarDemo theme model =
         ]
 
 
-calendarRows : List (Element msg)
-calendarRows =
+calendarRows : Model -> List (Element Msg)
+calendarRows model =
     [ Element.el [ Element.width (Element.px 420) ]
         (Calendar.view theme
             { calD | panel = { year = 2024, month = 6 }, now = { year = 2024, month = 6, day = 15 } }
@@ -851,19 +1075,21 @@ calendarRows =
     , Element.el [ Element.width (Element.px 420) ]
         (Calendar.view theme
             { calD
-                | panel = { year = 2024, month = 6 }
+                | panel = model.calSamplesPanel
                 , now = { year = 2024, month = 6, day = 15 }
-                , value = Just { year = 2024, month = 6, day = 20 }
+                , value = model.calSamplesValue
+                , onUpdateValue = Just CalSamplesPick
+                , onPanelChange = Just CalSamplesPanel
             }
         )
     ]
 
 
-calendarSection : Element msg
-calendarSection =
+calendarSection : Model -> Element Msg
+calendarSection model =
     section "Calendar"
         "A month view (the panel, value and locale are caller-owned)."
-        calendarRows
+        (calendarRows model)
 
 
 calendarLiveRow : Model -> Element Msg
@@ -875,7 +1101,7 @@ calendarLiveSection : Model -> Element Msg
 calendarLiveSection model =
     section "Calendar"
         "A month view (the panel, value and locale are caller-owned)."
-        (calendarRows ++ [ calendarLiveRow model ])
+        (calendarRows model ++ [ calendarLiveRow model ])
 
 
 
@@ -918,29 +1144,35 @@ pairDemo theme model =
         ]
 
 
-dynamicInputRows : List (Element msg)
-dynamicInputRows =
+dynamicInputRows : Model -> List (Element Msg)
+dynamicInputRows model =
     [ demoRow "Preset: input"
         [ DynamicInput.viewInput theme
             { diD
-                | value = [ "Alice", "Bob", "Cindy" ]
+                | value = model.stringsSamples
                 , placeholder = Just "Name"
+                , onUpdateValue = Just StringsSamplesUpdate
+                , onRemove = Just StringsSampleRemove
             }
         ]
     , demoRow "Preset: pair"
         [ DynamicInput.viewPair theme
             { diPairD
-                | value = [ ( "Name", "Naive UI" ), ( "Author", "07akioni" ) ]
+                | value = model.pairsSamples
                 , keyPlaceholder = Just "Key"
                 , valuePlaceholder = Just "Value"
+                , onUpdateValue = Just PairsSamplesUpdate
+                , onRemove = Just PairsSampleRemove
             }
         ]
     , demoRow "Max + sort buttons"
         [ DynamicInput.viewInput theme
             { diD
-                | value = [ "Only", "Three" ]
+                | value = model.onlyThree
                 , max = Just 3
                 , showSortButton = True
+                , onUpdateValue = Just OnlyThreeUpdate
+                , onRemove = Just OnlyThreeRemove
             }
         ]
     , demoRow "Empty (Create button)"
@@ -949,11 +1181,11 @@ dynamicInputRows =
     ]
 
 
-dynamicInputSection : Element msg
-dynamicInputSection =
+dynamicInputSection : Model -> Element Msg
+dynamicInputSection model =
     section "DynamicInput"
         "A list of values, each row an input (or key / value pair) with add / remove / sort actions. Pure list core: `insertAt` / `removeAt` / `moveUp` / `moveDown`, guarded by `min` / `max`."
-        dynamicInputRows
+        (dynamicInputRows model)
 
 
 pairLiveRow : Model -> Element Msg
@@ -965,7 +1197,7 @@ dynamicInputLiveSection : Model -> Element Msg
 dynamicInputLiveSection model =
     section "DynamicInput"
         "A list of values, each row an input (or key / value pair) with add / remove / sort actions. Pure list core: `insertAt` / `removeAt` / `moveUp` / `moveDown`, guarded by `min` / `max`."
-        (dynamicInputRows ++ [ pairLiveRow model ])
+        (dynamicInputRows model ++ [ pairLiveRow model ])
 
 
 
@@ -1125,6 +1357,40 @@ treeInfo key options =
                         treeInfo key rest
 
 
+{-| The phase-2 static rows' `nodeProps` seam — the port's documented
+node-click attribute hook (same seam the live row uses). `withCheck` rides
+the treemate check/uncheck algebra under `checkOnClick`, `withSelect` the
+toggleSelect walk; both always fold in the expand toggle (the switcher is
+display-only, so the node click owns expand too — the module doc's recipe).
+-}
+sampleNodeProps : Bool -> Bool -> (String -> Msg) -> Tree.TreeOption Msg -> List (Element.Attribute Msg)
+sampleNodeProps withCheck withSelect expandedToggle option =
+    let
+        key =
+            treeKeyOf option
+    in
+    case treeInfo key treeOptions of
+        Just info ->
+            if info.disabled then
+                []
+
+            else
+                [ Element.htmlAttribute
+                    (HE.onClick
+                        (SampleTreeNodeClick
+                            { key = key
+                            , check = withCheck
+                            , select = withSelect
+                            , expandedToggle = expandedToggle key
+                            }
+                        )
+                    )
+                ]
+
+        Nothing ->
+            []
+
+
 treeOpts : Model -> Tree.Options Msg
 treeOpts model =
     let
@@ -1170,56 +1436,59 @@ treeDemo theme model =
         ]
 
 
-treeRows : List (Element msg)
-treeRows =
+treeRows : Model -> List (Element Msg)
+treeRows model =
     [ demoRow "Basic · checkable (cascade, Child strategy)"
         [ Tree.view theme
             { treeD | data = treeOptions, expandedKeys = [ "beatles", "stones" ] }
         , Tree.view theme
             { treeD
                 | data = treeOptions
-                , expandedKeys = [ "beatles" ]
+                , expandedKeys = model.treeExpandedCheckable
                 , checkable = True
                 , cascade = True
                 , checkStrategy = Tree.Child
-                , checkedKeys = [ "drive", "nowhere" ]
+                , checkedKeys = model.treeCheckedBasic
+                , nodeProps = Just (sampleNodeProps True False TreeExpandedCheckableToggle)
             }
         ]
     , demoRow "Multiple selection · showLine"
         [ Tree.view theme
             { treeD
                 | data = treeOptions
-                , expandedKeys = [ "beatles" ]
+                , expandedKeys = model.treeExpandedMulti
                 , multiple = True
-                , selectedKeys = [ "drive", "exile" ]
+                , selectedKeys = model.treeSelectedMulti
+                , nodeProps = Just (sampleNodeProps False True TreeExpandedMultiToggle)
             }
         , Tree.view theme
-            { treeD | data = treeOptions, expandedKeys = [ "beatles", "stones" ], showLine = True }
+            { treeD | data = treeOptions, expandedKeys = model.treeExpandedLine, showLine = True }
         ]
     , demoRow "block-line + ellipsis · pending + highlight"
         [ Tree.view theme
             { treeD
                 | data = treeOptions
-                , expandedKeys = [ "beatles" ]
+                , expandedKeys = model.treeExpandedBlock
                 , blockLine = True
                 , ellipsis = True
                 , pendingKey = Just "nowhere"
                 , highlightKeys = Just [ "revolver" ]
+                , nodeProps = Just (sampleNodeProps False False TreeExpandedBlockToggle)
             }
         ]
     , demoRow "Loading switcher · empty"
         [ Tree.view theme
-            { treeD | data = treeOptions, expandedKeys = [ "beatles", "stones" ], loadingKeys = [ "stones" ] }
+            { treeD | data = treeOptions, expandedKeys = model.treeExpandedLoading, loadingKeys = [ "stones" ] }
         , Tree.view theme { treeD | attributes = [ Element.width (Element.px 240) ] }
         ]
     ]
 
 
-treeSection : Element msg
-treeSection =
+treeSection : Model -> Element Msg
+treeSection model =
     section "Tree"
         "Naive UI's tree — the `div.n-tree` root (17 `--n-*` vars; three derived from the wrapper-padding/height strings) rendering the flattened visible nodes as `n-tree-node-wrapper` rows: a `showLine` indent chain, the switcher (arrow svg, the loading spinner for `loadingKeys` keys — sw20/r85 baseline under the `spin*` overrides), the `data-checkbox`-wrapped `NUI.Checkbox` (cascade-checked via the shipped treemate helpers), and the prefix/label/suffix content. Everything interactive is data: `expandedKeys` / `checkedKeys` / `selectedKeys` / `pendingKey` / `loadingKeys` / `dropMark`; the pure helpers (`flatten`, `getCheckedKeys`, `check` / `uncheck`, `toggleExpand`, `toggleSelect`, `getNonLeafKeys`, `filterTree`) do the treemate math. Not ported: virtual list, expand motion, drag/keyboard events."
-        treeRows
+        (treeRows model)
 
 
 treeLiveRow : Model -> Element Msg
@@ -1231,7 +1500,7 @@ treeLiveSection : Model -> Element Msg
 treeLiveSection model =
     section "Tree"
         "Naive UI's tree — the `div.n-tree` root (17 `--n-*` vars; three derived from the wrapper-padding/height strings) rendering the flattened visible nodes as `n-tree-node-wrapper` rows: a `showLine` indent chain, the switcher (arrow svg, the loading spinner for `loadingKeys` keys — sw20/r85 baseline under the `spin*` overrides), the `data-checkbox`-wrapped `NUI.Checkbox` (cascade-checked via the shipped treemate helpers), and the prefix/label/suffix content. Everything interactive is data: `expandedKeys` / `checkedKeys` / `selectedKeys` / `pendingKey` / `loadingKeys` / `dropMark`; the pure helpers (`flatten`, `getCheckedKeys`, `check` / `uncheck`, `toggleExpand`, `toggleSelect`, `getNonLeafKeys`, `filterTree`) do the treemate math. Not ported: virtual list, expand motion, drag/keyboard events."
-        (treeRows ++ [ treeLiveRow model ])
+        (treeRows model ++ [ treeLiveRow model ])
 
 
 
@@ -1757,8 +2026,8 @@ dataTableDemo theme model =
         ]
 
 
-dataTableRows : List (Element msg)
-dataTableRows =
+dataTableRows : Model -> List (Element Msg)
+dataTableRows model =
     let
         dtD =
             DataTable.defaults
@@ -1869,22 +2138,33 @@ dataTableRows =
         ]
     , demoRow "Sorting"
         [ DataTable.view theme
-            { dtD | columns = sortableColumns, data = people_, rowKey = .name }
+            { dtD
+                | columns = sortableColumns
+                , data = people_
+                , rowKey = .name
+                , sortStates = model.dtSortSample
+                , onSorterChange = Just DtSortSampleChange
+            }
         , DataTable.view theme
             { dtD
                 | columns = sortableColumns
                 , data = people_
                 , rowKey = .name
                 , sortStates =
-                    DataTable.defaultSortStates sortableColumns
-                        |> List.map
-                            (\state ->
-                                if state.columnKey == "age" then
-                                    { state | order = DataTable.Descend }
+                    if List.isEmpty model.dtSortSample then
+                        DataTable.defaultSortStates sortableColumns
+                            |> List.map
+                                (\state ->
+                                    if state.columnKey == "age" then
+                                        { state | order = DataTable.Descend }
 
-                                else
-                                    state
-                            )
+                                    else
+                                        state
+                                )
+
+                    else
+                        model.dtSortSample
+                , onSorterChange = Just DtSortSampleChange
             }
         ]
     , demoRow "Pagination"
@@ -1902,13 +2182,19 @@ dataTableRows =
                 | columns = sortableColumns
                 , data = people_
                 , rowKey = .name
-                , sortStates = [ ageDescend ]
+                , sortStates =
+                    if List.isEmpty model.dtSortPageSample then
+                        [ ageDescend ]
+
+                    else
+                        model.dtSortPageSample
                 , pagination =
                     Just
                         { dtPg
                             | pageSize = Just 2
                             , currentPage = 2
                         }
+                , onSorterChange = Just DtSortPageSampleChange
             }
         ]
     , demoRow "Filter"
@@ -1933,7 +2219,8 @@ dataTableRows =
                     ]
                 , data = people_
                 , rowKey = .name
-                , checkedRowKeys = [ "Jaime Whyte", "Boris Wuhrer" ]
+                , checkedRowKeys = model.dtCheckedSelection
+                , onUpdateCheckedRowKeys = Just DtCheckedSelectionChange
             }
         ]
     , demoRow "Selection (single)"
@@ -1946,7 +2233,8 @@ dataTableRows =
                     ]
                 , data = people_
                 , rowKey = .name
-                , checkedRowKeys = [ "Boris Wuhrer", "Jesse Tripps" ]
+                , checkedRowKeys = model.dtCheckedSingle
+                , onUpdateCheckedRowKeys = Just DtCheckedSingleChange
             }
         ]
     , demoRow "Selection extra"
@@ -1962,7 +2250,8 @@ dataTableRows =
                     ]
                 , data = people_
                 , rowKey = .name
-                , checkedRowKeys = [ "Terry Malany" ]
+                , checkedRowKeys = model.dtCheckedExtra
+                , onUpdateCheckedRowKeys = Just DtCheckedExtraChange
             }
         ]
     , demoRow "Expand"
@@ -1979,7 +2268,8 @@ dataTableRows =
                     ]
                 , data = people_
                 , rowKey = .name
-                , expandedRowKeys = [ "Boris Wuhrer" ]
+                , expandedRowKeys = model.dtExpandedKeys
+                , onUpdateExpandedRowKeys = Just DtExpandedToggle
             }
         ]
     , demoRow "Scroll X + fixed columns"
@@ -2140,11 +2430,11 @@ dataTableRows =
     ]
 
 
-dataTableSection : Element msg
-dataTableSection =
+dataTableSection : Model -> Element Msg
+dataTableSection model =
     section "Data Table"
         "The advanced table (upstream `NDataTable`) — column definitions drive the colgroup, header cells and body cells; `rowKey` keys rows and the empty state renders `NEmpty`. Selection (checkbox / radio / extra menu), row expansion, scroll-X / fixed columns / max-height / flex-height (the discrete-header split), ellipsis columns, the loading overlay, the filter surface (trigger, pipeline, exported `filterMenu` body) and the structure extras — group headers (`children`), summary rows (`summary` / `summaryPlacement`) and merge cells (`colSpan` / `rowSpan` / `titleColSpan` — a swallowed slot renders no td) — ship in this batch, on top of sorting and pagination. The sort / page / checked / expanded / filter state is caller-owned — this page is static, so nothing is wired (the open menu is the caller's `NUI.Popover` runtime)."
-        dataTableRows
+        (dataTableRows model)
 
 
 dataTableLiveRow : Model -> Element Msg
@@ -2156,7 +2446,7 @@ dataTableLiveSection : Model -> Element Msg
 dataTableLiveSection model =
     section "Data Table"
         "The advanced table (upstream `NDataTable`) — column definitions drive the colgroup, header cells and body cells; `rowKey` keys rows and the empty state renders `NEmpty`. Selection (checkbox / radio / extra menu), row expansion, scroll-X / fixed columns / max-height / flex-height (the discrete-header split), ellipsis columns, the loading overlay, the filter surface (trigger, pipeline, exported `filterMenu` body) and the structure extras — group headers (`children`), summary rows (`summary` / `summaryPlacement`) and merge cells (`colSpan` / `rowSpan` / `titleColSpan` — a swallowed slot renders no td) — ship in this batch, on top of sorting and pagination. The sort / page / checked / expanded / filter state is caller-owned — this page is static, so nothing is wired (the open menu is the caller's `NUI.Popover` runtime)."
-        (dataTableRows ++ [ dataTableLiveRow model ])
+        (dataTableRows model ++ [ dataTableLiveRow model ])
 
 
 
@@ -2211,8 +2501,8 @@ transferDemo theme model =
         ]
 
 
-transferRows : List (Element msg)
-transferRows =
+transferRows : Model -> List (Element Msg)
+transferRows model =
     let
         trD =
             Transfer.defaults
@@ -2228,20 +2518,22 @@ transferRows =
         [ Transfer.view theme
             { trD
                 | options = opts
-                , value = [ "2" ]
+                , value = model.transferValue2
                 , sourceTitle = Just "Source"
                 , targetTitle = Just "Target"
+                , onCheck = Just TransferSamplesCheck
             }
         ]
     , demoRow "Filterable + large"
         [ Transfer.view theme
             { trD
                 | options = opts
-                , value = [ "1", "4" ]
+                , value = model.transferValueLarge
                 , size = T.Large
                 , sourceFilterable = True
                 , targetFilterable = True
                 , sourceFilterPlaceholder = Just "Search"
+                , onCheck = Just TransferLargeCheck
             }
         ]
     , demoRow "Disabled + empty target"
@@ -2260,19 +2552,20 @@ transferRows =
         [ Transfer.view theme
             { trD
                 | options = opts
-                , value = [ "1", "2", "3", "4" ]
+                , value = model.transferValueAll
                 , selectAllText = Just "Pick everything"
                 , clearText = Just "Drop everything"
+                , onCheck = Just TransferAllCheck
             }
         ]
     ]
 
 
-transferSection : Element msg
-transferSection =
+transferSection : Model -> Element Msg
+transferSection model =
     section "Transfer"
         "Two lists with select-all / clear — value and patterns are caller-owned."
-        transferRows
+        (transferRows model)
 
 
 transferLiveRow : Model -> Element Msg
@@ -2284,7 +2577,7 @@ transferLiveSection : Model -> Element Msg
 transferLiveSection model =
     section "Transfer"
         "Two lists with select-all / clear — value and patterns are caller-owned."
-        (transferRows ++ [ transferLiveRow model ])
+        (transferRows model ++ [ transferLiveRow model ])
 
 
 

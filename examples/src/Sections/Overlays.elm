@@ -53,6 +53,28 @@ toggle the overlays CLOSED → OPEN from the model.
     the animation frames (`start`/`kick`/`finish`/`error` + the enter/leave
     phase ladder).
 
+Phase 2 wires the static rows' own channels to the same model (initial
+values equal the old literals, so the initial DOM is byte-identical and
+every overlay root still renders open from init — the check-dom gate):
+
+  - **Dropdown static rows** wire `value` + `onSelect` (init = the current
+    literal) — the menus stay mounted (static specimens of the open menu),
+    leaf clicks navigate the active-option highlight in place.
+  - **Message / Notification "Closable" rows** move their item fixtures into
+    the model with `onClose` wired — the close × runs the same two-beat
+    caller-owned hide clock as the live queues (destroy, then remove).
+  - **Modal / Drawer static rows** wire `show` (init `True`) plus the close
+    channels the presets expose (Card/DrawerContent `onClose`, the drawer's
+    real `onMaskClick`, the dialog presets' positive/negative/×) — the
+    container roots always render, so closing only unmounts mask + body.
+  - **Popover / Popconfirm / Tooltip static rows** stay pure specimens: their
+    Options carry no show/close channel at all (the popover runtime is
+    caller-owned upstream — the live rows ARE that runtime), and the pinned
+    phase/appearance rows (LoadingBar Starting/Finishing/Error, popover
+    Enter-active, modal Enter-active, drawer Hidden-mask/Enter-active,
+    DialogProvider fixed queues, bare `Dialog.view` bodies) exist to show
+    those states.
+
 -}
 
 import Element exposing (Element)
@@ -198,6 +220,18 @@ type alias Model =
     , notificationOutcome : String
     , loadingBar : LoadingBar.State
     , loadingOutcome : String
+    , dropdownBasicValue : Maybe String
+    , dropdownGroupValue : Maybe String
+    , dropdownChildValue : Maybe String
+    , dropdownActiveValue : Maybe String
+    , dropdownVariantValue : Maybe String
+    , staticMessages : List (Message.Item Msg)
+    , staticNotifications : List (Notification.Item Msg)
+    , modalCardOpen : Bool
+    , modalDialogOpen : Bool
+    , modalConfirmOpen : Bool
+    , dialogSamplesOpen : Bool
+    , drawerStaticOpen : Bool
     }
 
 
@@ -238,6 +272,63 @@ init =
     , notificationOutcome = "queue empty"
     , loadingBar = LoadingBar.init
     , loadingOutcome = "idle — the bar is unmounted"
+    , dropdownBasicValue = Nothing
+    , dropdownGroupValue = Nothing
+    , dropdownChildValue = Just "target"
+    , dropdownActiveValue = Just "target"
+    , dropdownVariantValue = Nothing
+    , staticMessages =
+        [ { messageI
+            | key = "c1"
+            , options =
+                { messageD
+                    | kind = Message.Info
+                    , content = "Close me"
+                    , closable = Just True
+                    , onClose = Just (StaticMessageClose "c1")
+                }
+          }
+        , { messageI
+            | key = "c2"
+            , options =
+                { messageD
+                    | kind = Message.Success
+                    , content = "Also closable"
+                    , closable = Just True
+                    , onClose = Just (StaticMessageClose "c2")
+                }
+          }
+        ]
+    , staticNotifications =
+        [ { notificationI
+            | key = "full"
+            , options =
+                { notificationD
+                    | kind = Notification.Info
+                    , title = Just "Closable with the full tree"
+                    , description = Just "The description row"
+                    , content = Just "The content — upstream renders this in a <pre>"
+                    , meta = Just "the meta line"
+                    , action = Just (Element.text "action")
+                    , closable = Just True
+                    , onClose = Just (StaticNotificationClose "full")
+                }
+          }
+        , { notificationI
+            | key = "plain"
+            , options =
+                { notificationD
+                    | title = Just "No avatar — bare main (close renders: closable defaults true)"
+                    , kind = Notification.Default
+                    , onClose = Just (StaticNotificationClose "plain")
+                }
+          }
+        ]
+    , modalCardOpen = True
+    , modalDialogOpen = True
+    , modalConfirmOpen = True
+    , dialogSamplesOpen = True
+    , drawerStaticOpen = True
     }
 
 
@@ -285,6 +376,19 @@ type Msg
     | LoadingFinish
     | LoadingError
     | LoadingAfterLeave
+      -- phase-2: the static rows' own channels
+    | DropdownBasicSelect String
+    | DropdownGroupSelect String
+    | DropdownChildSelect String
+    | DropdownActiveSelect String
+    | DropdownVariantSelect String
+    | StaticMessageClose String
+    | StaticNotificationClose String
+    | ModalCardClose
+    | ModalDialogClose
+    | ModalConfirmClose
+    | DialogSampleClose
+    | DrawerStaticClose
 
 
 update : Msg -> Model -> Model
@@ -529,6 +633,59 @@ update msg model =
                 | loadingBar = loadingPhaseClear model.loadingBar
                 , loadingOutcome = "after-leave (.8s clock) — the container collapses"
             }
+
+        DropdownBasicSelect key ->
+            { model | dropdownBasicValue = Just key }
+
+        DropdownGroupSelect key ->
+            { model | dropdownGroupValue = Just key }
+
+        DropdownChildSelect key ->
+            { model | dropdownChildValue = Just key }
+
+        DropdownActiveSelect key ->
+            { model | dropdownActiveValue = Just key }
+
+        DropdownVariantSelect key ->
+            { model | dropdownVariantValue = Just key }
+
+        StaticMessageClose key ->
+            -- the same two-beat caller-owned hide clock as the live queue
+            let
+                state =
+                    { messageS | items = model.staticMessages }
+            in
+            if List.any (\i -> i.key == key && isLeaving i.phase) model.staticMessages then
+                { model | staticMessages = (Message.remove key state).items }
+
+            else
+                { model | staticMessages = (Message.destroy key state).items }
+
+        StaticNotificationClose key ->
+            let
+                state =
+                    { notificationS | items = model.staticNotifications }
+            in
+            if List.any (\i -> i.key == key && isLeaving i.phase) model.staticNotifications then
+                { model | staticNotifications = (Notification.remove key state).items }
+
+            else
+                { model | staticNotifications = (Notification.destroy key state).items }
+
+        ModalCardClose ->
+            { model | modalCardOpen = False }
+
+        ModalDialogClose ->
+            { model | modalDialogOpen = False }
+
+        ModalConfirmClose ->
+            { model | modalConfirmOpen = False }
+
+        DialogSampleClose ->
+            { model | dialogSamplesOpen = False }
+
+        DrawerStaticClose ->
+            { model | drawerStaticOpen = False }
 
 
 {-| One message pushed through the provider transforms: the typed helper
@@ -1035,13 +1192,13 @@ tooltipLiveSection model =
         (tooltipRows ++ [ tooltipHoverRow model ])
 
 
-dropdownRows : List (Element msg)
-dropdownRows =
+dropdownRows : Model -> List (Element Msg)
+dropdownRows model =
     [ demoRow "Basic + sizes"
         [ popoverHost Popover.Bottom
             []
             (Dropdown.view theme
-                dropdownD
+                { dropdownD | value = model.dropdownBasicValue, onSelect = Just DropdownBasicSelect }
                 [ Dropdown.Option
                     { key = "edit"
                     , label = "Edit"
@@ -1072,13 +1229,21 @@ dropdownRows =
         , popoverHost Popover.Bottom
             []
             (Dropdown.view theme
-                { dropdownD | size = Dropdown.Small }
+                { dropdownD
+                    | size = Dropdown.Small
+                    , value = model.dropdownBasicValue
+                    , onSelect = Just DropdownBasicSelect
+                }
                 [ demoLeaf "small-1" "Small", demoLeaf "small-2" "28px rows" ]
             )
         , popoverHost Popover.Bottom
             []
             (Dropdown.view theme
-                { dropdownD | size = Dropdown.Huge }
+                { dropdownD
+                    | size = Dropdown.Huge
+                    , value = model.dropdownBasicValue
+                    , onSelect = Just DropdownBasicSelect
+                }
                 [ demoLeaf "huge-1" "Huge", demoLeaf "huge-2" "46px rows, 18px icons" ]
             )
         ]
@@ -1086,7 +1251,11 @@ dropdownRows =
         [ popoverHost Popover.Bottom
             []
             (Dropdown.view theme
-                { dropdownD | width = Just "220px" }
+                { dropdownD
+                    | width = Just "220px"
+                    , value = model.dropdownGroupValue
+                    , onSelect = Just DropdownGroupSelect
+                }
                 [ Dropdown.Group
                     { key = "group-people"
                     , label = "People"
@@ -1129,7 +1298,10 @@ dropdownRows =
         , popoverHost Popover.Bottom
             []
             (Dropdown.view theme
-                { dropdownD | value = Just "target" }
+                { dropdownD
+                    | value = model.dropdownChildValue
+                    , onSelect = Just DropdownChildSelect
+                }
                 [ Dropdown.Option
                     { key = "parent"
                     , label = "Parent (child-active)"
@@ -1144,7 +1316,10 @@ dropdownRows =
         , popoverHost Popover.Bottom
             []
             (Dropdown.view theme
-                { dropdownD | value = Just "target" }
+                { dropdownD
+                    | value = model.dropdownActiveValue
+                    , onSelect = Just DropdownActiveSelect
+                }
                 [ demoLeaf "target" "Target (active)"
                 , demoLeaf "plain" "Plain"
                 ]
@@ -1154,13 +1329,21 @@ dropdownRows =
         [ popoverHost Popover.Bottom
             []
             (Dropdown.view theme
-                { dropdownD | showArrow = True }
+                { dropdownD
+                    | showArrow = True
+                    , value = model.dropdownVariantValue
+                    , onSelect = Just DropdownVariantSelect
+                }
                 [ demoLeaf "a1" "With the popover arrow", demoLeaf "a2" "Second item" ]
             )
         , popoverHost Popover.Bottom
             []
             (Dropdown.view theme
-                { dropdownD | inverted = True }
+                { dropdownD
+                    | inverted = True
+                    , value = model.dropdownVariantValue
+                    , onSelect = Just DropdownVariantSelect
+                }
                 [ demoLeaf "i1" "Inverted menu", demoLeaf "i2" "Primary hover" ]
             )
         , popoverHost Popover.Bottom
@@ -1169,6 +1352,8 @@ dropdownRows =
                 { dropdownD
                     | scrollable = True
                     , width = Just "240px"
+                    , value = model.dropdownVariantValue
+                    , onSelect = Just DropdownVariantSelect
                     , attributes = [ Element.height (Element.px 120) ]
                 }
                 (List.indexedMap (\i _ -> demoLeaf ("s" ++ String.fromInt i) ("Scrollable item " ++ String.fromInt (i + 1))) (List.range 1 12))
@@ -1177,11 +1362,11 @@ dropdownRows =
     ]
 
 
-dropdownSection : Element msg
-dropdownSection =
+dropdownSection : Model -> Element Msg
+dropdownSection model =
     section "Dropdown"
         "The `n-dropdown-menu` body — the popover runtime's sibling, rendered as its own element (`n-popover-shared` + `n-dropdown` markers, the merged 31-var set). The caller owns show state, the `v-placement` wrapper (here: `popoverHost`), and any submenu mounts."
-        dropdownRows
+        (dropdownRows model)
 
 
 {-| Live: `#live-dropdown-click` / `#live-dropdown-menu`.
@@ -1260,7 +1445,7 @@ dropdownLiveSection : Model -> Element Msg
 dropdownLiveSection model =
     section "Dropdown"
         "The `n-dropdown-menu` body — the popover runtime's sibling, rendered as its own element (`n-popover-shared` + `n-dropdown` markers, the merged 31-var set). The caller owns show state, the `v-placement` wrapper (here: `popoverHost`), and any submenu mounts."
-        (dropdownRows ++ [ dropdownClickRow model, dropdownHoverRow model ])
+        (dropdownRows model ++ [ dropdownClickRow model, dropdownHoverRow model ])
 
 
 demoLeaf : String -> String -> Dropdown.Option msg
@@ -1298,7 +1483,7 @@ demoIcon =
 placement; the fixed container is pinned into the cell with `position:
 relative` (the LoadingBar demo's trick).
 -}
-messageState : Message.Placement -> List (Message.Item msg) -> Element msg
+messageState : Message.Placement -> List (Message.Item Msg) -> Element Msg
 messageState placement items =
     modalHost []
         (Message.view theme
@@ -1310,7 +1495,7 @@ messageState placement items =
         )
 
 
-messageOf : String -> Message.Kind -> String -> Message.Item msg
+messageOf : String -> Message.Kind -> String -> Message.Item Msg
 messageOf key kind content =
     { messageI
         | key = key
@@ -1318,8 +1503,8 @@ messageOf key kind content =
     }
 
 
-messageRows : List (Element msg)
-messageRows =
+messageRows : Model -> List (Element Msg)
+messageRows model =
     [ demoRow "Kinds (one container, stacked)"
         [ messageState Message.Top
             [ messageOf "d" Message.Default "A default message — no icon wrapper"
@@ -1335,27 +1520,7 @@ messageRows =
             ]
         ]
     , demoRow "Closable (onClose fires; you destroy)"
-        [ messageState Message.Top
-            [ { messageI
-                | key = "c1"
-                , options =
-                    { messageD
-                        | kind = Message.Info
-                        , content = "Close me"
-                        , closable = Just True
-                        , onClose = Nothing
-                    }
-              }
-            , { messageI
-                | key = "c2"
-                , options =
-                    { messageD
-                        | kind = Message.Success
-                        , content = "Also closable"
-                        , closable = Just True
-                    }
-              }
-            ]
+        [ messageState Message.Top model.staticMessages
         ]
     , demoRow "Transition phases (caller clock)"
         [ messageState Message.Top
@@ -1404,11 +1569,11 @@ messageRows =
     ]
 
 
-messageSection : Element msg
-messageSection =
+messageSection : Model -> Element Msg
+messageSection model =
     section "Message"
         "Naive UI's message service: one caller-owned `State` holds the provider props (`max` — `Just 0` is unlimited and evictions drop the oldest item instantly, the 3000ms default, merged `keepAliveOnHover`/`closable`, `placement`) plus the queue. `create` appends and stamps the enter phase; `destroy` stamps the leave phase (a no-op while already leaving, like upstream's `hide()` on a hidden message); `remove` splices once the leave has run — the caller owns the hide clock, so these demos are static entered states (`phase = Nothing`) with one mid-enter item. A close click emits `onClose` only — completing the close is the caller's `destroy`; a message's close is never vetoed."
-        messageRows
+        (messageRows model)
 
 
 {-| Live: `#live-message-queue` (the push buttons stay immediately before the cell — `nearestPreceding` resolves them by document order).
@@ -1429,13 +1594,13 @@ messageLiveSection : Model -> Element Msg
 messageLiveSection model =
     section "Message"
         "Naive UI's message service: one caller-owned `State` holds the provider props (`max` — `Just 0` is unlimited and evictions drop the oldest item instantly, the 3000ms default, merged `keepAliveOnHover`/`closable`, `placement`) plus the queue. `create` appends and stamps the enter phase; `destroy` stamps the leave phase (a no-op while already leaving, like upstream's `hide()` on a hidden message); `remove` splices once the leave has run — the caller owns the hide clock, so these demos are static entered states (`phase = Nothing`) with one mid-enter item. A close click emits `onClose` only — completing the close is the caller's `destroy`; a message's close is never vetoed."
-        (messageRows ++ [ messageQueueRow model ])
+        (messageRows model ++ [ messageQueueRow model ])
 
 
 {-| One static notification demo cell — the message demo's trick: a fresh
 provider state per cell, pinned into it with `position: relative`.
 -}
-notificationState : Notification.Placement -> List (Notification.Item msg) -> Element msg
+notificationState : Notification.Placement -> List (Notification.Item Msg) -> Element Msg
 notificationState placement items =
     modalHost []
         (Notification.view theme
@@ -1447,7 +1612,7 @@ notificationState placement items =
         )
 
 
-notificationOf : String -> String -> Notification.Kind -> Notification.Item msg
+notificationOf : String -> String -> Notification.Kind -> Notification.Item Msg
 notificationOf key title kind =
     { notificationI
         | key = key
@@ -1455,8 +1620,8 @@ notificationOf key title kind =
     }
 
 
-notificationRows : List (Element msg)
-notificationRows =
+notificationRows : Model -> List (Element Msg)
+notificationRows model =
     [ demoRow "Kinds (top-right — scrollable, so the n-scrollbar tree shows)"
         [ notificationState Notification.TopRight
             [ notificationOf "d" "A default notification" Notification.Default
@@ -1467,22 +1632,7 @@ notificationRows =
             ]
         ]
     , demoRow "Closable + description / content-in-pre / meta + action"
-        [ notificationState Notification.TopRight
-            [ { notificationI
-                | key = "full"
-                , options =
-                    { notificationD
-                        | kind = Notification.Info
-                        , title = Just "Closable with the full tree"
-                        , description = Just "The description row"
-                        , content = Just "The content — upstream renders this in a <pre>"
-                        , meta = Just "the meta line"
-                        , action = Just (Element.text "action")
-                        , closable = Just True
-                    }
-              }
-            , notificationOf "plain" "No avatar — bare main (close renders: closable defaults true)" Notification.Default
-            ]
+        [ notificationState Notification.TopRight model.staticNotifications
         ]
     , demoRow "Placements (top/bottom centers force the scrollbar off)"
         [ notificationState Notification.TopLeft
@@ -1510,11 +1660,11 @@ notificationRows =
     ]
 
 
-notificationSection : Element msg
-notificationSection =
+notificationSection : Model -> Element Msg
+notificationSection model =
     section "Notification"
         "Naive UI's notification service — the `NUI.Message` twin: one caller-owned `State` (provider props + queue) and pure transforms. Deltas: vars ride BOTH the wrapper and `n-notification`; `--n-icon-color` is emitted only for typed kinds (no `iconColorDefault` upstream); the default `scrollable` provider wraps the queue in an `n-scrollbar` tree (forced off for the `top`/`bottom` centers); the container gains a bare `transitioning` class while any item holds a phase; `content` renders in a `<pre>`; the close click emits `onClose` and the VETO is the caller not calling `destroy` (upstream's `false`/rejected-promise rule). These demos are static entered states — the caller owns the hide clock."
-        notificationRows
+        (notificationRows model)
 
 
 {-| Live: `#live-notification-queue` (the push buttons stay immediately before the cell — `nearestPreceding` resolves them by document order).
@@ -1535,7 +1685,7 @@ notificationLiveSection : Model -> Element Msg
 notificationLiveSection model =
     section "Notification"
         "Naive UI's notification service — the `NUI.Message` twin: one caller-owned `State` (provider props + queue) and pure transforms. Deltas: vars ride BOTH the wrapper and `n-notification`; `--n-icon-color` is emitted only for typed kinds (no `iconColorDefault` upstream); the default `scrollable` provider wraps the queue in an `n-scrollbar` tree (forced off for the `top`/`bottom` centers); the container gains a bare `transitioning` class while any item holds a phase; `content` renders in a `<pre>`; the close click emits `onClose` and the VETO is the caller not calling `destroy` (upstream's `false`/rejected-promise rule). These demos are static entered states — the caller owns the hide clock."
-        (notificationRows ++ [ notificationQueueRow model ])
+        (notificationRows model ++ [ notificationQueueRow model ])
 
 
 {-| The fixed-tree preview cell (Modal/Drawer/DialogProvider): a sized,
@@ -1573,8 +1723,8 @@ cell content =
         content
 
 
-modalRows : List (Element msg)
-modalRows =
+modalRows : Model -> List (Element Msg)
+modalRows model =
     [ demoRow "Custom content + card preset"
         [ modalHost []
             (Modal.view theme
@@ -1591,12 +1741,13 @@ modalRows =
             )
         , modalHost []
             (Modal.view theme
-                { modalD | show = True }
+                { modalD | show = model.modalCardOpen }
                 (Modal.Card
                     { modalCardD
                         | title = Just (Element.text "A card modal")
                         , footer = Just (Element.text "#footer")
                         , closable = True
+                        , onClose = Just ModalCardClose
                     }
                     [ Element.text "Unbordered by default — upstream spreads the dialog props last." ]
                 )
@@ -1684,11 +1835,11 @@ modalRows =
     ]
 
 
-modalSection : Element msg
-modalSection =
+modalSection : Model -> Element Msg
+modalSection model =
     section "Modal"
         "The mount-body family — its own fixed tree (container > mask > body-wrapper > scrollbar > content), self-positioned and centred by flex. The caller owns mounting, the show state, the transition clock (one clock drives the mask and body tuples), outside-click closing and Esc; the `dialog`/`confirm` presets compose `NUI.Dialog` (its section follows). The demo cells confine the fixed tree with a `transform: translate(0,0)` containing block."
-        modalRows
+        (modalRows model)
 
 
 {-| Live: `#live-modal` / `#live-modal-tree` (the `Open modal` trigger stays immediately before the cell).
@@ -1733,43 +1884,44 @@ modalLiveSection : Model -> Element Msg
 modalLiveSection model =
     section "Modal"
         "The mount-body family — its own fixed tree (container > mask > body-wrapper > scrollbar > content), self-positioned and centred by flex. The caller owns mounting, the show state, the transition clock (one clock drives the mask and body tuples), outside-click closing and Esc; the `dialog`/`confirm` presets compose `NUI.Dialog` (its section follows). The demo cells confine the fixed tree with a `transform: translate(0,0)` containing block."
-        (modalRows ++ [ modalRow model ])
+        (modalRows model ++ [ modalRow model ])
 
 
 {-| The drawer's `NDrawerContent` body — title, closable header, footer.
 -}
-drawerBody : Element msg
+drawerBody : Element Msg
 drawerBody =
     DrawerContent.view theme
         { drawerContentD
             | title = Just (Element.text "A drawer")
             , closable = True
+            , onClose = Just DrawerStaticClose
             , footer = Just (Element.text "#footer")
         }
         [ Element.text "Edge-anchored, sized on the placement's axis." ]
 
 
-drawerRows : List (Element msg)
-drawerRows =
+drawerRows : Model -> List (Element Msg)
+drawerRows model =
     [ demoRow "Four placements (NDrawerContent composition)"
         [ modalHost []
             (Drawer.view theme
-                { drawerD | show = True, placement = Drawer.Right, width = Just "200px" }
+                { drawerD | show = model.drawerStaticOpen, placement = Drawer.Right, width = Just "200px", onMaskClick = Just DrawerStaticClose }
                 [ drawerBody ]
             )
         , modalHost []
             (Drawer.view theme
-                { drawerD | show = True, placement = Drawer.Left, width = Just "200px" }
+                { drawerD | show = model.drawerStaticOpen, placement = Drawer.Left, width = Just "200px", onMaskClick = Just DrawerStaticClose }
                 [ drawerBody ]
             )
         , modalHost []
             (Drawer.view theme
-                { drawerD | show = True, placement = Drawer.Top, height = Just "120px" }
+                { drawerD | show = model.drawerStaticOpen, placement = Drawer.Top, height = Just "120px", onMaskClick = Just DrawerStaticClose }
                 [ drawerBody ]
             )
         , modalHost []
             (Drawer.view theme
-                { drawerD | show = True, placement = Drawer.Bottom, height = Just "120px" }
+                { drawerD | show = model.drawerStaticOpen, placement = Drawer.Bottom, height = Just "120px", onMaskClick = Just DrawerStaticClose }
                 [ drawerBody ]
             )
         ]
@@ -1792,17 +1944,18 @@ drawerRows =
         [ modalHost []
             (Drawer.view theme
                 { drawerD
-                    | show = True
+                    | show = model.drawerStaticOpen
                     , placement = Drawer.Right
                     , width = Just "180px"
                     , showMask = Drawer.Transparent
+                    , onMaskClick = Just DrawerStaticClose
                 }
                 [ drawerBody ]
             )
         , modalHost []
             (Drawer.view theme
                 { drawerD
-                    | show = True
+                    | show = model.drawerStaticOpen
                     , placement = Drawer.Right
                     , width = Just "180px"
                     , showMask = Drawer.Hidden
@@ -1811,7 +1964,7 @@ drawerRows =
             )
         , modalHost []
             (Drawer.view theme
-                { drawerD | show = True, placement = Drawer.Right, width = Just "180px", zIndex = Just 100 }
+                { drawerD | show = model.drawerStaticOpen, placement = Drawer.Right, width = Just "180px", zIndex = Just 100 }
                 [ drawerBody ]
             )
         ]
@@ -1860,11 +2013,11 @@ drawerRows =
     ]
 
 
-drawerSection : Element msg
-drawerSection =
+drawerSection : Model -> Element Msg
+drawerSection model =
     section "Drawer"
         "The mount-body sibling of Modal — its own container/mask/host tree, edge-anchored (`position: absolute` per placement, the body transition family derived from it) instead of flex-centred. `NDrawerContent` composition (header/body/footer + close), the 3-state mask, the native-scrollbar seam (default: no scrollbar node, unlike Modal) and the resize trigger are DOM; the caller owns the show state, the transition clock, mask-click closing (`onMaskClick` — the mask is interactive here), Esc and the resize drag."
-        drawerRows
+        (drawerRows model)
 
 
 {-| Live: `#live-drawer` / `#live-drawer-tree` (the placement radios and `Open drawer` stay immediately before the cell; the `left` radio label is looked up globally first-match).
@@ -1908,7 +2061,7 @@ drawerLiveSection : Model -> Element Msg
 drawerLiveSection model =
     section "Drawer"
         "The mount-body sibling of Modal — its own container/mask/host tree, edge-anchored (`position: absolute` per placement, the body transition family derived from it) instead of flex-centred. `NDrawerContent` composition (header/body/footer + close), the 3-state mask, the native-scrollbar seam (default: no scrollbar node, unlike Modal) and the resize trigger are DOM; the caller owns the show state, the transition clock, mask-click closing (`onMaskClick` — the mask is interactive here), Esc and the resize drag."
-        (drawerRows ++ [ drawerRow model ])
+        (drawerRows model ++ [ drawerRow model ])
 
 
 dialogState : List (DialogProvider.Item msg) -> Element msg
@@ -1917,61 +2070,81 @@ dialogState items =
         (Element.column [] (DialogProvider.view theme { dialogPS | items = items }))
 
 
-dialogRows : List (Element msg)
-dialogRows =
+dialogRows : Model -> List (Element Msg)
+dialogRows model =
     [ demoRow "Kinds (bare body — the icon/type system)"
         [ cell
-            (Dialog.view theme
-                { dialogD
-                    | kind = T.Default
-                    , title = Just (Element.text "Default")
-                    , content = Just (Element.text "Info glyph on the base icon color.")
-                    , positiveText = Just "OK"
-                }
+            (if model.dialogSamplesOpen then
+                Dialog.view theme
+                    { dialogD
+                        | kind = T.Default
+                        , title = Just (Element.text "Default")
+                        , content = Just (Element.text "Info glyph on the base icon color.")
+                        , positiveText = Just "OK"
+                        , onPositiveClick = Just DialogSampleClose
+                    }
+
+             else
+                Element.none
             )
         , cell
-            (Dialog.view theme
-                { dialogD
-                    | kind = T.Warning
-                    , title = Just (Element.text "Warning")
-                    , content = Just (Element.text "A warning icon rides the title.")
-                    , positiveText = Just "Proceed"
-                    , negativeText = Just "Cancel"
-                }
+            (if model.dialogSamplesOpen then
+                Dialog.view theme
+                    { dialogD
+                        | kind = T.Warning
+                        , title = Just (Element.text "Warning")
+                        , content = Just (Element.text "A warning icon rides the title.")
+                        , positiveText = Just "Proceed"
+                        , negativeText = Just "Cancel"
+                        , onPositiveClick = Just DialogSampleClose
+                        , onNegativeClick = Just DialogSampleClose
+                    }
+
+             else
+                Element.none
             )
         , cell
-            (Dialog.view theme
-                { dialogD
-                    | kind = T.Error
-                    , title = Just (Element.text "Error")
-                    , content = Just (Element.text "Positive button keys to the kind.")
-                    , positiveText = Just "Retry"
-                    , negativeText = Just "Dismiss"
-                }
+            (if model.dialogSamplesOpen then
+                Dialog.view theme
+                    { dialogD
+                        | kind = T.Error
+                        , title = Just (Element.text "Error")
+                        , content = Just (Element.text "Positive button keys to the kind.")
+                        , positiveText = Just "Retry"
+                        , negativeText = Just "Dismiss"
+                        , onPositiveClick = Just DialogSampleClose
+                        , onNegativeClick = Just DialogSampleClose
+                    }
+
+             else
+                Element.none
             )
         ]
     , demoRow "Modal dialog/confirm presets"
         [ modalHost []
             (Modal.view theme
-                { modalD | show = True }
+                { modalD | show = model.modalDialogOpen }
                 (Modal.Dialog
                     { dialogD
                         | title = Just (Element.text "Use dialog?")
                         , content = Just (Element.text "The preset body gains n-modal; .n-modal .n-dialog sizes it to 446px.")
                         , positiveText = Just "Confirm"
                         , negativeText = Just "Cancel"
+                        , onPositiveClick = Just ModalDialogClose
+                        , onNegativeClick = Just ModalDialogClose
                     }
                 )
             )
         , modalHost []
             (Modal.view theme
-                { modalD | show = True }
+                { modalD | show = model.modalConfirmOpen }
                 (Modal.Confirm
                     { dialogD
                         | kind = T.Info
                         , title = Just (Element.text "A deprecated alias")
                         , content = Just (Element.text "confirm renders the identical body — only the constructor differs.")
                         , positiveText = Just "Got it"
+                        , onPositiveClick = Just ModalConfirmClose
                     }
                 )
             )
@@ -2022,14 +2195,19 @@ dialogRows =
         ]
     , demoRow "icon-top, bordered, custom action"
         [ cell
-            (Dialog.view theme
-                { dialogD
-                    | kind = T.Success
-                    , iconPlacement = Dialog.IconTop
-                    , title = Just (Element.text "Centred")
-                    , content = Just (Element.text "Icon-top swaps the margins and centres the icon above.")
-                    , positiveText = Just "OK"
-                }
+            (if model.dialogSamplesOpen then
+                Dialog.view theme
+                    { dialogD
+                        | kind = T.Success
+                        , iconPlacement = Dialog.IconTop
+                        , title = Just (Element.text "Centred")
+                        , content = Just (Element.text "Icon-top swaps the margins and centres the icon above.")
+                        , positiveText = Just "OK"
+                        , onPositiveClick = Just DialogSampleClose
+                    }
+
+             else
+                Element.none
             )
         , cell
             (Dialog.view theme
@@ -2080,11 +2258,11 @@ dialogRows =
     ]
 
 
-dialogSection : Element msg
-dialogSection =
+dialogSection : Model -> Element Msg
+dialogSection model =
     section "Dialog"
         "A pure body component (upstream `NDialog`) — the `.n-dialog` card, never a mask or container. Standalone here, and as Modal's `dialog`/`confirm` preset bodies (the preset adds `n-modal` + `aria-modal`, phase class last). Composed actions (negative ghost/small first, positive small + kind-derived + loading), the kind→ icon/type system, icon-top placement, and the caller-owned runtime: the `useDialog` queue is ported as `NUI.DialogProvider` (fixed queues below — one caller-owned `State`, pure transforms, no clock: dialogs persist until destroyed), while close gating, mask/esc stay yours (see Modal)."
-        dialogRows
+        (dialogRows model)
 
 
 {-| Live: `#live-dialog` / `#live-dialog-tree` (the `Open dialog` trigger stays immediately before the cell).
@@ -2125,7 +2303,7 @@ dialogLiveSection : Model -> Element Msg
 dialogLiveSection model =
     section "Dialog"
         "A pure body component (upstream `NDialog`) — the `.n-dialog` card, never a mask or container. Standalone here, and as Modal's `dialog`/`confirm` preset bodies (the preset adds `n-modal` + `aria-modal`, phase class last). Composed actions (negative ghost/small first, positive small + kind-derived + loading), the kind→ icon/type system, icon-top placement, and the caller-owned runtime: the `useDialog` queue is ported as `NUI.DialogProvider` (fixed queues below — one caller-owned `State`, pure transforms, no clock: dialogs persist until destroyed), while close gating, mask/esc stay yours (see Modal)."
-        (dialogRows ++ [ dialogRow model ])
+        (dialogRows model ++ [ dialogRow model ])
 
 
 
