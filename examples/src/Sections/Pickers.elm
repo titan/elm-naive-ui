@@ -1,18 +1,9 @@
 module Sections.Pickers exposing
     ( Model
     , Msg
-    , autoCompleteSection
-    , cascaderSection
-    , colorPickerSection
-    , datePickerSection
     , init
-    , mentionSection
-    , popselectSection
     , sections
-    , selectSection
     , subscriptions
-    , timePickerSection
-    , treeSelectSection
     , update
     )
 
@@ -70,6 +61,21 @@ Oracle-round divergences (tasks/recon/live-oracle.md):
     from either input; the LIVE smoke drives the full two-click
     `dualDateClick` flow (day A → hover preview → day B → Confirm) here and
     the single-date panel alongside it.
+
+Phase 2 — the static rows are state-driven with identical init (the brief's
+technique; `spec*` fields, init = each row's current literals). The open
+menu / open panel specimens (Select/Cascader/TreeSelect/AutoComplete/Mention
+menus, DatePicker/TimePicker/ColorPicker pairs) keep rendering open at init
+but wire their value + channels so interacting commits (option click moves
+the checkmark, day/cell click commits, Confirm/Clear closes the panel —
+`open` per row, init True) and the trigger's focus/click reopens. Rows that
+are pure state showcases (disabled/status/sizes/loading/empty/pattern pins,
+the no-channel plain triggers — Select emits nothing without a mounted menu)
+stay specimens. ColorPicker static rows wire value/draft/mode/undo-redo/
+confirm/clear/show; the drag pointer surface and per-unit typing stay on the
+live row (they need `pointerAreaIds`/`Browser.Dom`), and TimePicker static
+rows skip the column scroll commands (`colContainerIds` belongs to the live
+row's panel).
 
 -}
 
@@ -146,6 +152,38 @@ type alias Model =
     , cpRedo : List (Maybe String)
     , cpDrag : Maybe ColorPicker.PointerArea
     , cpUnitText : Maybe String
+
+    -- phase-2 static-row state (init = the rows' current literals)
+    , specSelClearable : SelectMenu.Value
+    , specSelMulti : SelectMenu.Value
+    , specSelMultiFilter : SelectMenu.Value
+    , specSelMenu : SelectMenu.Value
+    , specPopSingle : SelectMenu.Value
+    , specPopMulti : SelectMenu.Value
+    , specPopSelectMenu : SelectMenu.Value
+    , specCascSingle : SelectMenu.Value
+    , specCascMulti : SelectMenu.Value
+    , specCascMenu : SelectMenu.Value
+    , specCascMenuHover : Maybe String
+    , specCascChild : SelectMenu.Value
+    , specCascFlat : SelectMenu.Value
+    , specTsSingle : SelectMenu.Value
+    , specTsSinglePending : Maybe String
+    , specTsMulti : SelectMenu.Value
+    , specTsFilter : SelectMenu.Value
+    , specAcBasic : String
+    , specAcGroup : String
+    , specAcClearable : String
+    , specMnBasic : String
+    , specMnBasic2 : String
+    , specMnTextarea : String
+    , specMnAutosize : String
+    , specMnGroupTag : String
+    , specMnGroupUser : String
+    , specMnGroup2 : String
+    , specDp : SpecDpStates
+    , specTp : SpecTpStates
+    , specCp : SpecCpStates
     }
 
 
@@ -188,6 +226,38 @@ init =
     , cpRedo = []
     , cpDrag = Nothing
     , cpUnitText = Nothing
+
+    -- phase-2 static-row state — every field is the row's CURRENT literal
+    , specSelClearable = SelectMenu.Single (Just "drive")
+    , specSelMulti = SelectMenu.Multiple [ "a", "b", "c", "d", "ghost" ]
+    , specSelMultiFilter = SelectMenu.Multiple [ "drive" ]
+    , specSelMenu = SelectMenu.Single (Just "drive")
+    , specPopSingle = SelectMenu.Single (Just "drive")
+    , specPopMulti = SelectMenu.Multiple [ "in-my-life", "the-word" ]
+    , specPopSelectMenu = SelectMenu.Single Nothing
+    , specCascSingle = SelectMenu.Single (Just "eleanor")
+    , specCascMulti = SelectMenu.Multiple [ "abbey", "revolver" ]
+    , specCascMenu = SelectMenu.Multiple [ "abbey", "come" ]
+    , specCascMenuHover = Just "revolver"
+    , specCascChild = SelectMenu.Single (Just "drive")
+    , specCascFlat = SelectMenu.Multiple [ "abbey" ]
+    , specTsSingle = SelectMenu.Single (Just "o1-1")
+    , specTsSinglePending = Just "o1-1"
+    , specTsMulti = SelectMenu.Multiple [ "o1-1", "o2" ]
+    , specTsFilter = SelectMenu.Single (Just "o1-3")
+    , specAcBasic = "Dri"
+    , specAcGroup = "In My Life"
+    , specAcClearable = "clear me"
+    , specMnBasic = "@710"
+    , specMnBasic2 = ""
+    , specMnTextarea = "A textarea.\nPing @710mechgy here."
+    , specMnAutosize = "Autosized textarea:\ngrows with content."
+    , specMnGroupTag = "#e"
+    , specMnGroupUser = "@z"
+    , specMnGroup2 = "@in my"
+    , specDp = specDpInit
+    , specTp = specTpInit
+    , specCp = specCpInit
     }
 
 
@@ -248,6 +318,57 @@ type Msg
     | CpDragApply Int Int { width : Float, height : Float, left : Float, bottom : Float }
     | CpDragEnd
     | CpUnitTyped Int String
+      -- phase-2 static rows (state-drive with identical init)
+    | SpecSelCleared
+    | SpecSelMultiTagDeleted String
+    | SpecSelMultiFilterTagDeleted String
+    | SpecSelMenuPicked String
+    | SpecPopSinglePicked SelectMenu.Value
+    | SpecPopMultiPicked SelectMenu.Value
+    | SpecPopSelectMenuPicked String
+    | SpecCascSingleCleared
+    | SpecCascMultiTagDeleted String
+    | SpecCascMenuToggled String
+    | SpecCascChildPicked String
+    | SpecCascFlatToggled String
+    | SpecTsNodeClicked SpecTsRow String
+    | SpecAcBasicTyped String
+    | SpecAcBasicPicked String
+    | SpecAcGroupTyped String
+    | SpecAcGroupPicked String
+    | SpecAcClearableTyped String
+    | SpecAcCustomPicked String
+    | SpecMnBasicTyped String
+    | SpecMnBasicPicked String
+    | SpecMnBasic2Typed String
+    | SpecMnTextareaTyped String
+    | SpecMnAutosizeTyped String
+    | SpecMnGroupTagTyped String
+    | SpecMnGroupTagPicked String
+    | SpecMnGroupUserTyped String
+    | SpecMnGroupUserPicked String
+    | SpecMnGroup2Typed String
+    | SpecMnGroup2Picked String
+    | SpecDpFocused SpecDpRow
+    | SpecDpValueSet SpecDpRow DatePicker.Value
+    | SpecDpCleared SpecDpRow
+    | SpecDpConfirmed SpecDpRow
+    | SpecDpCalendar SpecDpRow DatePicker.CalendarSide Int
+    | SpecDpMonthToggled SpecDpRow Bool
+    | SpecDpDateClicked SpecDpRow Int
+    | SpecDpHovered SpecDpRow Int
+    | SpecDpMonthItem SpecDpRow Int DatePicker.RangePos
+    | SpecTpFocused SpecTpRow
+    | SpecTpValueSet SpecTpRow (Maybe Int)
+    | SpecTpConfirmed SpecTpRow
+    | SpecTpCleared SpecTpRow
+    | SpecCpOpened SpecCpRow
+    | SpecCpValueUpdated SpecCpRow (Maybe String)
+    | SpecCpModeChanged SpecCpRow ColorPicker.Mode
+    | SpecCpConfirmed SpecCpRow (Maybe String)
+    | SpecCpCleared SpecCpRow
+    | SpecCpUndone SpecCpRow
+    | SpecCpRedone SpecCpRow
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -570,6 +691,379 @@ updatePure msg model =
 
                 [] ->
                     model
+
+        -- phase-2 static rows
+        SpecSelCleared ->
+            { model | specSelClearable = SelectMenu.Single Nothing }
+
+        SpecSelMultiTagDeleted key ->
+            { model
+                | specSelMulti =
+                    SelectMenu.Multiple (List.filter ((/=) key) (valueKeys model.specSelMulti))
+            }
+
+        SpecSelMultiFilterTagDeleted key ->
+            { model
+                | specSelMultiFilter =
+                    SelectMenu.Multiple (List.filter ((/=) key) (valueKeys model.specSelMultiFilter))
+            }
+
+        SpecSelMenuPicked key ->
+            { model | specSelMenu = Select.toggleValue False model.specSelMenu key }
+
+        SpecPopSinglePicked value ->
+            { model | specPopSingle = value }
+
+        SpecPopMultiPicked value ->
+            { model | specPopMulti = value }
+
+        SpecPopSelectMenuPicked key ->
+            { model | specPopSelectMenu = Select.toggleValue False model.specPopSelectMenu key }
+
+        SpecCascSingleCleared ->
+            { model | specCascSingle = SelectMenu.Single Nothing }
+
+        SpecCascMultiTagDeleted key ->
+            { model
+                | specCascMulti =
+                    SelectMenu.Multiple (List.filter ((/=) key) (valueKeys model.specCascMulti))
+            }
+
+        SpecCascMenuToggled key ->
+            -- the columns menu stays mounted (open specimen): a branch click
+            -- retargets the hover column, a leaf click commits the checkmark
+            if cascIsLeaf key then
+                { model
+                    | specCascMenu =
+                        Cascader.toggleValue True Cascader.All model.specCascMenu key cascOptions
+                }
+
+            else
+                { model | specCascMenuHover = Just key }
+
+        SpecCascChildPicked key ->
+            { model
+                | specCascChild =
+                    Cascader.toggleValue True Cascader.Child model.specCascChild key cascOptions
+            }
+
+        SpecCascFlatToggled key ->
+            -- the flat menu's row activation: membership flip on the raw list
+            { model
+                | specCascFlat =
+                    case model.specCascFlat of
+                        SelectMenu.Multiple keys ->
+                            if List.member key keys then
+                                SelectMenu.Multiple (List.filter ((/=) key) keys)
+
+                            else
+                                SelectMenu.Multiple (keys ++ [ key ])
+
+                        single ->
+                            single
+            }
+
+        SpecTsNodeClicked row key ->
+            let
+                cfg =
+                    tsSpecCfg row
+
+                opts =
+                    { tsD
+                        | options = tsStaticData
+                        , multiple = cfg.multiple
+                        , checkable = cfg.checkable
+                        , cascade = cfg.cascade
+                    }
+            in
+            case row of
+                TsSingleRow ->
+                    { model
+                        | specTsSingle = TreeSelect.handleNodeClick opts model.specTsSingle key
+                        , specTsSinglePending = Just key
+                    }
+
+                TsMultiRow ->
+                    { model | specTsMulti = TreeSelect.handleNodeClick opts model.specTsMulti key }
+
+                TsFilterRow ->
+                    { model | specTsFilter = TreeSelect.handleNodeClick opts model.specTsFilter key }
+
+        SpecAcBasicTyped text ->
+            { model | specAcBasic = text }
+
+        SpecAcBasicPicked key ->
+            { model | specAcBasic = Maybe.withDefault key (selectLabel key songOptions) }
+
+        SpecAcGroupTyped text ->
+            { model | specAcGroup = text }
+
+        SpecAcGroupPicked key ->
+            { model | specAcGroup = Maybe.withDefault key (selectLabel key selectOptions) }
+
+        SpecAcClearableTyped text ->
+            { model | specAcClearable = text }
+
+        SpecAcCustomPicked key ->
+            -- the label commit for the custom-row menu's plain leaf
+            { model | specAcBasic = key }
+
+        SpecMnBasicTyped text ->
+            { model | specMnBasic = text }
+
+        SpecMnBasicPicked value ->
+            { model | specMnBasic = spliceMention model.specMnBasic value }
+
+        SpecMnBasic2Typed text ->
+            { model | specMnBasic2 = text }
+
+        SpecMnTextareaTyped text ->
+            { model | specMnTextarea = text }
+
+        SpecMnAutosizeTyped text ->
+            { model | specMnAutosize = text }
+
+        SpecMnGroupTagTyped text ->
+            { model | specMnGroupTag = text }
+
+        SpecMnGroupTagPicked value ->
+            { model | specMnGroupTag = spliceTag model.specMnGroupTag value }
+
+        SpecMnGroupUserTyped text ->
+            { model | specMnGroupUser = text }
+
+        SpecMnGroupUserPicked value ->
+            { model | specMnGroupUser = spliceMention model.specMnGroupUser value }
+
+        SpecMnGroup2Typed text ->
+            { model | specMnGroup2 = text }
+
+        SpecMnGroup2Picked value ->
+            { model | specMnGroup2 = spliceMention model.specMnGroup2 value }
+
+        SpecDpFocused row ->
+            specDpUpd row (\st -> { st | open = True }) model
+
+        SpecDpValueSet row value ->
+            -- single/range shape guard: a range panel never stores a single
+            -- value and vice versa (the shortcuts row mixes both shapes).
+            -- Range commits come from the shortcut buttons (the only range
+            -- commit channel — day clicks go through SpecDpDateClicked), and
+            -- upstream's shortcut click commits AND closes.
+            if DatePicker.isRangeType (specDpType row) then
+                case value of
+                    DatePicker.Range _ ->
+                        specDpUpd
+                            row
+                            (\st ->
+                                { st
+                                    | value = value
+                                    , monthPanel = False
+                                    , selecting = False
+                                    , open = st.open && not (specDpCloses row value)
+                                }
+                            )
+                            model
+
+                    _ ->
+                        model
+
+            else
+                case value of
+                    DatePicker.Single _ ->
+                        specDpUpd
+                            row
+                            (\st ->
+                                { st
+                                    | value = value
+                                    , open = st.open && not (specDpCloses row value)
+                                    , monthPanel = False
+                                }
+                            )
+                            model
+
+                    _ ->
+                        model
+
+        SpecDpCleared row ->
+            specDpUpd
+                row
+                (\st ->
+                    { st
+                        | value = specDpEmpty (specDpType row)
+                        , open = False
+                        , monthPanel = False
+                        , selecting = False
+                    }
+                )
+                model
+
+        SpecDpConfirmed row ->
+            specDpUpd
+                row
+                (\st ->
+                    { st
+                        | value = specDpSanitize (specDpType row) st.value
+                        , open = False
+                        , selecting = False
+                        , monthPanel = False
+                    }
+                )
+                model
+
+        SpecDpCalendar row side anchor ->
+            specDpUpd
+                row
+                (\st ->
+                    case side of
+                        DatePicker.CalStart ->
+                            { st | startCalendarValue = Just anchor }
+
+                        DatePicker.CalEnd ->
+                            { st | endCalendarValue = Just anchor }
+                )
+                model
+
+        SpecDpMonthToggled row open ->
+            specDpUpd row (\st -> { st | monthPanel = open }) model
+
+        SpecDpDateClicked row ts ->
+            specDpUpd
+                row
+                (\st ->
+                    let
+                        result =
+                            DatePicker.dualDateClick
+                                { value = st.value
+                                , selecting = st.selecting
+                                , type_ = specDpType row
+                                , closeOnSelect = False
+                                , updateValueOnClose = False
+                                }
+                                ts
+                    in
+                    { st
+                        | value = result.value
+                        , selecting = result.selecting
+                        , open = st.open && not result.close
+                    }
+                )
+                model
+
+        SpecDpHovered row ts ->
+            specDpUpd
+                row
+                (\st ->
+                    case
+                        DatePicker.dualHover
+                            { value = st.value
+                            , selecting = st.selecting
+                            , memorizedStart = Nothing
+                            , disabled = False
+                            }
+                            ts
+                    of
+                        Just value ->
+                            { st | value = value }
+
+                        Nothing ->
+                            st
+                )
+                model
+
+        SpecDpMonthItem row ts pos ->
+            specDpUpd
+                row
+                (\st -> { st | value = DatePicker.colItemClick (specDpType row) st.value ts pos })
+                model
+
+        SpecTpFocused row ->
+            specTpUpd row (\st -> { st | open = True }) model
+
+        SpecTpValueSet row value ->
+            -- column item clicks (and Now) keep the panel open
+            specTpUpd row (\st -> { st | value = value }) model
+
+        SpecTpConfirmed row ->
+            specTpUpd row (\st -> { st | open = False }) model
+
+        SpecTpCleared row ->
+            specTpUpd row (\st -> { st | value = Nothing }) model
+
+        SpecCpOpened row ->
+            -- the trigger's onUpdateShow: reopen + draft re-syncs to the
+            -- committed value
+            specCpUpd row (\st -> { st | open = True, draft = st.value }) model
+
+        SpecCpValueUpdated row value ->
+            specCpUpd row (\st -> { st | draft = value }) model
+
+        SpecCpModeChanged row mode ->
+            specCpUpd row (\st -> { st | mode = mode }) model
+
+        SpecCpConfirmed row value ->
+            specCpUpd
+                row
+                (\st ->
+                    { st
+                        | value = value
+                        , draft = value
+                        , undo = st.value :: st.undo
+                        , redo = []
+                        , open = False
+                    }
+                )
+                model
+
+        SpecCpCleared row ->
+            specCpUpd
+                row
+                (\st ->
+                    { st
+                        | value = Nothing
+                        , draft = Nothing
+                        , undo = st.value :: st.undo
+                        , redo = []
+                        , open = False
+                    }
+                )
+                model
+
+        SpecCpUndone row ->
+            specCpUpd
+                row
+                (\st ->
+                    case st.undo of
+                        prev :: rest ->
+                            { st
+                                | value = prev
+                                , draft = prev
+                                , undo = rest
+                                , redo = st.value :: st.redo
+                            }
+
+                        [] ->
+                            st
+                )
+                model
+
+        SpecCpRedone row ->
+            specCpUpd
+                row
+                (\st ->
+                    case st.redo of
+                        next :: rest ->
+                            { st
+                                | value = next
+                                , draft = next
+                                , redo = rest
+                                , undo = st.value :: st.undo
+                            }
+
+                        [] ->
+                            st
+                )
+                model
 
 
 subscriptions : Model -> Sub Msg
@@ -1365,6 +1859,753 @@ cpPanelOpts model =
 
 
 
+-- PHASE-2 SPEC ROW STATE (DatePicker / TimePicker / ColorPicker / TreeSelect)
+--
+-- One state record per wired static row, initialised to the row's CURRENT
+-- literals (the panels render OPEN at init — the open-specimen exception in
+-- the brief). The update branches above drive them through these row-tagged
+-- helpers; the rows below render value/open straight out of the state, so a
+-- commit/clear/confirm closes the panel (it unmounts) and the trigger's
+-- focus/click reopens it. `show` stays False on the trigger options on
+-- purpose: it only feeds the input's `n-input--focus` class, which the
+-- static specimens never carried (byte-identical initial DOM).
+
+
+type SpecDpRow
+    = DpDateRow
+    | DpDatetimeRow
+    | DpDaterangeRow
+    | DpDatetimerangeRow
+    | DpMonthRow
+    | DpYearRow
+    | DpQuarterRow
+    | DpMonthrangeRow
+    | DpWeekRow
+    | DpShortcutsRow
+
+
+type alias SpecDpState =
+    { open : Bool
+    , value : DatePicker.Value
+    , startCalendarValue : Maybe Int
+    , endCalendarValue : Maybe Int
+    , monthPanel : Bool
+    , selecting : Bool
+    }
+
+
+type alias SpecDpStates =
+    { date : SpecDpState
+    , datetime : SpecDpState
+    , daterange : SpecDpState
+    , datetimerange : SpecDpState
+    , month : SpecDpState
+    , year : SpecDpState
+    , quarter : SpecDpState
+    , monthrange : SpecDpState
+    , week : SpecDpState
+    , shortcuts : SpecDpState
+    }
+
+
+{-| The `Datetime` row's literal (1715770440000 ms — the static row's `dt`).
+-}
+dtMs : Int
+dtMs =
+    1715770440000
+
+
+specDpSingleInit : Int -> SpecDpState
+specDpSingleInit ts =
+    { open = True
+    , value = DatePicker.Single (Just ts)
+    , startCalendarValue = Nothing
+    , endCalendarValue = Nothing
+    , monthPanel = False
+    , selecting = False
+    }
+
+
+specDpRangeInit : SpecDpState
+specDpRangeInit =
+    { open = True
+    , value = DatePicker.Range (Just ( may10, may20 ))
+    , startCalendarValue = Just may10
+    , endCalendarValue = Just may20
+    , monthPanel = False
+    , selecting = False
+    }
+
+
+specDpInit : SpecDpStates
+specDpInit =
+    { date = specDpSingleInit dpNowMs
+    , datetime = specDpSingleInit dtMs
+    , daterange = specDpRangeInit
+    , datetimerange = specDpRangeInit
+    , month = specDpSingleInit dpNowMs
+    , year = specDpSingleInit dpNowMs
+    , quarter = specDpSingleInit dpNowMs
+    , monthrange = specDpRangeInit
+    , week = specDpSingleInit dpNowMs
+    , shortcuts = specDpRangeInit
+    }
+
+
+specDpType : SpecDpRow -> DatePicker.PanelType
+specDpType row =
+    case row of
+        DpDateRow ->
+            DatePicker.Date
+
+        DpDatetimeRow ->
+            DatePicker.Datetime
+
+        DpDaterangeRow ->
+            DatePicker.Daterange
+
+        DpDatetimerangeRow ->
+            DatePicker.Datetimerange
+
+        DpMonthRow ->
+            DatePicker.Month
+
+        DpYearRow ->
+            DatePicker.Year
+
+        DpQuarterRow ->
+            DatePicker.Quarter
+
+        DpMonthrangeRow ->
+            DatePicker.Monthrange
+
+        DpWeekRow ->
+            DatePicker.Week
+
+        DpShortcutsRow ->
+            DatePicker.Daterange
+
+
+{-| Upstream `emptyValue`: range panels clear to `Range Nothing`, singles to
+`Single Nothing`.
+-}
+specDpEmpty : DatePicker.PanelType -> DatePicker.Value
+specDpEmpty type_ =
+    if DatePicker.isRangeType type_ then
+        DatePicker.Range Nothing
+
+    else
+        DatePicker.Single Nothing
+
+
+{-| Confirm sanitizes both ends of a range (datetimerange → second,
+monthrange → month, else day) / the single timestamp — the same per-type
+`sanitizeValue` the live rows run on confirm.
+-}
+specDpSanitize : DatePicker.PanelType -> DatePicker.Value -> DatePicker.Value
+specDpSanitize type_ value =
+    case value of
+        DatePicker.Range (Just ( a, b )) ->
+            DatePicker.Range
+                (Just
+                    ( DatePicker.sanitizeValue type_ a
+                    , DatePicker.sanitizeValue type_ b
+                    )
+                )
+
+        DatePicker.Single (Just ts) ->
+            DatePicker.Single (Just (DatePicker.sanitizeValue type_ ts))
+
+        _ ->
+            value
+
+
+{-| The close flag after a single-panel commit — `singleDateClick`'s own close
+algebra, re-run against the committed timestamp (the live `dpSingleCloses`
+construction; the oracle-D note above covers why the re-derivation is sound).
+Range panels never close on a cell commit.
+-}
+specDpCloses : SpecDpRow -> DatePicker.Value -> Bool
+specDpCloses row value =
+    if DatePicker.isRangeType (specDpType row) then
+        -- range panels close only on the shortcut-commit channel (the
+        -- SpecDpValueSet range arm — day clicks route to SpecDpDateClicked,
+        -- whose own close flag governs there)
+        row == DpShortcutsRow
+
+    else
+        case value of
+            DatePicker.Single (Just ts) ->
+                .close
+                    (DatePicker.singleDateClick
+                        { type_ = specDpType row
+                        , value = DatePicker.Single Nothing
+                        , target = dpTarget ts
+                        , isDisabled = False
+                        , defaultTime = Nothing
+                        , now = dpNowMs
+                        , zone = Time.utc
+                        }
+                    )
+
+            _ ->
+                False
+
+
+specDpGet : SpecDpRow -> Model -> SpecDpState
+specDpGet row model =
+    case row of
+        DpDateRow ->
+            model.specDp.date
+
+        DpDatetimeRow ->
+            model.specDp.datetime
+
+        DpDaterangeRow ->
+            model.specDp.daterange
+
+        DpDatetimerangeRow ->
+            model.specDp.datetimerange
+
+        DpMonthRow ->
+            model.specDp.month
+
+        DpYearRow ->
+            model.specDp.year
+
+        DpQuarterRow ->
+            model.specDp.quarter
+
+        DpMonthrangeRow ->
+            model.specDp.monthrange
+
+        DpWeekRow ->
+            model.specDp.week
+
+        DpShortcutsRow ->
+            model.specDp.shortcuts
+
+
+specDpSet : SpecDpRow -> SpecDpState -> SpecDpStates -> SpecDpStates
+specDpSet row st states =
+    case row of
+        DpDateRow ->
+            { states | date = st }
+
+        DpDatetimeRow ->
+            { states | datetime = st }
+
+        DpDaterangeRow ->
+            { states | daterange = st }
+
+        DpDatetimerangeRow ->
+            { states | datetimerange = st }
+
+        DpMonthRow ->
+            { states | month = st }
+
+        DpYearRow ->
+            { states | year = st }
+
+        DpQuarterRow ->
+            { states | quarter = st }
+
+        DpMonthrangeRow ->
+            { states | monthrange = st }
+
+        DpWeekRow ->
+            { states | week = st }
+
+        DpShortcutsRow ->
+            { states | shortcuts = st }
+
+
+specDpUpd : SpecDpRow -> (SpecDpState -> SpecDpState) -> Model -> Model
+specDpUpd row f model =
+    { model | specDp = specDpSet row (f (specDpGet row model)) model.specDp }
+
+
+{-| One wired static row's options: the row's own literals (type, `now`,
+range anchors) with every channel the panel/trigger afford. `show` stays
+False (byte-parity — see the section comment); the panel mounts on `open`.
+-}
+specDpOpts : SpecDpRow -> Model -> DatePicker.Options Msg
+specDpOpts row model =
+    let
+        st =
+            specDpGet row model
+    in
+    { dpD
+        | value = st.value
+        , type_ = specDpType row
+        , show = False
+        , now = dpNow
+        , calendarValue = st.startCalendarValue
+        , startCalendarValue = st.startCalendarValue
+        , endCalendarValue = st.endCalendarValue
+        , monthPanelShow = st.monthPanel
+        , selecting = st.selecting
+        , onFocus = Just (SpecDpFocused row)
+        , onClear = Just (SpecDpCleared row)
+        , onConfirm = Just (SpecDpConfirmed row)
+        , onUpdateValue = Just (SpecDpValueSet row)
+        , onDateClick = Just (SpecDpDateClicked row)
+        , onDateEnter = Just (SpecDpHovered row)
+        , onMonthItemClick = Just (SpecDpMonthItem row)
+        , onUpdateCalendarValue = Just (SpecDpCalendar row)
+        , onUpdateMonthPanelShow = Just (SpecDpMonthToggled row)
+    }
+        |> specDpRowOpts row
+
+
+{-| The per-row literal extras the static rows carried beyond the base.
+-}
+specDpRowOpts : SpecDpRow -> DatePicker.Options Msg -> DatePicker.Options Msg
+specDpRowOpts row opts =
+    case row of
+        DpYearRow ->
+            { opts | yearRange = ( 2015, 2035 ) }
+
+        DpShortcutsRow ->
+            { opts
+                | clearable = True
+                , shortcuts =
+                    [ ( "This week", DatePicker.ShortcutRange ( may10, may20 ) )
+                    , ( "Today", DatePicker.ShortcutSingle dpNowMs )
+                    ]
+            }
+
+        _ ->
+            opts
+
+
+{-| The wired static pair: trigger always renders, the panel while `open`
+(init True — the open specimen; commit/clear/confirm closes it).
+-}
+specDpPair : SpecDpRow -> Model -> Element Msg
+specDpPair row model =
+    Element.column [ Element.spacing 12, Element.width Element.fill ]
+        [ DatePicker.view theme (specDpOpts row model)
+        , if (specDpGet row model).open then
+            DatePicker.panel theme (specDpOpts row model)
+
+          else
+            Element.none
+        ]
+
+
+type SpecTpRow
+    = TpBasicRow
+    | TpHmRow
+    | Tp12Row
+    | TpActionsRow
+    | TpDisabledRow
+
+
+type alias SpecTpState =
+    { open : Bool
+    , value : Maybe Int
+    }
+
+
+type alias SpecTpStates =
+    { basic : SpecTpState
+    , hm : SpecTpState
+    , twelve : SpecTpState
+    , actions : SpecTpState
+    , disabled : SpecTpState
+    }
+
+
+specTpRowInit : SpecTpState
+specTpRowInit =
+    { open = True
+    , value = Just tenToFiftyFour
+    }
+
+
+specTpInit : SpecTpStates
+specTpInit =
+    { basic = specTpRowInit
+    , hm = specTpRowInit
+    , twelve = specTpRowInit
+    , actions = specTpRowInit
+    , disabled = specTpRowInit
+    }
+
+
+specTpGet : SpecTpRow -> Model -> SpecTpState
+specTpGet row model =
+    case row of
+        TpBasicRow ->
+            model.specTp.basic
+
+        TpHmRow ->
+            model.specTp.hm
+
+        Tp12Row ->
+            model.specTp.twelve
+
+        TpActionsRow ->
+            model.specTp.actions
+
+        TpDisabledRow ->
+            model.specTp.disabled
+
+
+specTpSet : SpecTpRow -> SpecTpState -> SpecTpStates -> SpecTpStates
+specTpSet row st states =
+    case row of
+        TpBasicRow ->
+            { states | basic = st }
+
+        TpHmRow ->
+            { states | hm = st }
+
+        Tp12Row ->
+            { states | twelve = st }
+
+        TpActionsRow ->
+            { states | actions = st }
+
+        TpDisabledRow ->
+            { states | disabled = st }
+
+
+specTpUpd : SpecTpRow -> (SpecTpState -> SpecTpState) -> Model -> Model
+specTpUpd row f model =
+    { model | specTp = specTpSet row (f (specTpGet row model)) model.specTp }
+
+
+specTpOpts : SpecTpRow -> Model -> TimePicker.Options Msg
+specTpOpts row model =
+    let
+        st =
+            specTpGet row model
+    in
+    { tpD
+        | value = st.value
+        , show = False
+        , now = dpNow
+        , onFocus = Just (SpecTpFocused row)
+        , onClear = Just (SpecTpCleared row)
+        , onConfirm = Just (SpecTpConfirmed row)
+        , onUpdateValue = Just (SpecTpValueSet row)
+    }
+        |> specTpRowOpts row
+
+
+specTpRowOpts : SpecTpRow -> TimePicker.Options Msg -> TimePicker.Options Msg
+specTpRowOpts row opts =
+    case row of
+        TpHmRow ->
+            { opts | format = "HH:mm" }
+
+        Tp12Row ->
+            { opts | use12Hours = True, format = "hh:mm:ss a" }
+
+        TpActionsRow ->
+            { opts
+                | clearable = True
+                , actions = [ TimePicker.Clear, TimePicker.Now, TimePicker.Confirm ]
+            }
+
+        TpDisabledRow ->
+            { opts
+                | minutes = TimePicker.StepUnits 5
+                , seconds = TimePicker.OnlyUnits [ 0, 30 ]
+                , isHourDisabled = Just (\h -> h > 12)
+            }
+
+        _ ->
+            opts
+
+
+specTpPair : SpecTpRow -> Model -> Element Msg
+specTpPair row model =
+    Element.column [ Element.spacing 8 ]
+        [ TimePicker.view theme (specTpOpts row model)
+        , Element.el [ Element.width (Element.px 200) ]
+            (if (specTpGet row model).open then
+                TimePicker.panel theme (specTpOpts row model)
+
+             else
+                Element.none
+            )
+        ]
+
+
+type SpecCpRow
+    = CpBasicRow
+    | CpAlphaRow
+    | CpSizesRow
+    | CpSwatchesRow
+    | CpClearRow
+    | CpPreviewRow
+    | CpUndoRow
+
+
+type alias SpecCpState =
+    { open : Bool
+    , value : Maybe String
+    , draft : Maybe String
+    , mode : ColorPicker.Mode
+    , undo : List (Maybe String)
+    , redo : List (Maybe String)
+    }
+
+
+type alias SpecCpStates =
+    { basic : SpecCpState
+    , alpha : SpecCpState
+    , sizes : SpecCpState
+    , swatches : SpecCpState
+    , clear : SpecCpState
+    , preview : SpecCpState
+    , undo : SpecCpState
+    }
+
+
+{-| The static rows' shared colour literal (each row's `red`).
+-}
+specCpRed : String
+specCpRed =
+    "#d03050"
+
+
+{-| `displayedMode` inits to the Options default (`Rgb`) — the literal the
+static panels rendered (the RGBA unit row), NOT the value's own hex mode.
+The undo row seeds its stack so `undoable` starts True exactly as its pinned
+literal did, while Undo/Redo clicks have real stack semantics.
+-}
+specCpRowInit : List (Maybe String) -> SpecCpState
+specCpRowInit undo =
+    { open = True
+    , value = Just specCpRed
+    , draft = Just specCpRed
+    , mode = ColorPicker.Rgb
+    , undo = undo
+    , redo = []
+    }
+
+
+specCpInit : SpecCpStates
+specCpInit =
+    { basic = specCpRowInit []
+    , alpha = specCpRowInit []
+    , sizes = specCpRowInit []
+    , swatches = specCpRowInit []
+    , clear = specCpRowInit []
+    , preview = specCpRowInit []
+    , undo = specCpRowInit [ Just specCpRed ]
+    }
+
+
+specCpGet : SpecCpRow -> Model -> SpecCpState
+specCpGet row model =
+    case row of
+        CpBasicRow ->
+            model.specCp.basic
+
+        CpAlphaRow ->
+            model.specCp.alpha
+
+        CpSizesRow ->
+            model.specCp.sizes
+
+        CpSwatchesRow ->
+            model.specCp.swatches
+
+        CpClearRow ->
+            model.specCp.clear
+
+        CpPreviewRow ->
+            model.specCp.preview
+
+        CpUndoRow ->
+            model.specCp.undo
+
+
+specCpSet : SpecCpRow -> SpecCpState -> SpecCpStates -> SpecCpStates
+specCpSet row st states =
+    case row of
+        CpBasicRow ->
+            { states | basic = st }
+
+        CpAlphaRow ->
+            { states | alpha = st }
+
+        CpSizesRow ->
+            { states | sizes = st }
+
+        CpSwatchesRow ->
+            { states | swatches = st }
+
+        CpClearRow ->
+            { states | clear = st }
+
+        CpPreviewRow ->
+            { states | preview = st }
+
+        CpUndoRow ->
+            { states | undo = st }
+
+
+specCpUpd : SpecCpRow -> (SpecCpState -> SpecCpState) -> Model -> Model
+specCpUpd row f model =
+    { model | specCp = specCpSet row (f (specCpGet row model)) model.specCp }
+
+
+{-| The shared literal base (value/mode + the per-row extras); the trigger
+shows the committed value, the panel the draft (the live-row split).
+-}
+specCpBase : SpecCpRow -> Model -> ColorPicker.Options Msg
+specCpBase row model =
+    let
+        st =
+            specCpGet row model
+    in
+    { cpD
+        | value = st.value
+        , displayedMode = st.mode
+        , onUpdateShow = Just (\_ -> SpecCpOpened row)
+    }
+        |> specCpRowOpts row
+
+
+specCpRowOpts : SpecCpRow -> ColorPicker.Options Msg -> ColorPicker.Options Msg
+specCpRowOpts row opts =
+    case row of
+        CpAlphaRow ->
+            { opts | showAlpha = False, actions = Just [ ColorPicker.ConfirmAction ] }
+
+        CpSwatchesRow ->
+            { opts
+                | swatches =
+                    [ "#000000", "#ffffff", specCpRed, "rgba(208, 48, 80, 1)", "#0f0" ]
+            }
+
+        CpClearRow ->
+            { opts | actions = Just [ ColorPicker.ClearAction ] }
+
+        CpPreviewRow ->
+            { opts | showPreview = True }
+
+        CpUndoRow ->
+            { opts
+                | internalActions = Just [ ColorPicker.UndoAction, ColorPicker.RedoAction ]
+            }
+
+        _ ->
+            opts
+
+
+specCpTriggerOpts : SpecCpRow -> Model -> ColorPicker.Options Msg
+specCpTriggerOpts row model =
+    specCpBase row model
+
+
+specCpPanelOpts : SpecCpRow -> Model -> ColorPicker.Options Msg
+specCpPanelOpts row model =
+    let
+        st =
+            specCpGet row model
+
+        base =
+            specCpBase row model
+    in
+    { base
+        | value = st.draft
+        , undoable = not (List.isEmpty st.undo)
+        , redoable = not (List.isEmpty st.redo)
+        , onUpdateValue = Just (SpecCpValueUpdated row)
+        , onUpdateMode = Just (SpecCpModeChanged row)
+        , onConfirm = Just (SpecCpConfirmed row)
+        , onClear = Just (SpecCpCleared row)
+        , onUndo = Just (SpecCpUndone row)
+        , onRedo = Just (SpecCpRedone row)
+    }
+
+
+{-| The wired static pair — `extras` applies the per-instance literal (the
+Sizes row's Small/Medium/Large) to BOTH roots, exactly as the inline literal
+set did.
+-}
+specCpPair :
+    SpecCpRow
+    -> Model
+    -> (ColorPicker.Options Msg -> ColorPicker.Options Msg)
+    -> Element Msg
+specCpPair row model extras =
+    Element.column [ Element.spacing 8, Element.width (Element.px 240) ]
+        [ ColorPicker.view theme (extras (specCpTriggerOpts row model))
+        , Element.el [ Element.width (Element.px 240) ]
+            (if (specCpGet row model).open then
+                ColorPicker.panel theme (extras (specCpPanelOpts row model))
+
+             else
+                Element.none
+            )
+        ]
+
+
+
+-- PHASE-2 SPEC ROW STATE (TreeSelect)
+
+
+type SpecTsRow
+    = TsSingleRow
+    | TsMultiRow
+    | TsFilterRow
+
+
+{-| The three wired rows' shared option shape (the view's `singleCfg` /
+`multiCfg` / `filterCfg` — one source of truth for both sides).
+-}
+tsSpecCfg : SpecTsRow -> { multiple : Bool, checkable : Bool, cascade : Bool }
+tsSpecCfg row =
+    case row of
+        TsSingleRow ->
+            { multiple = False, checkable = False, cascade = False }
+
+        TsMultiRow ->
+            { multiple = True, checkable = True, cascade = True }
+
+        TsFilterRow ->
+            { multiple = False, checkable = False, cascade = False }
+
+
+{-| The static rows' tree fixture (the `data` the rows built inline).
+-}
+tsStaticData : List (Tree.TreeOption Msg)
+tsStaticData =
+    let
+        node key label disabled kids =
+            Tree.TreeOption
+                { key = key
+                , label = label
+                , disabled = disabled
+                , checkboxDisabled = False
+                , isLeaf = kids == Nothing
+                , children = kids
+                , prefix = []
+                , suffix = []
+                }
+    in
+    [ node "o1"
+        "Outfield"
+        False
+        (Just
+            [ node "o1-1" "Left" False (Just [ node "o1-3" "Bench" False Nothing ])
+            , node "o1-2" "Right" False Nothing
+            ]
+        )
+    , node "o2" "Pitcher" False Nothing
+    , node "o3" "Disabled" True Nothing
+    ]
+
+
+
 -- FIXTURES
 
 
@@ -1716,12 +2957,25 @@ picked value plus the separator space — upstream's handleSelect.
 -}
 spliceMention : String -> String -> String
 spliceMention text value =
-    case List.maximum (String.indexes "@" text) of
+    spliceRun '@' text value
+
+
+{-| The tag cell's splice — same shape, the run marker is `#` (the caller
+gates the prefix, the module scans the run it was handed).
+-}
+spliceTag : String -> String -> String
+spliceTag text value =
+    spliceRun '#' text value
+
+
+spliceRun : Char -> String -> String -> String
+spliceRun marker text value =
+    case List.maximum (String.indexes (String.fromChar marker) text) of
         Nothing ->
             text
 
         Just at ->
-            String.slice 0 at text ++ "@" ++ value ++ " "
+            String.slice 0 at text ++ String.fromChar marker ++ value ++ " "
 
 
 maybeChip : String -> Maybe String -> String
@@ -2042,24 +3296,30 @@ selectDesc =
     "Naive UI's select — a bare `.n-select` wrapper around the `NUI.BaseSelection` trigger (every var lives there); the menu is a separate caller-mounted body (upstream opens it in its own follower), `Select.menu` here. `view` derives the display from `value` + options: the single label (unknown values show themselves while `fallbackOption` is on), the multiple tags (same fallback; unknowns drop when off) with the numeric `maxTagCount` slice's `+N` counter, and the clear icon — `clearable && (hover || active) && selected`; `pattern` flows to the filter input, `filterOptions` being the pure default filter. The caller owns the show state, positioning and keyboard."
 
 
-selectRows : List (Element msg)
-selectRows =
+selectRows : Model -> List (Element Msg)
+selectRows model =
     [ demoRow "Single (leaves + group)"
+        -- specimen: nothing to commit — no menu is mounted in this row and
+        -- Select emits no channel without one (value is display-only here)
         [ Select.view theme
             { selectD | attributes = [ Element.width (Element.px 200) ] }
             selectOptions
         ]
     , demoRow "Selected + clearable (hover)"
+        -- wired: clearable value with the clear × armed (onClear)
         [ Select.view theme
             { selectD
-                | value = SelectMenu.Single (Just "drive")
+                | value = model.specSelClearable
                 , clearable = True
                 , hover = True
+                , onClear = Just SpecSelCleared
                 , attributes = [ Element.width (Element.px 200) ]
             }
             selectOptions
         ]
     , demoRow "Filterable (active, empty pattern)"
+        -- specimen: the pinned active/filter state is the row's purpose (the
+        -- pattern input drives the mounted-menu filtering, absent here)
         [ Select.view theme
             { selectD
                 | filterable = True
@@ -2070,28 +3330,34 @@ selectRows =
             selectOptions
         ]
     , demoRow "Multiple (maxTagCount 3 + fallback)"
+        -- wired: tag × deletes from the value (onDeleteTag)
         [ Select.view theme
             { selectD
                 | multiple = True
                 , maxTagCount = Just 3
-                , value = SelectMenu.Multiple [ "a", "b", "c", "d", "ghost" ]
+                , value = model.specSelMulti
+                , onDeleteTag = Just SpecSelMultiTagDeleted
                 , attributes = [ Element.width (Element.px 260) ]
             }
             letterOptions
         ]
     , demoRow "Multiple filterable (pattern)"
+        -- wired: the pinned pattern stays, the tags still delete
         [ Select.view theme
             { selectD
                 | multiple = True
                 , filterable = True
                 , active = True
                 , pattern = "dri"
-                , value = SelectMenu.Multiple [ "drive" ]
+                , value = model.specSelMultiFilter
+                , onDeleteTag = Just SpecSelMultiFilterTagDeleted
                 , attributes = [ Element.width (Element.px 260) ]
             }
             selectOptions
         ]
     , demoRow "Sizes · status · disabled"
+        -- specimen row (sizes/status/disabled are the showcase; the tags are
+        -- not clearable and no menu is mounted)
         [ Select.view theme
             { selectD
                 | size = Select.Small
@@ -2122,6 +3388,7 @@ selectRows =
             selectOptions
         ]
     , demoRow "Menu: loading (the __loading row)"
+        -- specimen: loading replaces the menu middle — nothing clickable
         [ Select.menu theme
             { selMenuD
                 | loading = True
@@ -2132,11 +3399,13 @@ selectRows =
             ]
         ]
     , demoRow "Menu: header · action · selected"
+        -- wired: the open menu's options toggle the checkmark (onToggle)
         [ Select.menu theme
             { selMenuD
                 | header = Just (Element.text "Header")
                 , action = Just (Element.text "#action")
-                , value = SelectMenu.Single (Just "drive")
+                , value = model.specSelMenu
+                , onToggle = Just SpecSelMenuPicked
                 , attributes = [ Element.width (Element.px 200) ]
             }
             selectOptions
@@ -2144,14 +3413,9 @@ selectRows =
     ]
 
 
-selectSection : Element msg
-selectSection =
-    section "Select" selectDesc selectRows
-
-
 selectLiveSection : Model -> Element Msg
 selectLiveSection model =
-    section "Select" selectDesc (selectRows ++ [ selectSingleLiveRow model, selectMultipleLiveRow model ])
+    section "Select" selectDesc (selectRows model ++ [ selectSingleLiveRow model, selectMultipleLiveRow model ])
 
 
 {-| The Popselect section description (shared by the static and live variants).
@@ -2161,37 +3425,45 @@ popselectDesc =
     "The popover-family body whose select-menu root is itself the popover-shared body (upstream `internalRenderBody` — the `Dropdown` path: no `n-popover` element, `--n-padding` zeroed, `--show-arrow` present unless `overlap` even with no arrow node). Selection is pure — `value` drives the per-option checkmarks, `toggleValue` computes the next value — while the caller owns the show state (`'hover'` trigger), positioning (default placement bottom) and the auto-close on single select. `NUI.SelectMenu` (the support module this composes) stands bare in the last row."
 
 
-popselectRows : List (Element msg)
-popselectRows =
+popselectRows : Model -> List (Element Msg)
+popselectRows model =
     [ demoRow "Single (leaves + group)"
+        -- wired (open specimen): value + onUpdateValue — a row click moves
+        -- the checkmark in place
         [ popoverHost Popover.Bottom
             []
             (Popselect.view theme
                 { popselectD
                     | width = Just "200px"
-                    , value = SelectMenu.Single (Just "drive")
+                    , value = model.specPopSingle
+                    , onUpdateValue = Just SpecPopSinglePicked
                 }
                 popselectOptions
             )
         ]
     , demoRow "Multiple (--multiple marker)"
+        -- wired (open specimen): same, multiple tags
         [ popoverHost Popover.Bottom
             []
             (Popselect.view theme
                 { popselectD
                     | width = Just "200px"
                     , multiple = True
-                    , value = SelectMenu.Multiple [ "in-my-life", "the-word" ]
+                    , value = model.specPopMulti
+                    , onUpdateValue = Just SpecPopMultiPicked
                 }
                 popselectOptions
             )
         ]
     , demoRow "Bare NUI.SelectMenu (no popover classes)"
+        -- wired (open specimen): the bare menu's rows toggle
         [ SelectMenu.view theme
             { selectMenuD
                 | size = SelectMenu.Small
                 , header = Just (Element.text "Header")
                 , action = Just (Element.text "#action")
+                , value = model.specPopSelectMenu
+                , onToggle = Just SpecPopSelectMenuPicked
                 , attributes = [ Element.width (Element.px 200) ]
             }
             popselectOptions
@@ -2199,14 +3471,9 @@ popselectRows =
     ]
 
 
-popselectSection : Element msg
-popselectSection =
-    section "Popselect" popselectDesc popselectRows
-
-
 popselectLiveSection : Model -> Element Msg
 popselectLiveSection model =
-    section "Popselect" popselectDesc (popselectRows ++ [ popselectLiveRow model ])
+    section "Popselect" popselectDesc (popselectRows model ++ [ popselectLiveRow model ])
 
 
 {-| The Cascader section description (shared by the static and live variants).
@@ -2216,14 +3483,16 @@ cascaderDesc =
     "Naive UI's cascader — the `NUI.BaseSelection` trigger (the `NUI.Select` lane) plus the multi-column menu, both caller-mounted bodies (upstream opens each in its own follower): `Cascader.menu` for the columns (the hover key's path decides them, `menuModel`; option states come from the value's `All`-strategy normalization) and `Cascader.selectMenu` for the filterable flat body (`filterOptions`' path-label rows). `view` derives the display from `value` + the tree: the single path label (unknown keys show themselves), the multiple cascade-normalized tags with the numeric `maxTagCount` slice. The treemate cascade logic ships pure — `getCheckedKeys` / `check` / `uncheck` / `toggleValue`; the caller owns the show state, positioning, keyboard and remote loading (`loadingKeys`)."
 
 
-cascaderRows : List (Element msg)
-cascaderRows =
+cascaderRows : Model -> List (Element Msg)
+cascaderRows model =
     [ demoRow "Single (path label) · multiple (maxTagCount)"
+        -- wired: clearable single (onClear) + multiple tag delete (onDeleteTag)
         [ Cascader.view theme
             { cascaderD
-                | value = SelectMenu.Single (Just "eleanor")
+                | value = model.specCascSingle
                 , clearable = True
                 , hover = True
+                , onClear = Just SpecCascSingleCleared
                 , attributes = [ Element.width (Element.px 280) ]
             }
             cascaderOptions
@@ -2231,26 +3500,34 @@ cascaderRows =
             { cascaderD
                 | multiple = True
                 , maxTagCount = Just 2
-                , value = SelectMenu.Multiple [ "abbey", "revolver" ]
+                , value = model.specCascMulti
+                , onDeleteTag = Just SpecCascMultiTagDeleted
                 , attributes = [ Element.width (Element.px 320) ]
             }
             cascaderOptions
         ]
     , demoRow "Columns menu (hover key opens the second column)"
+        -- wired (open specimen): option clicks toggle the value; a branch
+        -- click retargets the hover column (expand stays click here)
         [ Cascader.menu theme
             { cascMenuD
-                | hoverKey = Just "revolver"
+                | hoverKey = model.specCascMenuHover
                 , multiple = True
-                , value = SelectMenu.Multiple [ "abbey", "come" ]
+                , value = model.specCascMenu
+                , expandTrigger = Cascader.Click
+                , onToggle = Just SpecCascMenuToggled
                 , attributes = [ Element.width (Element.px 420) ]
             }
             cascaderOptions
         ]
     , demoRow "Columns menu: child strategy (leaf checkmarks) · empty · action"
+        -- wired: the child-strategy menu's leaf clicks commit; the empty
+        -- menu has nothing to wire (specimen)
         [ Cascader.menu theme
             { cascMenuD
                 | checkStrategy = Cascader.Child
-                , value = SelectMenu.Single (Just "drive")
+                , value = model.specCascChild
+                , onToggle = Just SpecCascChildPicked
                 , action = Just (Element.text "#action")
                 , attributes = [ Element.width (Element.px 200) ]
             }
@@ -2260,10 +3537,12 @@ cascaderRows =
             []
         ]
     , demoRow "Filterable flat menu (pattern 'sub')"
+        -- wired: the flat multiple menu's rows flip membership
         [ Cascader.selectMenu theme
             { cascSelectMenuD
                 | multiple = True
-                , value = SelectMenu.Multiple [ "abbey" ]
+                , value = model.specCascFlat
+                , onToggle = Just SpecCascFlatToggled
                 , attributes = [ Element.width (Element.px 280) ]
             }
             (Cascader.filterOptions "sub" Cascader.All " / " cascaderOptions)
@@ -2271,14 +3550,9 @@ cascaderRows =
     ]
 
 
-cascaderSection : Element msg
-cascaderSection =
-    section "Cascader" cascaderDesc cascaderRows
-
-
 cascaderLiveSection : Model -> Element Msg
 cascaderLiveSection model =
-    section "Cascader" cascaderDesc (cascaderRows ++ [ cascaderLiveRow model ])
+    section "Cascader" cascaderDesc (cascaderRows model ++ [ cascaderLiveRow model ])
 
 
 {-| The TreeSelect section description (shared by the static and live variants).
@@ -2288,8 +3562,8 @@ treeSelectDesc =
     "A selection trigger over a tree menu — show, positioning and the pattern/expand state are caller-owned."
 
 
-treeSelectRows : List (Element msg)
-treeSelectRows =
+treeSelectRows : Model -> List (Element Msg)
+treeSelectRows model =
     let
         node key label disabled kids =
             Tree.TreeOption
@@ -2318,73 +3592,88 @@ treeSelectRows =
 
         menuBox =
             Element.width (Element.px 260)
+
+        -- the per-row shared option set: value/pending/expanded mirror the
+        -- row's own literals (identical init), the node click is wired
+        rowOpts :
+            { multiple : Bool, checkable : Bool, cascade : Bool }
+            -> SelectMenu.Value
+            -> Maybe String
+            -> List String
+            -> TreeSelect.Options Msg
+        rowOpts cfg value pending expanded =
+            { tsD
+                | options = data
+                , multiple = cfg.multiple
+                , checkable = cfg.checkable
+                , cascade = cfg.cascade
+                , value = value
+                , pendingKey = pending
+                , expandedKeys = expanded
+                , onNodeClick = Just (rowMsg cfg)
+            }
+                |> (\o ->
+                        if cfg.multiple then
+                            { o | maxTagCount = Just 2 }
+
+                        else
+                            o
+                   )
+
+        rowMsg cfg =
+            if cfg.multiple then
+                SpecTsNodeClicked TsMultiRow
+
+            else if cfg.checkable then
+                SpecTsNodeClicked TsMultiRow
+
+            else
+                SpecTsNodeClicked TsSingleRow
+
+        singleCfg =
+            { multiple = False, checkable = False, cascade = False }
+
+        multiCfg =
+            { multiple = True, checkable = True, cascade = True }
+
+        filterCfg =
+            { multiple = False, checkable = False, cascade = False }
     in
     [ demoRow "Basic single"
         [ Element.column [ Element.spacing 8 ]
             [ TreeSelect.view theme
-                { tsD
-                    | options = data
-                    , value = SelectMenu.Single (Just "o1-1")
-                    , pendingKey = Just "o1-1"
-                    , expandedKeys = [ "o1" ]
-                }
+                (rowOpts singleCfg model.specTsSingle model.specTsSinglePending [ "o1" ])
             , Element.el [ menuBox ]
                 (TreeSelect.menu theme
-                    { tsD
-                        | options = data
-                        , value = SelectMenu.Single (Just "o1-1")
-                        , pendingKey = Just "o1-1"
-                        , expandedKeys = [ "o1", "o1-1" ]
-                    }
+                    (rowOpts singleCfg model.specTsSingle model.specTsSinglePending [ "o1", "o1-1" ])
                 )
             ]
         ]
     , demoRow "Multiple + cascade + checkable"
         [ Element.column [ Element.spacing 8 ]
             [ TreeSelect.view theme
-                { tsD
-                    | options = data
-                    , multiple = True
-                    , checkable = True
-                    , cascade = True
-                    , value = SelectMenu.Multiple [ "o1-1", "o2" ]
-                    , maxTagCount = Just 2
-                }
+                (rowOpts multiCfg model.specTsMulti Nothing [ "o1" ])
             , Element.el [ menuBox ]
-                (TreeSelect.menu theme
-                    { tsD
-                        | options = data
-                        , multiple = True
-                        , checkable = True
-                        , cascade = True
-                        , value = SelectMenu.Multiple [ "o1-1", "o2" ]
-                        , expandedKeys = [ "o1" ]
-                    }
-                )
+                (TreeSelect.menu theme (rowOpts multiCfg model.specTsMulti Nothing [ "o1" ]))
             ]
         ]
     , demoRow "Filterable + showPath"
         [ Element.column [ Element.spacing 8 ]
             [ TreeSelect.view theme
-                { tsD
-                    | options = data
-                    , filterable = True
-                    , showPath = True
-                    , value = SelectMenu.Single (Just "o1-3")
-                    , expandedKeys = [ "o1", "o1-1" ]
-                }
+                (rowOpts filterCfg model.specTsFilter Nothing [ "o1", "o1-1" ]
+                    |> (\o -> { o | filterable = True, showPath = True })
+                )
             , Element.el [ menuBox ]
                 (TreeSelect.menu theme
-                    { tsD
-                        | options = data
-                        , filterable = True
-                        , pattern = "eft"
-                        , expandedKeys = [ "o1" ]
-                    }
+                    (rowOpts filterCfg model.specTsFilter Nothing [ "o1" ]
+                        |> (\o -> { o | filterable = True, pattern = "eft" })
+                    )
                 )
             ]
         ]
     , demoRow "Slots + empty"
+        -- specimen row: the trigger's status/clearable/hover are the showcase
+        -- and the menu is header/action/empty pins (no tree rows to click)
         [ Element.column [ Element.spacing 8 ]
             [ TreeSelect.view theme
                 { tsD
@@ -2408,14 +3697,9 @@ treeSelectRows =
     ]
 
 
-treeSelectSection : Element msg
-treeSelectSection =
-    section "TreeSelect" treeSelectDesc treeSelectRows
-
-
 treeSelectLiveSection : Model -> Element Msg
 treeSelectLiveSection model =
-    section "TreeSelect" treeSelectDesc (treeSelectRows ++ [ treeSelectLiveRow model ])
+    section "TreeSelect" treeSelectDesc (treeSelectRows model ++ [ treeSelectLiveRow model ])
 
 
 {-| The AutoComplete section description (shared by the static and live variants).
@@ -2425,11 +3709,17 @@ autoCompleteDesc =
     "Naive UI's autocomplete — a bare `.n-auto-complete` wrapper around a plain `NUI.Input` trigger (NOT the selection: upstream drives `NInput` directly, no `NInternalSelection`); the menu is a separate caller-mounted body (its own follower upstream), `AutoComplete.menu` here — hardcoded Medium, `tabindex -1`, never `--selected` (no checkmark node), and `loading` is the input's suffix spinner, never a menu row. The caller owns the whole show gate (`getShow ? getShow (value || \"\") : value ≠ \"\"`, focused-typed, `showEmpty`), positioning, keyboard and the select commit (`onSelect value` always, then `clearAfterSelect` → null / the label commit, `append` ⇒ `value ++ label`); it does no filtering of its own — options are yours to derive (the email demo's suffix list). `fromString` lifts bare strings; `inputAttributes` is upstream's `inputProps`."
 
 
-autoCompleteRows : List (Element msg)
-autoCompleteRows =
+autoCompleteRows : Model -> List (Element Msg)
+autoCompleteRows model =
     [ demoRow "Basic (value + open menu + inputProps)"
+        -- wired: the first input's typing + the open menu's select commit;
+        -- the second keeps its inputProps specimen (autofocus pin)
         [ AutoComplete.view theme
-            { acD | value = "Dri", attributes = [ Element.width (Element.px 220) ] }
+            { acD
+                | value = model.specAcBasic
+                , onInput = Just SpecAcBasicTyped
+                , attributes = [ Element.width (Element.px 220) ]
+            }
         , AutoComplete.view theme
             { acD
                 | value = "v4f2"
@@ -2440,12 +3730,17 @@ autoCompleteRows =
                 , attributes = [ Element.width (Element.px 220) ]
             }
         , AutoComplete.menu theme
-            { acMenuD | attributes = [ Element.width (Element.px 220) ] }
+            { acMenuD
+                | onToggle = Just SpecAcBasicPicked
+                , attributes = [ Element.width (Element.px 220) ]
+            }
             [ AutoComplete.fromString "Drive My Car"
             , AutoComplete.fromString "Day Tripper"
             ]
         ]
     , demoRow "Sizes (the menu stays Medium)"
+        -- specimen row: Small/Medium/Large are the showcase; the menu mounts
+        -- the same two rows as the basic demo (nothing new to commit)
         [ AutoComplete.view theme
             { acD | size = AutoComplete.Small, value = "Dri", attributes = [ Element.width (Element.px 200) ] }
         , AutoComplete.view theme
@@ -2457,13 +3752,22 @@ autoCompleteRows =
             (List.take 2 selectOptions)
         ]
     , demoRow "Group (header + children)"
+        -- wired: group demo's input + the grouped menu's select
         [ AutoComplete.view theme
-            { acD | value = "In My Life", attributes = [ Element.width (Element.px 220) ] }
+            { acD
+                | value = model.specAcGroup
+                , onInput = Just SpecAcGroupTyped
+                , attributes = [ Element.width (Element.px 220) ]
+            }
         , AutoComplete.menu theme
-            { acMenuD | attributes = [ Element.width (Element.px 220) ] }
+            { acMenuD
+                | onToggle = Just SpecAcGroupPicked
+                , attributes = [ Element.width (Element.px 220) ]
+            }
             selectOptions
         ]
     , demoRow "Status · disabled"
+        -- specimen row (status/disabled are the showcase)
         [ AutoComplete.view theme
             { acD
                 | status = Just Input.Warning
@@ -2484,8 +3788,16 @@ autoCompleteRows =
             }
         ]
     , demoRow "Clearable · loading (suffix order: clear, loading, slot)"
+        -- wired: the clearable instance's × empties the value (the clear
+        -- fires onInput "" — upstream null ≡ ""); loading and the triple
+        -- instance stay specimens (their pins are the point)
         [ AutoComplete.view theme
-            { acD | value = "clear me", clearable = True, attributes = [ Element.width (Element.px 200) ] }
+            { acD
+                | value = model.specAcClearable
+                , clearable = True
+                , onInput = Just SpecAcClearableTyped
+                , attributes = [ Element.width (Element.px 200) ]
+            }
         , AutoComplete.view theme
             { acD
                 | value = "Loading…"
@@ -2502,6 +3814,7 @@ autoCompleteRows =
             }
         ]
     , demoRow "Show gate (showEmpty + the empty seam)"
+        -- specimen row: the empty seam + placeholder pin (nothing to select)
         [ AutoComplete.view theme
             { acD | placeholder = "Type to open", attributes = [ Element.width (Element.px 220) ] }
         , AutoComplete.menu theme
@@ -2512,6 +3825,8 @@ autoCompleteRows =
             []
         ]
     , demoRow "After select (the caller-owned commit)"
+        -- specimen row: the two chips document the commit semantics (the
+        -- inputs themselves stay inert — the live row exercises the loop)
         [ cell
             (Element.column [ Element.spacing 6, Element.width Element.fill ]
                 [ AutoComplete.view theme
@@ -2532,8 +3847,13 @@ autoCompleteRows =
             )
         ]
     , demoRow "Custom rows (renderLabel / renderOption)"
+        -- wired: the custom-row menu's leaf still selects (commit → the
+        -- basic input's value)
         [ AutoComplete.menu theme
-            { acMenuD | attributes = [ Element.width (Element.px 220) ] }
+            { acMenuD
+                | onToggle = Just SpecAcCustomPicked
+                , attributes = [ Element.width (Element.px 220) ]
+            }
             [ AutoComplete.fromString "A plain row"
             , SelectMenu.Custom
                 { key = "ac-custom"
@@ -2544,14 +3864,9 @@ autoCompleteRows =
     ]
 
 
-autoCompleteSection : Element msg
-autoCompleteSection =
-    section "AutoComplete" autoCompleteDesc autoCompleteRows
-
-
 autoCompleteLiveSection : Model -> Element Msg
 autoCompleteLiveSection model =
-    section "AutoComplete" autoCompleteDesc (autoCompleteRows ++ [ autoCompleteLiveRow model ])
+    section "AutoComplete" autoCompleteDesc (autoCompleteRows model ++ [ autoCompleteLiveRow model ])
 
 
 {-| The Mention section description (shared by the static and live variants).
@@ -2561,28 +3876,38 @@ mentionDesc =
     "Naive UI's mention — the same family as AutoComplete: a bare `.n-mention` wrapper around a plain `NUI.Input` trigger (NOT the selection — no `NInternalSelection` upstream), plus a separate caller-mounted `NUI.SelectMenu` body (`Mention.menu`). Three divergences from AutoComplete, frozen: `loading` is the MENU's `__loading` row (`MenuOptions.loading`), never the input suffix; upstream filters internally (the default `startsWith` predicate — the port drops the engine, the caller pre-filters and passes the filtered list); and the wrapper's cssr has no `display: inline-flex` (`width: 100%; z-index: auto; position: relative`) with `placeholder` defaulting to `\"\"`. The menu is hardcoded Medium, `tabindex -1`, and `value` stays `Single Nothing` — never `--selected`, no checkmark node. Options are `NUI.SelectMenu.Option` verbatim — no `fromString` (there are no bare-string options upstream); `type_` is `text`/`textarea` only. The caller owns the whole runtime: the show gate (the prefix scan + caret + separator formulas), the select splice, keyboard and positioning (upstream anchors the follower at the caret via mirror-div measurement — un-portable)."
 
 
-mentionRows : List (Element msg)
-mentionRows =
+mentionRows : Model -> List (Element Msg)
+mentionRows model =
     [ demoRow "Basic (the default @-trigger — caret inside an @-run opens)"
+        -- wired: the first cell's input types + the mounted menu splices
+        -- the mention; the second input is the placeholder specimen
         [ cell
             (Element.column [ Element.spacing 6, Element.width Element.fill ]
                 [ Mention.view theme
                     { mnD
-                        | value = "@710"
+                        | value = model.specMnBasic
+                        , onInput = Just SpecMnBasicTyped
                         , attributes = [ Element.width (Element.px 220) ]
                     }
                 , Mention.menu theme
-                    { mnMenuD | attributes = [ Element.width (Element.px 220) ] }
+                    { mnMenuD
+                        | onToggle = Just SpecMnBasicPicked
+                        , attributes = [ Element.width (Element.px 220) ]
+                    }
                     mentionOptions
                 ]
             )
         , Mention.view theme
             { mnD
-                | placeholder = "Type @ to mention"
+                | value = model.specMnBasic2
+                , onInput = Just SpecMnBasic2Typed
+                , placeholder = "Type @ to mention"
                 , attributes = [ Element.width (Element.px 220) ]
             }
         ]
     , demoRow "Sizes (the menu stays Medium)"
+        -- specimen row: Small/Medium/Large are the showcase (shared value
+        -- would homogenize the three sizes' text)
         [ Mention.view theme
             { mnD | size = Mention.Small, value = "@710", attributes = [ Element.width (Element.px 200) ] }
         , Mention.view theme
@@ -2594,37 +3919,47 @@ mentionRows =
             (List.take 4 mentionOptions)
         ]
     , demoRow "Textarea (type_ = Textarea — the union is text/textarea only)"
+        -- wired: the textarea types into the model
         [ Element.el [ Element.width (Element.px 360) ]
             (Mention.view theme
                 { mnD
                     | type_ = Mention.Textarea
-                    , value = "A textarea.\nPing @710mechgy here."
+                    , value = model.specMnTextarea
+                    , onInput = Just SpecMnTextareaTyped
                     , placeholder = "Type @ to mention"
                 }
             )
         ]
     , demoRow "Autosize (n-input--autosize, resizable suppressed — height measurement caller-owned)"
+        -- wired: same, the autosize textarea
         [ Element.el [ Element.width (Element.px 360) ]
             (Mention.view theme
                 { mnD
                     | type_ = Mention.Textarea
                     , autosize = True
-                    , value = "Autosized textarea:\ngrows with content."
+                    , value = model.specMnAutosize
+                    , onInput = Just SpecMnAutosizeTyped
                 }
             )
         ]
     , demoRow "Custom prefix (#@ — the caller gates the option set; the module does no scan)"
+        -- wired: the group demo's input types + BOTH mounted menus splice
+        -- into the same run
         [ cell
             (Element.column [ Element.spacing 6, Element.width Element.fill ]
                 [ Mention.view theme
                     { mnD
-                        | value = "#e"
+                        | value = model.specMnGroupTag
+                        , onInput = Just SpecMnGroupTagTyped
                         , placeholder = "# for tags"
                         , attributes = [ Element.width (Element.px 200) ]
                     }
                 , chip "prefix \"#\" → the tag list"
                 , Mention.menu theme
-                    { mnMenuD | attributes = [ Element.width (Element.px 200) ] }
+                    { mnMenuD
+                        | onToggle = Just (\value -> SpecMnGroupTagPicked ("#" ++ value))
+                        , attributes = [ Element.width (Element.px 200) ]
+                    }
                     mentionTagOptions
                 ]
             )
@@ -2632,18 +3967,24 @@ mentionRows =
             (Element.column [ Element.spacing 6, Element.width Element.fill ]
                 [ Mention.view theme
                     { mnD
-                        | value = "@z"
+                        | value = model.specMnGroupUser
+                        , onInput = Just SpecMnGroupUserTyped
                         , placeholder = "@ for users"
                         , attributes = [ Element.width (Element.px 200) ]
                     }
                 , chip "prefix \"@\" → the user list"
                 , Mention.menu theme
-                    { mnMenuD | attributes = [ Element.width (Element.px 200) ] }
+                    { mnMenuD
+                        | onToggle = Just (\value -> SpecMnGroupUserPicked ("@" ++ value))
+                        , attributes = [ Element.width (Element.px 200) ]
+                    }
                     mentionOptions
                 ]
             )
         ]
     , demoRow "Loading (THE divergence — the menu's __loading row, never the input suffix)"
+        -- specimen row: the loading pin is the point (loading replaces the
+        -- menu middle — nothing clickable)
         [ Mention.view theme
             { mnD
                 | value = "@7"
@@ -2655,13 +3996,18 @@ mentionRows =
             mentionOptions
         ]
     , demoRow "Group + custom rows (renderLabel lane)"
+        -- wired: the input types + the grouped menu's rows splice
         [ Mention.view theme
             { mnD
-                | value = "@in my"
+                | value = model.specMnGroup2
+                , onInput = Just SpecMnGroup2Typed
                 , attributes = [ Element.width (Element.px 220) ]
             }
         , Mention.menu theme
-            { mnMenuD | attributes = [ Element.width (Element.px 220) ] }
+            { mnMenuD
+                | onToggle = Just (\value -> SpecMnGroup2Picked value)
+                , attributes = [ Element.width (Element.px 220) ]
+            }
             (selectOptions
                 ++ [ SelectMenu.Custom
                         { key = "mention-custom"
@@ -2671,6 +4017,7 @@ mentionRows =
             )
         ]
     , demoRow "Status · disabled"
+        -- specimen row (status/disabled are the showcase)
         [ Mention.view theme
             { mnD
                 | status = Just Input.Warning
@@ -2693,14 +4040,9 @@ mentionRows =
     ]
 
 
-mentionSection : Element msg
-mentionSection =
-    section "Mention" mentionDesc mentionRows
-
-
 mentionLiveSection : Model -> Element Msg
 mentionLiveSection model =
-    section "Mention" mentionDesc (mentionRows ++ [ mentionLiveRow model ])
+    section "Mention" mentionDesc (mentionRows model ++ [ mentionLiveRow model ])
 
 
 {-| The DatePicker section description (shared by the static and live variants).
@@ -2710,89 +4052,53 @@ datePickerDesc =
     "An input trigger over a caller-mounted calendar panel — every upstream panel type, with show state, positioning and the value caller-owned."
 
 
-datePickerRows : List (Element msg)
-datePickerRows =
-    let
-        now =
-            Time.millisToPosix 1715731200000
-
-        may15 =
-            1715731200000
-
-        dt =
-            1715770440000
-
-        base =
-            { dpD | now = now }
-
-        pair opts =
-            Element.column [ Element.spacing 12, Element.width Element.fill ]
-                [ DatePicker.view theme opts
-                , DatePicker.panel theme opts
-                ]
-
-        rangeOpts opts =
-            { opts
-                | value = DatePicker.Range (Just ( may10, may20 ))
-                , startCalendarValue = Just may10
-                , endCalendarValue = Just may20
-            }
-    in
+datePickerRows : Model -> List (Element Msg)
+datePickerRows model =
     [ demoRow "Date"
-        [ pair { base | value = DatePicker.Single (Just may15) } ]
+        -- wired: value/calendar/month-panel state; day click commits + closes
+        [ specDpPair DpDateRow model ]
     , demoRow "Datetime"
-        [ pair { base | type_ = DatePicker.Datetime, value = DatePicker.Single (Just dt) } ]
+        -- wired: same, with the datetime actions (Now/Confirm) live
+        [ specDpPair DpDatetimeRow model ]
     , demoRow "Date range (pair input)"
-        [ pair (rangeOpts { base | type_ = DatePicker.Daterange }) ]
+        -- wired: two-click dual select, hover preview, Confirm commits
+        [ specDpPair DpDaterangeRow model ]
     , demoRow "Datetime range"
-        [ pair (rangeOpts { base | type_ = DatePicker.Datetimerange }) ]
+        -- wired: same + the per-side embedded time pickers
+        [ specDpPair DpDatetimerangeRow model ]
     , demoRow "Month"
-        [ pair { base | type_ = DatePicker.Month, value = DatePicker.Single (Just may15) } ]
+        -- wired: month cell click commits + closes
+        [ specDpPair DpMonthRow model ]
     , demoRow "Year"
-        [ pair
-            { base
-                | type_ = DatePicker.Year
-                , value = DatePicker.Single (Just may15)
-                , yearRange = ( 2015, 2035 )
-            }
-        ]
+        -- wired: year cell click commits + closes (yearRange literal kept)
+        [ specDpPair DpYearRow model ]
     , demoRow "Quarter"
-        [ pair { base | type_ = DatePicker.Quarter, value = DatePicker.Single (Just may15) } ]
+        -- wired: quarter cell click commits + closes
+        [ specDpPair DpQuarterRow model ]
     , demoRow "Month range"
-        [ pair (rangeOpts { base | type_ = DatePicker.Monthrange }) ]
+        -- wired: dual month select, Confirm commits
+        [ specDpPair DpMonthrangeRow model ]
     , demoRow "Week"
-        [ pair { base | type_ = DatePicker.Week, value = DatePicker.Single (Just may15) } ]
+        -- wired: week cell click commits + closes
+        [ specDpPair DpWeekRow model ]
     , demoRow "Sizes / clearable / status / disabled"
-        [ DatePicker.view theme { base | size = T.Small, value = DatePicker.Single (Just may15) }
-        , DatePicker.view theme { base | value = DatePicker.Single (Just may15), clearable = True }
-        , DatePicker.view theme { base | size = T.Large, placeholder = Just "Pick a date" }
-        , DatePicker.view theme { base | value = DatePicker.Single (Just may15), status = Just Input.Error }
-        , DatePicker.view theme { base | value = DatePicker.Single (Just may15), disabled = True }
+        -- specimen row (sizes/clearable/status/disabled are the showcase —
+        -- plain triggers with no mounted panel emit nothing)
+        [ DatePicker.view theme { dpD | now = dpNow, size = T.Small, value = DatePicker.Single (Just dpNowMs) }
+        , DatePicker.view theme { dpD | now = dpNow, value = DatePicker.Single (Just dpNowMs), clearable = True }
+        , DatePicker.view theme { dpD | now = dpNow, size = T.Large, placeholder = Just "Pick a date" }
+        , DatePicker.view theme { dpD | now = dpNow, value = DatePicker.Single (Just dpNowMs), status = Just Input.Error }
+        , DatePicker.view theme { dpD | now = dpNow, value = DatePicker.Single (Just dpNowMs), disabled = True }
         ]
     , demoRow "Range clearable + shortcuts"
-        [ pair
-            (rangeOpts
-                { base
-                    | type_ = DatePicker.Daterange
-                    , clearable = True
-                    , shortcuts =
-                        [ ( "This week", DatePicker.ShortcutRange ( may10, may20 ) )
-                        , ( "Today", DatePicker.ShortcutSingle may15 )
-                        ]
-                }
-            )
-        ]
+        -- wired: shortcut hover previews / click commits + closes
+        [ specDpPair DpShortcutsRow model ]
     ]
-
-
-datePickerSection : Element msg
-datePickerSection =
-    section "DatePicker" datePickerDesc datePickerRows
 
 
 datePickerLiveSection : Model -> Element Msg
 datePickerLiveSection model =
-    section "DatePicker" datePickerDesc (datePickerRows ++ [ dpSingleLiveRow model, dpRangeLiveRow model ])
+    section "DatePicker" datePickerDesc (datePickerRows model ++ [ dpSingleLiveRow model, dpRangeLiveRow model ])
 
 
 {-| The TimePicker section description (shared by the static and live variants).
@@ -2802,60 +4108,38 @@ timePickerDesc =
     "An input trigger over a caller-mounted clock panel — show state, positioning and the value are caller-owned."
 
 
-timePickerRows : List (Element msg)
-timePickerRows =
-    let
-        tenToEleven =
-            (10 * 60 + 54) * 60 * 1000
-
-        pair opts =
-            Element.column [ Element.spacing 8 ]
-                [ TimePicker.view theme opts
-                , Element.el [ Element.width (Element.px 200) ]
-                    (TimePicker.panel theme opts)
-                ]
-    in
+timePickerRows : Model -> List (Element Msg)
+timePickerRows model =
     [ demoRow "Default (HH:mm:ss)"
-        [ pair { tpD | value = Just tenToEleven } ]
+        -- wired: column item clicks set the value, Confirm commits + closes
+        [ specTpPair TpBasicRow model ]
     , demoRow "Hour + minute (HH:mm)"
-        [ pair { tpD | format = "HH:mm", value = Just tenToEleven } ]
+        -- wired: same, the two-column format
+        [ specTpPair TpHmRow model ]
     , demoRow "12 hours + period (hh:mm:ss a)"
-        [ pair { tpD | use12Hours = True, format = "hh:mm:ss a", value = Just tenToEleven } ]
+        -- wired: same, the period column included
+        [ specTpPair Tp12Row model ]
     , demoRow "Actions clear / now / confirm"
-        [ pair
-            { tpD
-                | value = Just tenToEleven
-                , clearable = True
-                , actions = [ TimePicker.Clear, TimePicker.Now, TimePicker.Confirm ]
-            }
-        ]
+        -- wired: Clear empties, Now snaps, Confirm closes
+        [ specTpPair TpActionsRow model ]
     , demoRow "Disabled units (5-min steps, seconds 0/30, hours ≤ 12)"
-        [ pair
-            { tpD
-                | value = Just tenToEleven
-                , minutes = TimePicker.StepUnits 5
-                , seconds = TimePicker.OnlyUnits [ 0, 30 ]
-                , isHourDisabled = Just (\h -> h > 12)
-            }
-        ]
+        -- wired: the filters gate the columns; clicks still commit
+        [ specTpPair TpDisabledRow model ]
     , demoRow "Sizes / clearable / disabled / status"
-        [ TimePicker.view theme { tpD | size = T.Small, value = Just tenToEleven }
-        , TimePicker.view theme { tpD | value = Just tenToEleven, clearable = True }
-        , TimePicker.view theme { tpD | size = T.Large, placeholder = "Pick" }
-        , TimePicker.view theme { tpD | value = Just tenToEleven, disabled = True }
-        , TimePicker.view theme { tpD | value = Just tenToEleven, status = Just Input.Error }
+        -- specimen row (sizes/clearable/disabled/status are the showcase —
+        -- plain triggers with no mounted panel emit nothing)
+        [ TimePicker.view theme { tpD | now = dpNow, size = T.Small, value = Just tenToFiftyFour }
+        , TimePicker.view theme { tpD | now = dpNow, value = Just tenToFiftyFour, clearable = True }
+        , TimePicker.view theme { tpD | now = dpNow, size = T.Large, placeholder = "Pick" }
+        , TimePicker.view theme { tpD | now = dpNow, value = Just tenToFiftyFour, disabled = True }
+        , TimePicker.view theme { tpD | now = dpNow, value = Just tenToFiftyFour, status = Just Input.Error }
         ]
     ]
 
 
-timePickerSection : Element msg
-timePickerSection =
-    section "TimePicker" timePickerDesc timePickerRows
-
-
 timePickerLiveSection : Model -> Element Msg
 timePickerLiveSection model =
-    section "TimePicker" timePickerDesc (timePickerRows ++ [ tpLiveRow model ])
+    section "TimePicker" timePickerDesc (timePickerRows model ++ [ tpLiveRow model ])
 
 
 {-| The ColorPicker section description (shared by the static and live variants).
@@ -2865,71 +4149,67 @@ colorPickerDesc =
     "A colour trigger over a caller-mounted palette panel — show state, positioning, drag and the value are caller-owned."
 
 
-colorPickerRows : List (Element msg)
-colorPickerRows =
-    let
-        cpd =
-            ColorPicker.defaultOptions
-
-        pair opts =
-            Element.column [ Element.spacing 8, Element.width (Element.px 240) ]
-                [ ColorPicker.view theme opts
-                , Element.el [ Element.width (Element.px 240) ] (ColorPicker.panel theme opts)
-                ]
-
-        red =
-            "#d03050"
-    in
+colorPickerRows : Model -> List (Element Msg)
+colorPickerRows model =
     [ demoRow "Basic"
-        [ pair { cpd | value = Just red } ]
+        -- wired: swatch clicks + mode toggle drive the draft; the trigger
+        -- reopens after a close
+        [ specCpPair CpBasicRow model identity ]
     , demoRow "Alpha off + confirm"
-        [ pair { cpd | value = Just red, showAlpha = False, actions = Just [ ColorPicker.ConfirmAction ] } ]
+        -- wired: Confirm commits + closes
+        [ specCpPair CpAlphaRow model identity ]
     , demoRow "Sizes"
-        [ pair { cpd | value = Just red, size = T.Small }
-        , pair { cpd | value = Just red }
-        , pair { cpd | value = Just red, size = T.Large }
+        -- wired: the three sizes share one row state (the brief's shared-
+        -- field rule -- they showcase the SAME colour at three sizes)
+        [ specCpPair CpSizesRow model (\o -> { o | size = T.Small })
+        , specCpPair CpSizesRow model identity
+        , specCpPair CpSizesRow model (\o -> { o | size = T.Large })
         ]
     , demoRow "Disabled"
-        [ pair { cpd | value = Just red, disabled = True } ]
-    , demoRow "Single mode (hex)"
-        [ pair { cpd | value = Just red, modes = [ ColorPicker.Hex ], displayedMode = ColorPicker.Hex } ]
-    , demoRow "Swatches"
-        [ pair
-            { cpd
-                | value = Just red
-                , swatches = [ "#000000", "#ffffff", red, "rgba(208, 48, 80, 1)", "#0f0" ]
-            }
+        -- specimen row (the disabled pin is the point -- the trigger and
+        -- panel render but nothing can fire)
+        [ Element.column [ Element.spacing 8, Element.width (Element.px 240) ]
+            [ ColorPicker.view theme { cpD | value = Just specCpRed, disabled = True }
+            , Element.el [ Element.width (Element.px 240) ]
+                (ColorPicker.panel theme { cpD | value = Just specCpRed, disabled = True })
+            ]
         ]
+    , demoRow "Single mode (hex)"
+        -- specimen row (the pinned single-mode unit row is the showcase --
+        -- the mode button would leave the pin)
+        [ Element.column [ Element.spacing 8, Element.width (Element.px 240) ]
+            [ ColorPicker.view theme { cpD | value = Just specCpRed, modes = [ ColorPicker.Hex ], displayedMode = ColorPicker.Hex }
+            , Element.el [ Element.width (Element.px 240) ]
+                (ColorPicker.panel theme { cpD | value = Just specCpRed, modes = [ ColorPicker.Hex ], displayedMode = ColorPicker.Hex })
+            ]
+        ]
+    , demoRow "Swatches"
+        -- wired: swatch clicks commit to the draft
+        [ specCpPair CpSwatchesRow model identity ]
     , demoRow "Actions clear"
-        [ pair { cpd | value = Just red, actions = Just [ ColorPicker.ClearAction ] } ]
+        -- wired: Clear empties + closes
+        [ specCpPair CpClearRow model identity ]
     , demoRow "Preview (native input)"
-        [ pair { cpd | value = Just red, showPreview = True } ]
+        -- wired: the preview tracks the draft
+        [ specCpPair CpPreviewRow model identity ]
     , demoRow "Custom trigger"
+        -- specimen row (the custom trigger is the showcase -- a plain button
+        -- replaces the picker's own trigger surface)
         [ ColorPicker.view theme
-            { cpd
-                | value = Just red
+            { cpD
+                | value = Just specCpRed
                 , customTrigger = Just (Button.view theme { btn | kind = T.Primary } [ Element.text "Pick a colour" ])
             }
         ]
     , demoRow "Undo / redo actions"
-        [ pair
-            { cpd
-                | value = Just red
-                , internalActions = Just [ ColorPicker.UndoAction, ColorPicker.RedoAction ]
-                , undoable = True
-            }
-        ]
+        -- wired: real undo/redo stacks (seeded so undoable starts True)
+        [ specCpPair CpUndoRow model identity ]
     ]
-
-
-colorPickerSection : Element msg
-colorPickerSection =
-    section "ColorPicker" colorPickerDesc colorPickerRows
 
 
 colorPickerLiveSection : Model -> Element Msg
 colorPickerLiveSection model =
-    section "ColorPicker" colorPickerDesc (colorPickerRows ++ [ cpLiveRow model ])
+    section "ColorPicker" colorPickerDesc (colorPickerRows model ++ [ cpLiveRow model ])
 
 
 {-| The family body in Main.body order — live variants for every section

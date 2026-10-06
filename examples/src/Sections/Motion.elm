@@ -1,7 +1,6 @@
 module Sections.Motion exposing
     ( Model
     , Msg
-    , carouselSection
     , countdownSection
     , init
     , logSection
@@ -22,6 +21,18 @@ The static rows moved verbatim from Main.elm — that surface feeds the
 check-dom gate, so every root keeps rendering exactly as before. The live
 demo rows (moved verbatim from Live/Motion.elm — same demoRow labels, same
 `#live-*` ids, same captions) run a real update loop owned by this module.
+
+Phase 2 — the static rows that HAVE channels are state-driven with identical
+init (the brief's technique): every static Carousel row keeps its exact
+literals (size, effect, dots, arrows, `defaultIndex`, its `live-carousel-*`
+id) but renders from a per-row `Carousel.State` initialised to the same
+`resize opts size (init opts 4)` it used to build inline, with `onDotTo` /
+`onPrev` / `onNext` / `onSlideClick` (card) / `onDotKeydown` + `keyboard`
+wired to one Msg each — dots, arrows, Enter/Space and arrow-key navigation
+now move the slides. The remaining Motion components expose no msg channels
+at all (Progress/Skeleton/Spin/Marquee/Countdown/NumberAnimation/Log are
+caller-clock display components — their Options records carry no `on*`
+fields), so those rows stay specimens; the Log live row covers Log.
 
 Every runtime concern the port documents as caller-owned lands here:
 
@@ -107,6 +118,7 @@ type alias Model =
     , spinShow : Bool
     , loaded : Bool
     , marqueePlay : Bool
+    , specCarousels : SpecCarStates
     }
 
 
@@ -142,6 +154,16 @@ init =
     , spinShow = True
     , loaded = False
     , marqueePlay = True
+    , specCarousels =
+        { basic = specCarInit CarBasicRow
+        , vertical = specCarInit CarVerticalRow
+        , arrows = specCarInit CarArrowsRow
+        , noLoop = specCarInit CarNoLoopRow
+        , perView = specCarInit CarPerViewRow
+        , fade = specCarInit CarFadeRow
+        , card = specCarInit CarCardRow
+        , defaultIx = specCarInit CarDefaultIxRow
+        }
     }
 
 
@@ -186,6 +208,13 @@ type Msg
     | SkelToggle Bool
       -- Marquee · play
     | MarqueeToggle Bool
+      -- Carousel · static rows (phase 2: state-drive with identical init)
+    | SpecCarPrev SpecCarRow
+    | SpecCarNext SpecCarRow
+    | SpecCarTo SpecCarRow Int
+    | SpecCarSlide SpecCarRow Int
+    | SpecCarEnd SpecCarRow
+    | SpecCarKey SpecCarRow Int Carousel.KeyInfo
 
 
 
@@ -411,6 +440,49 @@ update msg model =
         MarqueeToggle on ->
             { model | marqueePlay = on }
 
+        -- Carousel · static rows
+        SpecCarPrev row ->
+            specCarStep row Carousel.prev model
+
+        SpecCarNext row ->
+            specCarStep row Carousel.next model
+
+        SpecCarTo row i ->
+            specCarStep row (\o s -> Carousel.to o s i) model
+
+        SpecCarSlide row i ->
+            -- the card-effect gate: clicking an inactive slide runs `to`
+            specCarStep row (\o s -> Carousel.to o s i) model
+
+        SpecCarEnd row ->
+            { model
+                | specCarousels =
+                    specCarSet row
+                        (Carousel.transitionEnd (specCarOpts row) (specCarGet row model))
+                        model.specCarousels
+            }
+
+        SpecCarKey row _ info ->
+            let
+                opts =
+                    specCarOpts row
+
+                st =
+                    specCarGet row model
+
+                env =
+                    Carousel.envOf opts st st.slideCount
+            in
+            case Carousel.dotKeyAction opts env info of
+                Just Carousel.ToNext ->
+                    specCarStep row Carousel.next model
+
+                Just Carousel.ToPrev ->
+                    specCarStep row Carousel.prev model
+
+                _ ->
+                    model
+
 
 
 -- SUBSCRIPTIONS (this family owns the clocks)
@@ -453,6 +525,248 @@ subscriptions model =
 
 
 -- DEFAULTS (record-update needs a plain variable, not a qualified name)
+
+
+{-| Which static carousel row owns a state (phase 2). The Custom (usercontrol)
+row is deliberately absent — its `renderDots` slot replaces the dot bar with
+plain text, so there is nothing clickable to wire; it stays a specimen.
+-}
+type SpecCarRow
+    = CarBasicRow
+    | CarVerticalRow
+    | CarArrowsRow
+    | CarNoLoopRow
+    | CarPerViewRow
+    | CarFadeRow
+    | CarCardRow
+    | CarDefaultIxRow
+
+
+{-| The eight states, one per row, in the row order above.
+-}
+type alias SpecCarStates =
+    { basic : Carousel.State
+    , vertical : Carousel.State
+    , arrows : Carousel.State
+    , noLoop : Carousel.State
+    , perView : Carousel.State
+    , fade : Carousel.State
+    , card : Carousel.State
+    , defaultIx : Carousel.State
+    }
+
+
+{-| Each row's base options — EXACTLY the static literal sets the row used to
+build inline (plus the interaction channels the row's own affordances imply:
+arrows rows get `onPrev`/`onNext`, every row gets `onDotTo`, the card row
+gets `onSlideClick`, and `keyboard` follows the live precedent). The `id` is
+kept per-row (`live-carousel-*` — the row's original attribute).
+-}
+specCarOpts : SpecCarRow -> Carousel.Options Msg
+specCarOpts row =
+    let
+        d =
+            Carousel.defaults
+    in
+    case row of
+        CarBasicRow ->
+            { d
+                | keyboard = True
+                , onDotTo = Just (SpecCarTo CarBasicRow)
+                , onDotKeydown = Just (SpecCarKey CarBasicRow)
+                , onTransitionEnd = Just (SpecCarEnd CarBasicRow)
+                , attributes = [ HA.id "live-carousel" ]
+            }
+
+        CarVerticalRow ->
+            { d
+                | direction = Carousel.Vertical
+                , dotPlacement = Carousel.DotsRight
+                , keyboard = True
+                , onDotTo = Just (SpecCarTo CarVerticalRow)
+                , onDotKeydown = Just (SpecCarKey CarVerticalRow)
+                , onTransitionEnd = Just (SpecCarEnd CarVerticalRow)
+                , attributes = [ HA.id "live-carousel-vertical" ]
+            }
+
+        CarArrowsRow ->
+            { d
+                | showArrow = True
+                , dotType = Carousel.Line
+                , keyboard = True
+                , onPrev = Just (SpecCarPrev CarArrowsRow)
+                , onNext = Just (SpecCarNext CarArrowsRow)
+                , onDotTo = Just (SpecCarTo CarArrowsRow)
+                , onDotKeydown = Just (SpecCarKey CarArrowsRow)
+                , onTransitionEnd = Just (SpecCarEnd CarArrowsRow)
+                , attributes = [ HA.id "live-carousel-arrows" ]
+            }
+
+        CarNoLoopRow ->
+            { d
+                | loop = False
+                , showArrow = True
+                , keyboard = True
+                , onPrev = Just (SpecCarPrev CarNoLoopRow)
+                , onNext = Just (SpecCarNext CarNoLoopRow)
+                , onDotTo = Just (SpecCarTo CarNoLoopRow)
+                , onDotKeydown = Just (SpecCarKey CarNoLoopRow)
+                , onTransitionEnd = Just (SpecCarEnd CarNoLoopRow)
+                , attributes = [ HA.id "live-carousel-no-loop" ]
+            }
+
+        CarPerViewRow ->
+            { d
+                | slidesPerView = Carousel.PerView 3
+                , spaceBetween = 20
+                , loop = False
+                , showArrow = True
+                , keyboard = True
+                , onPrev = Just (SpecCarPrev CarPerViewRow)
+                , onNext = Just (SpecCarNext CarPerViewRow)
+                , onDotTo = Just (SpecCarTo CarPerViewRow)
+                , onDotKeydown = Just (SpecCarKey CarPerViewRow)
+                , onTransitionEnd = Just (SpecCarEnd CarPerViewRow)
+                , attributes = [ HA.id "live-carousel-slides-per-view" ]
+            }
+
+        CarFadeRow ->
+            { d
+                | effect = Carousel.FadeEffect
+                , keyboard = True
+                , onDotTo = Just (SpecCarTo CarFadeRow)
+                , onDotKeydown = Just (SpecCarKey CarFadeRow)
+                , onTransitionEnd = Just (SpecCarEnd CarFadeRow)
+                , attributes = [ HA.id "live-carousel-fade" ]
+            }
+
+        CarCardRow ->
+            { d
+                | effect = Carousel.CardEffect
+                , showDots = False
+                , prevSlideStyle = Just "transform:translateX(-60%) scale(0.7)"
+                , nextSlideStyle = Just "transform:translateX(60%) scale(0.7)"
+                , keyboard = True
+                , onSlideClick = Just (SpecCarSlide CarCardRow)
+                , onTransitionEnd = Just (SpecCarEnd CarCardRow)
+                , attributes = [ HA.id "live-carousel-card" ]
+            }
+
+        CarDefaultIxRow ->
+            { d
+                | defaultIndex = 2
+                , keyboard = True
+                , onDotTo = Just (SpecCarTo CarDefaultIxRow)
+                , onDotKeydown = Just (SpecCarKey CarDefaultIxRow)
+                , onTransitionEnd = Just (SpecCarEnd CarDefaultIxRow)
+                , attributes = [ HA.id "live-carousel-default-index" ]
+            }
+
+
+{-| The per-row fixed measured size — the same literal the row passed to
+`Carousel.resize` before.
+-}
+specCarSize : SpecCarRow -> Carousel.Size
+specCarSize row =
+    case row of
+        CarBasicRow ->
+            { width = 920, height = 360 }
+
+        CarVerticalRow ->
+            { width = 560, height = 280 }
+
+        CarArrowsRow ->
+            { width = 920, height = 360 }
+
+        CarNoLoopRow ->
+            { width = 920, height = 360 }
+
+        CarPerViewRow ->
+            { width = 920, height = 360 }
+
+        CarFadeRow ->
+            { width = 920, height = 360 }
+
+        CarCardRow ->
+            { width = 920, height = 360 }
+
+        CarDefaultIxRow ->
+            { width = 920, height = 360 }
+
+
+{-| One row's init: the exact `resize opts size (init opts 4)` the row used to
+run inline (NO `markMounted` — the static output keeps the pre-mount fade/card
+gate, byte-identical to before).
+-}
+specCarInit : SpecCarRow -> Carousel.State
+specCarInit row =
+    Carousel.resize (specCarOpts row) (specCarSize row) (Carousel.init (specCarOpts row) 4)
+
+
+specCarGet : SpecCarRow -> Model -> Carousel.State
+specCarGet row model =
+    case row of
+        CarBasicRow ->
+            model.specCarousels.basic
+
+        CarVerticalRow ->
+            model.specCarousels.vertical
+
+        CarArrowsRow ->
+            model.specCarousels.arrows
+
+        CarNoLoopRow ->
+            model.specCarousels.noLoop
+
+        CarPerViewRow ->
+            model.specCarousels.perView
+
+        CarFadeRow ->
+            model.specCarousels.fade
+
+        CarCardRow ->
+            model.specCarousels.card
+
+        CarDefaultIxRow ->
+            model.specCarousels.defaultIx
+
+
+specCarSet : SpecCarRow -> Carousel.State -> SpecCarStates -> SpecCarStates
+specCarSet row st states =
+    case row of
+        CarBasicRow ->
+            { states | basic = st }
+
+        CarVerticalRow ->
+            { states | vertical = st }
+
+        CarArrowsRow ->
+            { states | arrows = st }
+
+        CarNoLoopRow ->
+            { states | noLoop = st }
+
+        CarPerViewRow ->
+            { states | perView = st }
+
+        CarFadeRow ->
+            { states | fade = st }
+
+        CarCardRow ->
+            { states | card = st }
+
+        CarDefaultIxRow ->
+            { states | defaultIx = st }
+
+
+{-| One port step over one row's state (the `carStep` pattern, per-row).
+-}
+specCarStep : SpecCarRow -> (Carousel.Options Msg -> Carousel.State -> Carousel.State) -> Model -> Model
+specCarStep row f model =
+    { model
+        | specCarousels =
+            specCarSet row (f (specCarOpts row) (specCarGet row model)) model.specCarousels
+    }
 
 
 tagD : Tag.Options msg
@@ -1376,114 +1690,61 @@ numberAnimationLiveSection model =
         (numberAnimationRows ++ [ demoRow "NumberAnimation · tween" [ numberDemo theme model ] ])
 
 
-carouselRows : List (Element msg)
-carouselRows =
+carouselRows : Model -> List (Element Msg)
+carouselRows model =
     let
-        carouselD =
-            Carousel.defaults
+        spec : SpecCarRow -> Element Msg
+        spec row =
+            Element.el [ Element.width (Element.px (round (specCarSize row).width)) ]
+                (Carousel.view theme (specCarOpts row) (specCarGet row model) slides)
 
-        img gradient =
-            Html.img
-                [ HA.attribute "style" ("display:block;width:100%;height:100%;object-fit:cover;background:" ++ gradient)
-                , HA.src "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
-                , HA.alt ""
-                ]
-                []
-
-        carouselSlides =
-            [ img "linear-gradient(135deg, #18a058, #63e2b7)"
-            , img "linear-gradient(135deg, #2080f0, #70c0e8)"
-            , img "linear-gradient(135deg, #f0a020, #fcd68a)"
-            , img "linear-gradient(135deg, #d03050, #e88080)"
-            ]
-
-        demo : String -> Carousel.Size -> Carousel.Options msg -> Element msg
-        demo id size opts =
-            Element.el [ Element.width (Element.px (round size.width)) ]
-                (Carousel.view theme
-                    { opts | attributes = [ HA.id id ] }
-                    (Carousel.resize opts size (Carousel.init opts 4))
-                    carouselSlides
-                )
-    in
-    [ demoRow "Basic (loop, 4 slides + clones)"
-        [ demo "live-carousel" { width = 920, height = 360 } carouselD ]
-    , demoRow "Vertical + dots right"
-        [ demo "live-carousel-vertical"
-            { width = 560, height = 280 }
-            { carouselD | direction = Carousel.Vertical, dotPlacement = Carousel.DotsRight }
-        ]
-    , demoRow "Arrows + line dots"
-        [ demo "live-carousel-arrows"
-            { width = 920, height = 360 }
-            { carouselD | showArrow = True, dotType = Carousel.Line }
-        ]
-    , demoRow "Loop off (previous arrow disabled)"
-        [ demo "live-carousel-no-loop"
-            { width = 920, height = 360 }
-            { carouselD | loop = False, showArrow = True }
-        ]
-    , demoRow "slidesPerView 3 + spaceBetween 20"
-        [ demo "live-carousel-slides-per-view"
-            { width = 920, height = 360 }
-            { carouselD
-                | slidesPerView = Carousel.PerView 3
-                , spaceBetween = 20
-                , loop = False
-                , showArrow = True
-            }
-        ]
-    , demoRow "Fade"
-        [ demo "live-carousel-fade"
-            { width = 920, height = 360 }
-            { carouselD | effect = Carousel.FadeEffect }
-        ]
-    , demoRow "Card (previous/next slide styles)"
-        [ demo "live-carousel-card"
-            { width = 920, height = 360 }
-            { carouselD
-                | effect = Carousel.CardEffect
-                , showDots = False
-                , prevSlideStyle = Just "transform:translateX(-60%) scale(0.7)"
-                , nextSlideStyle = Just "transform:translateX(60%) scale(0.7)"
-            }
-        ]
-    , demoRow "Custom (usercontrol) + renderDots"
-        [ demo "live-carousel-custom"
-            { width = 920, height = 360 }
-            { carouselD
+        customD =
+            let
+                d =
+                    Carousel.defaults
+            in
+            { d
                 | effect = Carousel.CustomEffect
                 , renderDots =
                     Just
                         (\info ->
                             Element.text (String.fromInt (info.currentIndex + 1) ++ " / " ++ String.fromInt info.total)
                         )
+                , attributes = [ HA.id "live-carousel-custom" ]
             }
+    in
+    [ demoRow "Basic (loop, 4 slides + clones)"
+        [ spec CarBasicRow ]
+    , demoRow "Vertical + dots right"
+        [ spec CarVerticalRow ]
+    , demoRow "Arrows + line dots"
+        [ spec CarArrowsRow ]
+    , demoRow "Loop off (previous arrow disabled)"
+        [ spec CarNoLoopRow ]
+    , demoRow "slidesPerView 3 + spaceBetween 20"
+        [ spec CarPerViewRow ]
+    , demoRow "Fade"
+        [ spec CarFadeRow ]
+    , demoRow "Card (previous/next slide styles)"
+        [ spec CarCardRow ]
+    , demoRow "Custom (usercontrol) + renderDots"
+        [ Element.el [ Element.width (Element.px 920) ]
+            (Carousel.view theme
+                customD
+                (Carousel.resize customD { width = 920, height = 360 } (Carousel.init customD 4))
+                slides
+            )
         ]
     , demoRow "defaultIndex 2 (seeded)"
-        [ demo "live-carousel-default-index"
-            { width = 920, height = 360 }
-            { carouselD | defaultIndex = 2 }
-        ]
+        [ spec CarDefaultIxRow ]
     ]
 
 
-carouselSection : Element msg
-carouselSection =
-    section "Carousel"
-        "A slide track over a caller-owned clock and measurement — autoplay, drag and resize are the caller's to own."
-        carouselRows
-
-
-{-| Live: `#live-carousel-auto` (autoplay switch — the switch MUST stay
-immediately before the carousel cell in this row: `nearestPreceding` resolves
-it by document order) + `#live-carousel-drag` (document-level pointer drag).
--}
 carouselLiveSection : Model -> Element Msg
 carouselLiveSection model =
     section "Carousel"
         "A slide track over a caller-owned clock and measurement — autoplay, drag and resize are the caller's to own."
-        (carouselRows
+        (carouselRows model
             ++ [ demoRow "Carousel · autoplay + arrows + dots + wheel" [ carouselDemo theme model ]
                , demoRow "Carousel · pointer drag" [ dragDemo theme model ]
                ]
