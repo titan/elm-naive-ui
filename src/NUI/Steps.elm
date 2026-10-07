@@ -121,6 +121,16 @@ view theme opts items =
                 ++ I.classIf opts.vertical "n-steps--vertical"
                 ++ I.classIf (opts.contentPlacement == Bottom) "n-steps--content-bottom"
             )
+            :: I.cssVars
+                -- elm-ui rows vertically center their children (`cl ccy`);
+                -- upstream's `.n-steps` has none (stretch). Stretch is what keeps
+                -- the per-step circles on one horizontal line when the steps have
+                -- different heights (a description on step 1 only): each `.n-step`
+                -- gets the tallest row height and its circle pins to the top.
+                -- Centering drops the shorter steps' circles 13px below.
+                -- (Inline, because a second `style` attribute would clobber the
+                -- cssVars one.)
+                [ ( "align-items", "stretch" ) ]
             :: opts.attributes
         )
         (List.indexedMap (renderStep theme opts) items)
@@ -145,7 +155,15 @@ renderStep theme opts index it =
             Element.column
                 [ I.classes [ "n-step-indicator" ] ]
                 (Element.el
-                    [ I.classes [ "n-step-indicator-slot" ] ]
+                    [ I.classes [ "n-step-indicator-slot" ]
+
+                    -- upstream's slot is a plain div the circle centers via
+                    -- `align-items: center`; as an elm-ui width-content child
+                    -- of a column it gets `.s.c > .wc { align-self:
+                    -- flex-start }` (horizontal in a column) and pins left —
+                    -- restore the centering.
+                    , Element.htmlAttribute (HA.style "align-self" "center")
+                    ]
                     (indicatorContent status internalIndex it)
                     :: (if opts.vertical then
                             [ splitor ]
@@ -207,7 +225,19 @@ renderStep theme opts index it =
                 ++ I.classIf (it.description /= Nothing) "n-step--show-description"
                 ++ [ "n-step--" ++ statusClass status ++ "-status" ]
             )
-            :: I.cssVars (cssVarsFor theme opts status)
+            :: I.cssVars
+                -- elm-ui rows vertically center their children by default
+                -- (`cl ccy` -> align-items: center); upstream's `.n-step` has
+                -- no align-items (stretch), which is what pins the indicator
+                -- to the top and lets the header's margin
+                -- (indicator/2 - font/2) plus the splitor's (font/2) land the
+                -- connector exactly on the circle's center line. Centering
+                -- breaks that: with a description the circle drifts 13px
+                -- below the connector. (Inline, because a second `style`
+                -- attribute would clobber the cssVars one.)
+                ([ ( "align-items", "stretch" ) ]
+                    ++ cssVarsFor theme opts status
+                )
             :: clickAttr opts clickable internalIndex
         )
         stepChildren

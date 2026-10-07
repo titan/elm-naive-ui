@@ -615,7 +615,7 @@ pageItemEl opts info pCount item =
             in
             Element.el
                 (itemAttrs classes (clickMsg opts label))
-                (Element.text (String.fromInt label))
+                (pageLabel label)
 
         FastBackward _ ->
             -- upstream fastBackward(): Math.max(fastBackwardTo, 1)
@@ -624,6 +624,18 @@ pageItemEl opts info pCount item =
         FastForward _ ->
             -- upstream fastForward(): Math.min(fastForwardTo, pageCount)
             fastItemEl opts (min info.fastForwardTo pCount)
+
+
+{-| The page item's number. Upstream renders a bare text node as the flex
+item's only child (`Pagination.tsx` `contentNode = pageItem.label`), which
+the item's `justify-content: center` centers. elm-ui's `Element.el` wraps
+`Element.text` in a `width-fill` div (`textElementFill`), stretching it to
+the item's content box and pinning the glyph left — so render the bare text
+node through `Element.html`, exactly upstream's DOM.
+-}
+pageLabel : Int -> Element msg
+pageLabel label =
+    Element.html (Html.text (String.fromInt label))
 
 
 {-| The fast-backward / fast-forward ellipses. Upstream swaps the `More` icon
