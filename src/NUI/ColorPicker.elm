@@ -5,6 +5,7 @@ module NUI.ColorPicker exposing
     , Mode(..)
     , Options
     , PointerArea(..)
+    , PointerPress
     , alphaFromPoint
     , convertColor
     , defaultOptions
@@ -21,6 +22,7 @@ module NUI.ColorPicker exposing
     , normalizeRgbUnit
     , normalizeSlvUnit
     , panel
+    , panelNode
     , svFromPoint
     , view
     )
@@ -101,23 +103,33 @@ when set, else the committed value on `onUpdateValue`) and the caller closes.
 7.  **No pointer-drag wiring in the view.** Upstream binds document
     `mousemove`/`mouseup` on `mousedown` and reads `getBoundingClientRect`
     (`Pallete.tsx:34-52`, `HueSlider.tsx:36-60`, `AlphaSlider.tsx:35-58`);
-    the port emits a bare `onMousedown PointerArea` signal (the `NUI.Slider`
-    `onMousedown` precedent) and exports the pure geometry (`svFromPoint`,
-    `hueFromPoint`, `alphaFromPoint`) for the caller to run against a rect.
-    The `pointerAreaIds` seam puts inert `id`s on the three drag surfaces so
-    the caller can read those rects with `Browser.Dom.getElement`, and the
-    panel-root `attributes` seam (raw `Html` attributes, appended after the
-    component's own) carries e.g. an `id` for the whole panel.
+    the port emits an `onMousedown PointerPress` signal (area + press
+    coordinates + the pressed surface's size and viewport origin, all read
+    synchronously inside the event decoder, so a press commits immediately
+    the way upstream's `handleMouseDown` does) and exports the pure geometry
+    (`svFromPoint`, `hueFromPoint`, `alphaFromPoint`) for the caller to run
+    against that captured rect. The surfaces' purely visual children
+    (gradient layers, handles, the alpha checkboard rail) carry
+    `pointer-events: none` so a press always targets the surface itself —
+    upstream's rect read is target-independent (`railRef`, absolute
+    `clientX`), while the port's `offsetX` is target-relative and would
+    skew by the child's own offset. The `pointerAreaIds` seam still puts
+    inert `id`s on the three drag surfaces (test anchors / caller
+    instrumentation), and the panel-root `attributes` seam (raw `Html`
+    attributes, appended after the component's own) carries e.g. an `id`
+    for the whole panel.
 
 8.  **Unit inputs commit on input, not on change.** Upstream `ColorInputUnit`
     parses on `change`/blur (`ColorInputUnit.tsx:112-163`); the port's embedded
     `NInput` has no change seam, so `onUnitInput index raw` fires per keystroke
     and the caller normalizes with the exported unit normalizers.
 
-9.  **`padding: 0 4px` on the unit inputs is unreachable.** Upstream passes
-    `builtinThemeOverrides.inputThemeOverrides` (`ColorInputUnit.tsx:58-60`) to
-    the embedded `NInput`; the port adds no `Input.elm` seam, so the units use
-    the input's default padding.
+9.  **`padding: 0 4px` on the unit inputs** — upstream passes
+    `builtinThemeOverrides.inputThemeOverrides` (`ColorInputUnit.tsx:46-48,
+    157`) to the embedded `NInput`; the port threads it through
+    `Input.varOverrides` (`[ ( "--n-padding-left", "4px" ), ( "--n-padding-right", "4px" ) ]`
+    — the vars upstream's theme-peers chain lands in), so the unit inputs
+    carry the narrow padding.
 
 10. **panel `ondragstart` `preventDefault` is not ported** (`ColorPicker.tsx`
     `renderPanel`): `elm/html` cannot `preventDefault` without a message seam.
@@ -170,6 +182,7 @@ import Element exposing (Element)
 import Html exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
+import Json.Decode
 import NUI.Button as Button
 import NUI.Input as Input
 import NUI.Internal as I
@@ -246,8 +259,33 @@ type InternalAction
     | RedoAction
 
 
-{-| The drag surface a `onMousedown` signal came from.
+{-| The drag surface a `onMousedown` signal came from, with the press
+geometry read synchronously inside the event decoder:
+
+  - `x`/`y` — the pointer relative to the pressed surface (offsetX/Y;
+    exactly upstream's `e.clientX - rect.left` against a fresh
+    `getBoundingClientRect`)
+  - `width`/`height` — the surface's size (currentTarget.clientWidth/Height)
+  - `left`/`top` — the surface's viewport origin (clientX − offsetX), so the
+    caller can convert later `mousemove` client coords without any DOM read
+
+Everything the geometry helpers need rides on the event itself — a press
+commits in the same tick (upstream `Pallete.tsx handleMouseDown` calls
+`handleMouseMove(e)` on press; a click without any move still selects) and
+drags track per-frame with zero layout reads.
+
 -}
+type alias PointerPress =
+    { area : PointerArea
+    , x : Int
+    , y : Int
+    , width : Int
+    , height : Int
+    , left : Float
+    , top : Float
+    }
+
+
 type PointerArea
     = PaletteArea
     | HueArea
@@ -282,7 +320,7 @@ type alias Options msg =
     , onClear : Maybe msg
     , onUpdateShow : Maybe (Bool -> msg)
     , onUpdateMode : Maybe (Mode -> msg)
-    , onMousedown : Maybe (PointerArea -> msg)
+    , onMousedown : Maybe (PointerPress -> msg)
     , onUnitInput : Maybe (Int -> String -> msg)
     , onUndo : Maybe msg
     , onRedo : Maybe msg
@@ -562,21 +600,31 @@ valueLabel opts =
 -}
 panel : Theme -> Options msg -> Element msg
 panel theme opts =
-    Element.html <|
-        Html.div
-            ([ HA.class (String.join " " (panelClasses opts))
-             , HA.tabindex 0
-             , HA.attribute "style" (I.renderVars (styleVars theme opts.size))
-             ]
-                ++ opts.attributes
-            )
-            ([ Html.div [ HA.class "n-color-picker-control" ]
-                (palette opts ++ preview opts ++ colorInput theme opts ++ swatches opts)
-             ]
-                ++ actionsRow theme opts
-                ++ secondActionsRow theme opts
-                ++ [ focusDetectorNode ]
-            )
+    Element.html <| panelNode theme opts
+
+
+{-| The panel's raw `Html` — the `NUI.DatePicker.panelWith` seam: the options
+record is `msg`-polymorphic at the record fields, so a caller holding a
+`Options parentMsg` (e.g. the showcase's per-row options built for the
+trigger) can render the panel under `Element.map` without rebuilding the
+record. `panel` stays the plain entry point.
+-}
+panelNode : Theme -> Options msg -> Html msg
+panelNode theme opts =
+    Html.div
+        ([ HA.class (String.join " " (panelClasses opts))
+         , HA.tabindex 0
+         , HA.attribute "style" (I.renderVars (styleVars theme opts.size))
+         ]
+            ++ opts.attributes
+        )
+        ([ Html.div [ HA.class "n-color-picker-control" ]
+            (palette opts ++ preview opts ++ colorInput theme opts ++ swatches opts)
+         ]
+            ++ actionsRow theme opts
+            ++ secondActionsRow theme opts
+            ++ [ focusDetectorNode ]
+        )
 
 
 panelClasses : Options msg -> List String
@@ -617,6 +665,13 @@ palette opts =
                 ( Just rgb, Just ( s, v ) ) ->
                     [ Html.div
                         [ HA.class "n-color-picker-handle"
+
+                        -- pointer-events none: the handle is purely visual —
+                        -- a press ON it must target the palette itself so
+                        -- the decoder's offsetX/offsetY stay palette-relative
+                        -- (upstream reads railRef.getBoundingClientRect, which
+                        -- is target-independent)
+                        , HA.style "pointer-events" "none"
                         , HA.style "width" "12px"
                         , HA.style "height" "12px"
                         , HA.style "border-radius" "6px"
@@ -652,14 +707,14 @@ palette opts =
             , HA.attribute "style"
                 ("background-image:linear-gradient(90deg, white, hsl("
                     ++ num hue
-                    ++ ", 100%, 50%))"
+                    ++ ", 100%, 50%));pointer-events:none"
                 )
             ]
             []
          , Html.div
             [ HA.class "n-color-picker-pallete__layer"
             , HA.class "n-color-picker-pallete__layer--shadowed"
-            , HA.attribute "style" "background-image:linear-gradient(180deg, rgba(0, 0, 0, 0%), rgba(0, 0, 0, 100%))"
+            , HA.attribute "style" "background-image:linear-gradient(180deg, rgba(0, 0, 0, 0%), rgba(0, 0, 0, 100%));pointer-events:none"
             ]
             []
          ]
@@ -705,7 +760,7 @@ hueSlider opts =
                 ++ mousedownAttr opts HueArea
             )
             [ Html.div
-                [ HA.attribute "style" "position:absolute;left:6px;right:6px;top:0;bottom:0" ]
+                [ HA.attribute "style" "position:absolute;left:6px;right:6px;top:0;bottom:0;pointer-events:none" ]
                 [ Html.div
                     [ HA.class "n-color-picker-handle"
                     , HA.style "left" ("calc((" ++ num hue ++ "%) / 359 * 100 - 6px)")
@@ -758,7 +813,7 @@ alphaSlider opts =
                 case rgba of
                     Just c ->
                         [ Html.div
-                            [ HA.attribute "style" "position:absolute;left:6px;right:6px;top:0;bottom:0" ]
+                            [ HA.attribute "style" "position:absolute;left:6px;right:6px;top:0;bottom:0;pointer-events:none" ]
                             [ Html.div
                                 [ HA.class "n-color-picker-handle"
                                 , HA.style "left" ("calc(" ++ num (alpha * 100) ++ "% - 6px)")
@@ -791,7 +846,7 @@ alphaSlider opts =
                 ++ mousedownAttr opts AlphaArea
             )
             ([ Html.div
-                [ HA.attribute "style" "border-radius:6px;position:absolute;left:0;right:0;top:0;bottom:0;overflow:hidden" ]
+                [ HA.attribute "style" "border-radius:6px;position:absolute;left:0;right:0;top:0;bottom:0;overflow:hidden;pointer-events:none" ]
                 [ Html.div [ HA.class "n-color-picker-checkboard" ] []
                 , Html.div
                     [ HA.class "n-color-picker-slider__image"
@@ -897,11 +952,25 @@ unitInputs theme opts =
                     , placeholder = Just label
                     , value = valueStr
                     , onInput = onInputMsg
-                    , inputAttributes =
-                        -- upstream styles the A unit `flex-grow: 1.25`
-                        -- (ColorInputUnit.tsx:162)
+                    , varOverrides =
+                        -- upstream `inputThemeOverrides` (ColorInputUnit.tsx:
+                        -- 46-48): `paddingSmall: '0 4px'` — the units are
+                        -- narrow flex slots, not full inputs. Upstream feeds
+                        -- that through the theme-peers chain, which lands in
+                        -- the `--n-padding-left/right` vars; the port's
+                        -- varOverrides write vars directly, so the shorthand
+                        -- is pre-split here (a raw `paddingSmall` entry
+                        -- would be an unknown var and silently dropped,
+                        -- leaving the default 10px and clipping 3-digit
+                        -- values in the ~17px text area)
+                        [ ( "--n-padding-left", "4px" ), ( "--n-padding-right", "4px" ) ]
+                    , extraRootAttributes =
+                        -- upstream styles the A unit's `NInput` ROOT
+                        -- `flex-grow: 1.25` (ColorInputUnit.tsx:162 — a
+                        -- Vue `style` prop lands on the root, not the inner
+                        -- input): the wider slot is what fits `100%`
                         if label == "A" then
-                            [ HA.style "flex-grow" "1.25" ]
+                            [ Element.htmlAttribute (HA.style "flex-grow" "1.25") ]
 
                         else
                             []
@@ -1224,15 +1293,48 @@ mousedownAttr : Options msg -> PointerArea -> List (Html.Attribute msg)
 mousedownAttr opts area =
     case opts.onMousedown of
         Just f ->
-            [ HE.onMouseDown (f area) ]
+            -- upstream commits the press position immediately
+            -- (Pallete.tsx handleMouseDown → handleMouseMove(e)). The press
+            -- geometry reads synchronously inside the event decoder —
+            -- offsetX/offsetY are already relative to the pressed surface,
+            -- currentTarget.clientWidth/Height is its size — so the caller
+            -- commits without any async rect read.
+            [ HE.on "mousedown"
+                (Json.Decode.map f
+                    (Json.Decode.map6
+                        (\x y w h left top ->
+                            { area = area
+                            , x = x
+                            , y = y
+                            , width = w
+                            , height = h
+                            , left = left
+                            , top = top
+                            }
+                        )
+                        (Json.Decode.field "offsetX" Json.Decode.int)
+                        (Json.Decode.field "offsetY" Json.Decode.int)
+                        (Json.Decode.at [ "currentTarget", "clientWidth" ] Json.Decode.int)
+                        (Json.Decode.at [ "currentTarget", "clientHeight" ] Json.Decode.int)
+                        (Json.Decode.map2 (-)
+                            (Json.Decode.field "clientX" Json.Decode.float)
+                            (Json.Decode.field "offsetX" Json.Decode.float)
+                        )
+                        (Json.Decode.map2 (-)
+                            (Json.Decode.field "clientY" Json.Decode.float)
+                            (Json.Decode.field "offsetY" Json.Decode.float)
+                        )
+                    )
+                )
+            ]
 
         Nothing ->
             []
 
 
-{-| The `pointerAreaIds` seam — an inert `id` on a drag surface so the caller
-can read its rect (`Browser.Dom.getElement`) for the exported geometry
-helpers. See module docstring divergence 7.
+{-| The `pointerAreaIds` seam — an inert `id` on a drag surface (test
+anchor / caller instrumentation; the press geometry no longer needs a rect
+read — see module docstring divergence 7).
 -}
 pointerAreaIdAttr : Options msg -> ({ palette : String, hue : String, alpha : String } -> String) -> List (Html.Attribute msg)
 pointerAreaIdAttr opts pick =

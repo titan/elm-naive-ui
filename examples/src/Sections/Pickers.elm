@@ -40,8 +40,9 @@ Simulated runtime (the port's documented caller-owned concerns):
   - **ColorPicker** — upstream binds document `mousemove`/`mouseup` while a
     drag is live; the `Browser.Events` subscription pair drives the move/
     end through the port's `svFromPoint` / `hueFromPoint` /
-    `alphaFromPoint` geometry, the pointer surface rect read is a
-    `Browser.Dom.getElement` task, and per-unit typing parses through the
+    `alphaFromPoint` geometry against the rect captured synchronously at
+    press (the mousedown decoder carries the surface's size and viewport
+    origin — no async rect read), and per-unit typing parses through the
     port's `normalize*Unit` helpers (complete parse commits the draft,
     incomplete keeps the raw text in `cpUnitText`).
 
@@ -72,8 +73,9 @@ the checkmark, day/cell click commits, Confirm/Clear closes the panel —
 are pure state showcases (disabled/status/sizes/loading/empty/pattern pins,
 the no-channel plain triggers — Select emits nothing without a mounted menu)
 stay specimens. ColorPicker static rows wire value/draft/mode/undo-redo/
-confirm/clear/show; the drag pointer surface and per-unit typing stay on the
-live row (they need `pointerAreaIds`/`Browser.Dom`), and TimePicker static
+confirm/clear/show plus the drag pointer surface (per-instance
+`pointerAreaIds` on the shared subscription pair — the drag flag carries
+the site) and per-unit typing; TimePicker static
 rows skip the column scroll commands (`colContainerIds` belongs to the live
 row's panel).
 
@@ -150,7 +152,8 @@ type alias Model =
     , cpMode : ColorPicker.Mode
     , cpUndo : List (Maybe String)
     , cpRedo : List (Maybe String)
-    , cpDrag : Maybe ColorPicker.PointerArea
+    , cpDrag : Maybe CpDragCtx
+    , cpDragOrigin : Maybe ( CpDragSite, Maybe String )
     , cpUnitText : Maybe String
 
     -- phase-2 static-row state (init = the rows' current literals)
@@ -225,6 +228,7 @@ init =
     , cpUndo = []
     , cpRedo = []
     , cpDrag = Nothing
+    , cpDragOrigin = Nothing
     , cpUnitText = Nothing
 
     -- phase-2 static-row state — every field is the row's CURRENT literal
@@ -307,18 +311,17 @@ type Msg
     | TpClosed
     | TpScrolled
     | CpOpened
+    | CpClosed
     | CpValueUpdated (Maybe String)
     | CpModeChanged ColorPicker.Mode
     | CpConfirmed (Maybe String)
     | CpCleared
     | CpUndone
     | CpRedone
-    | CpDragStarted ColorPicker.PointerArea
+    | CpDragStarted ColorPicker.PointerPress
     | CpDragMove Int Int
-    | CpDragApply Int Int { width : Float, height : Float, left : Float, bottom : Float }
     | CpDragEnd
-    | CpUnitTyped Int String
-      -- phase-2 static rows (state-drive with identical init)
+    | CpUnitTyped Int String -- phase-2 static rows (state-drive with identical init)
     | SpecSelCleared
     | SpecSelMultiTagDeleted String
     | SpecSelMultiFilterTagDeleted String
@@ -369,6 +372,8 @@ type Msg
     | SpecCpCleared SpecCpRow
     | SpecCpUndone SpecCpRow
     | SpecCpRedone SpecCpRow
+    | SpecCpUnitTyped SpecCpRow Int String
+    | SpecCpDragStarted SpecCpRow Int ColorPicker.PointerPress
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -382,8 +387,11 @@ update msg model =
             -- without a DOM read (the item height is the theme's 34px).
             ( { model | tpShow = True }, tpScrollToActive model )
 
-        CpDragMove x y ->
-            cpDragMove x y model
+        CpDragStarted press ->
+            ( updatePure (CpDragStarted press) model, Cmd.none )
+
+        SpecCpDragStarted row inst press ->
+            ( updatePure (SpecCpDragStarted row inst press) model, Cmd.none )
 
         _ ->
             ( updatePure msg model, Cmd.none )
@@ -619,51 +627,106 @@ updatePure msg model =
             { model | tpShow = False }
 
         CpOpened ->
-            -- the trigger emits onUpdateShow True; the draft re-syncs to the
-            -- committed value on open
-            { model | cpShow = True, cpDraft = model.cpValue, cpUnitText = Nothing }
+            -- the trigger emits onUpdateShow True; upstream re-syncs nothing
+            -- here (the value is always live), but the undo stack starts
+            -- fresh when the panel closed last (watch(mergedShowRef) resets
+            -- it to [value] — the port models that as empty undo/redo lists,
+            -- undoable = not (List.isEmpty cpUndo))
+            { model | cpShow = True, cpUnitText = Nothing }
 
-        CpDragStarted area ->
-            -- upstream binds document mousemove/mouseup on mousedown; here
-            -- the subscription pair below drives the move/end while the
-            -- drag flag is set
-            { model | cpDrag = Just area }
+        CpClosed ->
+            -- panel closed (Confirm/Clear/trigger toggle): upstream resets
+            -- the undo stack to [currentValue] (watch mergedShowRef)
+            { model | cpShow = False, cpUndo = [], cpRedo = [] }
 
-        CpDragMove _ _ ->
-            model
+        CpDragStarted press ->
+            -- upstream commits the pressed position immediately
+            -- (Pallete.tsx handleMouseDown → handleMouseMove(e)) — the press
+            -- geometry rode in synchronously with the event (relative coords
+            -- + surface size + viewport origin), so the commit is pure and
+            -- same-tick. The pre-drag value is snapshotted PER SITE —
+            -- mouse-up pushes it onto that row's undo stack (onComplete)
+            { model
+                | cpDrag =
+                    Just
+                        { area = press.area
+                        , site = CpLiveSite
+                        , rect = cpPressRect press
+                        }
+                , cpDragOrigin = Just ( CpLiveSite, model.cpValue )
+            }
+                |> cpDragApplyPress press
 
-        CpDragApply x y rect ->
-            cpDragApply x y rect model
+        CpDragMove x y ->
+            -- pure per-frame tracking: client coords against the press-cached
+            -- viewport rect — zero DOM reads, zero async tasks
+            case model.cpDrag of
+                Just ctx ->
+                    cpDragApply ctx.area ctx.site x y ctx.rect model
+
+                Nothing ->
+                    model
 
         CpDragEnd ->
-            { model | cpDrag = Nothing }
+            -- upstream onComplete on mouse-up: push the pre-drag value onto
+            -- the dragged site's undo stack once (handleComplete pushes the
+            -- CURRENT value; the port's two-list shape stores pre-states, so
+            -- the origin it is) and clear that site's redo
+            case model.cpDragOrigin of
+                Just ( CpLiveSite, origin ) ->
+                    { model
+                        | cpDrag = Nothing
+                        , cpUndo = maybeCons (Just origin) model.cpUndo
+                        , cpRedo = []
+                        , cpDragOrigin = Nothing
+                    }
+
+                Just ( CpSpecSite row, origin ) ->
+                    { model | cpDrag = Nothing, cpDragOrigin = Nothing }
+                        |> specCpUpd
+                            row
+                            (\st ->
+                                { st
+                                    | undo = maybeCons (Just origin) st.undo
+                                    , redo = []
+                                }
+                            )
+
+                Nothing ->
+                    { model | cpDrag = Nothing }
 
         CpUnitTyped index raw ->
             cpUnitTyped index raw model
 
         CpValueUpdated value ->
-            { model | cpDraft = value }
-
-        CpModeChanged mode ->
-            -- the panel computed nextDisplayedMode already
-            { model | cpMode = mode }
-
-        CpConfirmed value ->
+            -- upstream doUpdateValue 'input' (swatch click): live commit;
+            -- swatches ALSO run onComplete (pushes the stack) — that lands
+            -- in the same handleComplete as drag mouse-up, so push here too
             { model
                 | cpValue = value
                 , cpDraft = value
                 , cpUndo = model.cpValue :: model.cpUndo
                 , cpRedo = []
-                , cpShow = False
             }
 
+        CpModeChanged mode ->
+            -- the panel computed nextDisplayedMode already
+            { model | cpMode = mode }
+
+        CpConfirmed _ ->
+            -- upstream handleConfirm: the value is already live-committed
+            -- (no stack push, no value change) — the panel just closes
+            { model | cpShow = False, cpUndo = [], cpRedo = [] }
+
         CpCleared ->
+            -- upstream handleClear: null value + close; the stack resets on
+            -- close (watch mergedShowRef) — modeled as empty undo/redo
             { model
                 | cpValue = Nothing
                 , cpDraft = Nothing
-                , cpUndo = model.cpValue :: model.cpUndo
-                , cpRedo = []
                 , cpShow = False
+                , cpUndo = []
+                , cpRedo = []
             }
 
         CpUndone ->
@@ -1065,6 +1128,35 @@ updatePure msg model =
                 )
                 model
 
+        SpecCpUnitTyped row index raw ->
+            -- same normalize-commit algebra as the live row's CpUnitTyped,
+            -- against the row's own draft/mode
+            specCpUpd
+                row
+                (\st ->
+                    case specCpUnitParse st index raw of
+                        Just value ->
+                            { st | draft = Just value, unitText = Nothing }
+
+                        Nothing ->
+                            { st | unitText = Just raw }
+                )
+                model
+
+        SpecCpDragStarted row inst press ->
+            -- the spec row's press: same same-tick click-commits semantics
+            -- as the live row, against the row's own draft
+            { model
+                | cpDrag =
+                    Just
+                        { area = press.area
+                        , site = CpSpecSite row
+                        , rect = cpPressRect press
+                        }
+                , cpDragOrigin = Just ( CpSpecSite row, (specCpGet row model).draft )
+            }
+                |> cpDragApplyPress press
+
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -1086,6 +1178,19 @@ moveDecoder toMsg =
     Json.Decode.map2 toMsg
         (Json.Decode.field "clientX" Json.Decode.int)
         (Json.Decode.field "clientY" Json.Decode.int)
+
+
+{-| `Just x` conses, `Nothing` passes the list through (the drag-origin
+unset case — no drag ran, nothing to push).
+-}
+maybeCons : Maybe a -> List a -> List a
+maybeCons maybeX xs =
+    case maybeX of
+        Just x ->
+            x :: xs
+
+        Nothing ->
+            xs
 
 
 {-| Upstream `scrollTimer` — each visible column's scroll container jumps so
@@ -1118,117 +1223,186 @@ tpScrollToActive model =
         ]
 
 
-{-| One drag move: read the dragged surface's rect, run the port's geometry
-helper against the document-space pointer, convert the result to the
-panel's displayed mode. The rect read is async, so the move is carried as a
-command-issued update (Task.perform against the current pointer).
+
+-- COLORPICKER DRAG (live row + spec rows share one subscription pair)
+
+
+{-| One live drag: which surface is dragged, whose value it commits (the
+live row's model fields vs a spec row's state), and the dragged surface's
+viewport rect — captured synchronously at press from the event itself, so
+the whole drag is pure client − rect arithmetic (zero DOM reads).
 -}
-cpDragMove : Int -> Int -> Model -> ( Model, Cmd Msg )
-cpDragMove x y model =
+type alias CpDragCtx =
+    { area : ColorPicker.PointerArea
+    , site : CpDragSite
+    , rect : { width : Float, height : Float, left : Float, bottom : Float }
+    }
+
+
+{-| The drag surface ids a drag is reading rects from, plus the site the
+geometry commits to (the live row's model fields vs a spec row's state).
+-}
+type alias CpDragIds =
+    { site : CpDragSite
+    , palette : String
+    , hue : String
+    , alpha : String
+    }
+
+
+type CpDragSite
+    = CpLiveSite
+    | CpSpecSite SpecCpRow
+
+
+{-| The live row's ids (its panel's `pointerAreaIds` seam).
+-}
+cpLiveIds : CpDragIds
+cpLiveIds =
+    { site = CpLiveSite
+    , palette = "live-cp-palette"
+    , hue = "live-cp-hue"
+    , alpha = "live-cp-alpha"
+    }
+
+
+{-| The dragged surface's viewport rect, built from the press event itself:
+`left`/`top` are `clientX/Y − offsetX/Y` (same-tick `getBoundingClientRect`
+origin), `width`/`height` are the surface's `clientWidth/Height`. The
+rect's `bottom` (viewport-space y of the surface's bottom edge) is what
+`svFromPoint` measures brightness against.
+-}
+cpPressRect :
+    ColorPicker.PointerPress
+    -> { width : Float, height : Float, left : Float, bottom : Float }
+cpPressRect press =
+    { width = toFloat press.width
+    , height = toFloat press.height
+    , left = press.left
+    , bottom = press.top + toFloat press.height
+    }
+
+
+{-| The press's immediate geometry commit — upstream
+`handleMouseDown → handleMouseMove(e)` in the same tick. Takes the ctx the
+`CpDragStarted` branch just built (rect + site), commits the pressed colour
+purely, and hands back the model with the drag running.
+-}
+cpDragApplyPress :
+    ColorPicker.PointerPress
+    -> Model
+    -> Model
+cpDragApplyPress press model =
     case model.cpDrag of
+        Just ctx ->
+            cpDragApply
+                ctx.area
+                ctx.site
+                (round press.left + press.x)
+                (round press.top + press.y)
+                ctx.rect
+                model
+
         Nothing ->
-            ( model, Cmd.none )
-
-        Just area ->
-            ( model
-            , case areaId area of
-                Just id ->
-                    Browser.Dom.getElement id
-                        |> Task.attempt
-                            (\result ->
-                                case result of
-                                    Ok el ->
-                                        CpDragApply x y { width = el.element.width, height = el.element.height, left = el.element.x, bottom = el.element.y + el.element.height }
-
-                                    Err _ ->
-                                        CpDragMove 0 0
-                            )
-
-                Nothing ->
-                    Cmd.none
-            )
-
-
-areaId : ColorPicker.PointerArea -> Maybe String
-areaId area =
-    case area of
-        ColorPicker.PaletteArea ->
-            Just "live-cp-palette"
-
-        ColorPicker.HueArea ->
-            Just "live-cp-hue"
-
-        ColorPicker.AlphaArea ->
-            Just "live-cp-alpha"
+            model
 
 
 {-| The geometry commit: `svFromPoint` / `hueFromPoint` / `alphaFromPoint`
-against the freshly-read rect, converted into the displayed mode. The
-pointer coordinates are viewport-relative (Browser.Events) and the rect
-from `getElement` is scroll-independent document-space, so the viewport's
-scroll offset is added to the pointer first.
+against the press-cached (viewport-space) rect, converted into the displayed
+mode. Pointer coordinates and the cached rect are both viewport-relative,
+so the per-frame move path is pure client − rect arithmetic.
 -}
 cpDragApply :
-    Int
+    ColorPicker.PointerArea
+    -> CpDragSite
+    -> Int
     -> Int
     -> { width : Float, height : Float, left : Float, bottom : Float }
     -> Model
     -> Model
-cpDragApply x y rect model =
-    case model.cpDrag of
-        Nothing ->
-            model
+cpDragApply area site x y rect model =
+    case site of
+        CpLiveSite ->
+            -- upstream doUpdateValue 'cursor': ONE live value —
+            -- cpValue and cpDraft move together every mousemove
+            -- (the trigger shows the changing colour while dragging)
+            { model
+                | cpValue = cpDragValue area x y rect model.cpDraft model.cpMode
+                , cpDraft = cpDragValue area x y rect model.cpDraft model.cpMode
+                , cpUnitText = Nothing
+            }
 
-        Just area ->
+        CpSpecSite row ->
+            specCpUpd
+                row
+                (\st ->
+                    { st
+                        | draft = cpDragValue area x y rect st.draft st.mode
+                        , unitText = Nothing
+                    }
+                )
+                model
+
+
+{-| The shared geometry commit — `svFromPoint` / `hueFromPoint` /
+`alphaFromPoint` against the (press-cached) rect, converted into the
+displayed mode. Pure over (draft, mode), so the live row and the spec rows
+run the same algebra (the site routing happens in `cpDragApply`).
+-}
+cpDragValue :
+    ColorPicker.PointerArea
+    -> Int
+    -> Int
+    -> { width : Float, height : Float, left : Float, bottom : Float }
+    -> Maybe String
+    -> ColorPicker.Mode
+    -> Maybe String
+cpDragValue area x y rect draft mode =
+    case area of
+        ColorPicker.PaletteArea ->
             let
-                nextValue =
-                    case area of
-                        ColorPicker.PaletteArea ->
-                            let
-                                { s, v } =
-                                    ColorPicker.svFromPoint rect { x = toFloat x, y = toFloat y }
+                { s, v } =
+                    ColorPicker.svFromPoint rect { x = toFloat x, y = toFloat y }
 
-                                base =
-                                    Maybe.withDefault { h = 0, s = 100, v = 100 } (Color.hsvaOf model.cpDraft |> Maybe.map (\c -> { h = c.h, s = c.s, v = c.v }))
+                base =
+                    Maybe.withDefault { h = 0, s = 100, v = 100 } (Color.hsvaOf draft |> Maybe.map (\c -> { h = c.h, s = c.s, v = c.v }))
 
-                                alpha =
-                                    Maybe.map .a (Color.hsvaOf model.cpDraft) |> Maybe.withDefault 1
-                            in
-                            ColorPicker.convertColor
-                                (Color.toHsvaString (Color.hsvWithAlpha alpha { s = s, v = v, h = base.h }))
-                                model.cpMode
-                                (ColorPicker.getModeFromValue model.cpDraft)
-
-                        ColorPicker.HueArea ->
-                            let
-                                hue =
-                                    ColorPicker.hueFromPoint { width = rect.width, left = rect.left } (toFloat x)
-
-                                base =
-                                    Maybe.withDefault { h = toFloat hue, s = 100, v = 100 } (Color.hsvaOf model.cpDraft |> Maybe.map (\c -> { h = c.h, s = c.s, v = c.v }))
-
-                                alpha =
-                                    Maybe.map .a (Color.hsvaOf model.cpDraft) |> Maybe.withDefault 1
-                            in
-                            ColorPicker.convertColor
-                                (Color.toHsvaString (Color.hsvWithAlpha alpha { base | h = toFloat hue }))
-                                model.cpMode
-                                (ColorPicker.getModeFromValue model.cpDraft)
-
-                        ColorPicker.AlphaArea ->
-                            let
-                                a =
-                                    ColorPicker.alphaFromPoint { width = rect.width, left = rect.left } (toFloat x)
-
-                                base =
-                                    Color.hsvaOf model.cpDraft |> Maybe.withDefault (Color.hsvWithAlpha 1 { h = 0, s = 100, v = 100 })
-                            in
-                            ColorPicker.convertColor
-                                (Color.toHsvaString { base | a = a })
-                                model.cpMode
-                                (ColorPicker.getModeFromValue model.cpDraft)
+                alpha =
+                    Maybe.map .a (Color.hsvaOf draft) |> Maybe.withDefault 1
             in
-            { model | cpDraft = nextValue, cpUnitText = Nothing }
+            ColorPicker.convertColor
+                (Color.toHsvaString (Color.hsvWithAlpha alpha { s = s, v = v, h = base.h }))
+                mode
+                (ColorPicker.getModeFromValue draft)
+
+        ColorPicker.HueArea ->
+            let
+                hue =
+                    ColorPicker.hueFromPoint { width = rect.width, left = rect.left } (toFloat x)
+
+                base =
+                    Maybe.withDefault { h = toFloat hue, s = 100, v = 100 } (Color.hsvaOf draft |> Maybe.map (\c -> { h = c.h, s = c.s, v = c.v }))
+
+                alpha =
+                    Maybe.map .a (Color.hsvaOf draft) |> Maybe.withDefault 1
+            in
+            ColorPicker.convertColor
+                (Color.toHsvaString (Color.hsvWithAlpha alpha { base | h = toFloat hue }))
+                mode
+                (ColorPicker.getModeFromValue draft)
+
+        ColorPicker.AlphaArea ->
+            let
+                a =
+                    ColorPicker.alphaFromPoint { width = rect.width, left = rect.left } (toFloat x)
+
+                base =
+                    Color.hsvaOf draft |> Maybe.withDefault (Color.hsvWithAlpha 1 { h = 0, s = 100, v = 100 })
+            in
+            ColorPicker.convertColor
+                (Color.toHsvaString { base | a = a })
+                mode
+                (ColorPicker.getModeFromValue draft)
 
 
 {-| One unit input keystroke — upstream `ColorInputUnit` parses per-unit
@@ -1299,7 +1473,15 @@ cpUnitTyped index raw model =
     in
     case parsed of
         Just (Just value) ->
-            { model | cpDraft = Just value, cpUnitText = Nothing }
+            -- upstream 'input' commit + handleComplete: live value + stack
+            -- push (complete parse = one committed change)
+            { model
+                | cpValue = Just value
+                , cpDraft = Just value
+                , cpUndo = model.cpValue :: model.cpUndo
+                , cpRedo = []
+                , cpUnitText = Nothing
+            }
 
         _ ->
             { model | cpUnitText = Just raw }
@@ -1358,6 +1540,116 @@ lightnessSet model raw =
                     )
                     (Color.hslaOf model.cpDraft)
             )
+
+
+
+-- SPEC-ROW UNIT TYPING (the live row's algebra, against a SpecCpState)
+
+
+{-| The live row's `cpUnitTyped` parse, re-run against a spec row's own
+draft/mode (the record shape is the only difference — the normalizers and
+the convert-into-displayed-mode flow are identical).
+-}
+specCpUnitParse : SpecCpState -> Int -> String -> Maybe String
+specCpUnitParse st index raw =
+    case st.mode of
+        ColorPicker.Hex ->
+            if ColorPicker.normalizeHexaUnit raw then
+                ColorPicker.convertColor (String.toUpper raw) st.mode Nothing
+
+            else
+                Nothing
+
+        _ ->
+            let
+                labels =
+                    specCpUnitLabels st
+
+                label =
+                    List.head (List.drop index labels)
+
+                baseHSV =
+                    Maybe.withDefault (Color.hsvWithAlpha 1 { h = 0, s = 100, v = 100 }) (Color.hsvaOf st.draft)
+
+                alpha =
+                    Maybe.map .a (Color.hsvaOf st.draft) |> Maybe.withDefault 1
+            in
+            case label of
+                Just "A" ->
+                    ColorPicker.normalizeAlphaUnit raw
+                        |> Maybe.andThen (\a -> ColorPicker.convertColor (Color.toHsvaString { baseHSV | a = a }) st.mode Nothing)
+
+                Just "H" ->
+                    ColorPicker.normalizeHueUnit raw
+                        |> Maybe.andThen (\h -> ColorPicker.convertColor (Color.toHsvaString (Color.hsvWithAlpha alpha { h = toFloat h, s = baseHSV.s, v = baseHSV.v })) st.mode Nothing)
+
+                Just "S" ->
+                    ColorPicker.normalizeSlvUnit raw
+                        |> Maybe.andThen (\s -> ColorPicker.convertColor (Color.toHsvaString (Color.hsvWithAlpha alpha { h = baseHSV.h, s = toFloat s, v = baseHSV.v })) st.mode Nothing)
+
+                Just "V" ->
+                    ColorPicker.normalizeSlvUnit raw
+                        |> Maybe.andThen (\v -> ColorPicker.convertColor (Color.toHsvaString (Color.hsvWithAlpha alpha { h = baseHSV.h, s = baseHSV.s, v = toFloat v })) st.mode Nothing)
+
+                Just "R" ->
+                    specChannelSet st (\c -> { c | r = channel raw })
+
+                Just "G" ->
+                    specChannelSet st (\c -> { c | g = channel raw })
+
+                Just "B" ->
+                    specChannelSet st (\c -> { c | b = channel raw })
+
+                Just "L" ->
+                    ColorPicker.normalizeSlvUnit raw
+                        |> Maybe.andThen
+                            (\l ->
+                                Maybe.map
+                                    (\c ->
+                                        ColorPicker.convertColor
+                                            (Color.toHslaString { c | l = toFloat l })
+                                            st.mode
+                                            Nothing
+                                            |> Maybe.withDefault ""
+                                    )
+                                    (Color.hslaOf st.draft)
+                            )
+
+                _ ->
+                    Nothing
+
+
+specCpUnitLabels : SpecCpState -> List String
+specCpUnitLabels st =
+    let
+        base =
+            case st.mode of
+                ColorPicker.Rgb ->
+                    [ "R", "G", "B" ]
+
+                ColorPicker.Hsl ->
+                    [ "H", "S", "L" ]
+
+                ColorPicker.Hsv ->
+                    [ "H", "S", "V" ]
+
+                ColorPicker.Hex ->
+                    []
+    in
+    base ++ [ "A" ]
+
+
+specChannelSet : SpecCpState -> (Color.RGBA -> Color.RGBA) -> Maybe String
+specChannelSet st set =
+    Maybe.map
+        (\c ->
+            ColorPicker.convertColor
+                (Color.toRgbaString (set c))
+                st.mode
+                Nothing
+                |> Maybe.withDefault ""
+        )
+        (Color.rgbaOf st.draft)
 
 
 
@@ -1690,8 +1982,8 @@ cpLiveRow model =
                 (ColorPicker.view theme (cpTriggerOpts model))
             , Element.row [ Element.spacing 10 ]
                 [ colorSwatch model.cpValue
-                , chip ("committed: " ++ cpHexText model.cpValue)
-                , chip ("draft: " ++ cpHexText model.cpDraft)
+                , chip ("value: " ++ cpHexText model.cpValue)
+                , chip ("undo " ++ String.fromInt (List.length model.cpUndo) ++ "/" ++ String.fromInt (List.length model.cpRedo) ++ " redo")
                 ]
             , if model.cpShow then
                 Element.el
@@ -1825,7 +2117,15 @@ cpTriggerOpts model =
         | value = model.cpValue
         , displayedMode = model.cpMode
         , swatches = cpSwatches
-        , onUpdateShow = Just (\_ -> CpOpened)
+        , onUpdateShow =
+            Just
+                (\open ->
+                    if open then
+                        CpOpened
+
+                    else
+                        CpClosed
+                )
     }
 
 
@@ -1843,9 +2143,9 @@ cpPanelOpts model =
         , attributes = [ HA.id "live-cp-panel" ]
         , pointerAreaIds =
             Just
-                { palette = "live-cp-palette"
-                , hue = "live-cp-hue"
-                , alpha = "live-cp-alpha"
+                { palette = cpLiveIds.palette
+                , hue = cpLiveIds.hue
+                , alpha = cpLiveIds.alpha
                 }
         , onMousedown = Just CpDragStarted
         , onUnitInput = Just (\i raw -> CpUnitTyped i raw)
@@ -2343,6 +2643,7 @@ type SpecCpRow
     | CpClearRow
     | CpPreviewRow
     | CpUndoRow
+    | CpSingleModeRow
 
 
 type alias SpecCpState =
@@ -2352,6 +2653,7 @@ type alias SpecCpState =
     , mode : ColorPicker.Mode
     , undo : List (Maybe String)
     , redo : List (Maybe String)
+    , unitText : Maybe String
     }
 
 
@@ -2363,6 +2665,7 @@ type alias SpecCpStates =
     , clear : SpecCpState
     , preview : SpecCpState
     , undo : SpecCpState
+    , singleMode : SpecCpState
     }
 
 
@@ -2386,6 +2689,7 @@ specCpRowInit undo =
     , mode = ColorPicker.Rgb
     , undo = undo
     , redo = []
+    , unitText = Nothing
     }
 
 
@@ -2398,6 +2702,7 @@ specCpInit =
     , clear = specCpRowInit []
     , preview = specCpRowInit []
     , undo = specCpRowInit [ Just specCpRed ]
+    , singleMode = { open = True, value = Just specCpRed, draft = Just specCpRed, mode = ColorPicker.Hex, undo = [], redo = [], unitText = Nothing }
     }
 
 
@@ -2425,6 +2730,9 @@ specCpGet row model =
         CpUndoRow ->
             model.specCp.undo
 
+        CpSingleModeRow ->
+            model.specCp.singleMode
+
 
 specCpSet : SpecCpRow -> SpecCpState -> SpecCpStates -> SpecCpStates
 specCpSet row st states =
@@ -2449,6 +2757,9 @@ specCpSet row st states =
 
         CpUndoRow ->
             { states | undo = st }
+
+        CpSingleModeRow ->
+            { states | singleMode = st }
 
 
 specCpUpd : SpecCpRow -> (SpecCpState -> SpecCpState) -> Model -> Model
@@ -2492,17 +2803,64 @@ specCpRowOpts row opts =
             { opts | showPreview = True }
 
         CpUndoRow ->
-            { opts
-                | internalActions = Just [ ColorPicker.UndoAction, ColorPicker.RedoAction ]
-            }
-
-        _ ->
             opts
+
+        CpBasicRow ->
+            opts
+
+        CpSizesRow ->
+            opts
+
+        CpSingleModeRow ->
+            -- the pinned single-mode showcase: `modes = [ Hex ]` makes the
+            -- mode button render hex-only (no switch away possible), so the
+            -- pin IS the options — the row still wires drag/swatches/undo
+            { opts | modes = [ ColorPicker.Hex ], displayedMode = ColorPicker.Hex }
 
 
 specCpTriggerOpts : SpecCpRow -> Model -> ColorPicker.Options Msg
 specCpTriggerOpts row model =
     specCpBase row model
+
+
+{-| A row instance's drag-surface ids — static per (row, instance) so the
+Sizes row's three instances each read their own rect (a shared id would
+route every drag to the first instance's surfaces).
+-}
+specCpAreaIds : SpecCpRow -> Int -> CpDragIds
+specCpAreaIds row inst =
+    let
+        tag =
+            case row of
+                CpBasicRow ->
+                    "basic"
+
+                CpAlphaRow ->
+                    "alpha"
+
+                CpSizesRow ->
+                    "sizes"
+
+                CpSwatchesRow ->
+                    "swatches"
+
+                CpClearRow ->
+                    "clear"
+
+                CpPreviewRow ->
+                    "preview"
+
+                CpUndoRow ->
+                    "undo"
+
+                CpSingleModeRow ->
+                    "single"
+    in
+    { site = CpSpecSite row
+    , palette = "spec-cp-" ++ tag ++ "-" ++ String.fromInt inst ++ "-palette"
+    , hue = "spec-cp-" ++ tag ++ "-" ++ String.fromInt inst ++ "-hue"
+    , alpha = "spec-cp-" ++ tag ++ "-" ++ String.fromInt inst ++ "-alpha"
+    }
 
 
 specCpPanelOpts : SpecCpRow -> Model -> ColorPicker.Options Msg
@@ -2518,6 +2876,7 @@ specCpPanelOpts row model =
         | value = st.draft
         , undoable = not (List.isEmpty st.undo)
         , redoable = not (List.isEmpty st.redo)
+        , onUnitInput = Just (\i raw -> SpecCpUnitTyped row i raw)
         , onUpdateValue = Just (SpecCpValueUpdated row)
         , onUpdateMode = Just (SpecCpModeChanged row)
         , onConfirm = Just (SpecCpConfirmed row)
@@ -2527,26 +2886,71 @@ specCpPanelOpts row model =
     }
 
 
+{-| The per-instance panel options — the shared row options plus the
+instance's drag seams (`pointerAreaIds` so its surfaces carry ids,
+`onMousedown` so a drag start records which instance's ids to read).
+-}
+specCpPairOpts : SpecCpRow -> Int -> Model -> ColorPicker.Options Msg
+specCpPairOpts row inst model =
+    let
+        base =
+            specCpPanelOpts row model
+
+        ids =
+            specCpAreaIds row inst
+    in
+    { base
+        | pointerAreaIds =
+            Just
+                { palette = ids.palette
+                , hue = ids.hue
+                , alpha = ids.alpha
+                }
+        , onMousedown = Just (SpecCpDragStarted row inst)
+    }
+
+
 {-| The wired static pair — `extras` applies the per-instance literal (the
 Sizes row's Small/Medium/Large) to BOTH roots, exactly as the inline literal
 set did.
 -}
 specCpPair :
     SpecCpRow
+    -> Int
     -> Model
     -> (ColorPicker.Options Msg -> ColorPicker.Options Msg)
     -> Element Msg
-specCpPair row model extras =
+specCpPair row inst model extras =
     Element.column [ Element.spacing 8, Element.width (Element.px 240) ]
         [ ColorPicker.view theme (extras (specCpTriggerOpts row model))
         , Element.el [ Element.width (Element.px 240) ]
             (if (specCpGet row model).open then
-                ColorPicker.panel theme (extras (specCpPanelOpts row model))
+                ColorPicker.panel theme
+                    (extras
+                        (specCpUnitTextEcho (specCpGet row model)
+                            (specCpPairOpts row inst model)
+                        )
+                    )
 
              else
                 Element.none
             )
         ]
+
+
+{-| The `unitText` echo — an incomplete unit parse keeps the raw string in
+the row state and shows it in the panel's value slot (the live row's
+`cpUnitText` split: a complete parse commits the draft, an incomplete one
+never touches it).
+-}
+specCpUnitTextEcho : SpecCpState -> ColorPicker.Options msg -> ColorPicker.Options msg
+specCpUnitTextEcho st opts =
+    case st.unitText of
+        Just _ ->
+            { opts | value = st.unitText }
+
+        Nothing ->
+            opts
 
 
 
@@ -3111,7 +3515,16 @@ colorSwatch maybeColor =
         , Border.rounded 4
         , Border.width 1
         , Element.htmlAttribute
-            (HA.style "background-color" (Maybe.withDefault "transparent" maybeColor))
+            (HA.style "background-color"
+                -- css only knows rgb/hsl/hex — the drag path commits the
+                -- displayed mode's format (upstream parity), which can be
+                -- hsva(...) and would silently fail as a background
+                (maybeColor
+                    |> Color.hslaOf
+                    |> Maybe.map Color.toHslaString
+                    |> Maybe.withDefault "transparent"
+                )
+            )
         ]
         Element.none
 
@@ -4153,17 +4566,18 @@ colorPickerRows : Model -> List (Element Msg)
 colorPickerRows model =
     [ demoRow "Basic"
         -- wired: swatch clicks + mode toggle drive the draft; the trigger
-        -- reopens after a close
-        [ specCpPair CpBasicRow model identity ]
+        -- reopens after a close; palette/hue/alpha drags commit live
+        [ specCpPair CpBasicRow 0 model identity ]
     , demoRow "Alpha off + confirm"
         -- wired: Confirm commits + closes
-        [ specCpPair CpAlphaRow model identity ]
+        [ specCpPair CpAlphaRow 0 model identity ]
     , demoRow "Sizes"
         -- wired: the three sizes share one row state (the brief's shared-
-        -- field rule -- they showcase the SAME colour at three sizes)
-        [ specCpPair CpSizesRow model (\o -> { o | size = T.Small })
-        , specCpPair CpSizesRow model identity
-        , specCpPair CpSizesRow model (\o -> { o | size = T.Large })
+        -- field rule -- they showcase the SAME colour at three sizes), each
+        -- instance reading its own drag rects (per-instance surface ids)
+        [ specCpPair CpSizesRow 0 model (\o -> { o | size = T.Small })
+        , specCpPair CpSizesRow 1 model identity
+        , specCpPair CpSizesRow 2 model (\o -> { o | size = T.Large })
         ]
     , demoRow "Disabled"
         -- specimen row (the disabled pin is the point -- the trigger and
@@ -4175,23 +4589,19 @@ colorPickerRows model =
             ]
         ]
     , demoRow "Single mode (hex)"
-        -- specimen row (the pinned single-mode unit row is the showcase --
-        -- the mode button would leave the pin)
-        [ Element.column [ Element.spacing 8, Element.width (Element.px 240) ]
-            [ ColorPicker.view theme { cpD | value = Just specCpRed, modes = [ ColorPicker.Hex ], displayedMode = ColorPicker.Hex }
-            , Element.el [ Element.width (Element.px 240) ]
-                (ColorPicker.panel theme { cpD | value = Just specCpRed, modes = [ ColorPicker.Hex ], displayedMode = ColorPicker.Hex })
-            ]
-        ]
+        -- wired: the pinned single-mode unit row — `modes = [ Hex ]` is both
+        -- the showcase pin AND the enforcement (no other mode exists to
+        -- switch to), so drag/swatches/undo run live against it
+        [ specCpPair CpSingleModeRow 0 model identity ]
     , demoRow "Swatches"
         -- wired: swatch clicks commit to the draft
-        [ specCpPair CpSwatchesRow model identity ]
+        [ specCpPair CpSwatchesRow 0 model identity ]
     , demoRow "Actions clear"
         -- wired: Clear empties + closes
-        [ specCpPair CpClearRow model identity ]
+        [ specCpPair CpClearRow 0 model identity ]
     , demoRow "Preview (native input)"
         -- wired: the preview tracks the draft
-        [ specCpPair CpPreviewRow model identity ]
+        [ specCpPair CpPreviewRow 0 model identity ]
     , demoRow "Custom trigger"
         -- specimen row (the custom trigger is the showcase -- a plain button
         -- replaces the picker's own trigger surface)
@@ -4203,7 +4613,7 @@ colorPickerRows model =
         ]
     , demoRow "Undo / redo actions"
         -- wired: real undo/redo stacks (seeded so undoable starts True)
-        [ specCpPair CpUndoRow model identity ]
+        [ specCpPair CpUndoRow 0 model identity ]
     ]
 
 
