@@ -29,7 +29,10 @@ import Element exposing (Element)
 import Element.Background as Bg
 import Element.Border as Border
 import Element.Font as Font
+import Element.Lazy
+import Html
 import Html.Attributes as HA
+import Html.Lazy
 import NUI.Css as Css
 import NUI.Typography as Typo
 import Sections.Controls
@@ -40,7 +43,7 @@ import Sections.Motion
 import Sections.Nav
 import Sections.Overlays
 import Sections.Pickers
-import Showcase exposing (chromeCss, sectionId, theme)
+import Showcase exposing (sectionId, theme)
 import Task exposing (Task)
 import Time
 
@@ -573,7 +576,22 @@ content model =
         , Element.paddingEach { top = 44, bottom = 120, left = 44, right = 36 }
         , Element.spacing 48
         ]
-        (hero :: (Css.element :: chromeCss :: body model))
+        (hero :: lazyCssElement :: lazyChromeCss :: [ body model ])
+
+
+{-| The 487KB stylesheet `<style>` node, lazily — a constant Html tree that
+the per-msg full diff would otherwise re-compare every frame.
+-}
+lazyCssElement : Element msg
+lazyCssElement =
+    Element.html (Html.Lazy.lazy (\() -> Css.elementNode) ())
+
+
+{-| Same for the showcase's chrome `<style>` node.
+-}
+lazyChromeCss : Element msg
+lazyChromeCss =
+    Element.html (Html.Lazy.lazy (\() -> Showcase.chromeCssNode) ())
 
 
 hero : Element msg
@@ -592,16 +610,47 @@ load-bearing for navigation: keep the two lists in sync when adding a
 section (87 entries, 1:1 — every section has exactly one sidebar entry).
 Each family body comes from its module's `sections` (static rows + live
 rows in place).
+
+Each family is wrapped in `Element.Lazy.lazy2` against its own sub-model: a
+message routed to one family (e.g. a ColorPicker drag inside Pickers)
+re-renders only that family's slice, and the other seven diff as identical
+lazy thunks — the page is ~26k DOM nodes, and re-diffing all of it per
+mousemove made drag updates visibly laggy (~185ms/frame in a trace).
+
 -}
-body : Model -> List (Element Msg)
+body : Model -> Element Msg
 body model =
-    List.concat
-        [ List.map (Element.map GeneralMsg) (Sections.General.sections model.general)
-        , List.map (Element.map ControlsMsg) (Sections.Controls.sections model.controls)
-        , List.map (Element.map DataMsg) (Sections.Data.sections model.data)
-        , List.map (Element.map DisplayMsg) (Sections.Display.sections model.display)
-        , List.map (Element.map NavMsg) (Sections.Nav.sections model.nav)
-        , List.map (Element.map OverlaysMsg) (Sections.Overlays.sections model.overlays)
-        , List.map (Element.map PickersMsg) (Sections.Pickers.sections model.pickers)
-        , List.map (Element.map MotionMsg) (Sections.Motion.sections model.motion)
+    Element.column [ Element.width Element.fill, Element.spacing 0 ]
+        [ lazyFamily GeneralMsg Sections.General.sections model.general
+        , lazyFamily ControlsMsg Sections.Controls.sections model.controls
+        , lazyFamily DataMsg Sections.Data.sections model.data
+        , lazyFamily DisplayMsg Sections.Display.sections model.display
+        , lazyFamily NavMsg Sections.Nav.sections model.nav
+        , lazyFamily OverlaysMsg Sections.Overlays.sections model.overlays
+        , lazyFamily PickersMsg Sections.Pickers.sections model.pickers
+        , lazyFamily MotionMsg Sections.Motion.sections model.motion
         ]
+
+
+{-| One family's slice, lazily. Every argument passed to
+`Element.Lazy.lazy3` MUST be a stable reference, not an inline lambda or a
+freshly-allocated tuple/record: the underlying virtual-dom thunk compares
+refs (fn, args) by `===`, and anything rebuilt per render — a closure
+captured in `body`, a tuple literal — makes the thunk miss every time and
+the whole family re-diffs anyway. Top-level `familyNode`, the `Msg`
+constructor (`GeneralMsg` etc.), the family's top-level `sections` and the
+sub-model record are all stable across renders, so an unrelated family's
+msg skips its entire vdom diff.
+-}
+lazyFamily :
+    (fmsg -> Msg)
+    -> (fmodel -> List (Element fmsg))
+    -> fmodel
+    -> Element Msg
+lazyFamily toMsg familySections fmodel =
+    Element.Lazy.lazy3 familyNode toMsg familySections fmodel
+
+
+familyNode : (fmsg -> Msg) -> (fmodel -> List (Element fmsg)) -> fmodel -> Element Msg
+familyNode toMsg familySections fmodel =
+    Element.column [ Element.width Element.fill ] (List.map (Element.map toMsg) (familySections fmodel))

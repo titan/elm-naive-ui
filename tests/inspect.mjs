@@ -11315,11 +11315,12 @@ dEq(
 dTrue(
   'DOM: color-picker A unit input carries upstream flex-grow 1.25 (ColorInputUnit.tsx:162), other units carry none',
   (() => {
-    const inputs = Array.from(cpRoot('live-color-picker-panel').querySelectorAll('.n-input-group input'))
+    // upstream's Vue `style` prop lands on the NInput ROOT, not the inner input
+    const inputs = Array.from(cpRoot('live-color-picker-panel').querySelectorAll('.n-input-group .n-input'))
     const styles = inputs.map((i) => i.getAttribute('style') || '')
     return (
       inputs.length === 4 &&
-      inputs[3].getAttribute('placeholder') === 'A' &&
+      inputs[3].querySelector('input').getAttribute('placeholder') === 'A' &&
       styles[3].includes('flex-grow: 1.25') &&
       styles.slice(0, 3).every((s) => !s.includes('flex-grow'))
     )

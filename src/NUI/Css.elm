@@ -1,6 +1,7 @@
 module NUI.Css exposing
     ( css
     , element
+    , elementNode
     , layout
     , rootAttribute
     )
@@ -40,7 +41,16 @@ css =
 -}
 element : Element msg
 element =
-    Element.html (Html.node "style" [] [ Html.text css ])
+    Element.html elementNode
+
+
+{-| The raw `<style>` node behind `element` — for callers that memoize the
+node themselves (e.g. `Html.Lazy.lazy`, so a per-msg diff skips the large
+constant text child).
+-}
+elementNode : Html.Html msg
+elementNode =
+    Html.node "style" [] [ Html.text css ]
 
 
 {-| The class the generated stylesheet is scoped under. Add it to (an ancestor of)

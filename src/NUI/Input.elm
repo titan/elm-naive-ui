@@ -141,6 +141,12 @@ components' `NInput` invocations):
     `.n-input` root (the pickers pass their own marker here, e.g.
     `n-date-panel-date-input`); appended after the component classes.
 
+  - `extraRootAttributes` — upstream's fallthrough `style`/attrs onto the
+    root (ColorPicker's alpha unit passes `flex-grow: 1.25` here,
+    `ColorInputUnit.tsx:162`); appended after the component's own, so a
+    duplicate name wins HTML's first-occurrence rule against them — pass
+    only attributes the component does not own.
+
   - `clearIconPlaceholder` — upstream's `clear-icon-placeholder` slot: the
     content shown inside `NBaseClear`'s placeholder while the clear button
     is hidden. `NBaseClear` renders iff `clearable` OR this is set (upstream
@@ -237,6 +243,7 @@ type alias Options msg =
     , onPairInput : Maybe (( String, String ) -> PairSource -> msg)
     , varOverrides : List ( String, String )
     , extraRootClasses : List String
+    , extraRootAttributes : List (Element.Attribute msg)
     }
 
 
@@ -280,6 +287,7 @@ defaults =
     , onPairInput = Nothing
     , varOverrides = []
     , extraRootClasses = []
+    , extraRootAttributes = []
     }
 
 
@@ -316,6 +324,7 @@ view theme opts =
             )
          ]
             ++ passiveRootTabindex opts
+            ++ opts.extraRootAttributes
         )
         (children ++ borderEls)
 

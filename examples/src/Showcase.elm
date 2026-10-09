@@ -2,6 +2,7 @@ module Showcase exposing
     ( capitalize
     , chip
     , chromeCss
+    , chromeCssNode
     , codeHljs
     , darkTheme
     , demoBox
@@ -86,26 +87,32 @@ section targets. Spliced next to `Css.element` in Main.
 -}
 chromeCss : Element msg
 chromeCss =
-    Element.html
-        (Html.node "style"
-            []
-            [ Html.text
-                (String.join
-                    ""
-                    [ "html{scroll-behavior:smooth}"
-                    , ".sc-sec{scroll-margin-top:78px}"
+    Element.html chromeCssNode
 
-                    -- elm-ui's height-content class (`.s.e > .hc{height:
-                    -- auto}`, specificity 0,3,0, re-embedded in per-view
-                    -- style nodes) defeats the drawer container's
-                    -- top/bottom stretch inside the demo hosts (height:auto
-                    -- resolves 0); height:100% restores the upstream "fills
-                    -- its mount parent" semantics.
-                    , ".n-drawer-container{height:100% !important}"
-                    ]
-                )
-            ]
-        )
+
+{-| The raw `<style>` node behind `chromeCss` — Main memoizes it with
+`Html.Lazy.lazy` so the per-msg diff skips the constant text child.
+-}
+chromeCssNode : Html.Html msg
+chromeCssNode =
+    Html.node "style"
+        []
+        [ Html.text
+            (String.join
+                ""
+                [ "html{scroll-behavior:smooth}"
+                , ".sc-sec{scroll-margin-top:78px}"
+
+                -- elm-ui's height-content class (`.s.e > .hc{height:
+                -- auto}`, specificity 0,3,0, re-embedded in per-view
+                -- style nodes) defeats the drawer container's
+                -- top/bottom stretch inside the demo hosts (height:auto
+                -- resolves 0); height:100% restores the upstream "fills
+                -- its mount parent" semantics.
+                , ".n-drawer-container{height:100% !important}"
+                ]
+            )
+        ]
 
 
 {-| Derives the anchor id of a section title — shared by `section` (the id

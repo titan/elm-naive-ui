@@ -9688,7 +9688,57 @@ color: var(--n-item-text-color-error);}.nui-root.nui-root .n-upload-file-list .n
   font-size: var(--n-option-font-size);
 }
 
-/* 6. Heatmap loading keyframes (port-added)
+/* 6. ColorPicker input-row flex slots (port-added)
+ *
+ * Upstream's `.n-color-picker-input` is a plain flex row: the `__mode` label
+ * keeps its CSS `width: 72px` and the `NInputGroup` fills the rest, its unit
+ * inputs sharing the remainder through `flex-grow: 1; flex-basis: 0`.
+ *
+ * Under elm-ui two defaults break that arithmetic:
+ *   - the group is an `Element.row` whose children get `.s { flex-shrink: 0 }`,
+ *     so each unit sticks at its min-content width (input intrinsic 34.75px
+ *     + padding) and the four RGBA units overflow the 216px panel content;
+ *   - the group itself is laid out at the full row width, so squeezing the
+ *     row lands entirely on `__mode` (shrink 1), pinching 72px to ~40px and
+ *     letting the units spill past the panel's right border.
+ *
+ * Restoring upstream's intent needs three targeted properties: the group
+ * becomes a proper flex slot (`flex: 1 1 0; min-width: 0`), the units may
+ * shrink below min-content (`min-width: 0`), and the label keeps its fixed
+ * slot (`flex: 0 0 72px`) so the shrink no longer lands on it. Naive UI
+ * declares none of flex/min-width here, so a doubly-scoped rule is safe.
+ */
+.nui-root.nui-root .n-color-picker-input .n-color-picker-input__mode {
+  flex: 0 0 72px;
+}
+
+.nui-root.nui-root .n-color-picker-input .n-input-group {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.nui-root.nui-root .n-color-picker-input .n-input-group .n-input {
+  min-width: 0;
+}
+
+/* The unit inputs' text slot: upstream's geometry (grow 1 / 1.25, padding
+ * 0 4px) fits three digit channels plus "100%" in their demo font stack
+ * (Arial-class, where "100%" ≈ 35.8px @14px). The port's showcase runs
+ * `system-ui`, whose "100%" ≈ 40px @14px — one to four px wider per glyph
+ * run — and the fixed 144px group cannot stretch (mode label is pinned at
+ * 72px, panel content at 216px). Rather than bending the flex arithmetic
+ * (any grow tweak that fits "100%" starves R/G/B below three digits), the
+ * unit row drops to 12px with 3px side padding: every value then fits its
+ * slot with margin (channels 22.9 ≤ 26.6, alpha 34.3 ≤ 35.2). Scoped to
+ * the color-picker input row only — standalone inputs are unaffected.
+ */
+.nui-root.nui-root .n-color-picker-input .n-input-group .n-input {
+  font-size: 12px;
+  --n-padding-left: 3px;
+  --n-padding-right: 3px;
+}
+
+/* 7. Heatmap loading keyframes (port-added)
  *
  * Upstream mounts this stylesheet at runtime (src/heatmap/src/animationStyle.ts):
  * a `heatmap-loading-<hash>` class whose name hashes the two loading colors, plus
