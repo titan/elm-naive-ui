@@ -72,8 +72,12 @@ the checkmark, day/cell click commits, Confirm/Clear closes the panel —
 `open` per row, init True) and the trigger's focus/click reopens. Rows that
 are pure state showcases (disabled/status/sizes/loading/empty/pattern pins,
 the no-channel plain triggers — Select emits nothing without a mounted menu)
-stay specimens. ColorPicker static rows wire value/draft/mode/undo-redo/
-confirm/clear/show plus the drag pointer surface (per-instance
+stay specimens. ColorPicker static rows wire value/mode/undo-redo/
+confirm/clear/show with ONE live value (every commit path — drag frame,
+swatch click, complete unit parse — writes `value` directly, so the
+trigger's colour and label track per frame exactly as upstream's single
+`mergedValue` does; upstream has no draft/committed split — Confirm only
+closes) plus the drag pointer surface (per-instance
 `pointerAreaIds` on the shared subscription pair — the drag flag carries
 the site) and per-unit typing; TimePicker static
 rows skip the column scroll commands (`colContainerIds` belongs to the live
@@ -1054,42 +1058,34 @@ updatePure msg model =
             specTpUpd row (\st -> { st | value = Nothing }) model
 
         SpecCpOpened row ->
-            -- the trigger's onUpdateShow: reopen + draft re-syncs to the
-            -- committed value
-            specCpUpd row (\st -> { st | open = True, draft = st.value }) model
+            -- the trigger's onUpdateShow: reopen (one live value — nothing
+            -- to re-sync)
+            specCpUpd row (\st -> { st | open = True }) model
 
         SpecCpValueUpdated row value ->
-            specCpUpd row (\st -> { st | draft = value }) model
+            -- upstream doUpdateValue 'input' (swatch click): live commit;
+            -- swatches ALSO run onComplete (pushes the stack) — same as the
+            -- live row
+            specCpUpd
+                row
+                (\st -> { st | value = value, undo = st.value :: st.undo, redo = [] })
+                model
 
         SpecCpModeChanged row mode ->
             specCpUpd row (\st -> { st | mode = mode }) model
 
-        SpecCpConfirmed row value ->
-            specCpUpd
-                row
-                (\st ->
-                    { st
-                        | value = value
-                        , draft = value
-                        , undo = st.value :: st.undo
-                        , redo = []
-                        , open = False
-                    }
-                )
-                model
+        SpecCpConfirmed row _ ->
+            -- upstream handleConfirm: the value is already live-committed
+            -- (no stack push, no value change) — the panel just closes and
+            -- the stack resets (watch mergedShowRef)
+            specCpUpd row (\st -> { st | open = False, undo = [], redo = [] }) model
 
         SpecCpCleared row ->
+            -- upstream handleClear: null value + close; the stack resets on
+            -- close (watch mergedShowRef)
             specCpUpd
                 row
-                (\st ->
-                    { st
-                        | value = Nothing
-                        , draft = Nothing
-                        , undo = st.value :: st.undo
-                        , redo = []
-                        , open = False
-                    }
-                )
+                (\st -> { st | value = Nothing, open = False, undo = [], redo = [] })
                 model
 
         SpecCpUndone row ->
@@ -1100,7 +1096,6 @@ updatePure msg model =
                         prev :: rest ->
                             { st
                                 | value = prev
-                                , draft = prev
                                 , undo = rest
                                 , redo = st.value :: st.redo
                             }
@@ -1118,7 +1113,6 @@ updatePure msg model =
                         next :: rest ->
                             { st
                                 | value = next
-                                , draft = next
                                 , redo = rest
                                 , undo = st.value :: st.undo
                             }
@@ -1130,13 +1124,14 @@ updatePure msg model =
 
         SpecCpUnitTyped row index raw ->
             -- same normalize-commit algebra as the live row's CpUnitTyped,
-            -- against the row's own draft/mode
+            -- against the row's own value/mode (complete parse commits the
+            -- value + pushes the stack, incomplete keeps the raw text)
             specCpUpd
                 row
                 (\st ->
                     case specCpUnitParse st index raw of
                         Just value ->
-                            { st | draft = Just value, unitText = Nothing }
+                            { st | value = Just value, unitText = Nothing, undo = st.value :: st.undo, redo = [] }
 
                         Nothing ->
                             { st | unitText = Just raw }
@@ -1153,7 +1148,7 @@ updatePure msg model =
                         , site = CpSpecSite row
                         , rect = cpPressRect press
                         }
-                , cpDragOrigin = Just ( CpSpecSite row, (specCpGet row model).draft )
+                , cpDragOrigin = Just ( CpSpecSite row, (specCpGet row model).value )
             }
                 |> cpDragApplyPress press
 
@@ -1333,11 +1328,13 @@ cpDragApply area site x y rect model =
             }
 
         CpSpecSite row ->
+            -- the same ONE-live-value commit as the live site: st.value
+            -- moves every frame, so the trigger tracks while dragging
             specCpUpd
                 row
                 (\st ->
                     { st
-                        | draft = cpDragValue area x y rect st.draft st.mode
+                        | value = cpDragValue area x y rect st.value st.mode
                         , unitText = Nothing
                     }
                 )
@@ -1569,10 +1566,10 @@ specCpUnitParse st index raw =
                     List.head (List.drop index labels)
 
                 baseHSV =
-                    Maybe.withDefault (Color.hsvWithAlpha 1 { h = 0, s = 100, v = 100 }) (Color.hsvaOf st.draft)
+                    Maybe.withDefault (Color.hsvWithAlpha 1 { h = 0, s = 100, v = 100 }) (Color.hsvaOf st.value)
 
                 alpha =
-                    Maybe.map .a (Color.hsvaOf st.draft) |> Maybe.withDefault 1
+                    Maybe.map .a (Color.hsvaOf st.value) |> Maybe.withDefault 1
             in
             case label of
                 Just "A" ->
@@ -1612,7 +1609,7 @@ specCpUnitParse st index raw =
                                             Nothing
                                             |> Maybe.withDefault ""
                                     )
-                                    (Color.hslaOf st.draft)
+                                    (Color.hslaOf st.value)
                             )
 
                 _ ->
@@ -1649,7 +1646,7 @@ specChannelSet st set =
                 Nothing
                 |> Maybe.withDefault ""
         )
-        (Color.rgbaOf st.draft)
+        (Color.rgbaOf st.value)
 
 
 
@@ -2649,7 +2646,6 @@ type SpecCpRow
 type alias SpecCpState =
     { open : Bool
     , value : Maybe String
-    , draft : Maybe String
     , mode : ColorPicker.Mode
     , undo : List (Maybe String)
     , redo : List (Maybe String)
@@ -2685,7 +2681,6 @@ specCpRowInit : List (Maybe String) -> SpecCpState
 specCpRowInit undo =
     { open = True
     , value = Just specCpRed
-    , draft = Just specCpRed
     , mode = ColorPicker.Rgb
     , undo = undo
     , redo = []
@@ -2702,7 +2697,7 @@ specCpInit =
     , clear = specCpRowInit []
     , preview = specCpRowInit []
     , undo = specCpRowInit [ Just specCpRed ]
-    , singleMode = { open = True, value = Just specCpRed, draft = Just specCpRed, mode = ColorPicker.Hex, undo = [], redo = [], unitText = Nothing }
+    , singleMode = { open = True, value = Just specCpRed, mode = ColorPicker.Hex, undo = [], redo = [], unitText = Nothing }
     }
 
 
@@ -2767,8 +2762,9 @@ specCpUpd row f model =
     { model | specCp = specCpSet row (f (specCpGet row model)) model.specCp }
 
 
-{-| The shared literal base (value/mode + the per-row extras); the trigger
-shows the committed value, the panel the draft (the live-row split).
+{-| The shared literal base (value/mode + the per-row extras) — ONE live
+value feeds both roots (the trigger's colour/label and the panel track per
+commit, upstream's single `mergedValue`).
 -}
 specCpBase : SpecCpRow -> Model -> ColorPicker.Options Msg
 specCpBase row model =
@@ -2803,7 +2799,9 @@ specCpRowOpts row opts =
             { opts | showPreview = True }
 
         CpUndoRow ->
-            opts
+            { opts
+                | internalActions = Just [ ColorPicker.UndoAction, ColorPicker.RedoAction ]
+            }
 
         CpBasicRow ->
             opts
@@ -2873,8 +2871,7 @@ specCpPanelOpts row model =
             specCpBase row model
     in
     { base
-        | value = st.draft
-        , undoable = not (List.isEmpty st.undo)
+        | undoable = not (List.isEmpty st.undo)
         , redoable = not (List.isEmpty st.redo)
         , onUnitInput = Just (\i raw -> SpecCpUnitTyped row i raw)
         , onUpdateValue = Just (SpecCpValueUpdated row)
