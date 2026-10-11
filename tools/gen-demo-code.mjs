@@ -133,9 +133,14 @@ function scanFile(file, src) {
   let m
   while ((m = re.exec(masked))) {
     const kind = m[1]
-    // Import/exposing-list mentions carry no argument shape — require one.
-    if (!/^(\s*"(ctl|dat|dsp|gen|mot|nav|ovr|pic)-\d+"|\s*"|\s*\(|\s*\d)/.test(masked.slice(m.index + m[0].length))) continue
     let i = skipWs(masked, m.index + m[0].length)
+    // Optional leading bare identifier — the threaded `theme` argument
+    // (`demoRow theme "gen-001" …`): one Elm ident between the call and the
+    // key/label. Absent for `demoRow "gen-001" …` (next char is a quote).
+    const lead = /^[A-Za-z_][A-Za-z0-9_']*/.exec(masked.slice(i))
+    if (lead) i = skipWs(masked, i + lead[0].length)
+    // Import/exposing-list mentions carry no argument shape — require one.
+    if (!/^("(ctl|dat|dsp|gen|mot|nav|ovr|pic)-\d+"|"|\(|\d)/.test(masked.slice(i))) continue
     // optional existing key
     let key = null
     if (masked[i] === '"') {

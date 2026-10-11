@@ -62,10 +62,11 @@ import NUI.List as NList
 import NUI.PageHeader as PageHeader
 import NUI.QrCode as QrCode
 import NUI.Scrollbar as Scrollbar
+import NUI.Theme exposing (Theme)
 import NUI.Timeline as Timeline
 import NUI.Types as T
 import NUI.Watermark as Watermark
-import Showcase exposing (chip, codeHljs, demoBox, demoRow, fakeKatex, fakeKatexDisplay, section, theme)
+import Showcase exposing (chip, codeHljs, demoBox, demoRow, fakeKatex, fakeKatexDisplay, section)
 import Time
 
 
@@ -249,10 +250,11 @@ gridItem =
 -- SECTIONS
 
 
-breadcrumbSection : Element msg
-breadcrumbSection =
-    section "Breadcrumb" "Navigation trails." <|
-        [ demoRow "dsp-001"
+breadcrumbSection : Theme -> Element msg
+breadcrumbSection theme =
+    section theme "Breadcrumb" "Navigation trails." <|
+        [ demoRow theme
+            "dsp-001"
             "Default"
             [ Breadcrumb.view theme
                 bcD
@@ -261,7 +263,8 @@ breadcrumbSection =
                 , { bcItem | content = [ Element.text "Data" ] }
                 ]
             ]
-        , demoRow "dsp-002"
+        , demoRow theme
+            "dsp-002"
             "Custom separator (per item)"
             [ Breadcrumb.view theme
                 { bcD | separator = "›" }
@@ -272,9 +275,9 @@ breadcrumbSection =
         ]
 
 
-timelineSection : Element msg
-timelineSection =
-    section "Timeline" "Vertical event trails." <|
+timelineSection : Theme -> Element msg
+timelineSection theme =
+    section theme "Timeline" "Vertical event trails." <|
         [ Timeline.view theme
             tlD
             [ { tlItem | time = Just "2023-01-01", content = [ Element.text "Project created" ] }
@@ -296,9 +299,9 @@ timelineSection =
         ]
 
 
-listSection : Element msg
-listSection =
-    section "List" "Bordered, hoverable item lists." <|
+listSection : Theme -> Element msg
+listSection theme =
+    section theme "List" "Bordered, hoverable item lists." <|
         [ Element.el [ Element.width (Element.px 360) ]
             (NList.view theme
                 { nlistD | bordered = True, hoverable = True }
@@ -314,8 +317,8 @@ listSection =
         ]
 
 
-pageHeaderRows : List (Element msg)
-pageHeaderRows =
+pageHeaderRows : Theme -> List (Element msg)
+pageHeaderRows theme =
     [ Element.el [ Element.width Element.fill ]
         (PageHeader.view theme
             { pageHeaderD
@@ -328,19 +331,21 @@ pageHeaderRows =
     ]
 
 
-pageHeaderSection : Element msg
-pageHeaderSection =
-    section "Page Header"
+pageHeaderSection : Theme -> Element msg
+pageHeaderSection theme =
+    section theme
+        "Page Header"
         "Title, subtitle and extra (pass `onBack` to add the back control)."
-        pageHeaderRows
+        (pageHeaderRows theme)
 
 
 {-| Live: `#secf-pageheader-back` — the back button counts real clicks
 (onBack is the port's caller-owned channel; Nothing hides the control).
 -}
-pageHeaderLiveRow : Model -> Element Msg
-pageHeaderLiveRow model =
-    demoRow "dsp-003"
+pageHeaderLiveRow : Model -> Theme -> Element Msg
+pageHeaderLiveRow model theme =
+    demoRow theme
+        "dsp-003"
         "PageHeader · back clicks (live)"
         [ Element.el [ Element.width Element.fill ]
             (PageHeader.view theme
@@ -358,17 +363,19 @@ pageHeaderLiveRow model =
         ]
 
 
-pageHeaderLiveSection : Model -> Element Msg
-pageHeaderLiveSection model =
-    section "Page Header"
+pageHeaderLiveSection : Model -> Theme -> Element Msg
+pageHeaderLiveSection model theme =
+    section theme
+        "Page Header"
         "Title, subtitle and extra (pass `onBack` to add the back control)."
-        (pageHeaderRows ++ [ pageHeaderLiveRow model ])
+        (pageHeaderRows theme ++ [ pageHeaderLiveRow model theme ])
 
 
-affixSection : Element msg
-affixSection =
-    section "Affix" "Pins content while scrolling (the affixed state is caller-owned). The preview box is the containing block — the fixed button stays inside it." <|
-        [ demoBox "dsp-004"
+affixSection : Theme -> Element msg
+affixSection theme =
+    section theme "Affix" "Pins content while scrolling (the affixed state is caller-owned). The preview box is the containing block — the fixed button stays inside it." <|
+        [ demoBox theme
+            "dsp-004"
             150
             (Element.el [ Element.padding 12 ]
                 (Affix.view theme
@@ -379,54 +386,62 @@ affixSection =
         ]
 
 
-flexSection : Element msg
-flexSection =
-    section "Flex"
+flexSection : Theme -> Element msg
+flexSection theme =
+    section theme
+        "Flex"
         "Naive UI's flexbox primitive — an inline flex container (no stylesheet rule; the layout is inline `display`/`gap`)."
     <|
-        [ demoRow "dsp-005"
+        [ demoRow theme
+            "dsp-005"
             "Gap"
             [ Flex.view theme
                 flexD
-                [ chip "One", chip "Two", chip "Three" ]
+                [ chip theme "One", chip theme "Two", chip theme "Three" ]
             ]
-        , demoRow "dsp-006"
+        , demoRow theme
+            "dsp-006"
             "Justify · space-between"
             [ Flex.view theme
                 { flexD | justify = Flex.SpaceBetween, size = Flex.Number 16 }
-                [ chip "Left", chip "Right" ]
+                [ chip theme "Left", chip theme "Right" ]
             ]
-        , demoRow "dsp-007"
+        , demoRow theme
+            "dsp-007"
             "Vertical · centered"
             [ Flex.view theme
                 { flexD | direction = Flex.Vertical, size = Flex.Number 8, align = Just Flex.Center }
-                [ chip "Top", chip "Middle", chip "Bottom" ]
+                [ chip theme "Top", chip theme "Middle", chip theme "Bottom" ]
             ]
-        , demoRow "dsp-008"
+        , demoRow theme
+            "dsp-008"
             "Inline · reversed"
             [ Flex.view theme
                 { flexD | inline = True, size = Flex.Number2 4 12, reverse = True }
-                [ chip "A", chip "B", chip "C" ]
+                [ chip theme "A", chip theme "B", chip theme "C" ]
             ]
         ]
 
 
-gridSection : Element msg
-gridSection =
-    section "Grid"
+gridSection : Theme -> Element msg
+gridSection theme =
+    section theme
+        "Grid"
         "A 24-column CSS grid (inline `display:grid`, no stylesheet rule); span/offset and the responsive collapse algorithm are caller-driven."
     <|
-        [ demoRow "dsp-009"
+        [ demoRow theme
+            "dsp-009"
             "Spans (12-col tracks)"
             [ Grid.view
                 { gridD | cols = Grid.Number 12, xGap = Grid.Number 16, yGap = Grid.Number 16 }
-                [ { gridItem | span = Grid.Number 6, content = [ chip "span 6" ] }
-                , { gridItem | span = Grid.Number 6, content = [ chip "span 6" ] }
-                , { gridItem | span = Grid.Number 4, content = [ chip "span 4" ] }
-                , { gridItem | span = Grid.Number 8, content = [ chip "span 8" ] }
+                [ { gridItem | span = Grid.Number 6, content = [ chip theme "span 6" ] }
+                , { gridItem | span = Grid.Number 6, content = [ chip theme "span 6" ] }
+                , { gridItem | span = Grid.Number 4, content = [ chip theme "span 4" ] }
+                , { gridItem | span = Grid.Number 8, content = [ chip theme "span 8" ] }
                 ]
             ]
-        , demoRow "dsp-010"
+        , demoRow theme
+            "dsp-010"
             "Collapsed (responsive overflow → suffix rest)"
             [ Grid.view
                 { gridD
@@ -435,20 +450,21 @@ gridSection =
                     , collapsed = True
                     , collapsedRows = 1
                 }
-                [ { gridItem | span = Grid.Number 4, content = [ chip "4" ] }
-                , { gridItem | span = Grid.Number 4, content = [ chip "4" ] }
-                , { gridItem | span = Grid.Number 4, content = [ chip "4" ] }
-                , { gridItem | span = Grid.Number 4, content = [ chip "hidden" ] }
+                [ { gridItem | span = Grid.Number 4, content = [ chip theme "4" ] }
+                , { gridItem | span = Grid.Number 4, content = [ chip theme "4" ] }
+                , { gridItem | span = Grid.Number 4, content = [ chip theme "4" ] }
+                , { gridItem | span = Grid.Number 4, content = [ chip theme "hidden" ] }
                 , { gridItem | suffix = True, content = [ Element.text "…" ] }
                 ]
             ]
         ]
 
 
-qrCodeSection : Element msg
-qrCodeSection =
-    section "QrCode" "QR codes, encoded by the ported Nayuki library and drawn as inline SVG." <|
-        [ demoRow "dsp-011"
+qrCodeSection : Theme -> Element msg
+qrCodeSection theme =
+    section theme "QrCode" "QR codes, encoded by the ported Nayuki library and drawn as inline SVG." <|
+        [ demoRow theme
+            "dsp-011"
             "Values"
             [ QrCode.view theme { qrD | value = "https://www.naiveui.com/" }
             , QrCode.view theme
@@ -458,13 +474,15 @@ qrCodeSection =
                     , backgroundColor = "#F5F5F5"
                 }
             ]
-        , demoRow "dsp-012"
+        , demoRow theme
+            "dsp-012"
             "Size & error correction"
             [ QrCode.view theme { qrD | value = "The rain dampened the sky", size = 140 }
             , QrCode.view theme
                 { qrD | value = "雨淋湿了天空", errorCorrectionLevel = QrCode.H }
             ]
-        , demoRow "dsp-013"
+        , demoRow theme
+            "dsp-013"
             "Icon"
             [ QrCode.view theme
                 { qrD
@@ -476,9 +494,10 @@ qrCodeSection =
         ]
 
 
-floatButtonRows : List (Element msg)
-floatButtonRows =
-    [ demoRow "dsp-014"
+floatButtonRows : Theme -> List (Element msg)
+floatButtonRows theme =
+    [ demoRow theme
+        "dsp-014"
         "Shapes & types"
         [ FloatButton.view theme { floatButtonD | position = FloatButton.Relative } [ Element.text "+" ]
         , FloatButton.view theme
@@ -488,13 +507,15 @@ floatButtonRows =
             { floatButtonD | position = FloatButton.Relative, type_ = FloatButton.Primary }
             [ Element.text "+" ]
         ]
-    , demoRow "dsp-015"
+    , demoRow theme
+        "dsp-015"
         "Description"
         [ FloatButton.view theme
             { floatButtonD | position = FloatButton.Relative, description = Just (Element.text "Top") }
             [ Element.text "↑" ]
         ]
-    , demoRow "dsp-016"
+    , demoRow theme
+        "dsp-016"
         "Menu"
         -- Resting state (showMenu = False): the body icon shows and the
         -- close glyph stays hidden until the menu opens. A second demo
@@ -542,19 +563,21 @@ floatButtonRows =
     ]
 
 
-floatButtonSection : Element msg
-floatButtonSection =
-    section "Float Button"
+floatButtonSection : Theme -> Element msg
+floatButtonSection theme =
+    section theme
+        "Float Button"
         "A floating action button (position and offsets are caller-owned)."
-        floatButtonRows
+        (floatButtonRows theme)
 
 
 {-| Live: `#secf-float-menu` — the click-triggered menu really opens/closes
 (showMenu is caller-owned; onUpdateShowMenu carries the toggle).
 -}
-floatButtonLiveRow : Model -> Element Msg
-floatButtonLiveRow model =
-    demoRow "dsp-017"
+floatButtonLiveRow : Model -> Theme -> Element Msg
+floatButtonLiveRow model theme =
+    demoRow theme
+        "dsp-017"
         "FloatButton · click menu (live)"
         [ Element.el
             [ Element.paddingEach { top = 170, bottom = 20, left = 20, right = 20 }
@@ -594,17 +617,19 @@ floatButtonLiveRow model =
         ]
 
 
-floatButtonLiveSection : Model -> Element Msg
-floatButtonLiveSection model =
-    section "Float Button"
+floatButtonLiveSection : Model -> Theme -> Element Msg
+floatButtonLiveSection model theme =
+    section theme
+        "Float Button"
         "A floating action button (position and offsets are caller-owned)."
-        (floatButtonRows ++ [ floatButtonLiveRow model ])
+        (floatButtonRows theme ++ [ floatButtonLiveRow model theme ])
 
 
-layoutSection : Model -> Element Msg
-layoutSection model =
-    section "Layout" "App shell — header, sider, content and footer (the sider's collapsed state is caller-owned)." <|
-        [ demoRow "dsp-018"
+layoutSection : Model -> Theme -> Element Msg
+layoutSection model theme =
+    section theme "Layout" "App shell — header, sider, content and footer (the sider's collapsed state is caller-owned)." <|
+        [ demoRow theme
+            "dsp-018"
             "Basic (header · sider · content · footer)"
             [ Element.el [ Element.width Element.fill ]
                 (Layout.view theme
@@ -626,7 +651,8 @@ layoutSection model =
                     ]
                 )
             ]
-        , demoRow "dsp-019"
+        , demoRow theme
+            "dsp-019"
             "Collapsed sider (right placement · bar trigger)"
             [ Element.el [ Element.width Element.fill ]
                 (Layout.view theme
@@ -651,7 +677,8 @@ layoutSection model =
                     ]
                 )
             ]
-        , demoRow "dsp-020"
+        , demoRow theme
+            "dsp-020"
             "Embedded (inset shell)"
             [ Element.el [ Element.width Element.fill ]
                 (Layout.view theme
@@ -664,12 +691,14 @@ layoutSection model =
         ]
 
 
-floatButtonGroupSection : Element msg
-floatButtonGroupSection =
-    section "Float Button Group"
+floatButtonGroupSection : Theme -> Element msg
+floatButtonGroupSection theme =
+    section theme
+        "Float Button Group"
         "A group of float buttons (shape, position and offsets are caller-owned)."
     <|
-        [ demoRow "dsp-021"
+        [ demoRow theme
+            "dsp-021"
             "Circle"
             [ FloatButtonGroup.view theme
                 { floatButtonGroupD | position = FloatButton.Relative, shape = FloatButton.Circle }
@@ -677,7 +706,8 @@ floatButtonGroupSection =
                 , FloatButton.view theme { floatButtonD | position = FloatButton.Relative } [ Element.text "?" ]
                 ]
             ]
-        , demoRow "dsp-022"
+        , demoRow theme
+            "dsp-022"
             "Square"
             [ FloatButtonGroup.view theme
                 { floatButtonGroupD | position = FloatButton.Relative, shape = FloatButton.Square }
@@ -688,22 +718,26 @@ floatButtonGroupSection =
         ]
 
 
-heatmapSection : Element msg
-heatmapSection =
-    section "Heatmap"
+heatmapSection : Theme -> Element msg
+heatmapSection theme =
+    section theme
+        "Heatmap"
         "GitHub-style contribution calendar: a real `table` of day rects coloured by `value / maxValue`, with week/month labels and a less/more indicator. Time is caller-owned (`zone`/`now`)."
     <|
-        [ demoRow "dsp-023"
+        [ demoRow theme
+            "dsp-023"
             "Default"
             [ Heatmap.view theme { heatmapD | data = heatmapSample, now = sampleNow } []
             ]
-        , demoRow "dsp-024"
+        , demoRow theme
+            "dsp-024"
             "Loading"
             [ Heatmap.view theme
                 { heatmapD | loading = True, loadingData = Just [], now = sampleNow }
                 []
             ]
-        , demoRow "dsp-025"
+        , demoRow theme
+            "dsp-025"
             "Small + custom palette + gaps filled"
             [ Heatmap.view theme
                 { heatmapD
@@ -741,12 +775,14 @@ sampleNow =
     Time.millisToPosix 1710086400000
 
 
-descriptionsSection : Element msg
-descriptionsSection =
-    section "Descriptions"
+descriptionsSection : Theme -> Element msg
+descriptionsSection theme =
+    section theme
+        "Descriptions"
         "Labelled field/value tables. `span` and `column` pack the rows; the packer is the pure `Descriptions.layout`."
     <|
-        [ demoRow "dsp-026"
+        [ demoRow theme
+            "dsp-026"
             "Basic (title + a span-2 cell)"
             [ Descriptions.view theme
                 { descD | title = Just (Element.text "Description") }
@@ -757,7 +793,8 @@ descriptionsSection =
                 , { descItemD | label = Just (Element.text "Midnight Snack"), content = [ Element.text "Apple" ] }
                 ]
             ]
-        , demoRow "dsp-027"
+        , demoRow theme
+            "dsp-027"
             "Bordered"
             [ Descriptions.view theme
                 { descD | bordered = True }
@@ -766,7 +803,8 @@ descriptionsSection =
                 , { descItemD | label = Just (Element.text "License"), content = [ Element.text "MIT" ] }
                 ]
             ]
-        , demoRow "dsp-028"
+        , demoRow theme
+            "dsp-028"
             "Left label placement (bordered)"
             [ Descriptions.view theme
                 { descD | labelPlacement = Descriptions.Left, bordered = True }
@@ -774,7 +812,8 @@ descriptionsSection =
                 , { descItemD | label = Just (Element.text "Version"), content = [ Element.text "0.19" ] }
                 ]
             ]
-        , demoRow "dsp-029"
+        , demoRow theme
+            "dsp-029"
             "Columns = 4"
             [ Descriptions.view theme
                 { descD | columns = Just 4 }
@@ -786,12 +825,14 @@ descriptionsSection =
         ]
 
 
-scrollbarSection : Element msg
-scrollbarSection =
-    section "Scrollbar"
+scrollbarSection : Theme -> Element msg
+scrollbarSection theme =
+    section theme
+        "Scrollbar"
         "A styled scroll container with custom rails. The caller owns whether each bar is shown and its measured geometry."
     <|
-        [ demoRow "dsp-030"
+        [ demoRow theme
+            "dsp-030"
             "Vertical bar shown"
             [ Element.el [ Element.height (Element.px 120), Element.width Element.fill ]
                 (Scrollbar.view theme
@@ -802,7 +843,8 @@ scrollbarSection =
                     [ Element.paragraph [] (List.repeat 3 (Element.text scrollbarCopy)) ]
                 )
             ]
-        , demoRow "dsp-031"
+        , demoRow theme
+            "dsp-031"
             "Both rails (x-scrollable)"
             -- a fixed-px cell (not `width fill`): a fill cell keeps
             -- `flex-basis: 0%` + `min-width: auto`, and the nowrap content's
@@ -824,7 +866,8 @@ scrollbarSection =
                     ]
                 )
             ]
-        , demoRow "dsp-032"
+        , demoRow theme
+            "dsp-032"
             "Rails only (left / top)"
             [ Element.el [ Element.height (Element.px 100), Element.width Element.fill ]
                 (Scrollbar.view theme
@@ -847,12 +890,14 @@ scrollbarCopy =
     "And as I sat there, brooding on the old unknown world, I thought of Gatsby's wonder when he first picked out the green light at the end of Daisy's dock."
 
 
-watermarkSection : Element msg
-watermarkSection =
-    section "Watermark"
+watermarkSection : Theme -> Element msg
+watermarkSection theme =
+    section theme
+        "Watermark"
         "Naive UI's watermark — the `div.n-watermark-container` (the `--selectable` / `--global-rotate` / `--fullscreen` modifiers; bare overlay when fullscreen without global rotation) wrapping the content plus the tiled `div.n-watermark` overlay (`background-size` tiling, the `cross` offset pair, the `max(142vh, 142vw)` rotated positioning, `z-index` handoff between the two nodes). The tile itself is upstream's canvas `toDataURL` seam, rebuilt purely: an SVG of the canvas dimensions — one `<text>` per line with the full font stack — base64-encoded in-library; `image` is referenced directly instead of re-rasterised. No `--n-*` vars — the theme's single `fontFamily` feeds the tile's font fallback."
     <|
-        [ demoRow "dsp-033"
+        [ demoRow theme
+            "dsp-033"
             "Basic · upstream demo tile (192×128, cross)"
             [ Watermark.view theme
                 { watermarkD
@@ -868,7 +913,8 @@ watermarkSection =
                 }
                 [ watermarkedText ]
             ]
-        , demoRow "dsp-034"
+        , demoRow theme
+            "dsp-034"
             "Two lines · centered · gaps · cross"
             [ Watermark.view theme
                 { watermarkD
@@ -887,7 +933,8 @@ watermarkSection =
                 }
                 [ watermarkedText ]
             ]
-        , demoRow "dsp-035"
+        , demoRow theme
+            "dsp-035"
             "Font stack · debug · not selectable"
             [ Watermark.view theme
                 { watermarkD
@@ -906,7 +953,8 @@ watermarkSection =
                 }
                 [ watermarkedText ]
             ]
-        , demoRow "dsp-036"
+        , demoRow theme
+            "dsp-036"
             "Global rotate (overflow-hidden container)"
             [ Watermark.view theme
                 { watermarkD
@@ -932,11 +980,13 @@ watermarkedText =
     Element.el [ Element.padding 24 ] (Element.text "The watermarked content sits in the container; the tile overlays it (pointer-events: none).")
 
 
-codeSection : Element msg
-codeSection =
-    section "Code"
+codeSection : Theme -> Element msg
+codeSection theme =
+    section theme
+        "Code"
         "A code block over a caller-supplied highlight.js — highlighting is the caller's to own."
-        [ demoRow "dsp-037"
+        [ demoRow theme
+            "dsp-037"
             "Basic (highlighted)"
             [ Code.view theme
                 { codeD
@@ -946,7 +996,8 @@ codeSection =
                 }
                 []
             ]
-        , demoRow "dsp-038"
+        , demoRow theme
+            "dsp-038"
             "Inline"
             [ Element.text "Call "
             , Code.view theme
@@ -959,7 +1010,8 @@ codeSection =
                 []
             , Element.text " to run it."
             ]
-        , demoRow "dsp-039"
+        , demoRow theme
+            "dsp-039"
             "Line numbers"
             [ Code.view theme
                 { codeD
@@ -970,7 +1022,8 @@ codeSection =
                 }
                 []
             ]
-        , demoRow "dsp-040"
+        , demoRow theme
+            "dsp-040"
             "Word wrap (line numbers suppressed)"
             [ Element.el [ Element.width (Element.px 220) ]
                 (Code.view theme
@@ -984,7 +1037,8 @@ codeSection =
                     []
                 )
             ]
-        , demoRow "dsp-041"
+        , demoRow theme
+            "dsp-041"
             "URI encoded"
             [ Code.view theme
                 { codeD
@@ -995,7 +1049,8 @@ codeSection =
                 }
                 []
             ]
-        , demoRow "dsp-042"
+        , demoRow theme
+            "dsp-042"
             "Trim off"
             [ Code.view theme
                 { codeD
@@ -1006,7 +1061,8 @@ codeSection =
                 }
                 []
             ]
-        , demoRow "dsp-043"
+        , demoRow theme
+            "dsp-043"
             "No hljs (plain text)"
             [ Code.view theme
                 { codeD | code = "const plain = 1", language = Just "javascript" }
@@ -1015,17 +1071,21 @@ codeSection =
         ]
 
 
-equationSection : Element msg
-equationSection =
-    section "Equation"
+equationSection : Theme -> Element msg
+equationSection theme =
+    section theme
+        "Equation"
         "KaTeX-rendered math via a caller-supplied renderToString closure (the component ships no KaTeX)."
-        [ demoRow "dsp-044"
+        [ demoRow theme
+            "dsp-044"
             "Inline (fake katex)"
             [ Equation.view theme { equationD | value = "E = mc^2", katex = Just fakeKatex } ]
-        , demoRow "dsp-045"
+        , demoRow theme
+            "dsp-045"
             "Display wrapper"
             [ Equation.view theme { equationD | value = "x^2 + y^2 = z^2", katex = Just fakeKatexDisplay } ]
-        , demoRow "dsp-046"
+        , demoRow theme
+            "dsp-046"
             "No katex"
             [ Equation.view theme { equationD | value = "a^2 + b^2 = c^2" } ]
         ]
@@ -1035,23 +1095,23 @@ equationSection =
 -- FAMILY BODY (Main.body order; live variants where live demos exist)
 
 
-sections : Model -> List (Element Msg)
-sections model =
-    [ breadcrumbSection
-    , timelineSection
-    , listSection
-    , pageHeaderLiveSection model
-    , affixSection
-    , flexSection
-    , gridSection
-    , qrCodeSection
-    , floatButtonLiveSection model
-    , layoutSection model
-    , floatButtonGroupSection
-    , heatmapSection
-    , descriptionsSection
-    , scrollbarSection
-    , watermarkSection
-    , codeSection
-    , equationSection
+sections : Model -> Theme -> List (Element Msg)
+sections model theme =
+    [ breadcrumbSection theme
+    , timelineSection theme
+    , listSection theme
+    , pageHeaderLiveSection model theme
+    , affixSection theme
+    , flexSection theme
+    , gridSection theme
+    , qrCodeSection theme
+    , floatButtonLiveSection model theme
+    , layoutSection model theme
+    , floatButtonGroupSection theme
+    , heatmapSection theme
+    , descriptionsSection theme
+    , scrollbarSection theme
+    , watermarkSection theme
+    , codeSection theme
+    , equationSection theme
     ]

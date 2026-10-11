@@ -74,7 +74,7 @@ import NUI.Steps as Steps
 import NUI.Tabs as Tabs
 import NUI.Theme exposing (Theme)
 import NUI.Types as T
-import Showcase exposing (chip, demoBox, demoRow, section, starIcon, theme)
+import Showcase exposing (chip, demoBox, demoRow, section, starIcon)
 
 
 
@@ -561,8 +561,8 @@ menuOptions =
 -- SECTIONS (static rows verbatim; live variants append the live demo rows)
 
 
-paginationRows : List (Element msg)
-paginationRows =
+paginationRows : Theme -> List (Element msg)
+paginationRows theme =
     [ Pagination.view theme { pgD | itemCount = Just 153, currentPage = 2 } []
     , Pagination.view theme { pgD | itemCount = Just 153, currentPage = 6 } []
     , Pagination.view theme { pgD | itemCount = Just 42, currentPage = 3, simple = True } []
@@ -579,16 +579,16 @@ paginationRows =
     ]
 
 
-paginationSection : Element msg
-paginationSection =
-    section "Pagination" "Page windows (the page, the page size and the jumper text are caller-owned)." paginationRows
+paginationSection : Theme -> Element msg
+paginationSection theme =
+    section theme "Pagination" "Page windows (the page, the page size and the jumper text are caller-owned)." (paginationRows theme)
 
 
 {-| Live: `#live-pagination` (+ the Go / size buttons drive the jumper and
 page-size channels).
 -}
-paginationLiveRow : Model -> Element Msg
-paginationLiveRow model =
+paginationLiveRow : Model -> Theme -> Element Msg
+paginationLiveRow model theme =
     let
         lastPage =
             Pagination.pageCount { itemCount = demoItemCount, pageSize = model.pageSize }
@@ -609,7 +609,8 @@ paginationLiveRow model =
                 }
                 [ Element.text (String.fromInt size ++ " / page") ]
     in
-    demoRow "nav-001"
+    demoRow theme
+        "nav-001"
         "Pagination · page + size + jumper"
         [ Element.column [ Element.spacing 12 ]
             [ Pagination.view theme
@@ -630,20 +631,21 @@ paginationLiveRow model =
                 (Button.view theme { small | onPress = Just JumperCommit } [ Element.text "Go" ]
                     :: List.map sizeButton demoSizeValues
                 )
-            , chip ("page " ++ String.fromInt model.page ++ " / " ++ String.fromInt lastPage ++ ", " ++ String.fromInt model.pageSize ++ " per page")
+            , chip theme ("page " ++ String.fromInt model.page ++ " / " ++ String.fromInt lastPage ++ ", " ++ String.fromInt model.pageSize ++ " per page")
             ]
         ]
 
 
-paginationLiveSection : Model -> Element Msg
-paginationLiveSection model =
-    section "Pagination"
+paginationLiveSection : Model -> Theme -> Element Msg
+paginationLiveSection model theme =
+    section theme
+        "Pagination"
         "Page windows (the page, the page size and the jumper text are caller-owned)."
-        (paginationRows ++ [ paginationLiveRow model ])
+        (paginationRows theme ++ [ paginationLiveRow model theme ])
 
 
-splitRows : List (Element msg)
-splitRows =
+splitRows : Theme -> List (Element msg)
+splitRows theme =
     [ Element.el [ Element.height (Element.px 120), Element.width Element.fill ]
         (Split.view theme
             { splitD
@@ -654,21 +656,22 @@ splitRows =
     ]
 
 
-splitSection : Element msg
-splitSection =
-    section "Split" "Resizable panes (the size is caller-owned)." splitRows
+splitSection : Theme -> Element msg
+splitSection theme =
+    section theme "Split" "Resizable panes (the size is caller-owned)." (splitRows theme)
 
 
 {-| Live: `#live-split` (pane size stepper — real drag is the Motion
 family's pattern).
 -}
-splitLiveRow : Model -> Element Msg
-splitLiveRow model =
+splitLiveRow : Model -> Theme -> Element Msg
+splitLiveRow model theme =
     let
         small =
             { btn | size = T.Small }
     in
-    demoRow "nav-002"
+    demoRow theme
+        "nav-002"
         "Split · pane size stepper (real drag is the Motion family's pattern)"
         [ Element.column [ Element.spacing 12, Element.width (Element.px 520) ]
             [ Split.view theme
@@ -682,19 +685,19 @@ splitLiveRow model =
                 [ Button.view theme { small | onPress = Just (SplitNudge -0.1) } [ Element.text "−10%" ]
                 , Button.view theme { small | onPress = Just (SplitNudge 0.1) } [ Element.text "+10%" ]
                 , Button.view theme { small | onPress = Just SplitReset } [ Element.text "Reset" ]
-                , chip ("pane 1: " ++ String.fromInt (round (model.splitRatio * 100)) ++ "%")
+                , chip theme ("pane 1: " ++ String.fromInt (round (model.splitRatio * 100)) ++ "%")
                 ]
             ]
         ]
 
 
-splitLiveSection : Model -> Element Msg
-splitLiveSection model =
-    section "Split" "Resizable panes (the size is caller-owned)." (splitRows ++ [ splitLiveRow model ])
+splitLiveSection : Model -> Theme -> Element Msg
+splitLiveSection model theme =
+    section theme "Split" "Resizable panes (the size is caller-owned)." (splitRows theme ++ [ splitLiveRow model theme ])
 
 
-stepsRows : List (Element msg)
-stepsRows =
+stepsRows : Theme -> List (Element msg)
+stepsRows theme =
     [ Steps.view theme
         { stepsD | current = Just 2 }
         [ { stepsItem | title = Just "First", description = Just "Details" }
@@ -704,15 +707,15 @@ stepsRows =
     ]
 
 
-stepsSection : Element msg
-stepsSection =
-    section "Steps" "Progress through a sequence." stepsRows
+stepsSection : Theme -> Element msg
+stepsSection theme =
+    section theme "Steps" "Progress through a sequence." (stepsRows theme)
 
 
 {-| Live: `#live-steps` (clickable steps + prev/next buttons).
 -}
-stepsLiveRow : Model -> Element Msg
-stepsLiveRow model =
+stepsLiveRow : Model -> Theme -> Element Msg
+stepsLiveRow model theme =
     let
         body =
             case List.drop (model.wizardStep - 1) wizardTitles |> List.head of
@@ -722,7 +725,8 @@ stepsLiveRow model =
                 Nothing ->
                     "Done"
     in
-    demoRow "nav-003"
+    demoRow theme
+        "nav-003"
         "Steps · wizard (next / prev / jump)"
         [ Element.column [ Element.spacing 12, Element.width (Element.px 520) ]
             [ Steps.view theme
@@ -742,20 +746,21 @@ stepsLiveRow model =
                 , Button.view theme
                     { btn | onPress = Just WizardNext, disabled = model.wizardStep >= List.length wizardTitles, kind = T.Primary }
                     [ Element.text "Next" ]
-                , chip body
+                , chip theme body
                 ]
             ]
         ]
 
 
-stepsLiveSection : Model -> Element Msg
-stepsLiveSection model =
-    section "Steps" "Progress through a sequence." (stepsRows ++ [ stepsLiveRow model ])
+stepsLiveSection : Model -> Theme -> Element Msg
+stepsLiveSection model theme =
+    section theme "Steps" "Progress through a sequence." (stepsRows theme ++ [ stepsLiveRow model theme ])
 
 
-backTopRows : List (Element msg)
-backTopRows =
-    [ demoBox "nav-004"
+backTopRows : Theme -> List (Element msg)
+backTopRows theme =
+    [ demoBox theme
+        "nav-004"
         160
         (Element.el [ Element.padding 12 ]
             (BackTop.view theme { backTopD | show = True } [ Element.text "Up" ])
@@ -763,25 +768,26 @@ backTopRows =
     ]
 
 
-backTopSection : Element msg
-backTopSection =
-    section "BackTop" "A fixed back-to-top button (the scroll state is caller-owned). The preview box is the containing block — the button pins to its corner." backTopRows
+backTopSection : Theme -> Element msg
+backTopSection theme =
+    section theme "BackTop" "A fixed back-to-top button (the scroll state is caller-owned). The preview box is the containing block — the button pins to its corner." (backTopRows theme)
 
 
 {-| Live: `#live-backtop` (simulated scrollTop; visible past 180px).
 -}
-backTopLiveRow : Model -> Element Msg
-backTopLiveRow model =
+backTopLiveRow : Model -> Theme -> Element Msg
+backTopLiveRow model theme =
     let
         small =
             { btn | size = T.Small }
     in
-    demoRow "nav-005"
+    demoRow theme
+        "nav-005"
         ("BackTop · simulated scroll (visible past " ++ String.fromInt backTopThreshold ++ "px)")
         [ Element.row [ Element.spacing 12 ]
             [ Button.view theme { small | onPress = Just (ScrollBy 300) } [ Element.text "Scroll down 300" ]
             , Button.view theme { small | onPress = Just (ScrollBy -300) } [ Element.text "Scroll up 300" ]
-            , chip ("scrollTop: " ++ String.fromInt model.scrollTop ++ " px")
+            , chip theme ("scrollTop: " ++ String.fromInt model.scrollTop ++ " px")
             , BackTop.view theme
                 { backTopD
                     | show = model.scrollTop >= backTopThreshold
@@ -793,15 +799,16 @@ backTopLiveRow model =
         ]
 
 
-backTopLiveSection : Model -> Element Msg
-backTopLiveSection model =
-    section "BackTop"
+backTopLiveSection : Model -> Theme -> Element Msg
+backTopLiveSection model theme =
+    section theme
+        "BackTop"
         "A fixed back-to-top button (the scroll state is caller-owned). The preview box is the containing block — the button pins to its corner."
-        (backTopRows ++ [ backTopLiveRow model ])
+        (backTopRows theme ++ [ backTopLiveRow model theme ])
 
 
-collapseRows : List (Element msg)
-collapseRows =
+collapseRows : Theme -> List (Element msg)
+collapseRows theme =
     [ Collapse.view theme
         { collapseD | expandedNames = [ "1" ] }
         [ { collapseItem
@@ -835,17 +842,18 @@ collapseRows =
     ]
 
 
-collapseSection : Element msg
-collapseSection =
-    section "Collapse" "Expandable panels (the expanded set is caller-owned)." collapseRows
+collapseSection : Theme -> Element msg
+collapseSection theme =
+    section theme "Collapse" "Expandable panels (the expanded set is caller-owned)." (collapseRows theme)
 
 
 {-| Live: `#live-collapse-accordion` (single-name expandedNames — the port's
 documented accordion recipe).
 -}
-accordionLiveRow : Model -> Element Msg
-accordionLiveRow model =
-    demoRow "nav-006"
+accordionLiveRow : Model -> Theme -> Element Msg
+accordionLiveRow model theme =
+    demoRow theme
+        "nav-006"
         "Collapse · accordion (one open at most)"
         [ Element.column [ Element.spacing 10, Element.width (Element.px 460) ]
             [ Collapse.view theme
@@ -858,16 +866,17 @@ accordionLiveRow model =
                 , panel "acc-2" "Usage" [ Element.text "Click a header: onToggle carries the item name, the model decides the next expanded set." ]
                 , panel "acc-3" "Notes" [ Element.text "Same component as the multiple demo below — only the caller's update differs." ]
                 ]
-            , chip ("expanded: " ++ namesLabel model.accordionNames)
+            , chip theme ("expanded: " ++ namesLabel model.accordionNames)
             ]
         ]
 
 
 {-| Live: `#live-collapse-multiple`.
 -}
-multiLiveRow : Model -> Element Msg
-multiLiveRow model =
-    demoRow "nav-007"
+multiLiveRow : Model -> Theme -> Element Msg
+multiLiveRow model theme =
+    demoRow theme
+        "nav-007"
         "Collapse · multiple open"
         [ Element.column [ Element.spacing 10, Element.width (Element.px 460) ]
             [ Collapse.view theme
@@ -880,7 +889,7 @@ multiLiveRow model =
                 , panel "mul-2" "Usage" [ Element.text "Open both, close one — the set is fully caller-owned state." ]
                 , panel "mul-3" "Notes" [ Element.text "The transition phase (fade-in-height-expand) needs a clock; this family runs Sub.none." ]
                 ]
-            , chip ("expanded: " ++ namesLabel model.multiNames)
+            , chip theme ("expanded: " ++ namesLabel model.multiNames)
             ]
         ]
 
@@ -890,55 +899,64 @@ panel name title body =
     { collapseItem | name = name, title = Just title, content = body }
 
 
-collapseLiveSection : Model -> Element Msg
-collapseLiveSection model =
-    section "Collapse"
+collapseLiveSection : Model -> Theme -> Element Msg
+collapseLiveSection model theme =
+    section theme
+        "Collapse"
         "Expandable panels (the expanded set is caller-owned)."
-        (collapseRows ++ [ accordionLiveRow model, multiLiveRow model ])
+        (collapseRows theme ++ [ accordionLiveRow model theme, multiLiveRow model theme ])
 
 
-tabsRows : List (Element msg)
-tabsRows =
-    [ demoRow "nav-008"
+tabsRows : Theme -> List (Element msg)
+tabsRows theme =
+    [ demoRow theme
+        "nav-008"
         "Bar (default)"
         [ Tabs.view theme { tabsD | value = "one" } tabsItems ]
-    , demoRow "nav-009"
+    , demoRow theme
+        "nav-009"
         "Line"
         [ Tabs.view theme { tabsD | type_ = Tabs.Line, value = "two" } tabsItems ]
-    , demoRow "nav-010"
+    , demoRow theme
+        "nav-010"
         "Card (closable)"
         [ Tabs.view theme { tabsD | type_ = Tabs.Card, closable = True, value = "one" } tabsItems ]
-    , demoRow "nav-011"
+    , demoRow theme
+        "nav-011"
         "Segment"
         [ Tabs.view theme { tabsD | type_ = Tabs.Segment, value = "two" } tabsItems ]
-    , demoRow "nav-012"
+    , demoRow theme
+        "nav-012"
         "Sizes (small / medium / large)"
         [ Tabs.view theme { tabsD | size = Tabs.Small, value = "one" } tabsItems
         , Tabs.view theme { tabsD | size = Tabs.Large, value = "one" } tabsItems
         ]
-    , demoRow "nav-013"
+    , demoRow theme
+        "nav-013"
         "Placement (bottom / left)"
         [ Tabs.view theme { tabsD | placement = Tabs.Bottom, value = "one" } tabsItems
         , Tabs.view theme { tabsD | placement = Tabs.Left, value = "one" } tabsItems
         ]
-    , demoRow "nav-014"
+    , demoRow theme
+        "nav-014"
         "Show directive (all panes mounted)"
         [ Tabs.view theme { tabsD | displayDirective = Tabs.Show, value = "one" } tabsItems ]
     ]
 
 
-tabsSection : Element msg
-tabsSection =
-    section "Tabs"
+tabsSection : Theme -> Element msg
+tabsSection theme =
+    section theme
+        "Tabs"
         "Tabbed navigation with panes. The caller owns the active `value`; `ShowIf` (default) mounts only the active pane."
-        tabsRows
+        (tabsRows theme)
 
 
 {-| Live: the addable/closable card tab bar (switch / close / add — the
 value and the tab list live in the model).
 -}
-tabsLiveRow : Model -> Element Msg
-tabsLiveRow model =
+tabsLiveRow : Model -> Theme -> Element Msg
+tabsLiveRow model theme =
     let
         opts =
             { tabsD
@@ -966,25 +984,28 @@ tabsLiveRow model =
             else
                 model.activeTab
     in
-    demoRow "nav-015"
+    demoRow theme
+        "nav-015"
         "Tabs · live tab bar (switch / close / add)"
         [ Element.column [ Element.spacing 10, Element.width (Element.px 460) ]
             [ Tabs.view theme opts (List.map toTab model.tabs)
-            , chip ("active: " ++ activeLabel)
+            , chip theme ("active: " ++ activeLabel)
             ]
         ]
 
 
-tabsLiveSection : Model -> Element Msg
-tabsLiveSection model =
-    section "Tabs"
+tabsLiveSection : Model -> Theme -> Element Msg
+tabsLiveSection model theme =
+    section theme
+        "Tabs"
         "Tabbed navigation with panes. The caller owns the active `value`; `ShowIf` (default) mounts only the active pane."
-        (tabsRows ++ [ tabsLiveRow model ])
+        (tabsRows theme ++ [ tabsLiveRow model theme ])
 
 
-menuRows : List (Element msg)
-menuRows =
-    [ demoRow "nav-016"
+menuRows : Theme -> List (Element msg)
+menuRows theme =
+    [ demoRow theme
+        "nav-016"
         "Vertical (fixed state: path expanded, leaf selected)"
         [ cell
             (Element.el [ Element.width (Element.px 240) ]
@@ -997,7 +1018,8 @@ menuRows =
                 )
             )
         ]
-    , demoRow "nav-017"
+    , demoRow theme
+        "nav-017"
         "Accordion + expand-all / value-path init"
         [ cell
             (Element.el [ Element.width (Element.px 240) ]
@@ -1019,7 +1041,8 @@ menuRows =
                 )
             )
         ]
-    , demoRow "nav-018"
+    , demoRow theme
+        "nav-018"
         "Collapsed (icon-only centering) + indent tuning"
         [ cell
             (Element.el [ Element.width (Element.px 64) ]
@@ -1041,7 +1064,8 @@ menuRows =
                 )
             )
         ]
-    , demoRow "nav-019"
+    , demoRow theme
+        "nav-019"
         "Horizontal + inverted"
         [ cell
             (Element.el [ Element.width Element.fill ]
@@ -1062,7 +1086,8 @@ menuRows =
                 )
             )
         ]
-    , demoRow "nav-020"
+    , demoRow theme
+        "nav-020"
         "Menu disabled (submenu dead, root leaf alive — upstream quirk)"
         [ cell
             (Element.el [ Element.width (Element.px 240) ]
@@ -1075,17 +1100,18 @@ menuRows =
     ]
 
 
-menuSection : Element msg
-menuSection =
-    section "Menu"
+menuSection : Theme -> Element msg
+menuSection theme =
+    section theme
+        "Menu"
         "The navigation tree (upstream `NMenu` over treemate options) — one recursive walk renders submenu/option/group/divider. State is caller-owned: `value` + `expandedKeys` in, `onSelect` / `onExpandedKeysChange` out (accordion applied via `toggleExpanded`); `initialExpandedKeys` / `expandTo` mirror the uncontrolled and imperative seams. Horizontal and collapsed submenus, and collapsed-leaf tooltips, are caller-mounted popovers — `submenuDropdownOptions` feeds `NUI.Dropdown.view`."
-        menuRows
+        (menuRows theme)
 
 
 {-| Live: `#live-menu` (select + expand + the reveal button).
 -}
-menuLiveRow : Model -> Element Msg
-menuLiveRow model =
+menuLiveRow : Model -> Theme -> Element Msg
+menuLiveRow model theme =
     let
         path =
             model.menuValue
@@ -1096,7 +1122,8 @@ menuLiveRow model =
         small =
             { btn | size = T.Small }
     in
-    demoRow "nav-021"
+    demoRow theme
+        "nav-021"
         "Menu · navigate (select + expand)"
         [ Element.column [ Element.spacing 10 ]
             [ Menu.view theme
@@ -1110,8 +1137,8 @@ menuLiveRow model =
                 menuOptions
             , Element.row [ Element.spacing 8 ]
                 [ Button.view theme { small | onPress = Just MenuReveal } [ Element.text "Expand to selection" ]
-                , chip ("value: " ++ Maybe.withDefault "—" model.menuValue)
-                , chip
+                , chip theme ("value: " ++ Maybe.withDefault "—" model.menuValue)
+                , chip theme
                     ("path: "
                         ++ (if path == "" then
                                 "—"
@@ -1125,15 +1152,16 @@ menuLiveRow model =
         ]
 
 
-menuLiveSection : Model -> Element Msg
-menuLiveSection model =
-    section "Menu"
+menuLiveSection : Model -> Theme -> Element Msg
+menuLiveSection model theme =
+    section theme
+        "Menu"
         "The navigation tree (upstream `NMenu` over treemate options) — one recursive walk renders submenu/option/group/divider. State is caller-owned: `value` + `expandedKeys` in, `onSelect` / `onExpandedKeysChange` out (accordion applied via `toggleExpanded`); `initialExpandedKeys` / `expandTo` mirror the uncontrolled and imperative seams. Horizontal and collapsed submenus, and collapsed-leaf tooltips, are caller-mounted popovers — `submenuDropdownOptions` feeds `NUI.Dropdown.view`."
-        (menuRows ++ [ menuLiveRow model ])
+        (menuRows theme ++ [ menuLiveRow model theme ])
 
 
-anchorRows : List (Element msg)
-anchorRows =
+anchorRows : Theme -> List (Element msg)
+anchorRows theme =
     let
         aLink title href children =
             Anchor.Link
@@ -1155,19 +1183,22 @@ anchorRows =
             , aLink "API" "#anchor-api" []
             ]
     in
-    [ demoRow "nav-022"
+    [ demoRow theme
+        "nav-022"
         "Rail (default)"
         [ Anchor.view theme
             { anchorD | activeHref = Just "#anchor-basic" }
             demoLinks
         ]
-    , demoRow "nav-023"
+    , demoRow theme
+        "nav-023"
         "Block"
         [ Anchor.view theme
             { anchorD | type_ = Anchor.Block, activeHref = Just "#anchor-block" }
             demoLinks
         ]
-    , demoRow "nav-024"
+    , demoRow theme
+        "nav-024"
         "No rail / no background"
         [ Anchor.view theme
             { anchorD | showRail = False }
@@ -1176,9 +1207,11 @@ anchorRows =
             { anchorD | showBackground = False, activeHref = Just "#anchor-api" }
             demoLinks
         ]
-    , demoRow "nav-025"
+    , demoRow theme
+        "nav-025"
         "Affix wrap"
-        [ demoBox "nav-026"
+        [ demoBox theme
+            "nav-026"
             200
             (Anchor.view theme
                 { anchorD
@@ -1191,18 +1224,19 @@ anchorRows =
     ]
 
 
-anchorSection : Element msg
-anchorSection =
-    section "Anchor"
+anchorSection : Theme -> Element msg
+anchorSection theme =
+    section theme
+        "Anchor"
         "In-page navigation — the active link is caller-owned scroll state."
-        anchorRows
+        (anchorRows theme)
 
 
 {-| Live: `#live-anchor` / `#live-anchor-block` (simulated scroll drives
 activeHref).
 -}
-anchorLiveRow : Model -> Element Msg
-anchorLiveRow model =
+anchorLiveRow : Model -> Theme -> Element Msg
+anchorLiveRow model theme =
     let
         links =
             anchorLinks AnchorGo
@@ -1214,14 +1248,15 @@ anchorLiveRow model =
                 , attributes = [ Element.htmlAttribute (HA.id id) ]
             }
     in
-    demoRow "nav-027"
+    demoRow theme
+        "nav-027"
         "Anchor · simulated scroll (caller-owned activeHref)"
         [ Element.column [ Element.spacing 10 ]
             [ Element.row [ Element.spacing 32 ]
                 [ Anchor.view theme (opts "live-anchor" Anchor.Rail) links
                 , Anchor.view theme (opts "live-anchor-block" Anchor.Block) links
                 ]
-            , chip ("active: " ++ model.activeHref)
+            , chip theme ("active: " ++ model.activeHref)
             ]
         ]
 
@@ -1249,11 +1284,12 @@ anchorLinks go =
     ]
 
 
-anchorLiveSection : Model -> Element Msg
-anchorLiveSection model =
-    section "Anchor"
+anchorLiveSection : Model -> Theme -> Element Msg
+anchorLiveSection model theme =
+    section theme
+        "Anchor"
         "In-page navigation — the active link is caller-owned scroll state."
-        (anchorRows ++ [ anchorLiveRow model ])
+        (anchorRows theme ++ [ anchorLiveRow model theme ])
 
 
 
@@ -1273,14 +1309,14 @@ namesLabel names =
 {-| The family body in Main.body order — live variants where live demos
 exist, legacy sections elsewhere (here every section has a live variant).
 -}
-sections : Model -> List (Element Msg)
-sections model =
-    [ paginationLiveSection model
-    , splitLiveSection model
-    , stepsLiveSection model
-    , backTopLiveSection model
-    , collapseLiveSection model
-    , tabsLiveSection model
-    , menuLiveSection model
-    , anchorLiveSection model
+sections : Model -> Theme -> List (Element Msg)
+sections model theme =
+    [ paginationLiveSection model theme
+    , splitLiveSection model theme
+    , stepsLiveSection model theme
+    , backTopLiveSection model theme
+    , collapseLiveSection model theme
+    , tabsLiveSection model theme
+    , menuLiveSection model theme
+    , anchorLiveSection model theme
     ]

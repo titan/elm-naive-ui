@@ -107,11 +107,12 @@ import NUI.Popselect as Popselect
 import NUI.Select as Select
 import NUI.SelectMenu as SelectMenu
 import NUI.Tag as Tag
+import NUI.Theme exposing (Theme)
 import NUI.TimePicker as TimePicker
 import NUI.Tree as Tree
 import NUI.TreeSelect as TreeSelect
 import NUI.Types as T
-import Showcase exposing (chip, demoRow, section, theme)
+import Showcase exposing (chip, demoRow, section)
 import Task
 import Time
 
@@ -1656,9 +1657,10 @@ specChannelSet st set =
 
 {-| Live: `#live-select-single` (+ `#live-select-single-menu` while open).
 -}
-selectSingleLiveRow : Model -> Element Msg
-selectSingleLiveRow model =
-    demoRow "pic-001"
+selectSingleLiveRow : Model -> Theme -> Element Msg
+selectSingleLiveRow model theme =
+    demoRow theme
+        "pic-001"
         "Select · single"
         [ Element.column [ Element.spacing 8, Element.width (Element.px 230) ]
             [ Select.view theme
@@ -1674,7 +1676,7 @@ selectSingleLiveRow model =
                         ]
                 }
                 songOptions
-            , chip ("value: " ++ describe (valueKey model.selSingle |> Maybe.andThen (\k -> selectLabel k songOptions)))
+            , chip theme ("value: " ++ describe (valueKey model.selSingle |> Maybe.andThen (\k -> selectLabel k songOptions)))
             , if model.selOpen then
                 Select.menu theme
                     { selMenuD
@@ -1695,9 +1697,10 @@ selectSingleLiveRow model =
 
 {-| Live: `#live-select-multiple` (+ `#live-select-multiple-menu`).
 -}
-selectMultipleLiveRow : Model -> Element Msg
-selectMultipleLiveRow model =
-    demoRow "pic-002"
+selectMultipleLiveRow : Model -> Theme -> Element Msg
+selectMultipleLiveRow model theme =
+    demoRow theme
+        "pic-002"
         "Select · multiple (tags)"
         [ Element.column [ Element.spacing 8, Element.width (Element.px 280) ]
             [ Select.view theme
@@ -1715,7 +1718,7 @@ selectMultipleLiveRow model =
                         ]
                 }
                 songOptions
-            , chip ("tags: " ++ describeRange (valueKeys model.selMulti))
+            , chip theme ("tags: " ++ describeRange (valueKeys model.selMulti))
             , if model.selMultiOpen then
                 Select.menu theme
                     { selMenuD
@@ -1737,9 +1740,10 @@ selectMultipleLiveRow model =
 
 {-| Live: `#live-popselect-trigger` / `#live-popselect` (the menu body while open).
 -}
-popselectLiveRow : Model -> Element Msg
-popselectLiveRow model =
-    demoRow "pic-003"
+popselectLiveRow : Model -> Theme -> Element Msg
+popselectLiveRow model theme =
+    demoRow theme
+        "pic-003"
         "Popselect · value"
         [ Element.column [ Element.spacing 8, Element.width (Element.px 200) ]
             [ Button.view theme
@@ -1766,9 +1770,10 @@ popselectLiveRow model =
 
 {-| Live: `#live-cascader` (+ `#live-cascader-menu` while open).
 -}
-cascaderLiveRow : Model -> Element Msg
-cascaderLiveRow model =
-    demoRow "pic-004"
+cascaderLiveRow : Model -> Theme -> Element Msg
+cascaderLiveRow model theme =
+    demoRow theme
+        "pic-004"
         "Cascader · drill (province → city)"
         [ Element.column [ Element.spacing 8, Element.width (Element.px 380) ]
             [ Cascader.view theme
@@ -1785,7 +1790,7 @@ cascaderLiveRow model =
                         ]
                 }
                 cascOptions
-            , chip ("path: " ++ cascValueText model.cascValue)
+            , chip theme ("path: " ++ cascValueText model.cascValue)
             , if model.cascOpen then
                 Cascader.menu theme
                     { cascMenuD
@@ -1809,15 +1814,16 @@ cascaderLiveRow model =
 
 {-| Live: `#live-treeselect-menu` (the menu body while open).
 -}
-treeSelectLiveRow : Model -> Element Msg
-treeSelectLiveRow model =
-    demoRow "pic-005"
+treeSelectLiveRow : Model -> Theme -> Element Msg
+treeSelectLiveRow model theme =
+    demoRow theme
+        "pic-005"
         "TreeSelect · pick node"
         [ Element.column [ Element.spacing 8, Element.width (Element.px 280) ]
             [ Element.el
                 [ Element.width Element.fill, Element.Events.onClick ToggleTreeSelect ]
                 (TreeSelect.view theme (tsOptions model))
-            , chip ("selected: " ++ describe (valueKey model.tsValue |> Maybe.andThen treeLabel))
+            , chip theme ("selected: " ++ describe (valueKey model.tsValue |> Maybe.andThen treeLabel))
             , if model.tsOpen then
                 Element.el
                     [ Element.width (Element.px 280), Element.htmlAttribute (HA.id "live-treeselect-menu") ]
@@ -1831,9 +1837,10 @@ treeSelectLiveRow model =
 
 {-| Live: `#live-autocomplete` (+ `#live-autocomplete-menu` while the show gate passes).
 -}
-autoCompleteLiveRow : Model -> Element Msg
-autoCompleteLiveRow model =
-    demoRow "pic-006"
+autoCompleteLiveRow : Model -> Theme -> Element Msg
+autoCompleteLiveRow model theme =
+    demoRow theme
+        "pic-006"
         "AutoComplete · filter"
         [ Element.column [ Element.spacing 8, Element.width (Element.px 260) ]
             [ AutoComplete.view theme
@@ -1844,7 +1851,7 @@ autoCompleteLiveRow model =
                     , placeholder = "Type a song…"
                     , attributes = [ Element.htmlAttribute (HA.id "live-autocomplete") ]
                 }
-            , chip
+            , chip theme
                 ("value: \""
                     ++ model.acText
                     ++ "\" · "
@@ -1871,9 +1878,10 @@ autoCompleteLiveRow model =
 
 {-| Live: `#live-mention` (+ `#live-mention-menu` while an @-run is active).
 -}
-mentionLiveRow : Model -> Element Msg
-mentionLiveRow model =
-    demoRow "pic-007"
+mentionLiveRow : Model -> Theme -> Element Msg
+mentionLiveRow model theme =
+    demoRow theme
+        "pic-007"
         "Mention · @ trigger"
         [ Element.column [ Element.spacing 8, Element.width (Element.px 320) ]
             [ Mention.view theme
@@ -1883,7 +1891,7 @@ mentionLiveRow model =
                     , placeholder = "Type @ to mention"
                     , attributes = [ Element.htmlAttribute (HA.id "live-mention") ]
                 }
-            , chip (maybeChip "run: @" (mnRun model.mnText))
+            , chip theme (maybeChip "run: @" (mnRun model.mnText))
             , if mnRun model.mnText /= Nothing then
                 Mention.menu theme
                     { mnMenuD
@@ -1904,15 +1912,16 @@ mentionLiveRow model =
 
 {-| Live: `#live-datepicker` / `#live-datepicker-panel` (the `committed:` chip is the s2LeafText caption).
 -}
-dpSingleLiveRow : Model -> Element Msg
-dpSingleLiveRow model =
-    demoRow "pic-008"
+dpSingleLiveRow : Model -> Theme -> Element Msg
+dpSingleLiveRow model theme =
+    demoRow theme
+        "pic-008"
         "DatePicker · single panel"
         [ Element.column [ Element.spacing 8, Element.width (Element.px 260) ]
             [ Element.el
                 [ Element.width Element.fill, Element.htmlAttribute (HA.id "live-datepicker") ]
                 (DatePicker.view theme (dpSingleOpts model))
-            , chip ("committed: " ++ dpValueText model.dpValue)
+            , chip theme ("committed: " ++ dpValueText model.dpValue)
             , if model.dpShow then
                 Element.el
                     [ Element.width (Element.px 310), Element.htmlAttribute (HA.id "live-datepicker-panel") ]
@@ -1926,15 +1935,16 @@ dpSingleLiveRow model =
 
 {-| Live: `#live-daterange` / `#live-daterange-panel` — the chip caption is a leaf div matching `^(unset|\d{13} → \d{13})( · selecting)?$` and must stay the FIRST document-order match (LIVE/PICK gate).
 -}
-dpRangeLiveRow : Model -> Element Msg
-dpRangeLiveRow model =
-    demoRow "pic-009"
+dpRangeLiveRow : Model -> Theme -> Element Msg
+dpRangeLiveRow model theme =
+    demoRow theme
+        "pic-009"
         "DatePicker · daterange"
         [ Element.column [ Element.spacing 8, Element.width Element.fill ]
             [ Element.el
                 [ Element.width Element.fill, Element.htmlAttribute (HA.id "live-daterange") ]
                 (DatePicker.view theme (dpRangeOpts model))
-            , chip (dpRangeText_ model)
+            , chip theme (dpRangeText_ model)
             , if model.dpRangeShow then
                 Element.el
                     [ Element.width Element.fill, Element.htmlAttribute (HA.id "live-daterange-panel") ]
@@ -1948,15 +1958,16 @@ dpRangeLiveRow model =
 
 {-| Live: `#live-timepicker` / `#live-timepicker-panel` (TpFocused issues the column scroll commands).
 -}
-tpLiveRow : Model -> Element Msg
-tpLiveRow model =
-    demoRow "pic-010"
+tpLiveRow : Model -> Theme -> Element Msg
+tpLiveRow model theme =
+    demoRow theme
+        "pic-010"
         "TimePicker · columns"
         [ Element.column [ Element.spacing 8, Element.width (Element.px 220) ]
             [ Element.el
                 [ Element.width Element.fill, Element.htmlAttribute (HA.id "live-timepicker") ]
                 (TimePicker.view theme (tpOpts model))
-            , chip
+            , chip theme
                 ("value: "
                     ++ (case model.tpValue of
                             Just ms ->
@@ -1980,9 +1991,10 @@ tpLiveRow model =
 
 {-| Live: `#live-colorpicker` / `#live-colorpicker-panel` (drag via the Browser.Events pair, rect read via Browser.Dom).
 -}
-cpLiveRow : Model -> Element Msg
-cpLiveRow model =
-    demoRow "pic-011"
+cpLiveRow : Model -> Theme -> Element Msg
+cpLiveRow model theme =
+    demoRow theme
+        "pic-011"
         "ColorPicker · full loop"
         [ Element.column [ Element.spacing 8, Element.width (Element.px 260) ]
             [ Element.el
@@ -1990,8 +2002,8 @@ cpLiveRow model =
                 (ColorPicker.view theme (cpTriggerOpts model))
             , Element.row [ Element.spacing 10 ]
                 [ colorSwatch model.cpValue
-                , chip ("value: " ++ cpHexText model.cpValue)
-                , chip ("undo " ++ String.fromInt (List.length model.cpUndo) ++ "/" ++ String.fromInt (List.length model.cpRedo) ++ " redo")
+                , chip theme ("value: " ++ cpHexText model.cpValue)
+                , chip theme ("undo " ++ String.fromInt (List.length model.cpUndo) ++ "/" ++ String.fromInt (List.length model.cpRedo) ++ " redo")
                 ]
             , if model.cpShow then
                 Element.el
@@ -2490,8 +2502,8 @@ specDpRowOpts row opts =
 {-| The wired static pair: trigger always renders, the panel while `open`
 (init True — the open specimen; commit/clear/confirm closes it).
 -}
-specDpPair : SpecDpRow -> Model -> Element Msg
-specDpPair row model =
+specDpPair : SpecDpRow -> Model -> Theme -> Element Msg
+specDpPair row model theme =
     Element.column [ Element.spacing 12, Element.width Element.fill ]
         [ DatePicker.view theme (specDpOpts row model)
         , if (specDpGet row model).open then
@@ -2629,8 +2641,8 @@ specTpRowOpts row opts =
             opts
 
 
-specTpPair : SpecTpRow -> Model -> Element Msg
-specTpPair row model =
+specTpPair : SpecTpRow -> Model -> Theme -> Element Msg
+specTpPair row model theme =
     Element.column [ Element.spacing 8 ]
         [ TimePicker.view theme (specTpOpts row model)
         , Element.el [ Element.width (Element.px 200) ]
@@ -2926,9 +2938,10 @@ specCpPair :
     SpecCpRow
     -> Int
     -> Model
+    -> Theme
     -> (ColorPicker.Options Msg -> ColorPicker.Options Msg)
     -> Element Msg
-specCpPair row inst model extras =
+specCpPair row inst model theme extras =
     Element.column [ Element.spacing 8, Element.width (Element.px 240) ]
         [ ColorPicker.view theme (extras (specCpTriggerOpts row model))
         , Element.el [ Element.width (Element.px 240) ]
@@ -3717,9 +3730,10 @@ selectDesc =
     "Naive UI's select — a bare `.n-select` wrapper around the `NUI.BaseSelection` trigger (every var lives there); the menu is a separate caller-mounted body (upstream opens it in its own follower), `Select.menu` here. `view` derives the display from `value` + options: the single label (unknown values show themselves while `fallbackOption` is on), the multiple tags (same fallback; unknowns drop when off) with the numeric `maxTagCount` slice's `+N` counter, and the clear icon — `clearable && (hover || active) && selected`; `pattern` flows to the filter input, `filterOptions` being the pure default filter. The caller owns the show state, positioning and keyboard."
 
 
-selectRows : Model -> List (Element Msg)
-selectRows model =
-    [ demoRow "pic-012"
+selectRows : Model -> Theme -> List (Element Msg)
+selectRows model theme =
+    [ demoRow theme
+        "pic-012"
         "Single (leaves + group)"
         -- specimen: nothing to commit — no menu is mounted in this row and
         -- Select emits no channel without one (value is display-only here)
@@ -3727,7 +3741,8 @@ selectRows model =
             { selectD | attributes = [ Element.width (Element.px 200) ] }
             selectOptions
         ]
-    , demoRow "pic-013"
+    , demoRow theme
+        "pic-013"
         "Selected + clearable (hover)"
         -- wired: clearable value with the clear × armed (onClear)
         [ Select.view theme
@@ -3740,7 +3755,8 @@ selectRows model =
             }
             selectOptions
         ]
-    , demoRow "pic-014"
+    , demoRow theme
+        "pic-014"
         "Filterable (active, empty pattern)"
         -- specimen: the pinned active/filter state is the row's purpose (the
         -- pattern input drives the mounted-menu filtering, absent here)
@@ -3753,7 +3769,8 @@ selectRows model =
             }
             selectOptions
         ]
-    , demoRow "pic-015"
+    , demoRow theme
+        "pic-015"
         "Multiple (maxTagCount 3 + fallback)"
         -- wired: tag × deletes from the value (onDeleteTag)
         [ Select.view theme
@@ -3766,7 +3783,8 @@ selectRows model =
             }
             letterOptions
         ]
-    , demoRow "pic-016"
+    , demoRow theme
+        "pic-016"
         "Multiple filterable (pattern)"
         -- wired: the pinned pattern stays, the tags still delete
         [ Select.view theme
@@ -3781,7 +3799,8 @@ selectRows model =
             }
             selectOptions
         ]
-    , demoRow "pic-017"
+    , demoRow theme
+        "pic-017"
         "Sizes · status · disabled"
         -- specimen row (sizes/status/disabled are the showcase; the tags are
         -- not clearable and no menu is mounted)
@@ -3814,7 +3833,8 @@ selectRows model =
             }
             selectOptions
         ]
-    , demoRow "pic-018"
+    , demoRow theme
+        "pic-018"
         "Menu: loading (the __loading row)"
         -- specimen: loading replaces the menu middle — nothing clickable
         [ Select.menu theme
@@ -3826,7 +3846,8 @@ selectRows model =
             , SelectMenu.Option { value = "b", label = "B", disabled = False, attributes = [] }
             ]
         ]
-    , demoRow "pic-019"
+    , demoRow theme
+        "pic-019"
         "Menu: header · action · selected"
         -- wired: the open menu's options toggle the checkmark (onToggle)
         [ Select.menu theme
@@ -3842,9 +3863,9 @@ selectRows model =
     ]
 
 
-selectLiveSection : Model -> Element Msg
-selectLiveSection model =
-    section "Select" selectDesc (selectRows model ++ [ selectSingleLiveRow model, selectMultipleLiveRow model ])
+selectLiveSection : Model -> Theme -> Element Msg
+selectLiveSection model theme =
+    section theme "Select" selectDesc (selectRows model theme ++ [ selectSingleLiveRow model theme, selectMultipleLiveRow model theme ])
 
 
 {-| The Popselect section description (shared by the static and live variants).
@@ -3854,9 +3875,10 @@ popselectDesc =
     "The popover-family body whose select-menu root is itself the popover-shared body (upstream `internalRenderBody` — the `Dropdown` path: no `n-popover` element, `--n-padding` zeroed, `--show-arrow` present unless `overlap` even with no arrow node). Selection is pure — `value` drives the per-option checkmarks, `toggleValue` computes the next value — while the caller owns the show state (`'hover'` trigger), positioning (default placement bottom) and the auto-close on single select. `NUI.SelectMenu` (the support module this composes) stands bare in the last row."
 
 
-popselectRows : Model -> List (Element Msg)
-popselectRows model =
-    [ demoRow "pic-020"
+popselectRows : Model -> Theme -> List (Element Msg)
+popselectRows model theme =
+    [ demoRow theme
+        "pic-020"
         "Single (leaves + group)"
         -- wired (open specimen): value + onUpdateValue — a row click moves
         -- the checkmark in place
@@ -3871,7 +3893,8 @@ popselectRows model =
                 popselectOptions
             )
         ]
-    , demoRow "pic-021"
+    , demoRow theme
+        "pic-021"
         "Multiple (--multiple marker)"
         -- wired (open specimen): same, multiple tags
         [ popoverHost Popover.Bottom
@@ -3886,7 +3909,8 @@ popselectRows model =
                 popselectOptions
             )
         ]
-    , demoRow "pic-022"
+    , demoRow theme
+        "pic-022"
         "Bare NUI.SelectMenu (no popover classes)"
         -- wired (open specimen): the bare menu's rows toggle
         [ SelectMenu.view theme
@@ -3903,9 +3927,9 @@ popselectRows model =
     ]
 
 
-popselectLiveSection : Model -> Element Msg
-popselectLiveSection model =
-    section "Popselect" popselectDesc (popselectRows model ++ [ popselectLiveRow model ])
+popselectLiveSection : Model -> Theme -> Element Msg
+popselectLiveSection model theme =
+    section theme "Popselect" popselectDesc (popselectRows model theme ++ [ popselectLiveRow model theme ])
 
 
 {-| The Cascader section description (shared by the static and live variants).
@@ -3915,9 +3939,10 @@ cascaderDesc =
     "Naive UI's cascader — the `NUI.BaseSelection` trigger (the `NUI.Select` lane) plus the multi-column menu, both caller-mounted bodies (upstream opens each in its own follower): `Cascader.menu` for the columns (the hover key's path decides them, `menuModel`; option states come from the value's `All`-strategy normalization) and `Cascader.selectMenu` for the filterable flat body (`filterOptions`' path-label rows). `view` derives the display from `value` + the tree: the single path label (unknown keys show themselves), the multiple cascade-normalized tags with the numeric `maxTagCount` slice. The treemate cascade logic ships pure — `getCheckedKeys` / `check` / `uncheck` / `toggleValue`; the caller owns the show state, positioning, keyboard and remote loading (`loadingKeys`)."
 
 
-cascaderRows : Model -> List (Element Msg)
-cascaderRows model =
-    [ demoRow "pic-023"
+cascaderRows : Model -> Theme -> List (Element Msg)
+cascaderRows model theme =
+    [ demoRow theme
+        "pic-023"
         "Single (path label) · multiple (maxTagCount)"
         -- wired: clearable single (onClear) + multiple tag delete (onDeleteTag)
         [ Cascader.view theme
@@ -3939,7 +3964,8 @@ cascaderRows model =
             }
             cascaderOptions
         ]
-    , demoRow "pic-024"
+    , demoRow theme
+        "pic-024"
         "Columns menu (hover key opens the second column)"
         -- wired (open specimen): option clicks toggle the value; a branch
         -- click retargets the hover column (expand stays click here)
@@ -3954,7 +3980,8 @@ cascaderRows model =
             }
             cascaderOptions
         ]
-    , demoRow "pic-025"
+    , demoRow theme
+        "pic-025"
         "Columns menu: child strategy (leaf checkmarks) · empty · action"
         -- wired: the child-strategy menu's leaf clicks commit; the empty
         -- menu has nothing to wire (specimen)
@@ -3971,7 +3998,8 @@ cascaderRows model =
             { cascMenuD | attributes = [ Element.width (Element.px 200) ] }
             []
         ]
-    , demoRow "pic-026"
+    , demoRow theme
+        "pic-026"
         "Filterable flat menu (pattern 'sub')"
         -- wired: the flat multiple menu's rows flip membership
         [ Cascader.selectMenu theme
@@ -3986,9 +4014,9 @@ cascaderRows model =
     ]
 
 
-cascaderLiveSection : Model -> Element Msg
-cascaderLiveSection model =
-    section "Cascader" cascaderDesc (cascaderRows model ++ [ cascaderLiveRow model ])
+cascaderLiveSection : Model -> Theme -> Element Msg
+cascaderLiveSection model theme =
+    section theme "Cascader" cascaderDesc (cascaderRows model theme ++ [ cascaderLiveRow model theme ])
 
 
 {-| The TreeSelect section description (shared by the static and live variants).
@@ -3998,8 +4026,8 @@ treeSelectDesc =
     "A selection trigger over a tree menu — show, positioning and the pattern/expand state are caller-owned."
 
 
-treeSelectRows : Model -> List (Element Msg)
-treeSelectRows model =
+treeSelectRows : Model -> Theme -> List (Element Msg)
+treeSelectRows model theme =
     let
         node key label disabled kids =
             Tree.TreeOption
@@ -4075,7 +4103,8 @@ treeSelectRows model =
         filterCfg =
             { multiple = False, checkable = False, cascade = False }
     in
-    [ demoRow "pic-027"
+    [ demoRow theme
+        "pic-027"
         "Basic single"
         [ Element.column [ Element.spacing 8 ]
             [ TreeSelect.view theme
@@ -4086,7 +4115,8 @@ treeSelectRows model =
                 )
             ]
         ]
-    , demoRow "pic-028"
+    , demoRow theme
+        "pic-028"
         "Multiple + cascade + checkable"
         [ Element.column [ Element.spacing 8 ]
             [ TreeSelect.view theme
@@ -4095,7 +4125,8 @@ treeSelectRows model =
                 (TreeSelect.menu theme (rowOpts multiCfg model.specTsMulti Nothing [ "o1" ]))
             ]
         ]
-    , demoRow "pic-029"
+    , demoRow theme
+        "pic-029"
         "Filterable + showPath"
         [ Element.column [ Element.spacing 8 ]
             [ TreeSelect.view theme
@@ -4110,7 +4141,8 @@ treeSelectRows model =
                 )
             ]
         ]
-    , demoRow "pic-030"
+    , demoRow theme
+        "pic-030"
         "Slots + empty"
         -- specimen row: the trigger's status/clearable/hover are the showcase
         -- and the menu is header/action/empty pins (no tree rows to click)
@@ -4137,9 +4169,9 @@ treeSelectRows model =
     ]
 
 
-treeSelectLiveSection : Model -> Element Msg
-treeSelectLiveSection model =
-    section "TreeSelect" treeSelectDesc (treeSelectRows model ++ [ treeSelectLiveRow model ])
+treeSelectLiveSection : Model -> Theme -> Element Msg
+treeSelectLiveSection model theme =
+    section theme "TreeSelect" treeSelectDesc (treeSelectRows model theme ++ [ treeSelectLiveRow model theme ])
 
 
 {-| The AutoComplete section description (shared by the static and live variants).
@@ -4149,9 +4181,10 @@ autoCompleteDesc =
     "Naive UI's autocomplete — a bare `.n-auto-complete` wrapper around a plain `NUI.Input` trigger (NOT the selection: upstream drives `NInput` directly, no `NInternalSelection`); the menu is a separate caller-mounted body (its own follower upstream), `AutoComplete.menu` here — hardcoded Medium, `tabindex -1`, never `--selected` (no checkmark node), and `loading` is the input's suffix spinner, never a menu row. The caller owns the whole show gate (`getShow ? getShow (value || \"\") : value ≠ \"\"`, focused-typed, `showEmpty`), positioning, keyboard and the select commit (`onSelect value` always, then `clearAfterSelect` → null / the label commit, `append` ⇒ `value ++ label`); it does no filtering of its own — options are yours to derive (the email demo's suffix list). `fromString` lifts bare strings; `inputAttributes` is upstream's `inputProps`."
 
 
-autoCompleteRows : Model -> List (Element Msg)
-autoCompleteRows model =
-    [ demoRow "pic-031"
+autoCompleteRows : Model -> Theme -> List (Element Msg)
+autoCompleteRows model theme =
+    [ demoRow theme
+        "pic-031"
         "Basic (value + open menu + inputProps)"
         -- wired: the first input's typing + the open menu's select commit;
         -- the second keeps its inputProps specimen (autofocus pin)
@@ -4179,7 +4212,8 @@ autoCompleteRows model =
             , AutoComplete.fromString "Day Tripper"
             ]
         ]
-    , demoRow "pic-032"
+    , demoRow theme
+        "pic-032"
         "Sizes (the menu stays Medium)"
         -- specimen row: Small/Medium/Large are the showcase; the menu mounts
         -- the same two rows as the basic demo (nothing new to commit)
@@ -4193,7 +4227,8 @@ autoCompleteRows model =
             { acMenuD | attributes = [ Element.width (Element.px 220) ] }
             (List.take 2 selectOptions)
         ]
-    , demoRow "pic-033"
+    , demoRow theme
+        "pic-033"
         "Group (header + children)"
         -- wired: group demo's input + the grouped menu's select
         [ AutoComplete.view theme
@@ -4209,7 +4244,8 @@ autoCompleteRows model =
             }
             selectOptions
         ]
-    , demoRow "pic-034"
+    , demoRow theme
+        "pic-034"
         "Status · disabled"
         -- specimen row (status/disabled are the showcase)
         [ AutoComplete.view theme
@@ -4231,7 +4267,8 @@ autoCompleteRows model =
                 , attributes = [ Element.width (Element.px 220) ]
             }
         ]
-    , demoRow "pic-035"
+    , demoRow theme
+        "pic-035"
         "Clearable · loading (suffix order: clear, loading, slot)"
         -- wired: the clearable instance's × empties the value (the clear
         -- fires onInput "" — upstream null ≡ ""); loading and the triple
@@ -4258,7 +4295,8 @@ autoCompleteRows model =
                 , attributes = [ Element.width (Element.px 200) ]
             }
         ]
-    , demoRow "pic-036"
+    , demoRow theme
+        "pic-036"
         "Show gate (showEmpty + the empty seam)"
         -- specimen row: the empty seam + placeholder pin (nothing to select)
         [ AutoComplete.view theme
@@ -4270,7 +4308,8 @@ autoCompleteRows model =
             }
             []
         ]
-    , demoRow "pic-037"
+    , demoRow theme
+        "pic-037"
         "After select (the caller-owned commit)"
         -- specimen row: the two chips document the commit semantics (the
         -- inputs themselves stay inert — the live row exercises the loop)
@@ -4278,7 +4317,7 @@ autoCompleteRows model =
             (Element.column [ Element.spacing 6, Element.width Element.fill ]
                 [ AutoComplete.view theme
                     { acD | placeholder = "clearAfterSelect → \"\"", attributes = [ Element.width (Element.px 200) ] }
-                , chip "onSelect \"Drive My Car\" → value = \"\""
+                , chip theme "onSelect \"Drive My Car\" → value = \"\""
                 ]
             )
         , cell
@@ -4289,11 +4328,12 @@ autoCompleteRows model =
                         , placeholder = "append ⇒ value ++ label"
                         , attributes = [ Element.width (Element.px 200) ]
                     }
-                , chip "onSelect \"Drive My Car\" → \"DriDrive My Car\""
+                , chip theme "onSelect \"Drive My Car\" → \"DriDrive My Car\""
                 ]
             )
         ]
-    , demoRow "pic-038"
+    , demoRow theme
+        "pic-038"
         "Custom rows (renderLabel / renderOption)"
         -- wired: the custom-row menu's leaf still selects (commit → the
         -- basic input's value)
@@ -4312,9 +4352,9 @@ autoCompleteRows model =
     ]
 
 
-autoCompleteLiveSection : Model -> Element Msg
-autoCompleteLiveSection model =
-    section "AutoComplete" autoCompleteDesc (autoCompleteRows model ++ [ autoCompleteLiveRow model ])
+autoCompleteLiveSection : Model -> Theme -> Element Msg
+autoCompleteLiveSection model theme =
+    section theme "AutoComplete" autoCompleteDesc (autoCompleteRows model theme ++ [ autoCompleteLiveRow model theme ])
 
 
 {-| The Mention section description (shared by the static and live variants).
@@ -4324,9 +4364,10 @@ mentionDesc =
     "Naive UI's mention — the same family as AutoComplete: a bare `.n-mention` wrapper around a plain `NUI.Input` trigger (NOT the selection — no `NInternalSelection` upstream), plus a separate caller-mounted `NUI.SelectMenu` body (`Mention.menu`). Three divergences from AutoComplete, frozen: `loading` is the MENU's `__loading` row (`MenuOptions.loading`), never the input suffix; upstream filters internally (the default `startsWith` predicate — the port drops the engine, the caller pre-filters and passes the filtered list); and the wrapper's cssr has no `display: inline-flex` (`width: 100%; z-index: auto; position: relative`) with `placeholder` defaulting to `\"\"`. The menu is hardcoded Medium, `tabindex -1`, and `value` stays `Single Nothing` — never `--selected`, no checkmark node. Options are `NUI.SelectMenu.Option` verbatim — no `fromString` (there are no bare-string options upstream); `type_` is `text`/`textarea` only. The caller owns the whole runtime: the show gate (the prefix scan + caret + separator formulas), the select splice, keyboard and positioning (upstream anchors the follower at the caret via mirror-div measurement — un-portable)."
 
 
-mentionRows : Model -> List (Element Msg)
-mentionRows model =
-    [ demoRow "pic-039"
+mentionRows : Model -> Theme -> List (Element Msg)
+mentionRows model theme =
+    [ demoRow theme
+        "pic-039"
         "Basic (the default @-trigger — caret inside an @-run opens)"
         -- wired: the first cell's input types + the mounted menu splices
         -- the mention; the second input is the placeholder specimen
@@ -4354,7 +4395,8 @@ mentionRows model =
                 , attributes = [ Element.width (Element.px 220) ]
             }
         ]
-    , demoRow "pic-040"
+    , demoRow theme
+        "pic-040"
         "Sizes (the menu stays Medium)"
         -- specimen row: Small/Medium/Large are the showcase (shared value
         -- would homogenize the three sizes' text)
@@ -4368,7 +4410,8 @@ mentionRows model =
             { mnMenuD | attributes = [ Element.width (Element.px 220) ] }
             (List.take 4 mentionOptions)
         ]
-    , demoRow "pic-041"
+    , demoRow theme
+        "pic-041"
         "Textarea (type_ = Textarea — the union is text/textarea only)"
         -- wired: the textarea types into the model
         [ Element.el [ Element.width (Element.px 360) ]
@@ -4381,7 +4424,8 @@ mentionRows model =
                 }
             )
         ]
-    , demoRow "pic-042"
+    , demoRow theme
+        "pic-042"
         "Autosize (n-input--autosize, resizable suppressed — height measurement caller-owned)"
         -- wired: same, the autosize textarea
         [ Element.el [ Element.width (Element.px 360) ]
@@ -4394,7 +4438,8 @@ mentionRows model =
                 }
             )
         ]
-    , demoRow "pic-043"
+    , demoRow theme
+        "pic-043"
         "Custom prefix (#@ — the caller gates the option set; the module does no scan)"
         -- wired: the group demo's input types + BOTH mounted menus splice
         -- into the same run
@@ -4407,7 +4452,7 @@ mentionRows model =
                         , placeholder = "# for tags"
                         , attributes = [ Element.width (Element.px 200) ]
                     }
-                , chip "prefix \"#\" → the tag list"
+                , chip theme "prefix \"#\" → the tag list"
                 , Mention.menu theme
                     { mnMenuD
                         | onToggle = Just (\value -> SpecMnGroupTagPicked ("#" ++ value))
@@ -4425,7 +4470,7 @@ mentionRows model =
                         , placeholder = "@ for users"
                         , attributes = [ Element.width (Element.px 200) ]
                     }
-                , chip "prefix \"@\" → the user list"
+                , chip theme "prefix \"@\" → the user list"
                 , Mention.menu theme
                     { mnMenuD
                         | onToggle = Just (\value -> SpecMnGroupUserPicked ("@" ++ value))
@@ -4435,7 +4480,8 @@ mentionRows model =
                 ]
             )
         ]
-    , demoRow "pic-044"
+    , demoRow theme
+        "pic-044"
         "Loading (THE divergence — the menu's __loading row, never the input suffix)"
         -- specimen row: the loading pin is the point (loading replaces the
         -- menu middle — nothing clickable)
@@ -4449,7 +4495,8 @@ mentionRows model =
             { mnMenuD | loading = True, attributes = [ Element.width (Element.px 220) ] }
             mentionOptions
         ]
-    , demoRow "pic-045"
+    , demoRow theme
+        "pic-045"
         "Group + custom rows (renderLabel lane)"
         -- wired: the input types + the grouped menu's rows splice
         [ Mention.view theme
@@ -4471,7 +4518,8 @@ mentionRows model =
                    ]
             )
         ]
-    , demoRow "pic-046"
+    , demoRow theme
+        "pic-046"
         "Status · disabled"
         -- specimen row (status/disabled are the showcase)
         [ Mention.view theme
@@ -4496,9 +4544,9 @@ mentionRows model =
     ]
 
 
-mentionLiveSection : Model -> Element Msg
-mentionLiveSection model =
-    section "Mention" mentionDesc (mentionRows model ++ [ mentionLiveRow model ])
+mentionLiveSection : Model -> Theme -> Element Msg
+mentionLiveSection model theme =
+    section theme "Mention" mentionDesc (mentionRows model theme ++ [ mentionLiveRow model theme ])
 
 
 {-| The DatePicker section description (shared by the static and live variants).
@@ -4508,45 +4556,55 @@ datePickerDesc =
     "An input trigger over a caller-mounted calendar panel — every upstream panel type, with show state, positioning and the value caller-owned."
 
 
-datePickerRows : Model -> List (Element Msg)
-datePickerRows model =
-    [ demoRow "pic-047"
+datePickerRows : Model -> Theme -> List (Element Msg)
+datePickerRows model theme =
+    [ demoRow theme
+        "pic-047"
         "Date"
         -- wired: value/calendar/month-panel state; day click commits + closes
-        [ specDpPair DpDateRow model ]
-    , demoRow "pic-048"
+        [ specDpPair DpDateRow model theme ]
+    , demoRow theme
+        "pic-048"
         "Datetime"
         -- wired: same, with the datetime actions (Now/Confirm) live
-        [ specDpPair DpDatetimeRow model ]
-    , demoRow "pic-049"
+        [ specDpPair DpDatetimeRow model theme ]
+    , demoRow theme
+        "pic-049"
         "Date range (pair input)"
         -- wired: two-click dual select, hover preview, Confirm commits
-        [ specDpPair DpDaterangeRow model ]
-    , demoRow "pic-050"
+        [ specDpPair DpDaterangeRow model theme ]
+    , demoRow theme
+        "pic-050"
         "Datetime range"
         -- wired: same + the per-side embedded time pickers
-        [ specDpPair DpDatetimerangeRow model ]
-    , demoRow "pic-051"
+        [ specDpPair DpDatetimerangeRow model theme ]
+    , demoRow theme
+        "pic-051"
         "Month"
         -- wired: month cell click commits + closes
-        [ specDpPair DpMonthRow model ]
-    , demoRow "pic-052"
+        [ specDpPair DpMonthRow model theme ]
+    , demoRow theme
+        "pic-052"
         "Year"
         -- wired: year cell click commits + closes (yearRange literal kept)
-        [ specDpPair DpYearRow model ]
-    , demoRow "pic-053"
+        [ specDpPair DpYearRow model theme ]
+    , demoRow theme
+        "pic-053"
         "Quarter"
         -- wired: quarter cell click commits + closes
-        [ specDpPair DpQuarterRow model ]
-    , demoRow "pic-054"
+        [ specDpPair DpQuarterRow model theme ]
+    , demoRow theme
+        "pic-054"
         "Month range"
         -- wired: dual month select, Confirm commits
-        [ specDpPair DpMonthrangeRow model ]
-    , demoRow "pic-055"
+        [ specDpPair DpMonthrangeRow model theme ]
+    , demoRow theme
+        "pic-055"
         "Week"
         -- wired: week cell click commits + closes
-        [ specDpPair DpWeekRow model ]
-    , demoRow "pic-056"
+        [ specDpPair DpWeekRow model theme ]
+    , demoRow theme
+        "pic-056"
         "Sizes / clearable / status / disabled"
         -- specimen row (sizes/clearable/status/disabled are the showcase —
         -- plain triggers with no mounted panel emit nothing)
@@ -4556,16 +4614,17 @@ datePickerRows model =
         , DatePicker.view theme { dpD | now = dpNow, value = DatePicker.Single (Just dpNowMs), status = Just Input.Error }
         , DatePicker.view theme { dpD | now = dpNow, value = DatePicker.Single (Just dpNowMs), disabled = True }
         ]
-    , demoRow "pic-057"
+    , demoRow theme
+        "pic-057"
         "Range clearable + shortcuts"
         -- wired: shortcut hover previews / click commits + closes
-        [ specDpPair DpShortcutsRow model ]
+        [ specDpPair DpShortcutsRow model theme ]
     ]
 
 
-datePickerLiveSection : Model -> Element Msg
-datePickerLiveSection model =
-    section "DatePicker" datePickerDesc (datePickerRows model ++ [ dpSingleLiveRow model, dpRangeLiveRow model ])
+datePickerLiveSection : Model -> Theme -> Element Msg
+datePickerLiveSection model theme =
+    section theme "DatePicker" datePickerDesc (datePickerRows model theme ++ [ dpSingleLiveRow model theme, dpRangeLiveRow model theme ])
 
 
 {-| The TimePicker section description (shared by the static and live variants).
@@ -4575,29 +4634,35 @@ timePickerDesc =
     "An input trigger over a caller-mounted clock panel — show state, positioning and the value are caller-owned."
 
 
-timePickerRows : Model -> List (Element Msg)
-timePickerRows model =
-    [ demoRow "pic-058"
+timePickerRows : Model -> Theme -> List (Element Msg)
+timePickerRows model theme =
+    [ demoRow theme
+        "pic-058"
         "Default (HH:mm:ss)"
         -- wired: column item clicks set the value, Confirm commits + closes
-        [ specTpPair TpBasicRow model ]
-    , demoRow "pic-059"
+        [ specTpPair TpBasicRow model theme ]
+    , demoRow theme
+        "pic-059"
         "Hour + minute (HH:mm)"
         -- wired: same, the two-column format
-        [ specTpPair TpHmRow model ]
-    , demoRow "pic-060"
+        [ specTpPair TpHmRow model theme ]
+    , demoRow theme
+        "pic-060"
         "12 hours + period (hh:mm:ss a)"
         -- wired: same, the period column included
-        [ specTpPair Tp12Row model ]
-    , demoRow "pic-061"
+        [ specTpPair Tp12Row model theme ]
+    , demoRow theme
+        "pic-061"
         "Actions clear / now / confirm"
         -- wired: Clear empties, Now snaps, Confirm closes
-        [ specTpPair TpActionsRow model ]
-    , demoRow "pic-062"
+        [ specTpPair TpActionsRow model theme ]
+    , demoRow theme
+        "pic-062"
         "Disabled units (5-min steps, seconds 0/30, hours ≤ 12)"
         -- wired: the filters gate the columns; clicks still commit
-        [ specTpPair TpDisabledRow model ]
-    , demoRow "pic-063"
+        [ specTpPair TpDisabledRow model theme ]
+    , demoRow theme
+        "pic-063"
         "Sizes / clearable / disabled / status"
         -- specimen row (sizes/clearable/disabled/status are the showcase —
         -- plain triggers with no mounted panel emit nothing)
@@ -4610,9 +4675,9 @@ timePickerRows model =
     ]
 
 
-timePickerLiveSection : Model -> Element Msg
-timePickerLiveSection model =
-    section "TimePicker" timePickerDesc (timePickerRows model ++ [ tpLiveRow model ])
+timePickerLiveSection : Model -> Theme -> Element Msg
+timePickerLiveSection model theme =
+    section theme "TimePicker" timePickerDesc (timePickerRows model theme ++ [ tpLiveRow model theme ])
 
 
 {-| The ColorPicker section description (shared by the static and live variants).
@@ -4622,27 +4687,31 @@ colorPickerDesc =
     "A colour trigger over a caller-mounted palette panel — show state, positioning, drag and the value are caller-owned."
 
 
-colorPickerRows : Model -> List (Element Msg)
-colorPickerRows model =
-    [ demoRow "pic-064"
+colorPickerRows : Model -> Theme -> List (Element Msg)
+colorPickerRows model theme =
+    [ demoRow theme
+        "pic-064"
         "Basic"
         -- wired: swatch clicks + mode toggle drive the draft; the trigger
         -- reopens after a close; palette/hue/alpha drags commit live
-        [ specCpPair CpBasicRow 0 model identity ]
-    , demoRow "pic-065"
+        [ specCpPair CpBasicRow 0 model theme identity ]
+    , demoRow theme
+        "pic-065"
         "Alpha off + confirm"
         -- wired: Confirm commits + closes
-        [ specCpPair CpAlphaRow 0 model identity ]
-    , demoRow "pic-066"
+        [ specCpPair CpAlphaRow 0 model theme identity ]
+    , demoRow theme
+        "pic-066"
         "Sizes"
         -- wired: the three sizes share one row state (the brief's shared-
         -- field rule -- they showcase the SAME colour at three sizes), each
         -- instance reading its own drag rects (per-instance surface ids)
-        [ specCpPair CpSizesRow 0 model (\o -> { o | size = T.Small })
-        , specCpPair CpSizesRow 1 model identity
-        , specCpPair CpSizesRow 2 model (\o -> { o | size = T.Large })
+        [ specCpPair CpSizesRow 0 model theme (\o -> { o | size = T.Small })
+        , specCpPair CpSizesRow 1 model theme identity
+        , specCpPair CpSizesRow 2 model theme (\o -> { o | size = T.Large })
         ]
-    , demoRow "pic-067"
+    , demoRow theme
+        "pic-067"
         "Disabled"
         -- specimen row (the disabled pin is the point -- the trigger and
         -- panel render but nothing can fire)
@@ -4652,25 +4721,30 @@ colorPickerRows model =
                 (ColorPicker.panel theme { cpD | value = Just specCpRed, disabled = True })
             ]
         ]
-    , demoRow "pic-068"
+    , demoRow theme
+        "pic-068"
         "Single mode (hex)"
         -- wired: the pinned single-mode unit row — `modes = [ Hex ]` is both
         -- the showcase pin AND the enforcement (no other mode exists to
         -- switch to), so drag/swatches/undo run live against it
-        [ specCpPair CpSingleModeRow 0 model identity ]
-    , demoRow "pic-069"
+        [ specCpPair CpSingleModeRow 0 model theme identity ]
+    , demoRow theme
+        "pic-069"
         "Swatches"
         -- wired: swatch clicks commit to the draft
-        [ specCpPair CpSwatchesRow 0 model identity ]
-    , demoRow "pic-070"
+        [ specCpPair CpSwatchesRow 0 model theme identity ]
+    , demoRow theme
+        "pic-070"
         "Actions clear"
         -- wired: Clear empties + closes
-        [ specCpPair CpClearRow 0 model identity ]
-    , demoRow "pic-071"
+        [ specCpPair CpClearRow 0 model theme identity ]
+    , demoRow theme
+        "pic-071"
         "Preview (native input)"
         -- wired: the preview tracks the draft
-        [ specCpPair CpPreviewRow 0 model identity ]
-    , demoRow "pic-072"
+        [ specCpPair CpPreviewRow 0 model theme identity ]
+    , demoRow theme
+        "pic-072"
         "Custom trigger"
         -- specimen row (the custom trigger is the showcase -- a plain button
         -- replaces the picker's own trigger surface)
@@ -4680,32 +4754,33 @@ colorPickerRows model =
                 , customTrigger = Just (Button.view theme { btn | kind = T.Primary } [ Element.text "Pick a colour" ])
             }
         ]
-    , demoRow "pic-073"
+    , demoRow theme
+        "pic-073"
         "Undo / redo actions"
         -- wired: real undo/redo stacks (seeded so undoable starts True)
-        [ specCpPair CpUndoRow 0 model identity ]
+        [ specCpPair CpUndoRow 0 model theme identity ]
     ]
 
 
-colorPickerLiveSection : Model -> Element Msg
-colorPickerLiveSection model =
-    section "ColorPicker" colorPickerDesc (colorPickerRows model ++ [ cpLiveRow model ])
+colorPickerLiveSection : Model -> Theme -> Element Msg
+colorPickerLiveSection model theme =
+    section theme "ColorPicker" colorPickerDesc (colorPickerRows model theme ++ [ cpLiveRow model theme ])
 
 
 {-| The family body in Main.body order — live variants for every section
 (each gains at least one live demo row appended after the static rows).
 -}
-sections : Model -> List (Element Msg)
-sections model =
-    [ selectLiveSection model
-    , popselectLiveSection model
-    , cascaderLiveSection model
-    , treeSelectLiveSection model
-    , autoCompleteLiveSection model
-    , mentionLiveSection model
-    , datePickerLiveSection model
-    , timePickerLiveSection model
-    , colorPickerLiveSection model
+sections : Model -> Theme -> List (Element Msg)
+sections model theme =
+    [ selectLiveSection model theme
+    , popselectLiveSection model theme
+    , cascaderLiveSection model theme
+    , treeSelectLiveSection model theme
+    , autoCompleteLiveSection model theme
+    , mentionLiveSection model theme
+    , datePickerLiveSection model theme
+    , timePickerLiveSection model theme
+    , colorPickerLiveSection model theme
     ]
 
 

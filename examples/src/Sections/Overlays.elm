@@ -98,10 +98,11 @@ import NUI.Popconfirm as Popconfirm
 import NUI.Popover as Popover
 import NUI.Radio as Radio
 import NUI.Switch as Switch
+import NUI.Theme exposing (Theme)
 import NUI.Tooltip as Tooltip
 import NUI.Types as T
 import NUI.Typography as Typo
-import Showcase exposing (chip, darkTheme, demoRow, section, theme)
+import Showcase exposing (chip, darkTheme, demoRow, section)
 import Svg
 import Svg.Attributes as SA
 
@@ -820,9 +821,10 @@ dialogPS =
 
 {-| Deterministic demo data (UTC midnights, ~10 weeks, some gaps and zeros).
 -}
-loadingBarRows : List (Element msg)
-loadingBarRows =
-    [ demoRow "ovr-001"
+loadingBarRows : Theme -> List (Element msg)
+loadingBarRows theme =
+    [ demoRow theme
+        "ovr-001"
         "Starting (80%)"
         [ Element.el [ Element.width (Element.px 440) ]
             (LoadingBar.view theme
@@ -830,7 +832,8 @@ loadingBarRows =
                 (LoadingBar.start LoadingBar.init |> LoadingBar.kick)
             )
         ]
-    , demoRow "ovr-002"
+    , demoRow theme
+        "ovr-002"
         "Finishing"
         [ Element.el [ Element.width (Element.px 440) ]
             (LoadingBar.view theme
@@ -838,7 +841,8 @@ loadingBarRows =
                 (LoadingBar.start LoadingBar.init |> LoadingBar.kick |> LoadingBar.finish)
             )
         ]
-    , demoRow "ovr-003"
+    , demoRow theme
+        "ovr-003"
         "Error"
         [ Element.el [ Element.width (Element.px 440) ]
             (LoadingBar.view theme
@@ -849,19 +853,20 @@ loadingBarRows =
     ]
 
 
-loadingBarSection : Element msg
-loadingBarSection =
-    section "LoadingBar"
+loadingBarSection : Theme -> Element msg
+loadingBarSection theme =
+    section theme
+        "LoadingBar"
         "Top loading indicator: a `max-width`-transitioned bar driven by a caller-owned state machine (`start` / `kick` / `finish` / `error`). The container is `position: fixed` by default; the demos pin it relatively."
-        loadingBarRows
+        (loadingBarRows theme)
 
 
 {-| Live: `#live-loading-bar` (buttons immediately before the bar cell —
 `nearestPreceding` resolves them by document order).
 -}
-loadingBarClockRow : Model -> Element Msg
-loadingBarClockRow model =
-    demoRow "ovr-004" "LoadingBar · manual clock" <|
+loadingBarClockRow : Model -> Theme -> Element Msg
+loadingBarClockRow model theme =
+    demoRow theme "ovr-004" "LoadingBar · manual clock" <|
         [ Button.view theme { btn | size = T.Small, onPress = Just LoadingStart } [ Element.text "start" ]
         , Button.view theme { btn | size = T.Small, onPress = Just LoadingKick } [ Element.text "kick" ]
         , Button.view theme { btn | size = T.Small, onPress = Just LoadingFadeDone } [ Element.text "fade ✓" ]
@@ -876,15 +881,16 @@ loadingBarClockRow model =
                 { lbD | containerStyle = Just "position:relative;margin-bottom:8px;" }
                 model.loadingBar
             )
-        , chip (loadingSummary model.loadingBar ++ " — " ++ model.loadingOutcome)
+        , chip theme (loadingSummary model.loadingBar ++ " — " ++ model.loadingOutcome)
         ]
 
 
-loadingBarLiveSection : Model -> Element Msg
-loadingBarLiveSection model =
-    section "LoadingBar"
+loadingBarLiveSection : Model -> Theme -> Element Msg
+loadingBarLiveSection model theme =
+    section theme
+        "LoadingBar"
         "Top loading indicator: a `max-width`-transitioned bar driven by a caller-owned state machine (`start` / `kick` / `finish` / `error`). The container is `position: fixed` by default; the demos pin it relatively."
-        (loadingBarRows ++ [ loadingBarClockRow model ])
+        (loadingBarRows theme ++ [ loadingBarClockRow model theme ])
 
 
 scrollbarCopy : String
@@ -912,9 +918,10 @@ popoverHost placement attrs content =
         content
 
 
-popoverRows : List (Element msg)
-popoverRows =
-    [ demoRow "ovr-005"
+popoverRows : Theme -> List (Element msg)
+popoverRows theme =
+    [ demoRow theme
+        "ovr-005"
         "Basic (top) + header/footer (bottom)"
         [ popoverHost Popover.Top
             []
@@ -933,7 +940,8 @@ popoverRows =
                 [ Element.text "Header and footer slots add their wrapper divs and the modifier class." ]
             )
         ]
-    , demoRow "ovr-006"
+    , demoRow theme
+        "ovr-006"
         "No arrow / overlap / raw"
         [ popoverHost Popover.Right
             []
@@ -954,7 +962,8 @@ popoverRows =
                 [ Element.text "Raw: no background, radius or padding." ]
             )
         ]
-    , demoRow "ovr-007"
+    , demoRow theme
+        "ovr-007"
         "Enter-active transition (caller-driven)"
         [ popoverHost Popover.Top
             []
@@ -966,7 +975,8 @@ popoverRows =
                 [ Element.text "The popover-transition classes are the caller's clock." ]
             )
         ]
-    , demoRow "ovr-008"
+    , demoRow theme
+        "ovr-008"
         "Scrollable (n-scrollbar child)"
         [ popoverHost Popover.Top
             []
@@ -982,9 +992,10 @@ popoverRows =
     ]
 
 
-popconfirmRows : List (Element msg)
-popconfirmRows =
-    [ demoRow "ovr-009"
+popconfirmRows : Theme -> List (Element msg)
+popconfirmRows theme =
+    [ demoRow theme
+        "ovr-009"
         "Default + no icon / action slot"
         [ popoverHost Popover.Top
             []
@@ -1003,7 +1014,8 @@ popconfirmRows =
                 [ Element.text "No icon; the body renders content-only." ]
             )
         ]
-    , demoRow "ovr-010"
+    , demoRow theme
+        "ovr-010"
         "Custom texts + button-props overrides"
         [ popoverHost Popover.Top
             []
@@ -1021,19 +1033,20 @@ popconfirmRows =
     ]
 
 
-popconfirmSection : Element msg
-popconfirmSection =
-    section "Popconfirm"
+popconfirmSection : Theme -> Element msg
+popconfirmSection theme =
+    section theme
+        "Popconfirm"
         "The popover body with the confirm panel in its default slot (upstream renders `NPopover` with the `popconfirm` extra class). The panel's icon/body/action structure and the composed action buttons — negative plain `small` first, positive `small` Primary, `positiveProps`/`negativeProps` spreading over the derived base, the action row always rendered — are DOM; the caller owns the show state, the `'click'` trigger and the close gate (upstream's return-false-keeps-it-open is the caller's update)."
-        popconfirmRows
+        (popconfirmRows theme)
 
 
 {-| Live: `#live-popconfirm` (the trigger button stays immediately before
 the cell it drives).
 -}
-popconfirmFlowRow : Model -> Element Msg
-popconfirmFlowRow model =
-    demoRow "ovr-011" "Popconfirm · confirm flow" <|
+popconfirmFlowRow : Model -> Theme -> Element Msg
+popconfirmFlowRow model theme =
+    demoRow theme "ovr-011" "Popconfirm · confirm flow" <|
         [ relHost "live-popconfirm"
             Popover.Top
             [ Button.view theme
@@ -1051,31 +1064,33 @@ popconfirmFlowRow model =
               else
                 Element.none
             ]
-        , chip model.popconfirmOutcome
+        , chip theme model.popconfirmOutcome
         ]
 
 
-popconfirmLiveSection : Model -> Element Msg
-popconfirmLiveSection model =
-    section "Popconfirm"
+popconfirmLiveSection : Model -> Theme -> Element Msg
+popconfirmLiveSection model theme =
+    section theme
+        "Popconfirm"
         "The popover body with the confirm panel in its default slot (upstream renders `NPopover` with the `popconfirm` extra class). The panel's icon/body/action structure and the composed action buttons — negative plain `small` first, positive `small` Primary, `positiveProps`/`negativeProps` spreading over the derived base, the action row always rendered — are DOM; the caller owns the show state, the `'click'` trigger and the close gate (upstream's return-false-keeps-it-open is the caller's update)."
-        (popconfirmRows ++ [ popconfirmFlowRow model ])
+        (popconfirmRows theme ++ [ popconfirmFlowRow model theme ])
 
 
-popoverSection : Element msg
-popoverSection =
-    section "Popover"
+popoverSection : Theme -> Element msg
+popoverSection theme =
+    section theme
+        "Popover"
         "The `n-popover` body. The caller owns the show state and the positioned `v-placement` wrapper (here: `popoverHost`); placements, arrows, header/footer and the scrollable scrollbar are static DOM."
-        popoverRows
+        (popoverRows theme)
 
 
 {-| Live: `#live-popover` (the pin switch and the Show button stay the
 nearest preceding controls — `nearestPreceding('.n-switch')` resolves the
 switch by document order).
 -}
-popoverControlledRow : Model -> Element Msg
-popoverControlledRow model =
-    demoRow "ovr-012" "Popover · controlled" <|
+popoverControlledRow : Model -> Theme -> Element Msg
+popoverControlledRow model theme =
+    demoRow theme "ovr-012" "Popover · controlled" <|
         [ Switch.view theme
             { swD | value = model.popoverPinned, onChange = Just PopoverPinned }
             [ Element.text "controlled" ]
@@ -1113,20 +1128,22 @@ popoverControlledRow model =
               else
                 Element.none
             ]
-        , chip model.popoverOutcome
+        , chip theme model.popoverOutcome
         ]
 
 
-popoverLiveSection : Model -> Element Msg
-popoverLiveSection model =
-    section "Popover"
+popoverLiveSection : Model -> Theme -> Element Msg
+popoverLiveSection model theme =
+    section theme
+        "Popover"
         "The `n-popover` body. The caller owns the show state and the positioned `v-placement` wrapper (here: `popoverHost`); placements, arrows, header/footer and the scrollable scrollbar are static DOM."
-        (popoverRows ++ [ popoverControlledRow model ])
+        (popoverRows theme ++ [ popoverControlledRow model theme ])
 
 
-tooltipRows : List (Element msg)
-tooltipRows =
-    [ demoRow "ovr-013"
+tooltipRows : Theme -> List (Element msg)
+tooltipRows theme =
+    [ demoRow theme
+        "ovr-013"
         "Light theme (dark bubble)"
         [ popoverHost Popover.Top
             []
@@ -1141,7 +1158,8 @@ tooltipRows =
                 [ Element.text "No arrow." ]
             )
         ]
-    , demoRow "ovr-014"
+    , demoRow theme
+        "ovr-014"
         "Dark theme (popover colours)"
         [ popoverHost Popover.Right
             []
@@ -1153,18 +1171,19 @@ tooltipRows =
     ]
 
 
-tooltipSection : Element msg
-tooltipSection =
-    section "Tooltip"
+tooltipSection : Theme -> Element msg
+tooltipSection theme =
+    section theme
+        "Tooltip"
         "Popover wearing waistcoat — the same body (`n-tooltip` marker class), the tooltip theme swapping the colours: a dark bubble in light mode, the popover's own colours in dark."
-        tooltipRows
+        (tooltipRows theme)
 
 
 {-| Live: `#live-tooltip-region` (mouseenter/mouseleave on the host region).
 -}
-tooltipHoverRow : Model -> Element Msg
-tooltipHoverRow model =
-    demoRow "ovr-015" "Tooltip · hover" <|
+tooltipHoverRow : Model -> Theme -> Element Msg
+tooltipHoverRow model theme =
+    demoRow theme "ovr-015" "Tooltip · hover" <|
         [ Element.column
             [ Popover.placementAttribute Popover.Bottom
             , Element.htmlAttribute (HA.attribute "style" "position:relative;padding:6px 0;")
@@ -1186,7 +1205,7 @@ tooltipHoverRow model =
               else
                 Element.none
             ]
-        , chip
+        , chip theme
             (if model.tooltipHover then
                 "hovering — the tooltip body is mounted"
 
@@ -1196,16 +1215,18 @@ tooltipHoverRow model =
         ]
 
 
-tooltipLiveSection : Model -> Element Msg
-tooltipLiveSection model =
-    section "Tooltip"
+tooltipLiveSection : Model -> Theme -> Element Msg
+tooltipLiveSection model theme =
+    section theme
+        "Tooltip"
         "Popover wearing waistcoat — the same body (`n-tooltip` marker class), the tooltip theme swapping the colours: a dark bubble in light mode, the popover's own colours in dark."
-        (tooltipRows ++ [ tooltipHoverRow model ])
+        (tooltipRows theme ++ [ tooltipHoverRow model theme ])
 
 
-dropdownRows : Model -> List (Element Msg)
-dropdownRows model =
-    [ demoRow "ovr-016"
+dropdownRows : Model -> Theme -> List (Element Msg)
+dropdownRows model theme =
+    [ demoRow theme
+        "ovr-016"
         "Basic + sizes"
         [ popoverHost Popover.Bottom
             []
@@ -1259,7 +1280,8 @@ dropdownRows model =
                 [ demoLeaf "huge-1" "Huge", demoLeaf "huge-2" "46px rows, 18px icons" ]
             )
         ]
-    , demoRow "ovr-017"
+    , demoRow theme
+        "ovr-017"
         "Groups, dividers, icons, submenus, custom"
         [ popoverHost Popover.Bottom
             []
@@ -1338,7 +1360,8 @@ dropdownRows model =
                 ]
             )
         ]
-    , demoRow "ovr-018"
+    , demoRow theme
+        "ovr-018"
         "Arrow / inverted / scrollable"
         [ popoverHost Popover.Bottom
             []
@@ -1376,18 +1399,19 @@ dropdownRows model =
     ]
 
 
-dropdownSection : Model -> Element Msg
-dropdownSection model =
-    section "Dropdown"
+dropdownSection : Model -> Theme -> Element Msg
+dropdownSection model theme =
+    section theme
+        "Dropdown"
         "The `n-dropdown-menu` body — the popover runtime's sibling, rendered as its own element (`n-popover-shared` + `n-dropdown` markers, the merged 31-var set). The caller owns show state, the `v-placement` wrapper (here: `popoverHost`), and any submenu mounts."
-        (dropdownRows model)
+        (dropdownRows model theme)
 
 
 {-| Live: `#live-dropdown-click` / `#live-dropdown-menu`.
 -}
-dropdownClickRow : Model -> Element Msg
-dropdownClickRow model =
-    demoRow "ovr-019" "Dropdown · click trigger" <|
+dropdownClickRow : Model -> Theme -> Element Msg
+dropdownClickRow model theme =
+    demoRow theme "ovr-019" "Dropdown · click trigger" <|
         [ relHost "live-dropdown-click"
             Popover.Bottom
             [ Button.view theme
@@ -1411,7 +1435,7 @@ dropdownClickRow model =
               else
                 Element.none
             ]
-        , chip
+        , chip theme
             (if String.isEmpty model.dropdownPick then
                 "no pick yet — a leaf click selects and closes"
 
@@ -1423,9 +1447,9 @@ dropdownClickRow model =
 
 {-| Live: `#live-dropdown-hover` / `#live-dropdown-hover-menu`.
 -}
-dropdownHoverRow : Model -> Element Msg
-dropdownHoverRow model =
-    demoRow "ovr-020" "Dropdown · hover trigger" <|
+dropdownHoverRow : Model -> Theme -> Element Msg
+dropdownHoverRow model theme =
+    demoRow theme "ovr-020" "Dropdown · hover trigger" <|
         [ Element.column
             [ Popover.placementAttribute Popover.Bottom
             , Element.htmlAttribute (HA.attribute "style" "position:relative;padding:6px 0;")
@@ -1445,7 +1469,7 @@ dropdownHoverRow model =
               else
                 Element.none
             ]
-        , chip
+        , chip theme
             (if model.dropdownHover then
                 "hovering — mounted"
 
@@ -1455,11 +1479,12 @@ dropdownHoverRow model =
         ]
 
 
-dropdownLiveSection : Model -> Element Msg
-dropdownLiveSection model =
-    section "Dropdown"
+dropdownLiveSection : Model -> Theme -> Element Msg
+dropdownLiveSection model theme =
+    section theme
+        "Dropdown"
         "The `n-dropdown-menu` body — the popover runtime's sibling, rendered as its own element (`n-popover-shared` + `n-dropdown` markers, the merged 31-var set). The caller owns show state, the `v-placement` wrapper (here: `popoverHost`), and any submenu mounts."
-        (dropdownRows model ++ [ dropdownClickRow model, dropdownHoverRow model ])
+        (dropdownRows model theme ++ [ dropdownClickRow model theme, dropdownHoverRow model theme ])
 
 
 demoLeaf : String -> String -> Dropdown.Option msg
@@ -1497,8 +1522,8 @@ demoIcon =
 placement; the fixed container is pinned into the cell with `position:
 relative` (the LoadingBar demo's trick).
 -}
-messageState : Message.Placement -> List (Message.Item Msg) -> Element Msg
-messageState placement items =
+messageState : Theme -> Message.Placement -> List (Message.Item Msg) -> Element Msg
+messageState theme placement items =
     modalHost []
         (Message.view theme
             { messageS
@@ -1517,11 +1542,13 @@ messageOf key kind content =
     }
 
 
-messageRows : Model -> List (Element Msg)
-messageRows model =
-    [ demoRow "ovr-021"
+messageRows : Model -> Theme -> List (Element Msg)
+messageRows model theme =
+    [ demoRow theme
+        "ovr-021"
         "Kinds (one container, stacked)"
-        [ messageState Message.Top
+        [ messageState theme
+            Message.Top
             [ messageOf "d" Message.Default "A default message — no icon wrapper"
             , messageOf "i" Message.Info "An info message"
             , messageOf "s" Message.Success "A success message"
@@ -1529,18 +1556,22 @@ messageRows model =
             , messageOf "e" Message.Error "An error message"
             , messageOf "l" Message.Loading "A loading message — n-base-loading spinner"
             ]
-        , messageState Message.BottomRight
+        , messageState theme
+            Message.BottomRight
             [ messageOf "b1" Message.Info "Bottom-right placement"
             , messageOf "b2" Message.Success "align-items flips to flex-end"
             ]
         ]
-    , demoRow "ovr-022"
+    , demoRow theme
+        "ovr-022"
         "Closable (onClose fires; you destroy)"
-        [ messageState Message.Top model.staticMessages
+        [ messageState theme Message.Top model.staticMessages
         ]
-    , demoRow "ovr-023"
+    , demoRow theme
+        "ovr-023"
         "Transition phases (caller clock)"
-        [ messageState Message.Top
+        [ messageState theme
+            Message.Top
             [ messageOf "idle" Message.Info "Settled — no phase class"
             , { messageI
                 | key = "entering"
@@ -1554,9 +1585,11 @@ messageRows model =
               }
             ]
         ]
-    , demoRow "ovr-024"
+    , demoRow theme
+        "ovr-024"
         "Custom icon + render (replaces the whole body)"
-        [ messageState Message.Top
+        [ messageState theme
+            Message.Top
             [ { messageI
                 | key = "icon"
                 , options =
@@ -1587,39 +1620,41 @@ messageRows model =
     ]
 
 
-messageSection : Model -> Element Msg
-messageSection model =
-    section "Message"
+messageSection : Model -> Theme -> Element Msg
+messageSection model theme =
+    section theme
+        "Message"
         "Naive UI's message service: one caller-owned `State` holds the provider props (`max` — `Just 0` is unlimited and evictions drop the oldest item instantly, the 3000ms default, merged `keepAliveOnHover`/`closable`, `placement`) plus the queue. `create` appends and stamps the enter phase; `destroy` stamps the leave phase (a no-op while already leaving, like upstream's `hide()` on a hidden message); `remove` splices once the leave has run — the caller owns the hide clock, so these demos are static entered states (`phase = Nothing`) with one mid-enter item. A close click emits `onClose` only — completing the close is the caller's `destroy`; a message's close is never vetoed."
-        (messageRows model)
+        (messageRows model theme)
 
 
 {-| Live: `#live-message-queue` (the push buttons stay immediately before the cell — `nearestPreceding` resolves them by document order).
 -}
-messageQueueRow : Model -> Element Msg
-messageQueueRow model =
-    demoRow "ovr-025" "Message · queue (click-to-dismiss clock)" <|
+messageQueueRow : Model -> Theme -> Element Msg
+messageQueueRow model theme =
+    demoRow theme "ovr-025" "Message · queue (click-to-dismiss clock)" <|
         [ Button.view theme { btn | onPress = Just MessageInfo } [ Element.text "info" ]
         , Button.view theme { btn | kind = T.Primary, onPress = Just MessageSuccess } [ Element.text "success" ]
         , Button.view theme { btn | kind = T.Error, onPress = Just MessageError } [ Element.text "error" ]
         , Button.view theme { btn | size = T.Small, onPress = Just MessageClear } [ Element.text "clear" ]
         , overlayCell "live-message-queue" (Message.view theme model.messages)
-        , chip model.messageOutcome
+        , chip theme model.messageOutcome
         ]
 
 
-messageLiveSection : Model -> Element Msg
-messageLiveSection model =
-    section "Message"
+messageLiveSection : Model -> Theme -> Element Msg
+messageLiveSection model theme =
+    section theme
+        "Message"
         "Naive UI's message service: one caller-owned `State` holds the provider props (`max` — `Just 0` is unlimited and evictions drop the oldest item instantly, the 3000ms default, merged `keepAliveOnHover`/`closable`, `placement`) plus the queue. `create` appends and stamps the enter phase; `destroy` stamps the leave phase (a no-op while already leaving, like upstream's `hide()` on a hidden message); `remove` splices once the leave has run — the caller owns the hide clock, so these demos are static entered states (`phase = Nothing`) with one mid-enter item. A close click emits `onClose` only — completing the close is the caller's `destroy`; a message's close is never vetoed."
-        (messageRows model ++ [ messageQueueRow model ])
+        (messageRows model theme ++ [ messageQueueRow model theme ])
 
 
 {-| One static notification demo cell — the message demo's trick: a fresh
 provider state per cell, pinned into it with `position: relative`.
 -}
-notificationState : Notification.Placement -> List (Notification.Item Msg) -> Element Msg
-notificationState placement items =
+notificationState : Theme -> Notification.Placement -> List (Notification.Item Msg) -> Element Msg
+notificationState theme placement items =
     modalHost []
         (Notification.view theme
             { notificationS
@@ -1638,11 +1673,13 @@ notificationOf key title kind =
     }
 
 
-notificationRows : Model -> List (Element Msg)
-notificationRows model =
-    [ demoRow "ovr-026"
+notificationRows : Model -> Theme -> List (Element Msg)
+notificationRows model theme =
+    [ demoRow theme
+        "ovr-026"
         "Kinds (top-right — scrollable, so the n-scrollbar tree shows)"
-        [ notificationState Notification.TopRight
+        [ notificationState theme
+            Notification.TopRight
             [ notificationOf "d" "A default notification" Notification.Default
             , notificationOf "i" "An info notification" Notification.Info
             , notificationOf "s" "A success notification" Notification.Success
@@ -1650,22 +1687,29 @@ notificationRows model =
             , notificationOf "e" "An error notification" Notification.Error
             ]
         ]
-    , demoRow "ovr-027"
+    , demoRow theme
+        "ovr-027"
         "Closable + description / content-in-pre / meta + action"
-        [ notificationState Notification.TopRight model.staticNotifications
+        [ notificationState theme Notification.TopRight model.staticNotifications
         ]
-    , demoRow "ovr-028"
+    , demoRow theme
+        "ovr-028"
         "Placements (top/bottom centers force the scrollbar off)"
-        [ notificationState Notification.TopLeft
+        [ notificationState theme
+            Notification.TopLeft
             [ notificationOf "tl" "Top-left — scrollable" Notification.Success ]
-        , notificationState Notification.Top
+        , notificationState theme
+            Notification.Top
             [ notificationOf "tc" "Top center — scrollable forced off (no scrollbar tree)" Notification.Warning ]
-        , notificationState Notification.BottomRight
+        , notificationState theme
+            Notification.BottomRight
             [ notificationOf "br" "Bottom-right — align flips" Notification.Error ]
         ]
-    , demoRow "ovr-029"
+    , demoRow theme
+        "ovr-029"
         "Transition phases (caller clock) + the container's transitioning class"
-        [ notificationState Notification.TopRight
+        [ notificationState theme
+            Notification.TopRight
             [ notificationOf "idle" "Settled — no phase class" Notification.Info
             , { notificationI
                 | key = "entering"
@@ -1682,32 +1726,34 @@ notificationRows model =
     ]
 
 
-notificationSection : Model -> Element Msg
-notificationSection model =
-    section "Notification"
+notificationSection : Model -> Theme -> Element Msg
+notificationSection model theme =
+    section theme
+        "Notification"
         "Naive UI's notification service — the `NUI.Message` twin: one caller-owned `State` (provider props + queue) and pure transforms. Deltas: vars ride BOTH the wrapper and `n-notification`; `--n-icon-color` is emitted only for typed kinds (no `iconColorDefault` upstream); the default `scrollable` provider wraps the queue in an `n-scrollbar` tree (forced off for the `top`/`bottom` centers); the container gains a bare `transitioning` class while any item holds a phase; `content` renders in a `<pre>`; the close click emits `onClose` and the VETO is the caller not calling `destroy` (upstream's `false`/rejected-promise rule). These demos are static entered states — the caller owns the hide clock."
-        (notificationRows model)
+        (notificationRows model theme)
 
 
 {-| Live: `#live-notification-queue` (the push buttons stay immediately before the cell — `nearestPreceding` resolves them by document order).
 -}
-notificationQueueRow : Model -> Element Msg
-notificationQueueRow model =
-    demoRow "ovr-030" "Notification · queue (max 3)" <|
+notificationQueueRow : Model -> Theme -> Element Msg
+notificationQueueRow model theme =
+    demoRow theme "ovr-030" "Notification · queue (max 3)" <|
         [ Button.view theme { btn | onPress = Just NotificationInfo } [ Element.text "info" ]
         , Button.view theme { btn | kind = T.Primary, onPress = Just NotificationSuccess } [ Element.text "success" ]
         , Button.view theme { btn | kind = T.Error, onPress = Just NotificationError } [ Element.text "error" ]
         , Button.view theme { btn | size = T.Small, onPress = Just NotificationClear } [ Element.text "clear" ]
         , overlayCell "live-notification-queue" (Notification.view theme model.notifications)
-        , chip model.notificationOutcome
+        , chip theme model.notificationOutcome
         ]
 
 
-notificationLiveSection : Model -> Element Msg
-notificationLiveSection model =
-    section "Notification"
+notificationLiveSection : Model -> Theme -> Element Msg
+notificationLiveSection model theme =
+    section theme
+        "Notification"
         "Naive UI's notification service — the `NUI.Message` twin: one caller-owned `State` (provider props + queue) and pure transforms. Deltas: vars ride BOTH the wrapper and `n-notification`; `--n-icon-color` is emitted only for typed kinds (no `iconColorDefault` upstream); the default `scrollable` provider wraps the queue in an `n-scrollbar` tree (forced off for the `top`/`bottom` centers); the container gains a bare `transitioning` class while any item holds a phase; `content` renders in a `<pre>`; the close click emits `onClose` and the VETO is the caller not calling `destroy` (upstream's `false`/rejected-promise rule). These demos are static entered states — the caller owns the hide clock."
-        (notificationRows model ++ [ notificationQueueRow model ])
+        (notificationRows model theme ++ [ notificationQueueRow model theme ])
 
 
 {-| The fixed-tree preview cell (Modal/Drawer/DialogProvider): a sized,
@@ -1745,9 +1791,10 @@ cell content =
         content
 
 
-modalRows : Model -> List (Element Msg)
-modalRows model =
-    [ demoRow "ovr-031"
+modalRows : Model -> Theme -> List (Element Msg)
+modalRows model theme =
+    [ demoRow theme
+        "ovr-031"
         "Custom content + card preset"
         [ modalHost []
             (Modal.view theme
@@ -1776,7 +1823,8 @@ modalRows model =
                 )
             )
         ]
-    , demoRow "ovr-032"
+    , demoRow theme
+        "ovr-032"
         "Card variants (bordered opt-in, segmented, dark)"
         [ modalHost []
             (Modal.view theme
@@ -1814,7 +1862,8 @@ modalRows model =
                 )
             )
         ]
-    , demoRow "ovr-033"
+    , demoRow theme
+        "ovr-033"
         "No mask (mask-hidden) + z-index"
         [ modalHost []
             (Modal.view theme
@@ -1843,7 +1892,8 @@ modalRows model =
                 )
             )
         ]
-    , demoRow "ovr-034"
+    , demoRow theme
+        "ovr-034"
         "Enter-active phases (caller clock)"
         [ modalHost []
             (Modal.view theme
@@ -1861,18 +1911,19 @@ modalRows model =
     ]
 
 
-modalSection : Model -> Element Msg
-modalSection model =
-    section "Modal"
+modalSection : Model -> Theme -> Element Msg
+modalSection model theme =
+    section theme
+        "Modal"
         "The mount-body family — its own fixed tree (container > mask > body-wrapper > scrollbar > content), self-positioned and centred by flex. The caller owns mounting, the show state, the transition clock (one clock drives the mask and body tuples), outside-click closing and Esc; the `dialog`/`confirm` presets compose `NUI.Dialog` (its section follows). The demo cells confine the fixed tree with a `transform: translate(0,0)` containing block."
-        (modalRows model)
+        (modalRows model theme)
 
 
 {-| Live: `#live-modal` / `#live-modal-tree` (the `Open modal` trigger stays immediately before the cell).
 -}
-modalRow : Model -> Element Msg
-modalRow model =
-    demoRow "ovr-035" "Modal · open/close + mask" <|
+modalRow : Model -> Theme -> Element Msg
+modalRow model theme =
+    demoRow theme "ovr-035" "Modal · open/close + mask" <|
         [ Button.view theme
             { btn | kind = T.Primary, onPress = Just ModalOpen }
             [ Element.text "Open modal" ]
@@ -1901,22 +1952,23 @@ modalRow model =
                     )
 
             else
-                overlayHint "modal unmounted — the fixed tree mounts on open (displayDirective: if)"
-        , chip model.modalOutcome
+                overlayHint theme "modal unmounted — the fixed tree mounts on open (displayDirective: if)"
+        , chip theme model.modalOutcome
         ]
 
 
-modalLiveSection : Model -> Element Msg
-modalLiveSection model =
-    section "Modal"
+modalLiveSection : Model -> Theme -> Element Msg
+modalLiveSection model theme =
+    section theme
+        "Modal"
         "The mount-body family — its own fixed tree (container > mask > body-wrapper > scrollbar > content), self-positioned and centred by flex. The caller owns mounting, the show state, the transition clock (one clock drives the mask and body tuples), outside-click closing and Esc; the `dialog`/`confirm` presets compose `NUI.Dialog` (its section follows). The demo cells confine the fixed tree with a `transform: translate(0,0)` containing block."
-        (modalRows model ++ [ modalRow model ])
+        (modalRows model theme ++ [ modalRow model theme ])
 
 
 {-| The drawer's `NDrawerContent` body — title, closable header, footer.
 -}
-drawerBody : Element Msg
-drawerBody =
+drawerBody : Theme -> Element Msg
+drawerBody theme =
     DrawerContent.view theme
         { drawerContentD
             | title = Just (Element.text "A drawer")
@@ -1927,32 +1979,34 @@ drawerBody =
         [ Element.text "Edge-anchored, sized on the placement's axis." ]
 
 
-drawerRows : Model -> List (Element Msg)
-drawerRows model =
-    [ demoRow "ovr-036"
+drawerRows : Model -> Theme -> List (Element Msg)
+drawerRows model theme =
+    [ demoRow theme
+        "ovr-036"
         "Four placements (NDrawerContent composition)"
         [ modalHost []
             (Drawer.view theme
                 { drawerD | show = model.drawerStaticOpen, placement = Drawer.Right, width = Just "200px", onMaskClick = Just DrawerStaticClose }
-                [ drawerBody ]
+                [ drawerBody theme ]
             )
         , modalHost []
             (Drawer.view theme
                 { drawerD | show = model.drawerStaticOpen, placement = Drawer.Left, width = Just "200px", onMaskClick = Just DrawerStaticClose }
-                [ drawerBody ]
+                [ drawerBody theme ]
             )
         , modalHost []
             (Drawer.view theme
                 { drawerD | show = model.drawerStaticOpen, placement = Drawer.Top, height = Just "120px", onMaskClick = Just DrawerStaticClose }
-                [ drawerBody ]
+                [ drawerBody theme ]
             )
         , modalHost []
             (Drawer.view theme
                 { drawerD | show = model.drawerStaticOpen, placement = Drawer.Bottom, height = Just "120px", onMaskClick = Just DrawerStaticClose }
-                [ drawerBody ]
+                [ drawerBody theme ]
             )
         ]
-    , demoRow "ovr-037"
+    , demoRow theme
+        "ovr-037"
         "Custom content (no DrawerContent)"
         [ modalHost []
             (Drawer.view theme
@@ -1968,7 +2022,8 @@ drawerRows model =
                 ]
             )
         ]
-    , demoRow "ovr-038"
+    , demoRow theme
+        "ovr-038"
         "Mask variants + z-index"
         [ modalHost []
             (Drawer.view theme
@@ -1979,7 +2034,7 @@ drawerRows model =
                     , showMask = Drawer.Transparent
                     , onMaskClick = Just DrawerStaticClose
                 }
-                [ drawerBody ]
+                [ drawerBody theme ]
             )
         , modalHost []
             (Drawer.view theme
@@ -1989,15 +2044,16 @@ drawerRows model =
                     , width = Just "180px"
                     , showMask = Drawer.Hidden
                 }
-                [ drawerBody ]
+                [ drawerBody theme ]
             )
         , modalHost []
             (Drawer.view theme
                 { drawerD | show = model.drawerStaticOpen, placement = Drawer.Right, width = Just "180px", zIndex = Just 100 }
-                [ drawerBody ]
+                [ drawerBody theme ]
             )
         ]
-    , demoRow "ovr-039"
+    , demoRow theme
+        "ovr-039"
         "Scroll seams + resize trigger"
         [ modalHost []
             (Drawer.view theme
@@ -2024,10 +2080,11 @@ drawerRows model =
                     , resizable = True
                     , showResizeTriggerHover = True
                 }
-                [ drawerBody ]
+                [ drawerBody theme ]
             )
         ]
-    , demoRow "ovr-040"
+    , demoRow theme
+        "ovr-040"
         "Enter-active phase (caller clock)"
         [ modalHost []
             (Drawer.view theme
@@ -2038,24 +2095,25 @@ drawerRows model =
                     , maskTransition = Just I.EnterActive
                     , bodyTransition = Just I.EnterActive
                 }
-                [ drawerBody ]
+                [ drawerBody theme ]
             )
         ]
     ]
 
 
-drawerSection : Model -> Element Msg
-drawerSection model =
-    section "Drawer"
+drawerSection : Model -> Theme -> Element Msg
+drawerSection model theme =
+    section theme
+        "Drawer"
         "The mount-body sibling of Modal — its own container/mask/host tree, edge-anchored (`position: absolute` per placement, the body transition family derived from it) instead of flex-centred. `NDrawerContent` composition (header/body/footer + close), the 3-state mask, the native-scrollbar seam (default: no scrollbar node, unlike Modal) and the resize trigger are DOM; the caller owns the show state, the transition clock, mask-click closing (`onMaskClick` — the mask is interactive here), Esc and the resize drag."
-        (drawerRows model)
+        (drawerRows model theme)
 
 
 {-| Live: `#live-drawer` / `#live-drawer-tree` (the placement radios and `Open drawer` stay immediately before the cell; the `left` radio label is looked up globally first-match).
 -}
-drawerRow : Model -> Element Msg
-drawerRow model =
-    demoRow "ovr-041" "Drawer · placement picker" <|
+drawerRow : Model -> Theme -> Element Msg
+drawerRow model theme =
+    demoRow theme "ovr-041" "Drawer · placement picker" <|
         [ Radio.group theme
             { radioGD
                 | value = Just model.drawerPlacement
@@ -2084,26 +2142,28 @@ drawerRow model =
 
             else
                 Element.none
-        , chip ("placement: " ++ Drawer.placementName model.drawerPlacement ++ " · " ++ model.drawerOutcome)
+        , chip theme ("placement: " ++ Drawer.placementName model.drawerPlacement ++ " · " ++ model.drawerOutcome)
         ]
 
 
-drawerLiveSection : Model -> Element Msg
-drawerLiveSection model =
-    section "Drawer"
+drawerLiveSection : Model -> Theme -> Element Msg
+drawerLiveSection model theme =
+    section theme
+        "Drawer"
         "The mount-body sibling of Modal — its own container/mask/host tree, edge-anchored (`position: absolute` per placement, the body transition family derived from it) instead of flex-centred. `NDrawerContent` composition (header/body/footer + close), the 3-state mask, the native-scrollbar seam (default: no scrollbar node, unlike Modal) and the resize trigger are DOM; the caller owns the show state, the transition clock, mask-click closing (`onMaskClick` — the mask is interactive here), Esc and the resize drag."
-        (drawerRows model ++ [ drawerRow model ])
+        (drawerRows model theme ++ [ drawerRow model theme ])
 
 
-dialogState : List (DialogProvider.Item msg) -> Element msg
-dialogState items =
+dialogState : Theme -> List (DialogProvider.Item msg) -> Element msg
+dialogState theme items =
     modalHost []
         (Element.column [] (DialogProvider.view theme { dialogPS | items = items }))
 
 
-dialogRows : Model -> List (Element Msg)
-dialogRows model =
-    [ demoRow "ovr-042"
+dialogRows : Model -> Theme -> List (Element Msg)
+dialogRows model theme =
+    [ demoRow theme
+        "ovr-042"
         "Kinds (bare body — the icon/type system)"
         [ cell
             (if model.dialogSamplesOpen then
@@ -2152,7 +2212,8 @@ dialogRows model =
                 Element.none
             )
         ]
-    , demoRow "ovr-043"
+    , demoRow theme
+        "ovr-043"
         "Modal dialog/confirm presets"
         [ modalHost []
             (Modal.view theme
@@ -2182,9 +2243,10 @@ dialogRows model =
                 )
             )
         ]
-    , demoRow "ovr-044"
+    , demoRow theme
+        "ovr-044"
         "useDialog service (NUI.DialogProvider — fixed queues)"
-        [ dialogState
+        [ dialogState theme
             [ { dialogPI
                 | key = "d1"
                 , zIndex = Just 2000
@@ -2198,7 +2260,7 @@ dialogRows model =
                     }
               }
             ]
-        , dialogState
+        , dialogState theme
             [ { dialogPI
                 | key = "d2"
                 , phase = Just I.EnterActive
@@ -2227,7 +2289,8 @@ dialogRows model =
               }
             ]
         ]
-    , demoRow "ovr-045"
+    , demoRow theme
+        "ovr-045"
         "icon-top, bordered, custom action"
         [ cell
             (if model.dialogSamplesOpen then
@@ -2257,7 +2320,8 @@ dialogRows model =
                 }
             )
         ]
-    , demoRow "ovr-046"
+    , demoRow theme
+        "ovr-046"
         "Loading + button-props overrides + dark"
         [ cell
             (Dialog.view theme
@@ -2294,18 +2358,19 @@ dialogRows model =
     ]
 
 
-dialogSection : Model -> Element Msg
-dialogSection model =
-    section "Dialog"
+dialogSection : Model -> Theme -> Element Msg
+dialogSection model theme =
+    section theme
+        "Dialog"
         "A pure body component (upstream `NDialog`) — the `.n-dialog` card, never a mask or container. Standalone here, and as Modal's `dialog`/`confirm` preset bodies (the preset adds `n-modal` + `aria-modal`, phase class last). Composed actions (negative ghost/small first, positive small + kind-derived + loading), the kind→ icon/type system, icon-top placement, and the caller-owned runtime: the `useDialog` queue is ported as `NUI.DialogProvider` (fixed queues below — one caller-owned `State`, pure transforms, no clock: dialogs persist until destroyed), while close gating, mask/esc stay yours (see Modal)."
-        (dialogRows model)
+        (dialogRows model theme)
 
 
 {-| Live: `#live-dialog` / `#live-dialog-tree` (the `Open dialog` trigger stays immediately before the cell).
 -}
-dialogRow : Model -> Element Msg
-dialogRow model =
-    demoRow "ovr-047" "Dialog · positive/negative" <|
+dialogRow : Model -> Theme -> Element Msg
+dialogRow model theme =
+    demoRow theme "ovr-047" "Dialog · positive/negative" <|
         [ Button.view theme
             { btn | onPress = Just DialogOpen }
             [ Element.text "Open dialog" ]
@@ -2331,15 +2396,16 @@ dialogRow model =
 
             else
                 Element.none
-        , chip ("outcome: " ++ model.dialogOutcome)
+        , chip theme ("outcome: " ++ model.dialogOutcome)
         ]
 
 
-dialogLiveSection : Model -> Element Msg
-dialogLiveSection model =
-    section "Dialog"
+dialogLiveSection : Model -> Theme -> Element Msg
+dialogLiveSection model theme =
+    section theme
+        "Dialog"
         "A pure body component (upstream `NDialog`) — the `.n-dialog` card, never a mask or container. Standalone here, and as Modal's `dialog`/`confirm` preset bodies (the preset adds `n-modal` + `aria-modal`, phase class last). Composed actions (negative ghost/small first, positive small + kind-derived + loading), the kind→ icon/type system, icon-top placement, and the caller-owned runtime: the `useDialog` queue is ported as `NUI.DialogProvider` (fixed queues below — one caller-owned `State`, pure transforms, no clock: dialogs persist until destroyed), while close gating, mask/esc stay yours (see Modal)."
-        (dialogRows model ++ [ dialogRow model ])
+        (dialogRows model theme ++ [ dialogRow model theme ])
 
 
 
@@ -2383,8 +2449,8 @@ overlayCell id content =
 {-| What an unmounted overlay cell shows instead of empty gray: a muted
 placeholder naming the mount point, so the cell reads as a preview host.
 -}
-overlayHint : String -> Element msg
-overlayHint text =
+overlayHint : Theme -> String -> Element msg
+overlayHint theme text =
     let
         typ =
             Typo.defaults
@@ -2398,7 +2464,7 @@ overlayHint text =
                 "display:flex;align-items:center;justify-content:center;text-align:center;padding:0 24px;color:#909399;font-size:12px"
             )
         ]
-        (Typo.text Showcase.theme { typ | depth = Just 3, size = Just 12 } [ Element.text text ])
+        (Typo.text theme { typ | depth = Just 3, size = Just 12 } [ Element.text text ])
 
 
 {-| The simulated outside-click seam: stops card-inner clicks from bubbling
@@ -2551,16 +2617,16 @@ phaseName phase =
 exist. Main.elm is not touched in this phase (the legacy static exports
 stay wired there); the integration phase swaps this in.
 -}
-sections : Model -> List (Element Msg)
-sections model =
-    [ loadingBarLiveSection model
-    , popoverLiveSection model
-    , popconfirmLiveSection model
-    , tooltipLiveSection model
-    , dropdownLiveSection model
-    , messageLiveSection model
-    , notificationLiveSection model
-    , modalLiveSection model
-    , drawerLiveSection model
-    , dialogLiveSection model
+sections : Model -> Theme -> List (Element Msg)
+sections model theme =
+    [ loadingBarLiveSection model theme
+    , popoverLiveSection model theme
+    , popconfirmLiveSection model theme
+    , tooltipLiveSection model theme
+    , dropdownLiveSection model theme
+    , messageLiveSection model theme
+    , notificationLiveSection model theme
+    , modalLiveSection model theme
+    , drawerLiveSection model theme
+    , dialogLiveSection model theme
     ]
