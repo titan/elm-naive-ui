@@ -65,10 +65,11 @@ import NUI.Space as Space
 import NUI.Statistic as Statistic
 import NUI.Switch as Switch
 import NUI.Tag as Tag
+import NUI.Theme exposing (Theme)
 import NUI.Thing as Thing
 import NUI.Types as T
 import NUI.Typography as Typo
-import Showcase exposing (capitalize, chip, demoRow, fillWidth, purple, section, starIcon, theme)
+import Showcase exposing (capitalize, chip, demoRow, fillWidth, purple, section, starIcon)
 
 
 
@@ -284,9 +285,10 @@ avatarColor name =
 -- SECTIONS
 
 
-typographySection : Element msg
-typographySection =
-    section "Typography"
+typographySection : Theme -> Element msg
+typographySection theme =
+    section theme
+        "Typography"
         "Headers, text and rich content."
         [ Typo.h1 theme typ [ Element.text "H1 Heading" ]
         , Typo.h3 theme typ [ Element.text "H3 Heading" ]
@@ -298,7 +300,8 @@ typographySection =
                 (\k -> Typo.text theme { typ | kind = k } [ Element.text (capitalize (T.kindClass k)) ])
                 [ T.Default, T.Primary, T.Info, T.Success, T.Warning, T.Error ]
             )
-        , demoRow "gen-001"
+        , demoRow theme
+            "gen-001"
             "Styles"
             [ Typo.text theme { typ | strong = True } [ Element.text "Strong" ]
             , Typo.text theme { typ | italic = True } [ Element.text "Italic" ]
@@ -321,15 +324,17 @@ typographySection =
         ]
 
 
-tagRows : Model -> List (Element Msg)
-tagRows model =
-    [ demoRow "gen-002"
+tagRows : Model -> Theme -> List (Element Msg)
+tagRows model theme =
+    [ demoRow theme
+        "gen-002"
         "Types"
         (List.map
             (\k -> Tag.view theme { tagD | kind = k } [ Element.text (capitalize (T.kindClass k)) ])
             [ T.Default, T.Primary, T.Info, T.Success, T.Warning, T.Error ]
         )
-    , demoRow "gen-003"
+    , demoRow theme
+        "gen-003"
         "Shapes & states"
         [ Tag.view theme { tagD | round = True } [ Element.text "Round" ]
         , Tag.view theme { tagD | bordered = False } [ Element.text "Filled" ]
@@ -354,17 +359,18 @@ tagRows model =
     ]
 
 
-tagSection : Model -> Element Msg
-tagSection model =
-    section "Tag" "Compact labels, with optional close and check states." (tagRows model)
+tagSection : Model -> Theme -> Element Msg
+tagSection model theme =
+    section theme "Tag" "Compact labels, with optional close and check states." (tagRows model theme)
 
 
 {-| Live: `#secf-tag-add` — the close × and the checkable toggle drive real
 model state (onClose / onCheck are the port's caller-owned channels).
 -}
-tagLiveRow : Model -> Element Msg
-tagLiveRow model =
-    demoRow "gen-004"
+tagLiveRow : Model -> Theme -> Element Msg
+tagLiveRow model theme =
+    demoRow theme
+        "gen-004"
         "Tag · close / check / add (live)"
         [ Element.row [ Element.spacing 8 ]
             (List.map
@@ -405,16 +411,18 @@ tagLiveRow model =
         ]
 
 
-tagLiveSection : Model -> Element Msg
-tagLiveSection model =
-    section "Tag"
+tagLiveSection : Model -> Theme -> Element Msg
+tagLiveSection model theme =
+    section theme
+        "Tag"
         "Compact labels, with optional close and check states."
-        (tagRows model ++ [ tagLiveRow model ])
+        (tagRows model theme ++ [ tagLiveRow model theme ])
 
 
-alertRows : Model -> List (Element Msg)
-alertRows model =
-    [ demoRow "gen-005"
+alertRows : Model -> Theme -> List (Element Msg)
+alertRows model theme =
+    [ demoRow theme
+        "gen-005"
         "Default (no icon — the Default kind reserves no gutter)"
         [ fillWidth
             (Alert.view theme
@@ -422,7 +430,8 @@ alertRows model =
                 [ Element.text "A default alert." ]
             )
         ]
-    , demoRow "gen-006"
+    , demoRow theme
+        "gen-006"
         "Kinds · title · closable"
         [ fillWidth
             (Alert.view theme
@@ -453,17 +462,18 @@ alertRows model =
     ]
 
 
-alertSection : Model -> Element Msg
-alertSection model =
-    section "Alert" "Inline messages." (alertRows model)
+alertSection : Model -> Theme -> Element Msg
+alertSection model theme =
+    section theme "Alert" "Inline messages." (alertRows model theme)
 
 
 {-| Live: `#secf-alert-reset` — each closable alert really leaves the DOM when
 its × is clicked (onClose is the port's caller-owned channel).
 -}
-alertLiveRow : Model -> Element Msg
-alertLiveRow model =
-    demoRow "gen-007"
+alertLiveRow : Model -> Theme -> Element Msg
+alertLiveRow model theme =
+    demoRow theme
+        "gen-007"
         "Alert · closable (live)"
         ([ Button.view theme
             { btn
@@ -511,21 +521,23 @@ alertLiveRow model =
         )
 
 
-alertLiveSection : Model -> Element Msg
-alertLiveSection model =
-    section "Alert" "Inline messages." (alertRows model ++ [ alertLiveRow model ])
+alertLiveSection : Model -> Theme -> Element Msg
+alertLiveSection model theme =
+    section theme "Alert" "Inline messages." (alertRows model theme ++ [ alertLiveRow model theme ])
 
 
-dividerSection : Element msg
-dividerSection =
-    section "Divider" "Separates content." <|
-        [ demoRow "gen-008"
+dividerSection : Theme -> Element msg
+dividerSection theme =
+    section theme "Divider" "Separates content." <|
+        [ demoRow theme
+            "gen-008"
             "Title placements"
             [ Divider.view theme { divD | titlePlacement = Divider.Left } [ Element.text "Left" ]
             , Divider.view theme { divD | titlePlacement = Divider.Center } [ Element.text "Center" ]
             , Divider.view theme { divD | titlePlacement = Divider.Right } [ Element.text "Right" ]
             ]
-        , demoRow "gen-009"
+        , demoRow theme
+            "gen-009"
             "Dashed + vertical"
             [ Divider.view theme { divD | dashed = True } []
             , Element.row [ Element.spacing 16, Element.height (Element.px 42) ]
@@ -539,10 +551,11 @@ dividerSection =
         ]
 
 
-avatarSection : Element msg
-avatarSection =
-    section "Avatar" "Sizes, shapes and colours." <|
-        [ demoRow "gen-010"
+avatarSection : Theme -> Element msg
+avatarSection theme =
+    section theme "Avatar" "Sizes, shapes and colours." <|
+        [ demoRow theme
+            "gen-010"
             "Sizes"
             [ Avatar.view theme { avD | size = Avatar.Tiny } [ Element.text "T" ]
             , Avatar.view theme { avD | size = Avatar.Small } [ Element.text "S" ]
@@ -550,13 +563,15 @@ avatarSection =
             , Avatar.view theme { avD | size = Avatar.Large } [ Element.text "L" ]
             , Avatar.view theme { avD | size = Avatar.Huge } [ Element.text "H" ]
             ]
-        , demoRow "gen-011"
+        , demoRow theme
+            "gen-011"
             "Shapes & colours"
             [ Avatar.view theme { avD | circle = True, color = Just "#18a058" } [ Element.text "A" ]
             , Avatar.view theme { avD | circle = True, color = Just "#2080f0" } [ Element.text "B" ]
             , Avatar.view theme { avD | color = Just "#f0a020" } [ Element.text "Rounded" ]
             ]
-        , demoRow "gen-012"
+        , demoRow theme
+            "gen-012"
             "Group"
             [ AvatarGroup.view theme
                 { agD
@@ -585,9 +600,9 @@ avatarSection =
         ]
 
 
-cardSection : Element msg
-cardSection =
-    section "Card" "Bordered containers, optionally hoverable." <|
+cardSection : Theme -> Element msg
+cardSection theme =
+    section theme "Card" "Bordered containers, optionally hoverable." <|
         [ Element.row [ Element.spacing 16, Element.width Element.fill ]
             [ Element.el [ Element.width Element.fill ]
                 (Card.view theme
@@ -613,28 +628,32 @@ cardSection =
         ]
 
 
-spaceSection : Element msg
-spaceSection =
-    section "Space" "Spacing between arbitrary children." <|
-        [ demoRow "gen-013"
+spaceSection : Theme -> Element msg
+spaceSection theme =
+    section theme "Space" "Spacing between arbitrary children." <|
+        [ demoRow theme
+            "gen-013"
             "Small gap"
-            [ Space.view theme { spaceD | size = Space.Small } (List.map chip [ "One", "Two", "Three" ]) ]
-        , demoRow "gen-014"
+            [ Space.view theme { spaceD | size = Space.Small } (List.map (chip theme) [ "One", "Two", "Three" ]) ]
+        , demoRow theme
+            "gen-014"
             "Medium gap"
-            [ Space.view theme { spaceD | size = Space.Medium } (List.map chip [ "One", "Two", "Three" ]) ]
-        , demoRow "gen-015"
+            [ Space.view theme { spaceD | size = Space.Medium } (List.map (chip theme) [ "One", "Two", "Three" ]) ]
+        , demoRow theme
+            "gen-015"
             "Vertical"
             [ Space.view theme
                 { spaceD | direction = Space.Vertical, size = Space.Medium }
-                (List.map chip [ "Stacked", "Vertically", "Spaced" ])
+                (List.map (chip theme) [ "Stacked", "Vertically", "Spaced" ])
             ]
         ]
 
 
-badgeSection : Element msg
-badgeSection =
-    section "Badge" "Counts and status dots on arbitrary content." <|
-        [ demoRow "gen-016"
+badgeSection : Theme -> Element msg
+badgeSection theme =
+    section theme "Badge" "Counts and status dots on arbitrary content." <|
+        [ demoRow theme
+            "gen-016"
             "Annotating a button"
             [ Badge.view theme
                 { badgeD | value = Just (Badge.Number 5) }
@@ -646,7 +665,8 @@ badgeSection =
                 { badgeD | dot = True, processing = True, type_ = Badge.Error }
                 [ Button.view theme { btn | size = T.Small } [ Element.text "Alerts" ] ]
             ]
-        , demoRow "gen-017"
+        , demoRow theme
+            "gen-017"
             "Types"
             (List.map
                 (\t ->
@@ -656,14 +676,16 @@ badgeSection =
                 )
                 [ Badge.Default, Badge.Info, Badge.Success, Badge.Warning, Badge.Error ]
             )
-        , demoRow "gen-018"
+        , demoRow theme
+            "gen-018"
             "Custom colour"
             [ Badge.view theme
                 { badgeD | value = Just (Badge.Text "New"), color = Just "#36ad6a" }
                 []
             , Badge.view theme { badgeD | dot = True, color = Just "#18a058" } []
             ]
-        , demoRow "gen-019"
+        , demoRow theme
+            "gen-019"
             "Runtime (digit scroll · wave)"
             [ Badge.view theme
                 { badgeD
@@ -682,8 +704,8 @@ badgeSection =
         ]
 
 
-emptySection : Element msg
-emptySection =
+emptySection : Theme -> Element msg
+emptySection theme =
     let
         -- The demo card's own `Element.padding 20` is dropped by elm-ui (its
         -- spacing-reduction emits the reduced `pad-*` class without a matching
@@ -697,16 +719,18 @@ emptySection =
                 ]
                 content
     in
-    section "Empty" "Placeholder for empty states." <|
+    section theme "Empty" "Placeholder for empty states." <|
         -- The component hits `width fill` on its own root (upstream's `.n-empty`
         -- is a block flex column), so the demos mount it directly in the demo
         -- card — a fixed-px wrapper would pin the centred content to the card's
         -- left edge. The Sizes pair keeps two fixed measures (so the scales are
         -- comparable) but centres the pair as a unit in a full-width row.
-        [ demoRow "gen-020"
+        [ demoRow theme
+            "gen-020"
             "Default"
             [ cell (Empty.view theme emptyD []) ]
-        , demoRow "gen-021"
+        , demoRow theme
+            "gen-021"
             "Description & extra"
             [ cell
                 (Empty.view theme
@@ -717,7 +741,8 @@ emptySection =
                     []
                 )
             ]
-        , demoRow "gen-022"
+        , demoRow theme
+            "gen-022"
             "Sizes"
             [ Element.row
                 [ Element.width Element.fill
@@ -736,10 +761,11 @@ emptySection =
         ]
 
 
-resultSection : Element msg
-resultSection =
-    section "Result" "Important feedback pages." <|
-        [ demoRow "gen-023"
+resultSection : Theme -> Element msg
+resultSection theme =
+    section theme "Result" "Important feedback pages." <|
+        [ demoRow theme
+            "gen-023"
             "Statuses"
             [ Element.el [ Element.width (Element.px 210) ]
                 (Result.view theme
@@ -752,7 +778,8 @@ resultSection =
                     []
                 )
             ]
-        , demoRow "gen-024"
+        , demoRow theme
+            "gen-024"
             "404 · custom content"
             [ Element.el [ Element.width (Element.px 340) ]
                 (Result.view theme
@@ -768,10 +795,11 @@ resultSection =
         ]
 
 
-gradientTextSection : Element msg
-gradientTextSection =
-    section "Gradient Text" "Themed gradient text." <|
-        [ demoRow "gen-025"
+gradientTextSection : Theme -> Element msg
+gradientTextSection theme =
+    section theme "Gradient Text" "Themed gradient text." <|
+        [ demoRow theme
+            "gen-025"
             "Types"
             (List.map
                 (\t -> GradientText.view theme { gtD | type_ = t } [ Element.text "Wonderful" ])
@@ -782,7 +810,8 @@ gradientTextSection =
                 , GradientText.Error
                 ]
             )
-        , demoRow "gen-026"
+        , demoRow theme
+            "gen-026"
             "Custom gradient"
             [ GradientText.view theme
                 { gtD
@@ -798,10 +827,11 @@ gradientTextSection =
         ]
 
 
-statisticSection : Element msg
-statisticSection =
-    section "Statistic" "Labelled numeric displays." <|
-        [ demoRow "gen-027"
+statisticSection : Theme -> Element msg
+statisticSection theme =
+    section theme "Statistic" "Labelled numeric displays." <|
+        [ demoRow theme
+            "gen-027"
             "Basic"
             [ Statistic.view theme
                 { statD | label = Just "Active users", value = Just "128" }
@@ -814,7 +844,8 @@ statisticSection =
                 }
                 []
             ]
-        , demoRow "gen-028"
+        , demoRow theme
+            "gen-028"
             "Tabular nums & custom value"
             [ Statistic.view theme
                 { statD
@@ -827,10 +858,11 @@ statisticSection =
         ]
 
 
-thingSection : Element msg
-thingSection =
-    section "Thing" "A flexible content block (avatar + header + body)." <|
-        [ demoRow "gen-029"
+thingSection : Theme -> Element msg
+thingSection theme =
+    section theme "Thing" "A flexible content block (avatar + header + body)." <|
+        [ demoRow theme
+            "gen-029"
             "With avatar"
             [ Element.el [ Element.width (Element.px 320) ]
                 (Thing.view theme
@@ -843,7 +875,8 @@ thingSection =
                     [ Element.text "Content sits under the header." ]
                 )
             ]
-        , demoRow "gen-030"
+        , demoRow theme
+            "gen-030"
             "Indented content"
             [ Element.el [ Element.width (Element.px 320) ]
                 (Thing.view theme
@@ -858,9 +891,10 @@ thingSection =
         ]
 
 
-ellipsisRows : Model -> List (Element Msg)
-ellipsisRows model =
-    [ demoRow "gen-031"
+ellipsisRows : Model -> Theme -> List (Element Msg)
+ellipsisRows model theme =
+    [ demoRow theme
+        "gen-031"
         "Single line"
         [ Element.el [ Element.width (Element.px 220) ]
             (Ellipsis.view theme
@@ -868,7 +902,8 @@ ellipsisRows model =
                 [ Element.text "A very long single line of text that gets cut off with an ellipsis character." ]
             )
         ]
-    , demoRow "gen-032"
+    , demoRow theme
+        "gen-032"
         "Line clamp 2"
         [ Element.el [ Element.width (Element.px 220) ]
             (Ellipsis.view theme
@@ -876,7 +911,8 @@ ellipsisRows model =
                 [ Element.text "Line clamping caps this paragraph at two lines and hides the remaining text behind a trailing ellipsis." ]
             )
         ]
-    , demoRow "gen-033"
+    , demoRow theme
+        "gen-033"
         "Expand on click"
         [ Element.el [ Element.width (Element.px 220) ]
             (Ellipsis.view theme
@@ -892,17 +928,18 @@ ellipsisRows model =
     ]
 
 
-ellipsisSection : Model -> Element Msg
-ellipsisSection model =
-    section "Ellipsis" "Truncated text (the expand state is caller-owned)." (ellipsisRows model)
+ellipsisSection : Model -> Theme -> Element Msg
+ellipsisSection model theme =
+    section theme "Ellipsis" "Truncated text (the expand state is caller-owned)." (ellipsisRows model theme)
 
 
 {-| Live: the expand/collapse click toggles real model state (the expanded
 flag is the port's caller-owned seam).
 -}
-ellipsisLiveRow : Model -> Element Msg
-ellipsisLiveRow model =
-    demoRow "gen-034"
+ellipsisLiveRow : Model -> Theme -> Element Msg
+ellipsisLiveRow model theme =
+    demoRow theme
+        "gen-034"
         "Ellipsis · expand toggle (live)"
         [ Element.el [ Element.width (Element.px 220) ]
             (Ellipsis.view theme
@@ -924,25 +961,29 @@ ellipsisLiveRow model =
         ]
 
 
-ellipsisLiveSection : Model -> Element Msg
-ellipsisLiveSection model =
-    section "Ellipsis"
+ellipsisLiveSection : Model -> Theme -> Element Msg
+ellipsisLiveSection model theme =
+    section theme
+        "Ellipsis"
         "Truncated text (the expand state is caller-owned)."
-        (ellipsisRows model ++ [ ellipsisLiveRow model ])
+        (ellipsisRows model theme ++ [ ellipsisLiveRow model theme ])
 
 
-iconSection : Element msg
-iconSection =
-    section "Icon"
+iconSection : Theme -> Element msg
+iconSection theme =
+    section theme
+        "Icon"
         "Naive UI's icon primitive (`.n-icon`) and its rounded wrapper (`.n-icon-wrapper`). Pass the glyph as the child."
     <|
-        [ demoRow "gen-035"
+        [ demoRow theme
+            "gen-035"
             "Icon"
             [ Icon.view theme iconD [ starIcon ]
             , Icon.view theme { iconD | size = Just (Icon.Px 32) } [ starIcon ]
             , Icon.view theme { iconD | depth = Just Icon.Depth2 } [ starIcon ]
             ]
-        , demoRow "gen-036"
+        , demoRow theme
+            "gen-036"
             "Wrapper"
             [ IconWrapper.view theme iconWrapperD [ Icon.view theme iconD [ starIcon ] ]
             , IconWrapper.view theme
@@ -952,9 +993,10 @@ iconSection =
         ]
 
 
-highlightSection : Element msg
-highlightSection =
-    section "Highlight"
+highlightSection : Theme -> Element msg
+highlightSection theme =
+    section theme
+        "Highlight"
         "Plain text with every pattern occurrence wrapped in a `mark` (no stylesheet of its own)."
     <|
         [ Highlight.view theme
@@ -977,12 +1019,14 @@ highlightSection =
         ]
 
 
-rtlSection : Element msg
-rtlSection =
-    section "RTL"
+rtlSection : Theme -> Element msg
+rtlSection theme =
+    section theme
+        "RTL"
         "Right-to-left layout — pass `rtl = True`; the RTL rules ship in the stylesheet. (The alert copy is Arabic so the bidi layout is exercised with real RTL text.)"
     <|
-        [ demoRow "gen-037"
+        [ demoRow theme
+            "gen-037"
             "Alert"
             [ Element.el [ Element.width (Element.px 340) ]
                 (fillWidth
@@ -992,7 +1036,8 @@ rtlSection =
                     )
                 )
             ]
-        , demoRow "gen-038"
+        , demoRow theme
+            "gen-038"
             "Components"
             [ Button.view theme { btn | rtl = True, kind = T.Primary } [ Element.text "Button" ]
             , Tag.view theme { tagD | rtl = True, kind = T.Primary } [ Element.text "Tag" ]
@@ -1006,22 +1051,25 @@ rtlSection =
         ]
 
 
-themeSection : Element msg
-themeSection =
-    section "Theme"
+themeSection : Theme -> Element msg
+themeSection theme =
+    section theme
+        "Theme"
         "One variable set drives every component — override the primary colour and it propagates."
     <|
-        [ demoRow "gen-039"
+        [ demoRow theme
+            "gen-039"
             "Default primary"
             [ Button.view theme { btn | kind = T.Primary } [ Element.text "Primary" ]
             , Tag.view theme { tagD | kind = T.Primary } [ Element.text "Tag" ]
             , Switch.view theme { swD | value = True } []
             ]
-        , demoRow "gen-040"
+        , demoRow theme
+            "gen-040"
             "setPrimary \"#7c3aed\""
-            [ Button.view purple { btn | kind = T.Primary } [ Element.text "Primary" ]
-            , Tag.view purple { tagD | kind = T.Primary } [ Element.text "Tag" ]
-            , Switch.view purple { swD | value = True } []
+            [ Button.view (purple theme) { btn | kind = T.Primary } [ Element.text "Primary" ]
+            , Tag.view (purple theme) { tagD | kind = T.Primary } [ Element.text "Tag" ]
+            , Switch.view (purple theme) { swD | value = True } []
             ]
         ]
 
@@ -1030,24 +1078,24 @@ themeSection =
 -- FAMILY BODY (Main.body order; live variants where live demos exist)
 
 
-sections : Model -> List (Element Msg)
-sections model =
-    [ typographySection
-    , tagLiveSection model
-    , alertLiveSection model
-    , dividerSection
-    , avatarSection
-    , cardSection
-    , spaceSection
-    , badgeSection
-    , emptySection
-    , resultSection
-    , gradientTextSection
-    , statisticSection
-    , thingSection
-    , ellipsisLiveSection model
-    , iconSection
-    , highlightSection
-    , rtlSection
-    , themeSection
+sections : Model -> Theme -> List (Element Msg)
+sections model theme =
+    [ typographySection theme
+    , tagLiveSection model theme
+    , alertLiveSection model theme
+    , dividerSection theme
+    , avatarSection theme
+    , cardSection theme
+    , spaceSection theme
+    , badgeSection theme
+    , emptySection theme
+    , resultSection theme
+    , gradientTextSection theme
+    , statisticSection theme
+    , thingSection theme
+    , ellipsisLiveSection model theme
+    , iconSection theme
+    , highlightSection theme
+    , rtlSection theme
+    , themeSection theme
     ]
