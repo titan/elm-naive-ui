@@ -12,6 +12,11 @@ column) and the ordered body list. The former dedicated "Live · _" sections
 are gone — their update loops and demo rows were merged into the per-family
 modules verbatim (same #live-\* ids, same captions).
 
+The whole page is theme-switchable: `ThemeToggled` (the top bar's Light/Dark
+button) flips `themeMode`, every family's `sections` and all the chrome
+re-render under the derived `NUI.Theme` (`Showcase.paletteFor` restyles the
+shared card/footer/code chrome).
+
 The sidebar is a real scrollspy: a `Time.every` tick re-reads every
 section id (derived from the title by `Showcase.sectionId` — the same
 function `Showcase.section` uses for the anchor ids) plus the viewport
@@ -33,7 +38,11 @@ import Element.Lazy
 import Html
 import Html.Attributes as HA
 import Html.Lazy
+import NUI.Button as Button
 import NUI.Css as Css
+import NUI.Theme as Theme
+import NUI.Theme.Color as ThemeColor
+import NUI.Types as T
 import NUI.Typography as Typo
 import Sections.Controls
 import Sections.Data
@@ -43,18 +52,21 @@ import Sections.Motion
 import Sections.Nav
 import Sections.Overlays
 import Sections.Pickers
-import Showcase exposing (sectionId, theme)
+import Showcase exposing (paletteFor)
+import Svg
+import Svg.Attributes as SA
 import Task exposing (Task)
 import Time
 
 
 
 -- APP STATE (the Live/* families own the interactive state; the chrome owns
--- the scrollspy's active section).
+-- the scrollspy's active section and the page-wide theme mode).
 
 
 type alias Model =
-    { general : Sections.General.Model
+    { themeMode : Theme.Mode
+    , general : Sections.General.Model
     , controls : Sections.Controls.Model
     , data : Sections.Data.Model
     , display : Sections.Display.Model
@@ -70,7 +82,8 @@ type alias Model =
 
 init : Model
 init =
-    { general = Sections.General.init
+    { themeMode = Theme.Light
+    , general = Sections.General.init
     , controls = Sections.Controls.init
     , data = Sections.Data.init
     , display = Sections.Display.init
@@ -85,7 +98,8 @@ init =
 
 
 type Msg
-    = GeneralMsg Sections.General.Msg
+    = ThemeToggled
+    | GeneralMsg Sections.General.Msg
     | ControlsMsg Sections.Controls.Msg
     | DataMsg Sections.Data.Msg
     | DisplayMsg Sections.Display.Msg
@@ -102,6 +116,21 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        ThemeToggled ->
+            -- Spy state is deliberately untouched: the DOM is not re-laid
+            -- out (same geometry), so the last reads stay valid.
+            ( { model
+                | themeMode =
+                    case model.themeMode of
+                        Theme.Light ->
+                            Theme.Dark
+
+                        Theme.Dark ->
+                            Theme.Light
+              }
+            , Cmd.none
+            )
+
         GeneralMsg m ->
             ( { model | general = Sections.General.update m model.general }, Cmd.none )
 
@@ -205,6 +234,47 @@ main =
         , update = update
         , subscriptions = subscriptions
         }
+
+
+
+-- THEME
+
+
+{-| The page theme — computed per render from the mode. Every component and
+every chrome colour below renders with it; `ThemeToggled` just flips the
+mode.
+-}
+modelTheme : Model -> Theme.Theme
+modelTheme model =
+    Theme.withMode model.themeMode Theme.default
+
+
+{-| The memoized chrome `<style>` node — keyed on the mode alone, so the
+per-msg diff skips re-comparing the text child until the theme flips.
+-}
+chromeNode : Theme.Mode -> Html.Html msg
+chromeNode mode =
+    Showcase.chromeCssNode (Theme.withMode mode Theme.default)
+
+
+{-| Parses the palette's `#rgb`/`#rrggbb`/`rgb()`/`rgba()` strings for
+elm-ui's `Bg.color`/`Font.color` attributes — via the library's own parser
+(the same one that derives hover colours from these strings inside the
+components). All inputs come from `Showcase.paletteFor`.
+-}
+color : String -> Element.Color
+color raw =
+    case ThemeColor.parse raw of
+        Just c ->
+            Element.fromRgb
+                { red = c.r / 255
+                , green = c.g / 255
+                , blue = c.b / 255
+                , alpha = c.a
+                }
+
+        Nothing ->
+            Element.rgb 0 0 0
 
 
 
@@ -332,7 +402,7 @@ navSectionIds : List String
 navSectionIds =
     navGroups
         |> List.concatMap Tuple.second
-        |> List.map sectionId
+        |> List.map Showcase.sectionId
 
 
 
@@ -344,29 +414,28 @@ typ =
     Typo.defaults
 
 
-accentColor : Element.Color
-accentColor =
-    Element.rgb255 0x18 0xA0 0x58
-
-
 page : Model -> Element Msg
 page model =
+    let
+        p =
+            paletteFor (modelTheme model)
+    in
     Element.el
         [ Element.width Element.fill
         , Element.height Element.fill
-        , Bg.color (Element.rgb 1 1 1)
+        , Bg.color (color p.bg)
         , Font.family [ Font.typeface "system-ui", Font.sansSerif ]
-        , Font.color (Element.rgb255 0x33 0x36 0x39)
+        , Font.color (color p.text)
         ]
         (Element.column
             [ Element.width Element.fill ]
-            [ topBar
+            [ topBar p.accent model.themeMode
             , Element.row
                 [ Element.width Element.fill
                 , Element.alignTop
                 ]
-                [ sidebar (sectionActive (activeSection model.spyYs model.spyVp))
-                , content model
+                [ sidebar p (sectionActive (activeSection model.spyYs model.spyVp))
+                , content p model
                 ]
             ]
         )
@@ -456,16 +525,20 @@ elemY domId =
         |> Task.map (.element >> .y)
 
 
-topBar : Element msg
-topBar =
+topBar : String -> Theme.Mode -> Element Msg
+topBar accent mode =
+    let
+        p =
+            paletteFor (Theme.withMode mode Theme.default)
+    in
     Element.el
         [ Element.width Element.fill
         , Element.height (Element.px 60)
-        , Bg.color (Element.rgb 1 1 1)
+        , Bg.color (color p.surface)
         , Element.htmlAttribute
             (HA.attribute
                 "style"
-                "position:sticky;top:0;z-index:100;border-bottom:1px solid #efeff5"
+                ("position:sticky;top:0;z-index:100;border-bottom:1px solid " ++ p.border)
             )
         ]
         (Element.row
@@ -479,7 +552,7 @@ topBar =
                     [ Element.width (Element.px 10)
                     , Element.height (Element.px 10)
                     , Border.rounded 5
-                    , Bg.color accentColor
+                    , Bg.color (color accent)
                     ]
                     Element.none
                 , Element.el
@@ -489,9 +562,68 @@ topBar =
             , Element.el
                 [ Element.centerY
                 , Font.size 12
-                , Font.color (Element.rgb255 0x7C 0x80 0x87)
+                , Font.color (color p.textMuted)
                 ]
                 (Element.text "naive-ui v2.45.3 · 100 components · Elm port")
+            , Element.el
+                [ Element.alignRight, Element.centerY ]
+                (Button.view (Theme.withMode mode Theme.default)
+                    { btnD | size = T.Small, onPress = Just ThemeToggled, icon = Just (themeGlyph mode) }
+                    [ Element.text (themeToggleLabel mode) ]
+                )
+            ]
+        )
+
+
+{-| The `Button.defaults` baseline for the toggle, at top level so the record
+literal is a stable reference (not that it needs to be — it is applied once
+per topBar render — but it keeps the view lean).
+-}
+btnD : Button.Options Msg
+btnD =
+    Button.defaults
+
+
+themeToggleLabel : Theme.Mode -> String
+themeToggleLabel mode =
+    case mode of
+        Theme.Light ->
+            "Dark mode"
+
+        Theme.Dark ->
+            "Light mode"
+
+
+{-| A small sun/moon glyph, inline SVG stroke currentColor so it inherits the
+button's text colour (theme-aware for free).
+-}
+themeGlyph : Theme.Mode -> Element msg
+themeGlyph mode =
+    Element.html
+        (Svg.svg
+            [ SA.viewBox "0 0 16 16"
+            , SA.width "12"
+            , SA.height "12"
+            , HA.attribute "aria-hidden" "true"
+            ]
+            [ Svg.path
+                [ SA.fill "none"
+                , SA.stroke "currentColor"
+                , SA.strokeWidth "1.5"
+                , SA.strokeLinecap "round"
+                , SA.strokeLinejoin "round"
+                , SA.d
+                    (case mode of
+                        Theme.Light ->
+                            -- moon (click → dark)
+                            "M13.5 9.5A6 6 0 0 1 6.5 2.5a6 6 0 1 0 7 7z"
+
+                        Theme.Dark ->
+                            -- sun (click → light)
+                            "M8 11.5A3.5 3.5 0 1 0 8 4.5a3.5 3.5 0 0 0 0 7zM8 1.5v1.4M8 13.1v1.4M1.5 8h1.4M13.1 8h1.4M3.4 3.4l1 1M11.6 11.6l1 1M12.6 3.4l-1 1M4.4 11.6l-1 1"
+                    )
+                ]
+                []
             ]
         )
 
@@ -499,8 +631,8 @@ topBar =
 {-| The sticky sidebar: family groups of section links, internally scrollable,
 active link in the primary colour.
 -}
-sidebar : (String -> Bool) -> Element msg
-sidebar isActive =
+sidebar : Showcase.Palette -> (String -> Bool) -> Element msg
+sidebar p isActive =
     Element.el
         [ Element.width (Element.px 224)
         , Element.alignTop
@@ -508,7 +640,7 @@ sidebar isActive =
         , Element.htmlAttribute
             (HA.attribute
                 "style"
-                "position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;border-right:1px solid #efeff5"
+                ("position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;border-right:1px solid " ++ p.border)
             )
         ]
         (Element.column
@@ -516,32 +648,35 @@ sidebar isActive =
             , Element.paddingXY 14 24
             , Element.spacing 3
             ]
-            (List.concatMap (navGroup isActive) navGroups)
+            (List.concatMap (navGroup p isActive) navGroups)
         )
 
 
-navGroup : (String -> Bool) -> ( String, List String ) -> List (Element msg)
-navGroup isActive ( group, titles ) =
+navGroup : Showcase.Palette -> (String -> Bool) -> ( String, List String ) -> List (Element msg)
+navGroup p isActive ( group, titles ) =
     Element.el
         [ Element.paddingEach { top = 14, bottom = 4, left = 10, right = 0 }
         , Font.size 11
         , Font.bold
-        , Font.color (Element.rgb255 0x90 0x93 0x99)
+        , Font.color (color p.textFaint)
         , Element.htmlAttribute
             (HA.attribute
                 "style"
-                "position:sticky;top:0;z-index:1;background:#fff"
+                ("position:sticky;top:0;z-index:1;background:" ++ p.bg)
             )
         ]
         (Element.text (String.toUpper group))
-        :: List.map (navItem isActive) titles
+        :: List.map (navItem p isActive) titles
 
 
-navItem : (String -> Bool) -> String -> Element msg
-navItem isActive title =
+navItem : Showcase.Palette -> (String -> Bool) -> String -> Element msg
+navItem p isActive title =
     let
         id =
-            sectionId title
+            Showcase.sectionId title
+
+        accentColor =
+            color p.accent
 
         base =
             [ Element.width Element.fill
@@ -554,12 +689,12 @@ navItem isActive title =
 
         attrs =
             if isActive id then
-                Element.htmlAttribute (HA.attribute "style" "background:#f0faf5")
+                Element.htmlAttribute (HA.attribute "style" ("background:" ++ p.activeBg))
                     :: Font.color accentColor
                     :: base
 
             else
-                Font.color (Element.rgb255 0x4C 0x50 0x56)
+                Font.color (color p.navIdle)
                     :: base
     in
     Element.link attrs
@@ -568,15 +703,15 @@ navItem isActive title =
         }
 
 
-content : Model -> Element Msg
-content model =
+content : Showcase.Palette -> Model -> Element Msg
+content p model =
     Element.column
         [ Element.width (Element.maximum 1080 Element.fill)
         , Element.alignTop
         , Element.paddingEach { top = 44, bottom = 120, left = 44, right = 36 }
         , Element.spacing 48
         ]
-        (hero :: lazyCssElement :: lazyChromeCss :: [ body model ])
+        (hero (modelTheme model) :: lazyCssElement :: lazyChromeCss model.themeMode :: [ body model ])
 
 
 {-| The 487KB stylesheet `<style>` node, lazily — a constant Html tree that
@@ -587,18 +722,19 @@ lazyCssElement =
     Element.html (Html.Lazy.lazy (\() -> Css.elementNode) ())
 
 
-{-| Same for the showcase's chrome `<style>` node.
+{-| Same for the showcase's chrome `<style>` node — keyed on the mode, so it
+re-emits only when the theme flips.
 -}
-lazyChromeCss : Element msg
-lazyChromeCss =
-    Element.html (Html.Lazy.lazy (\() -> Showcase.chromeCssNode) ())
+lazyChromeCss : Theme.Mode -> Element msg
+lazyChromeCss mode =
+    Element.html (Html.Lazy.lazy chromeNode mode)
 
 
-hero : Element msg
-hero =
+hero : Theme.Theme -> Element msg
+hero t =
     Element.column [ Element.spacing 8 ]
-        [ Typo.h1 theme typ [ Element.text "Naive UI for Elm" ]
-        , Typo.text theme
+        [ Typo.h1 t typ [ Element.text "Naive UI for Elm" ]
+        , Typo.text t
             { typ | depth = Just 3 }
             [ Element.text "Naive UI components built on elm-ui — Naive UI's own CSS, driven by a typed Elm theme." ]
         ]
@@ -611,7 +747,7 @@ section (87 entries, 1:1 — every section has exactly one sidebar entry).
 Each family body comes from its module's `sections` (static rows + live
 rows in place).
 
-Each family is wrapped in `Element.Lazy.lazy2` against its own sub-model: a
+Each family is wrapped in `Element.Lazy.lazy` against its own sub-model: a
 message routed to one family (e.g. a ColorPicker drag inside Pickers)
 re-renders only that family's slice, and the other seven diff as identical
 lazy thunks — the page is ~26k DOM nodes, and re-diffing all of it per
@@ -621,36 +757,46 @@ mousemove made drag updates visibly laggy (~185ms/frame in a trace).
 body : Model -> Element Msg
 body model =
     Element.column [ Element.width Element.fill, Element.spacing 0 ]
-        [ lazyFamily GeneralMsg Sections.General.sections model.general
-        , lazyFamily ControlsMsg Sections.Controls.sections model.controls
-        , lazyFamily DataMsg Sections.Data.sections model.data
-        , lazyFamily DisplayMsg Sections.Display.sections model.display
-        , lazyFamily NavMsg Sections.Nav.sections model.nav
-        , lazyFamily OverlaysMsg Sections.Overlays.sections model.overlays
-        , lazyFamily PickersMsg Sections.Pickers.sections model.pickers
-        , lazyFamily MotionMsg Sections.Motion.sections model.motion
+        [ lazyFamily GeneralMsg Sections.General.sections model.themeMode model.general
+        , lazyFamily ControlsMsg Sections.Controls.sections model.themeMode model.controls
+        , lazyFamily DataMsg Sections.Data.sections model.themeMode model.data
+        , lazyFamily DisplayMsg Sections.Display.sections model.themeMode model.display
+        , lazyFamily NavMsg Sections.Nav.sections model.themeMode model.nav
+        , lazyFamily OverlaysMsg Sections.Overlays.sections model.themeMode model.overlays
+        , lazyFamily PickersMsg Sections.Pickers.sections model.themeMode model.pickers
+        , lazyFamily MotionMsg Sections.Motion.sections model.themeMode model.motion
         ]
 
 
 {-| One family's slice, lazily. Every argument passed to
-`Element.Lazy.lazy3` MUST be a stable reference, not an inline lambda or a
+`Element.Lazy.lazy4` MUST be a stable reference, not an inline lambda or a
 freshly-allocated tuple/record: the underlying virtual-dom thunk compares
 refs (fn, args) by `===`, and anything rebuilt per render — a closure
 captured in `body`, a tuple literal — makes the thunk miss every time and
 the whole family re-diffs anyway. Top-level `familyNode`, the `Msg`
-constructor (`GeneralMsg` etc.), the family's top-level `sections` and the
-sub-model record are all stable across renders, so an unrelated family's
-msg skips its entire vdom diff.
+constructor (`GeneralMsg` etc.), the family's top-level `sections`, the
+mode (a variant constructor value) and the sub-model record are all stable
+across renders, so an unrelated family's msg skips its entire vdom diff.
+The `Theme` itself is derived from the mode INSIDE the node — a fresh
+record per render would break the ref comparison.
 -}
 lazyFamily :
     (fmsg -> Msg)
-    -> (fmodel -> List (Element fmsg))
+    -> (fmodel -> Theme.Theme -> List (Element fmsg))
+    -> Theme.Mode
     -> fmodel
     -> Element Msg
-lazyFamily toMsg familySections fmodel =
-    Element.Lazy.lazy3 familyNode toMsg familySections fmodel
+lazyFamily toMsg familySections mode fmodel =
+    Element.Lazy.lazy4 familyNode toMsg familySections mode fmodel
 
 
-familyNode : (fmsg -> Msg) -> (fmodel -> List (Element fmsg)) -> fmodel -> Element Msg
-familyNode toMsg familySections fmodel =
-    Element.column [ Element.width Element.fill ] (List.map (Element.map toMsg) (familySections fmodel))
+familyNode :
+    (fmsg -> Msg)
+    -> (fmodel -> Theme.Theme -> List (Element fmsg))
+    -> Theme.Mode
+    -> fmodel
+    -> Element Msg
+familyNode toMsg familySections mode fmodel =
+    Element.column
+        [ Element.width Element.fill ]
+        (List.map (Element.map toMsg) (familySections fmodel (Theme.withMode mode Theme.default)))

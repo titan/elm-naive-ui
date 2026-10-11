@@ -1,5 +1,6 @@
 module Showcase exposing
-    ( capitalize
+    ( Palette
+    , capitalize
     , chip
     , chromeCss
     , chromeCssNode
@@ -10,18 +11,26 @@ module Showcase exposing
     , fakeKatex
     , fakeKatexDisplay
     , fillWidth
+    , paletteFor
     , purple
     , section
     , sectionId
     , starIcon
-    , theme
     )
 
-{-| Shared showcase chrome: the theme set, the docs-style section/demo scaffolding,
-and the cross-family fixtures (a fake highlight.js, fake katex closures, a star
+{-| Shared showcase chrome: the docs-style section/demo scaffolding, and the
+cross-family fixtures (a fake highlight.js, fake katex closures, a star
 glyph) used by more than one section family. Used by the static page
 (Main / Sections/_) and every Live/_ interactive family module, so live demos
 read exactly like the static ones.
+
+The page is theme-switchable (Light ⇄ Dark, toggled from Main's top bar):
+every scaffold here takes the runtime `Theme` as its first argument, and the
+chrome colours (card surfaces, borders, footer labels, the code panel and
+its syntax tokens) come from `paletteFor`, so light mode renders exactly the
+old hardcoded palette and dark mode restyles the same DOM. `darkTheme`
+stays a fixed standalone specimen theme — the Overlay demos that
+deliberately show dark specimens use it regardless of the page theme.
 
 The page chrome itself (top bar, sticky sidebar, content column) lives in
 Main.elm; this module owns the pieces every section shares:
@@ -40,7 +49,6 @@ Main.elm; this module owns the pieces every section shares:
 
 import DemoCode
 import Element exposing (Element)
-import Element.Font as Font
 import ElmSyntax
 import Html
 import Html.Attributes as HA
@@ -56,23 +64,118 @@ import Svg.Attributes as SA
 -- THEMES
 
 
-theme : Theme
-theme =
-    Theme.default
+{-| Derives a purple-primary theme from whatever the page currently shows
+(the General "Theme" section demos `setPrimary` with it).
+-}
+purple : Theme -> Theme
+purple t =
+    Theme.setPrimary "#7c3aed" t
 
 
-purple : Theme
-purple =
-    Theme.setPrimary "#7c3aed" theme
-
-
+{-| A fixed dark specimen theme for the demos that deliberately show dark
+components (Overlay's Tooltip/Modal/Dialog specimens) whatever the page
+theme is.
+-}
 darkTheme : Theme
 darkTheme =
     Theme.dark
 
 
 
--- CHROME
+-- CHROME PALETTE (one Palette per mode; every chrome colour below comes from it)
+
+
+type alias Palette =
+    { bg : String
+    , text : String
+    , textMuted : String
+    , textFaint : String
+    , border : String
+    , borderHover : String
+    , borderOpen : String
+    , surface : String
+    , surfaceAlt : String
+    , codeBg : String
+    , codeText : String
+    , activeBg : String
+    , hoverBg : String
+    , openBg : String
+    , navIdle : String
+    , accent : String
+    , tokComment : String
+    , tokString : String
+    , tokNumber : String
+    , tokKeyword : String
+    , tokType : String
+    }
+
+
+paletteFor : Theme -> Palette
+paletteFor t =
+    case t.mode of
+        Theme.Light ->
+            lightPalette
+
+        Theme.Dark ->
+            darkPalette
+
+
+{-| Light = the palette the chrome used to hardcode, byte for byte.
+-}
+lightPalette : Palette
+lightPalette =
+    { bg = "#fff"
+    , text = "#333639"
+    , textMuted = "#7c8087"
+    , textFaint = "#909399"
+    , border = "#efeff5"
+    , borderHover = "#e3e3ea"
+    , borderOpen = "#d5e9de"
+    , surface = "#fff"
+    , surfaceAlt = "#fafafc"
+    , codeBg = "#f6f8fa"
+    , codeText = "#24292f"
+    , activeBg = "#f0faf5"
+    , hoverBg = "#f6f8fa"
+    , openBg = "#f0faf5"
+    , navIdle = "#4c5056"
+    , accent = "#18a058"
+    , tokComment = "#6a737d"
+    , tokString = "#0e8a54"
+    , tokNumber = "#9a6700"
+    , tokKeyword = "#cf222e"
+    , tokType = "#8250df"
+    }
+
+
+{-| Dark = naive-ui's dark surfaces (rgb(16,16,20) body, rgb(24,24,28) cards,
+mint #63e2b7 primary) with translucent-white text/borders so cards sit on the
+page instead of floating.
+-}
+darkPalette : Palette
+darkPalette =
+    { bg = "rgb(16,16,20)"
+    , text = "rgba(255,255,255,.82)"
+    , textMuted = "rgba(255,255,255,.55)"
+    , textFaint = "rgba(255,255,255,.38)"
+    , border = "rgb(255,255,255,.09)"
+    , borderHover = "rgb(255,255,255,.14)"
+    , borderOpen = "rgba(99,226,183,.28)"
+    , surface = "rgb(24,24,28)"
+    , surfaceAlt = "rgb(44,44,50)"
+    , codeBg = "rgb(32,32,36)"
+    , codeText = "rgba(255,255,255,.82)"
+    , activeBg = "rgba(99,226,183,.09)"
+    , hoverBg = "rgba(255,255,255,.06)"
+    , openBg = "rgba(99,226,183,.12)"
+    , navIdle = "rgba(255,255,255,.62)"
+    , accent = "#63e2b7"
+    , tokComment = "rgba(255,255,255,.4)"
+    , tokString = "#63e2b7"
+    , tokNumber = "#f2c97d"
+    , tokKeyword = "#e88080"
+    , tokType = "#a78bfa"
+    }
 
 
 typ : Typo.Options msg
@@ -88,16 +191,23 @@ tagD =
 {-| Chrome CSS: smooth anchor scrolling and the sticky-header offset for
 section targets. Spliced next to `Css.element` in Main.
 -}
-chromeCss : Element msg
-chromeCss =
-    Element.html chromeCssNode
+chromeCss : Theme -> Element msg
+chromeCss t =
+    Element.html (chromeCssNode t)
 
 
-{-| The raw `<style>` node behind `chromeCss` — Main memoizes it with
-`Html.Lazy.lazy` so the per-msg diff skips the constant text child.
+{-| The raw `<style>` node behind `chromeCss` — the same rule set Main embeds
+(memoized on `model.themeMode` via `Html.Lazy.lazy`, so the per-msg diff
+skips the constant text child until the theme flips), with every colour
+interpolated from `paletteFor`. Selectors and non-colour declarations are
+mode-independent.
 -}
-chromeCssNode : Html.Html msg
-chromeCssNode =
+chromeCssNode : Theme -> Html.Html msg
+chromeCssNode t =
+    let
+        p =
+            paletteFor t
+    in
     Html.node "style"
         []
         [ Html.text
@@ -120,25 +230,61 @@ chromeCssNode =
                 -- typographic baseline in both toggle states; the toggle
                 -- is a native <details> laid out as an end-aligned flex
                 -- column, so the chip hugs the right edge while the
-                -- expanded panel anchors to the footer's RIGHT edge —
-                -- the one anchor that is identical on every card (a
-                -- left anchor would jitter with each label's width).
-                , ".sc-foot{width:100%;box-sizing:border-box;display:flex;align-items:baseline;gap:12px;padding:9px 16px;border-top:1px solid #efeff5}"
-                , ".sc-foot-label{font-size:11px;color:#7c8087;letter-spacing:.6px;white-space:nowrap}"
-                , ".sc-code{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;align-items:flex-end;font-size:11px;color:#7c8087}"
+                -- expanded panel anchors to the footer's RIGHT edge — the one
+                -- anchor that is identical on every card (a left anchor
+                -- would jitter with each label's width).
+                , ".sc-foot{width:100%;box-sizing:border-box;display:flex;align-items:baseline;gap:12px;padding:9px 16px;border-top:1px solid "
+                    ++ p.border
+                    ++ "}"
+                , ".sc-foot-label{font-size:11px;color:"
+                    ++ p.textMuted
+                    ++ ";letter-spacing:.6px;white-space:nowrap}"
+                , ".sc-code{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;align-items:flex-end;font-size:11px;color:"
+                    ++ p.textMuted
+                    ++ "}"
                 , ".sc-code>summary{list-style:none;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border:1px solid transparent;border-radius:3px;font-size:11px;letter-spacing:.4px;line-height:16px;color:inherit;transition:color .15s ease,border-color .15s ease,background-color .15s ease}"
                 , ".sc-code>summary::-webkit-details-marker{display:none}"
-                , ".sc-code>summary:hover{color:#18a058;background:#f6f8fa;border-color:#e3e3ea}"
-                , ".sc-code[open]>summary{color:#18a058;background:#f0faf5;border-color:#d5e9de}"
-                , ".sc-code>summary:focus-visible{outline:1px solid #18a058;outline-offset:2px}"
+                , ".sc-code>summary:hover{color:"
+                    ++ p.accent
+                    ++ ";background:"
+                    ++ p.hoverBg
+                    ++ ";border-color:"
+                    ++ p.borderHover
+                    ++ "}"
+                , ".sc-code[open]>summary{color:"
+                    ++ p.accent
+                    ++ ";background:"
+                    ++ p.openBg
+                    ++ ";border-color:"
+                    ++ p.borderOpen
+                    ++ "}"
+                , ".sc-code>summary:focus-visible{outline:1px solid "
+                    ++ p.accent
+                    ++ ";outline-offset:2px}"
                 , ".sc-code .sc-code-chev{flex:none;transition:transform .18s ease}"
                 , ".sc-code[open] .sc-code-chev{transform:rotate(90deg)}"
-                , ".sc-code>pre{max-width:min(780px,100%);margin:8px 0 2px;padding:12px 14px;background:#f6f8fa;border:1px solid #efeff5;border-left:2px solid rgba(24,160,88,.45);border-radius:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;line-height:1.65;color:#24292f;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere}"
-                , ".sc-code>pre .tok-com{color:#6a737d;font-style:italic}"
-                , ".sc-code>pre .tok-str,.sc-code>pre .tok-chr{color:#0e8a54}"
-                , ".sc-code>pre .tok-num{color:#9a6700}"
-                , ".sc-code>pre .tok-kw,.sc-code>pre .tok-pun{color:#cf222e}"
-                , ".sc-code>pre .tok-typ,.sc-code>pre .tok-fn{color:#8250df}"
+                , ".sc-code>pre{max-width:min(780px,100%);margin:8px 0 2px;padding:12px 14px;background:"
+                    ++ p.codeBg
+                    ++ ";border:1px solid "
+                    ++ p.border
+                    ++ ";border-left:2px solid rgba(24,160,88,.45);border-radius:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;line-height:1.65;color:"
+                    ++ p.codeText
+                    ++ ";white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere}"
+                , ".sc-code>pre .tok-com{color:"
+                    ++ p.tokComment
+                    ++ ";font-style:italic}"
+                , ".sc-code>pre .tok-str,.sc-code>pre .tok-chr{color:"
+                    ++ p.tokString
+                    ++ "}"
+                , ".sc-code>pre .tok-num{color:"
+                    ++ p.tokNumber
+                    ++ "}"
+                , ".sc-code>pre .tok-kw,.sc-code>pre .tok-pun{color:"
+                    ++ p.tokKeyword
+                    ++ "}"
+                , ".sc-code>pre .tok-typ,.sc-code>pre .tok-fn{color:"
+                    ++ p.tokType
+                    ++ "}"
                 ]
             )
         ]
@@ -181,18 +327,18 @@ description is held to a ~720px reading measure — the content column is
 ~1000px wide and full-measure paragraphs (Notification, Menu, Modal…) read
 as a wall of text.
 -}
-section : String -> String -> List (Element msg) -> Element msg
-section title desc examples =
+section : Theme -> String -> String -> List (Element msg) -> Element msg
+section t title desc examples =
     Element.column
         [ Element.spacing 16
         , Element.width Element.fill
         , Element.htmlAttribute (HA.id (sectionId title))
         , Element.htmlAttribute (HA.class "sc-sec")
         ]
-        [ Typo.h3 theme typ [ Element.text title ]
+        [ Typo.h3 t typ [ Element.text title ]
         , Element.el
             [ Element.width (Element.maximum 720 Element.fill) ]
-            (Typo.text theme { typ | depth = Just 3 } [ Element.text desc ])
+            (Typo.text t { typ | depth = Just 3 } [ Element.text desc ])
         , Element.column [ Element.spacing 20, Element.width Element.fill ] examples
         ]
 
@@ -209,14 +355,18 @@ generated DemoCode dictionary. Pure CSS open/close — no model state, no
 messages, so the toggle is inert to the page's update loop.
 
 -}
-demoRow : String -> String -> List (Element msg) -> Element msg
-demoRow key label items =
+demoRow : Theme -> String -> String -> List (Element msg) -> Element msg
+demoRow t key label items =
     Element.column
         [ Element.width Element.fill
         , Element.htmlAttribute
             (HA.attribute
                 "style"
-                "border:1px solid #efeff5;border-radius:4px;background:#fff"
+                ("border:1px solid "
+                    ++ (paletteFor t).border
+                    ++ ";border-radius:4px;background:"
+                    ++ (paletteFor t).surface
+                )
             )
         ]
         [ Element.wrappedRow
@@ -229,7 +379,7 @@ demoRow key label items =
                 )
             ]
             items
-        , footerBar key label
+        , footerBar t key label
         ]
 
 
@@ -244,8 +394,8 @@ the pre-toggle footer exactly. The `Element.el width fill` wrapper is
 load-bearing: `Element.html` alone shrink-wraps to content, which would
 clip the footer's border-top to the label's width instead of the card's.
 -}
-footerBar : String -> String -> Element msg
-footerBar key label =
+footerBar : Theme -> String -> String -> Element msg
+footerBar t key label =
     Element.el
         [ Element.width Element.fill ]
         (Element.html
@@ -341,14 +491,18 @@ chevronDown =
 `overflow: hidden` keeps their geometry inside the box. Keyed like `demoRow`,
 with the code toggle in its footer.
 -}
-demoBox : String -> Int -> Element msg -> Element msg
-demoBox key heightPx content =
+demoBox : Theme -> String -> Int -> Element msg -> Element msg
+demoBox t key heightPx content =
     Element.column
         [ Element.width Element.fill
         , Element.htmlAttribute
             (HA.attribute
                 "style"
-                "position:relative;transform:translate(0,0);border:1px solid #efeff5;border-radius:4px;background:#fafafc"
+                ("position:relative;transform:translate(0,0);border:1px solid "
+                    ++ (paletteFor t).border
+                    ++ ";border-radius:4px;background:"
+                    ++ (paletteFor t).surfaceAlt
+                )
             )
         ]
         [ Element.el
@@ -357,13 +511,13 @@ demoBox key heightPx content =
             , Element.htmlAttribute (HA.attribute "style" "overflow:hidden")
             ]
             content
-        , footerBar key ""
+        , footerBar t key ""
         ]
 
 
-chip : String -> Element msg
-chip label =
-    Tag.view theme { tagD | bordered = False } [ Element.text label ]
+chip : Theme -> String -> Element msg
+chip t label =
+    Tag.view t { tagD | bordered = False } [ Element.text label ]
 
 
 {-| Stretches a content-sized component to the full width of its container.
