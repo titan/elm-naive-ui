@@ -822,21 +822,24 @@ dialogPS =
 -}
 loadingBarRows : List (Element msg)
 loadingBarRows =
-    [ demoRow "Starting (80%)"
+    [ demoRow "ovr-001"
+        "Starting (80%)"
         [ Element.el [ Element.width (Element.px 440) ]
             (LoadingBar.view theme
                 { lbD | containerStyle = Just "position:relative;margin-bottom:8px;" }
                 (LoadingBar.start LoadingBar.init |> LoadingBar.kick)
             )
         ]
-    , demoRow "Finishing"
+    , demoRow "ovr-002"
+        "Finishing"
         [ Element.el [ Element.width (Element.px 440) ]
             (LoadingBar.view theme
                 { lbD | containerStyle = Just "position:relative;margin-bottom:8px;" }
                 (LoadingBar.start LoadingBar.init |> LoadingBar.kick |> LoadingBar.finish)
             )
         ]
-    , demoRow "Error"
+    , demoRow "ovr-003"
+        "Error"
         [ Element.el [ Element.width (Element.px 440) ]
             (LoadingBar.view theme
                 { lbD | containerStyle = Just "position:relative;margin-bottom:8px;" }
@@ -858,7 +861,7 @@ loadingBarSection =
 -}
 loadingBarClockRow : Model -> Element Msg
 loadingBarClockRow model =
-    demoRow "LoadingBar · manual clock" <|
+    demoRow "ovr-004" "LoadingBar · manual clock" <|
         [ Button.view theme { btn | size = T.Small, onPress = Just LoadingStart } [ Element.text "start" ]
         , Button.view theme { btn | size = T.Small, onPress = Just LoadingKick } [ Element.text "kick" ]
         , Button.view theme { btn | size = T.Small, onPress = Just LoadingFadeDone } [ Element.text "fade ✓" ]
@@ -911,7 +914,8 @@ popoverHost placement attrs content =
 
 popoverRows : List (Element msg)
 popoverRows =
-    [ demoRow "Basic (top) + header/footer (bottom)"
+    [ demoRow "ovr-005"
+        "Basic (top) + header/footer (bottom)"
         [ popoverHost Popover.Top
             []
             (Popover.view theme
@@ -929,7 +933,8 @@ popoverRows =
                 [ Element.text "Header and footer slots add their wrapper divs and the modifier class." ]
             )
         ]
-    , demoRow "No arrow / overlap / raw"
+    , demoRow "ovr-006"
+        "No arrow / overlap / raw"
         [ popoverHost Popover.Right
             []
             (Popover.view theme
@@ -949,7 +954,8 @@ popoverRows =
                 [ Element.text "Raw: no background, radius or padding." ]
             )
         ]
-    , demoRow "Enter-active transition (caller-driven)"
+    , demoRow "ovr-007"
+        "Enter-active transition (caller-driven)"
         [ popoverHost Popover.Top
             []
             (Popover.view theme
@@ -960,7 +966,8 @@ popoverRows =
                 [ Element.text "The popover-transition classes are the caller's clock." ]
             )
         ]
-    , demoRow "Scrollable (n-scrollbar child)"
+    , demoRow "ovr-008"
+        "Scrollable (n-scrollbar child)"
         [ popoverHost Popover.Top
             []
             (Popover.view theme
@@ -977,7 +984,8 @@ popoverRows =
 
 popconfirmRows : List (Element msg)
 popconfirmRows =
-    [ demoRow "Default + no icon / action slot"
+    [ demoRow "ovr-009"
+        "Default + no icon / action slot"
         [ popoverHost Popover.Top
             []
             (Popconfirm.view theme
@@ -995,7 +1003,8 @@ popconfirmRows =
                 [ Element.text "No icon; the body renders content-only." ]
             )
         ]
-    , demoRow "Custom texts + button-props overrides"
+    , demoRow "ovr-010"
+        "Custom texts + button-props overrides"
         [ popoverHost Popover.Top
             []
             (Popconfirm.view theme
@@ -1024,7 +1033,7 @@ the cell it drives).
 -}
 popconfirmFlowRow : Model -> Element Msg
 popconfirmFlowRow model =
-    demoRow "Popconfirm · confirm flow" <|
+    demoRow "ovr-011" "Popconfirm · confirm flow" <|
         [ relHost "live-popconfirm"
             Popover.Top
             [ Button.view theme
@@ -1066,7 +1075,7 @@ switch by document order).
 -}
 popoverControlledRow : Model -> Element Msg
 popoverControlledRow model =
-    demoRow "Popover · controlled" <|
+    demoRow "ovr-012" "Popover · controlled" <|
         [ Switch.view theme
             { swD | value = model.popoverPinned, onChange = Just PopoverPinned }
             [ Element.text "controlled" ]
@@ -1117,7 +1126,8 @@ popoverLiveSection model =
 
 tooltipRows : List (Element msg)
 tooltipRows =
-    [ demoRow "Light theme (dark bubble)"
+    [ demoRow "ovr-013"
+        "Light theme (dark bubble)"
         [ popoverHost Popover.Top
             []
             (Tooltip.view theme
@@ -1131,7 +1141,8 @@ tooltipRows =
                 [ Element.text "No arrow." ]
             )
         ]
-    , demoRow "Dark theme (popover colours)"
+    , demoRow "ovr-014"
+        "Dark theme (popover colours)"
         [ popoverHost Popover.Right
             []
             (Tooltip.view darkTheme
@@ -1153,7 +1164,7 @@ tooltipSection =
 -}
 tooltipHoverRow : Model -> Element Msg
 tooltipHoverRow model =
-    demoRow "Tooltip · hover" <|
+    demoRow "ovr-015" "Tooltip · hover" <|
         [ Element.column
             [ Popover.placementAttribute Popover.Bottom
             , Element.htmlAttribute (HA.attribute "style" "position:relative;padding:6px 0;")
@@ -1194,7 +1205,8 @@ tooltipLiveSection model =
 
 dropdownRows : Model -> List (Element Msg)
 dropdownRows model =
-    [ demoRow "Basic + sizes"
+    [ demoRow "ovr-016"
+        "Basic + sizes"
         [ popoverHost Popover.Bottom
             []
             (Dropdown.view theme
@@ -1247,7 +1259,8 @@ dropdownRows model =
                 [ demoLeaf "huge-1" "Huge", demoLeaf "huge-2" "46px rows, 18px icons" ]
             )
         ]
-    , demoRow "Groups, dividers, icons, submenus, custom"
+    , demoRow "ovr-017"
+        "Groups, dividers, icons, submenus, custom"
         [ popoverHost Popover.Bottom
             []
             (Dropdown.view theme
@@ -1325,7 +1338,8 @@ dropdownRows model =
                 ]
             )
         ]
-    , demoRow "Arrow / inverted / scrollable"
+    , demoRow "ovr-018"
+        "Arrow / inverted / scrollable"
         [ popoverHost Popover.Bottom
             []
             (Dropdown.view theme
@@ -1373,7 +1387,7 @@ dropdownSection model =
 -}
 dropdownClickRow : Model -> Element Msg
 dropdownClickRow model =
-    demoRow "Dropdown · click trigger" <|
+    demoRow "ovr-019" "Dropdown · click trigger" <|
         [ relHost "live-dropdown-click"
             Popover.Bottom
             [ Button.view theme
@@ -1411,7 +1425,7 @@ dropdownClickRow model =
 -}
 dropdownHoverRow : Model -> Element Msg
 dropdownHoverRow model =
-    demoRow "Dropdown · hover trigger" <|
+    demoRow "ovr-020" "Dropdown · hover trigger" <|
         [ Element.column
             [ Popover.placementAttribute Popover.Bottom
             , Element.htmlAttribute (HA.attribute "style" "position:relative;padding:6px 0;")
@@ -1505,7 +1519,8 @@ messageOf key kind content =
 
 messageRows : Model -> List (Element Msg)
 messageRows model =
-    [ demoRow "Kinds (one container, stacked)"
+    [ demoRow "ovr-021"
+        "Kinds (one container, stacked)"
         [ messageState Message.Top
             [ messageOf "d" Message.Default "A default message — no icon wrapper"
             , messageOf "i" Message.Info "An info message"
@@ -1519,10 +1534,12 @@ messageRows model =
             , messageOf "b2" Message.Success "align-items flips to flex-end"
             ]
         ]
-    , demoRow "Closable (onClose fires; you destroy)"
+    , demoRow "ovr-022"
+        "Closable (onClose fires; you destroy)"
         [ messageState Message.Top model.staticMessages
         ]
-    , demoRow "Transition phases (caller clock)"
+    , demoRow "ovr-023"
+        "Transition phases (caller clock)"
         [ messageState Message.Top
             [ messageOf "idle" Message.Info "Settled — no phase class"
             , { messageI
@@ -1537,7 +1554,8 @@ messageRows model =
               }
             ]
         ]
-    , demoRow "Custom icon + render (replaces the whole body)"
+    , demoRow "ovr-024"
+        "Custom icon + render (replaces the whole body)"
         [ messageState Message.Top
             [ { messageI
                 | key = "icon"
@@ -1580,7 +1598,7 @@ messageSection model =
 -}
 messageQueueRow : Model -> Element Msg
 messageQueueRow model =
-    demoRow "Message · queue (click-to-dismiss clock)" <|
+    demoRow "ovr-025" "Message · queue (click-to-dismiss clock)" <|
         [ Button.view theme { btn | onPress = Just MessageInfo } [ Element.text "info" ]
         , Button.view theme { btn | kind = T.Primary, onPress = Just MessageSuccess } [ Element.text "success" ]
         , Button.view theme { btn | kind = T.Error, onPress = Just MessageError } [ Element.text "error" ]
@@ -1622,7 +1640,8 @@ notificationOf key title kind =
 
 notificationRows : Model -> List (Element Msg)
 notificationRows model =
-    [ demoRow "Kinds (top-right — scrollable, so the n-scrollbar tree shows)"
+    [ demoRow "ovr-026"
+        "Kinds (top-right — scrollable, so the n-scrollbar tree shows)"
         [ notificationState Notification.TopRight
             [ notificationOf "d" "A default notification" Notification.Default
             , notificationOf "i" "An info notification" Notification.Info
@@ -1631,10 +1650,12 @@ notificationRows model =
             , notificationOf "e" "An error notification" Notification.Error
             ]
         ]
-    , demoRow "Closable + description / content-in-pre / meta + action"
+    , demoRow "ovr-027"
+        "Closable + description / content-in-pre / meta + action"
         [ notificationState Notification.TopRight model.staticNotifications
         ]
-    , demoRow "Placements (top/bottom centers force the scrollbar off)"
+    , demoRow "ovr-028"
+        "Placements (top/bottom centers force the scrollbar off)"
         [ notificationState Notification.TopLeft
             [ notificationOf "tl" "Top-left — scrollable" Notification.Success ]
         , notificationState Notification.Top
@@ -1642,7 +1663,8 @@ notificationRows model =
         , notificationState Notification.BottomRight
             [ notificationOf "br" "Bottom-right — align flips" Notification.Error ]
         ]
-    , demoRow "Transition phases (caller clock) + the container's transitioning class"
+    , demoRow "ovr-029"
+        "Transition phases (caller clock) + the container's transitioning class"
         [ notificationState Notification.TopRight
             [ notificationOf "idle" "Settled — no phase class" Notification.Info
             , { notificationI
@@ -1671,7 +1693,7 @@ notificationSection model =
 -}
 notificationQueueRow : Model -> Element Msg
 notificationQueueRow model =
-    demoRow "Notification · queue (max 3)" <|
+    demoRow "ovr-030" "Notification · queue (max 3)" <|
         [ Button.view theme { btn | onPress = Just NotificationInfo } [ Element.text "info" ]
         , Button.view theme { btn | kind = T.Primary, onPress = Just NotificationSuccess } [ Element.text "success" ]
         , Button.view theme { btn | kind = T.Error, onPress = Just NotificationError } [ Element.text "error" ]
@@ -1725,7 +1747,8 @@ cell content =
 
 modalRows : Model -> List (Element Msg)
 modalRows model =
-    [ demoRow "Custom content + card preset"
+    [ demoRow "ovr-031"
+        "Custom content + card preset"
         [ modalHost []
             (Modal.view theme
                 { modalD | show = True }
@@ -1753,7 +1776,8 @@ modalRows model =
                 )
             )
         ]
-    , demoRow "Card variants (bordered opt-in, segmented, dark)"
+    , demoRow "ovr-032"
+        "Card variants (bordered opt-in, segmented, dark)"
         [ modalHost []
             (Modal.view theme
                 { modalD | show = True }
@@ -1790,7 +1814,8 @@ modalRows model =
                 )
             )
         ]
-    , demoRow "No mask (mask-hidden) + z-index"
+    , demoRow "ovr-033"
+        "No mask (mask-hidden) + z-index"
         [ modalHost []
             (Modal.view theme
                 { modalD | show = True, showMask = False }
@@ -1818,7 +1843,8 @@ modalRows model =
                 )
             )
         ]
-    , demoRow "Enter-active phases (caller clock)"
+    , demoRow "ovr-034"
+        "Enter-active phases (caller clock)"
         [ modalHost []
             (Modal.view theme
                 { modalD
@@ -1846,7 +1872,7 @@ modalSection model =
 -}
 modalRow : Model -> Element Msg
 modalRow model =
-    demoRow "Modal · open/close + mask" <|
+    demoRow "ovr-035" "Modal · open/close + mask" <|
         [ Button.view theme
             { btn | kind = T.Primary, onPress = Just ModalOpen }
             [ Element.text "Open modal" ]
@@ -1903,7 +1929,8 @@ drawerBody =
 
 drawerRows : Model -> List (Element Msg)
 drawerRows model =
-    [ demoRow "Four placements (NDrawerContent composition)"
+    [ demoRow "ovr-036"
+        "Four placements (NDrawerContent composition)"
         [ modalHost []
             (Drawer.view theme
                 { drawerD | show = model.drawerStaticOpen, placement = Drawer.Right, width = Just "200px", onMaskClick = Just DrawerStaticClose }
@@ -1925,7 +1952,8 @@ drawerRows model =
                 [ drawerBody ]
             )
         ]
-    , demoRow "Custom content (no DrawerContent)"
+    , demoRow "ovr-037"
+        "Custom content (no DrawerContent)"
         [ modalHost []
             (Drawer.view theme
                 { drawerD | show = True, placement = Drawer.Right, width = Just "220px" }
@@ -1940,7 +1968,8 @@ drawerRows model =
                 ]
             )
         ]
-    , demoRow "Mask variants + z-index"
+    , demoRow "ovr-038"
+        "Mask variants + z-index"
         [ modalHost []
             (Drawer.view theme
                 { drawerD
@@ -1968,7 +1997,8 @@ drawerRows model =
                 [ drawerBody ]
             )
         ]
-    , demoRow "Scroll seams + resize trigger"
+    , demoRow "ovr-039"
+        "Scroll seams + resize trigger"
         [ modalHost []
             (Drawer.view theme
                 { drawerD
@@ -1997,7 +2027,8 @@ drawerRows model =
                 [ drawerBody ]
             )
         ]
-    , demoRow "Enter-active phase (caller clock)"
+    , demoRow "ovr-040"
+        "Enter-active phase (caller clock)"
         [ modalHost []
             (Drawer.view theme
                 { drawerD
@@ -2024,7 +2055,7 @@ drawerSection model =
 -}
 drawerRow : Model -> Element Msg
 drawerRow model =
-    demoRow "Drawer · placement picker" <|
+    demoRow "ovr-041" "Drawer · placement picker" <|
         [ Radio.group theme
             { radioGD
                 | value = Just model.drawerPlacement
@@ -2072,7 +2103,8 @@ dialogState items =
 
 dialogRows : Model -> List (Element Msg)
 dialogRows model =
-    [ demoRow "Kinds (bare body — the icon/type system)"
+    [ demoRow "ovr-042"
+        "Kinds (bare body — the icon/type system)"
         [ cell
             (if model.dialogSamplesOpen then
                 Dialog.view theme
@@ -2120,7 +2152,8 @@ dialogRows model =
                 Element.none
             )
         ]
-    , demoRow "Modal dialog/confirm presets"
+    , demoRow "ovr-043"
+        "Modal dialog/confirm presets"
         [ modalHost []
             (Modal.view theme
                 { modalD | show = model.modalDialogOpen }
@@ -2149,7 +2182,8 @@ dialogRows model =
                 )
             )
         ]
-    , demoRow "useDialog service (NUI.DialogProvider — fixed queues)"
+    , demoRow "ovr-044"
+        "useDialog service (NUI.DialogProvider — fixed queues)"
         [ dialogState
             [ { dialogPI
                 | key = "d1"
@@ -2193,7 +2227,8 @@ dialogRows model =
               }
             ]
         ]
-    , demoRow "icon-top, bordered, custom action"
+    , demoRow "ovr-045"
+        "icon-top, bordered, custom action"
         [ cell
             (if model.dialogSamplesOpen then
                 Dialog.view theme
@@ -2222,7 +2257,8 @@ dialogRows model =
                 }
             )
         ]
-    , demoRow "Loading + button-props overrides + dark"
+    , demoRow "ovr-046"
+        "Loading + button-props overrides + dark"
         [ cell
             (Dialog.view theme
                 { dialogD
@@ -2269,7 +2305,7 @@ dialogSection model =
 -}
 dialogRow : Model -> Element Msg
 dialogRow model =
-    demoRow "Dialog · positive/negative" <|
+    demoRow "ovr-047" "Dialog · positive/negative" <|
         [ Button.view theme
             { btn | onPress = Just DialogOpen }
             [ Element.text "Open dialog" ]

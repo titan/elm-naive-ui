@@ -51,6 +51,7 @@ elm make --output=/dev/null
 
 echo "== 5/8 example build =="
 bust_stale_elm_stuff "$here/examples"
+node tools/gen-demo-code.mjs --check
 ( cd examples && elm make src/Main.elm --output=index.html )
 
 echo "== 6/8 component DOM/bridge =="

@@ -298,7 +298,8 @@ typographySection =
                 (\k -> Typo.text theme { typ | kind = k } [ Element.text (capitalize (T.kindClass k)) ])
                 [ T.Default, T.Primary, T.Info, T.Success, T.Warning, T.Error ]
             )
-        , demoRow "Styles"
+        , demoRow "gen-001"
+            "Styles"
             [ Typo.text theme { typ | strong = True } [ Element.text "Strong" ]
             , Typo.text theme { typ | italic = True } [ Element.text "Italic" ]
             , Typo.text theme { typ | underline = True } [ Element.text "Underline" ]
@@ -322,12 +323,14 @@ typographySection =
 
 tagRows : Model -> List (Element Msg)
 tagRows model =
-    [ demoRow "Types"
+    [ demoRow "gen-002"
+        "Types"
         (List.map
             (\k -> Tag.view theme { tagD | kind = k } [ Element.text (capitalize (T.kindClass k)) ])
             [ T.Default, T.Primary, T.Info, T.Success, T.Warning, T.Error ]
         )
-    , demoRow "Shapes & states"
+    , demoRow "gen-003"
+        "Shapes & states"
         [ Tag.view theme { tagD | round = True } [ Element.text "Round" ]
         , Tag.view theme { tagD | bordered = False } [ Element.text "Filled" ]
         , Tag.view theme { tagD | kind = T.Primary, strong = True } [ Element.text "Strong" ]
@@ -361,7 +364,8 @@ model state (onClose / onCheck are the port's caller-owned channels).
 -}
 tagLiveRow : Model -> Element Msg
 tagLiveRow model =
-    demoRow "Tag · close / check / add (live)"
+    demoRow "gen-004"
+        "Tag · close / check / add (live)"
         [ Element.row [ Element.spacing 8 ]
             (List.map
                 (\name ->
@@ -410,14 +414,16 @@ tagLiveSection model =
 
 alertRows : Model -> List (Element Msg)
 alertRows model =
-    [ demoRow "Default (no icon — the Default kind reserves no gutter)"
+    [ demoRow "gen-005"
+        "Default (no icon — the Default kind reserves no gutter)"
         [ fillWidth
             (Alert.view theme
                 { alertD | showIcon = False }
                 [ Element.text "A default alert." ]
             )
         ]
-    , demoRow "Kinds · title · closable"
+    , demoRow "gen-006"
+        "Kinds · title · closable"
         [ fillWidth
             (Alert.view theme
                 { alertD | kind = T.Info, title = Just "Info" }
@@ -457,7 +463,8 @@ its × is clicked (onClose is the port's caller-owned channel).
 -}
 alertLiveRow : Model -> Element Msg
 alertLiveRow model =
-    demoRow "Alert · closable (live)"
+    demoRow "gen-007"
+        "Alert · closable (live)"
         ([ Button.view theme
             { btn
                 | size = T.Small
@@ -512,12 +519,14 @@ alertLiveSection model =
 dividerSection : Element msg
 dividerSection =
     section "Divider" "Separates content." <|
-        [ demoRow "Title placements"
+        [ demoRow "gen-008"
+            "Title placements"
             [ Divider.view theme { divD | titlePlacement = Divider.Left } [ Element.text "Left" ]
             , Divider.view theme { divD | titlePlacement = Divider.Center } [ Element.text "Center" ]
             , Divider.view theme { divD | titlePlacement = Divider.Right } [ Element.text "Right" ]
             ]
-        , demoRow "Dashed + vertical"
+        , demoRow "gen-009"
+            "Dashed + vertical"
             [ Divider.view theme { divD | dashed = True } []
             , Element.row [ Element.spacing 16, Element.height (Element.px 42) ]
                 [ Element.text "Text"
@@ -533,19 +542,22 @@ dividerSection =
 avatarSection : Element msg
 avatarSection =
     section "Avatar" "Sizes, shapes and colours." <|
-        [ demoRow "Sizes"
+        [ demoRow "gen-010"
+            "Sizes"
             [ Avatar.view theme { avD | size = Avatar.Tiny } [ Element.text "T" ]
             , Avatar.view theme { avD | size = Avatar.Small } [ Element.text "S" ]
             , Avatar.view theme { avD | size = Avatar.Medium } [ Element.text "M" ]
             , Avatar.view theme { avD | size = Avatar.Large } [ Element.text "L" ]
             , Avatar.view theme { avD | size = Avatar.Huge } [ Element.text "H" ]
             ]
-        , demoRow "Shapes & colours"
+        , demoRow "gen-011"
+            "Shapes & colours"
             [ Avatar.view theme { avD | circle = True, color = Just "#18a058" } [ Element.text "A" ]
             , Avatar.view theme { avD | circle = True, color = Just "#2080f0" } [ Element.text "B" ]
             , Avatar.view theme { avD | color = Just "#f0a020" } [ Element.text "Rounded" ]
             ]
-        , demoRow "Group"
+        , demoRow "gen-012"
+            "Group"
             [ AvatarGroup.view theme
                 { agD
                     | max = Just 3
@@ -604,11 +616,14 @@ cardSection =
 spaceSection : Element msg
 spaceSection =
     section "Space" "Spacing between arbitrary children." <|
-        [ demoRow "Small gap"
+        [ demoRow "gen-013"
+            "Small gap"
             [ Space.view theme { spaceD | size = Space.Small } (List.map chip [ "One", "Two", "Three" ]) ]
-        , demoRow "Medium gap"
+        , demoRow "gen-014"
+            "Medium gap"
             [ Space.view theme { spaceD | size = Space.Medium } (List.map chip [ "One", "Two", "Three" ]) ]
-        , demoRow "Vertical"
+        , demoRow "gen-015"
+            "Vertical"
             [ Space.view theme
                 { spaceD | direction = Space.Vertical, size = Space.Medium }
                 (List.map chip [ "Stacked", "Vertically", "Spaced" ])
@@ -619,7 +634,8 @@ spaceSection =
 badgeSection : Element msg
 badgeSection =
     section "Badge" "Counts and status dots on arbitrary content." <|
-        [ demoRow "Annotating a button"
+        [ demoRow "gen-016"
+            "Annotating a button"
             [ Badge.view theme
                 { badgeD | value = Just (Badge.Number 5) }
                 [ Button.view theme { btn | size = T.Small } [ Element.text "Mail" ] ]
@@ -630,7 +646,8 @@ badgeSection =
                 { badgeD | dot = True, processing = True, type_ = Badge.Error }
                 [ Button.view theme { btn | size = T.Small } [ Element.text "Alerts" ] ]
             ]
-        , demoRow "Types"
+        , demoRow "gen-017"
+            "Types"
             (List.map
                 (\t ->
                     Badge.view theme
@@ -639,13 +656,15 @@ badgeSection =
                 )
                 [ Badge.Default, Badge.Info, Badge.Success, Badge.Warning, Badge.Error ]
             )
-        , demoRow "Custom colour"
+        , demoRow "gen-018"
+            "Custom colour"
             [ Badge.view theme
                 { badgeD | value = Just (Badge.Text "New"), color = Just "#36ad6a" }
                 []
             , Badge.view theme { badgeD | dot = True, color = Just "#18a058" } []
             ]
-        , demoRow "Runtime (digit scroll · wave)"
+        , demoRow "gen-019"
+            "Runtime (digit scroll · wave)"
             [ Badge.view theme
                 { badgeD
                     | value = Just (Badge.Number 128)
@@ -684,9 +703,11 @@ emptySection =
         -- card — a fixed-px wrapper would pin the centred content to the card's
         -- left edge. The Sizes pair keeps two fixed measures (so the scales are
         -- comparable) but centres the pair as a unit in a full-width row.
-        [ demoRow "Default"
+        [ demoRow "gen-020"
+            "Default"
             [ cell (Empty.view theme emptyD []) ]
-        , demoRow "Description & extra"
+        , demoRow "gen-021"
+            "Description & extra"
             [ cell
                 (Empty.view theme
                     { emptyD
@@ -696,7 +717,8 @@ emptySection =
                     []
                 )
             ]
-        , demoRow "Sizes"
+        , demoRow "gen-022"
+            "Sizes"
             [ Element.row
                 [ Element.width Element.fill
                 , Element.htmlAttribute
@@ -717,7 +739,8 @@ emptySection =
 resultSection : Element msg
 resultSection =
     section "Result" "Important feedback pages." <|
-        [ demoRow "Statuses"
+        [ demoRow "gen-023"
+            "Statuses"
             [ Element.el [ Element.width (Element.px 210) ]
                 (Result.view theme
                     { resultD | status = Result.Info, title = Just "Informational" }
@@ -729,7 +752,8 @@ resultSection =
                     []
                 )
             ]
-        , demoRow "404 · custom content"
+        , demoRow "gen-024"
+            "404 · custom content"
             [ Element.el [ Element.width (Element.px 340) ]
                 (Result.view theme
                     { resultD
@@ -747,7 +771,8 @@ resultSection =
 gradientTextSection : Element msg
 gradientTextSection =
     section "Gradient Text" "Themed gradient text." <|
-        [ demoRow "Types"
+        [ demoRow "gen-025"
+            "Types"
             (List.map
                 (\t -> GradientText.view theme { gtD | type_ = t } [ Element.text "Wonderful" ])
                 [ GradientText.Primary
@@ -757,7 +782,8 @@ gradientTextSection =
                 , GradientText.Error
                 ]
             )
-        , demoRow "Custom gradient"
+        , demoRow "gen-026"
+            "Custom gradient"
             [ GradientText.view theme
                 { gtD
                     | gradient =
@@ -775,7 +801,8 @@ gradientTextSection =
 statisticSection : Element msg
 statisticSection =
     section "Statistic" "Labelled numeric displays." <|
-        [ demoRow "Basic"
+        [ demoRow "gen-027"
+            "Basic"
             [ Statistic.view theme
                 { statD | label = Just "Active users", value = Just "128" }
                 []
@@ -787,7 +814,8 @@ statisticSection =
                 }
                 []
             ]
-        , demoRow "Tabular nums & custom value"
+        , demoRow "gen-028"
+            "Tabular nums & custom value"
             [ Statistic.view theme
                 { statD
                     | label = Just "Growth"
@@ -802,7 +830,8 @@ statisticSection =
 thingSection : Element msg
 thingSection =
     section "Thing" "A flexible content block (avatar + header + body)." <|
-        [ demoRow "With avatar"
+        [ demoRow "gen-029"
+            "With avatar"
             [ Element.el [ Element.width (Element.px 320) ]
                 (Thing.view theme
                     { thingD
@@ -814,7 +843,8 @@ thingSection =
                     [ Element.text "Content sits under the header." ]
                 )
             ]
-        , demoRow "Indented content"
+        , demoRow "gen-030"
+            "Indented content"
             [ Element.el [ Element.width (Element.px 320) ]
                 (Thing.view theme
                     { thingD
@@ -830,21 +860,24 @@ thingSection =
 
 ellipsisRows : Model -> List (Element Msg)
 ellipsisRows model =
-    [ demoRow "Single line"
+    [ demoRow "gen-031"
+        "Single line"
         [ Element.el [ Element.width (Element.px 220) ]
             (Ellipsis.view theme
                 ellipsisD
                 [ Element.text "A very long single line of text that gets cut off with an ellipsis character." ]
             )
         ]
-    , demoRow "Line clamp 2"
+    , demoRow "gen-032"
+        "Line clamp 2"
         [ Element.el [ Element.width (Element.px 220) ]
             (Ellipsis.view theme
                 { ellipsisD | lineClamp = Just 2 }
                 [ Element.text "Line clamping caps this paragraph at two lines and hides the remaining text behind a trailing ellipsis." ]
             )
         ]
-    , demoRow "Expand on click"
+    , demoRow "gen-033"
+        "Expand on click"
         [ Element.el [ Element.width (Element.px 220) ]
             (Ellipsis.view theme
                 { ellipsisD
@@ -869,7 +902,8 @@ flag is the port's caller-owned seam).
 -}
 ellipsisLiveRow : Model -> Element Msg
 ellipsisLiveRow model =
-    demoRow "Ellipsis · expand toggle (live)"
+    demoRow "gen-034"
+        "Ellipsis · expand toggle (live)"
         [ Element.el [ Element.width (Element.px 220) ]
             (Ellipsis.view theme
                 { ellipsisD
@@ -902,12 +936,14 @@ iconSection =
     section "Icon"
         "Naive UI's icon primitive (`.n-icon`) and its rounded wrapper (`.n-icon-wrapper`). Pass the glyph as the child."
     <|
-        [ demoRow "Icon"
+        [ demoRow "gen-035"
+            "Icon"
             [ Icon.view theme iconD [ starIcon ]
             , Icon.view theme { iconD | size = Just (Icon.Px 32) } [ starIcon ]
             , Icon.view theme { iconD | depth = Just Icon.Depth2 } [ starIcon ]
             ]
-        , demoRow "Wrapper"
+        , demoRow "gen-036"
+            "Wrapper"
             [ IconWrapper.view theme iconWrapperD [ Icon.view theme iconD [ starIcon ] ]
             , IconWrapper.view theme
                 { iconWrapperD | color = Just "#18a058", iconColor = Just "#fff" }
@@ -946,7 +982,8 @@ rtlSection =
     section "RTL"
         "Right-to-left layout — pass `rtl = True`; the RTL rules ship in the stylesheet. (The alert copy is Arabic so the bidi layout is exercised with real RTL text.)"
     <|
-        [ demoRow "Alert"
+        [ demoRow "gen-037"
+            "Alert"
             [ Element.el [ Element.width (Element.px 340) ]
                 (fillWidth
                     (Alert.view theme
@@ -955,7 +992,8 @@ rtlSection =
                     )
                 )
             ]
-        , demoRow "Components"
+        , demoRow "gen-038"
+            "Components"
             [ Button.view theme { btn | rtl = True, kind = T.Primary } [ Element.text "Button" ]
             , Tag.view theme { tagD | rtl = True, kind = T.Primary } [ Element.text "Tag" ]
             , Badge.view theme
@@ -973,12 +1011,14 @@ themeSection =
     section "Theme"
         "One variable set drives every component — override the primary colour and it propagates."
     <|
-        [ demoRow "Default primary"
+        [ demoRow "gen-039"
+            "Default primary"
             [ Button.view theme { btn | kind = T.Primary } [ Element.text "Primary" ]
             , Tag.view theme { tagD | kind = T.Primary } [ Element.text "Tag" ]
             , Switch.view theme { swD | value = True } []
             ]
-        , demoRow "setPrimary \"#7c3aed\""
+        , demoRow "gen-040"
+            "setPrimary \"#7c3aed\""
             [ Button.view purple { btn | kind = T.Primary } [ Element.text "Primary" ]
             , Tag.view purple { tagD | kind = T.Primary } [ Element.text "Tag" ]
             , Switch.view purple { swD | value = True } []

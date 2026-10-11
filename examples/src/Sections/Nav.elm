@@ -609,7 +609,8 @@ paginationLiveRow model =
                 }
                 [ Element.text (String.fromInt size ++ " / page") ]
     in
-    demoRow "Pagination · page + size + jumper"
+    demoRow "nav-001"
+        "Pagination · page + size + jumper"
         [ Element.column [ Element.spacing 12 ]
             [ Pagination.view theme
                 { pgD
@@ -667,7 +668,8 @@ splitLiveRow model =
         small =
             { btn | size = T.Small }
     in
-    demoRow "Split · pane size stepper (real drag is the Motion family's pattern)"
+    demoRow "nav-002"
+        "Split · pane size stepper (real drag is the Motion family's pattern)"
         [ Element.column [ Element.spacing 12, Element.width (Element.px 520) ]
             [ Split.view theme
                 { splitD
@@ -720,7 +722,8 @@ stepsLiveRow model =
                 Nothing ->
                     "Done"
     in
-    demoRow "Steps · wizard (next / prev / jump)"
+    demoRow "nav-003"
+        "Steps · wizard (next / prev / jump)"
         [ Element.column [ Element.spacing 12, Element.width (Element.px 520) ]
             [ Steps.view theme
                 { stepsD
@@ -752,7 +755,8 @@ stepsLiveSection model =
 
 backTopRows : List (Element msg)
 backTopRows =
-    [ demoBox 160
+    [ demoBox "nav-004"
+        160
         (Element.el [ Element.padding 12 ]
             (BackTop.view theme { backTopD | show = True } [ Element.text "Up" ])
         )
@@ -772,7 +776,8 @@ backTopLiveRow model =
         small =
             { btn | size = T.Small }
     in
-    demoRow ("BackTop · simulated scroll (visible past " ++ String.fromInt backTopThreshold ++ "px)")
+    demoRow "nav-005"
+        ("BackTop · simulated scroll (visible past " ++ String.fromInt backTopThreshold ++ "px)")
         [ Element.row [ Element.spacing 12 ]
             [ Button.view theme { small | onPress = Just (ScrollBy 300) } [ Element.text "Scroll down 300" ]
             , Button.view theme { small | onPress = Just (ScrollBy -300) } [ Element.text "Scroll up 300" ]
@@ -840,7 +845,8 @@ documented accordion recipe).
 -}
 accordionLiveRow : Model -> Element Msg
 accordionLiveRow model =
-    demoRow "Collapse · accordion (one open at most)"
+    demoRow "nav-006"
+        "Collapse · accordion (one open at most)"
         [ Element.column [ Element.spacing 10, Element.width (Element.px 460) ]
             [ Collapse.view theme
                 { collapseD
@@ -861,7 +867,8 @@ accordionLiveRow model =
 -}
 multiLiveRow : Model -> Element Msg
 multiLiveRow model =
-    demoRow "Collapse · multiple open"
+    demoRow "nav-007"
+        "Collapse · multiple open"
         [ Element.column [ Element.spacing 10, Element.width (Element.px 460) ]
             [ Collapse.view theme
                 { collapseD
@@ -892,23 +899,30 @@ collapseLiveSection model =
 
 tabsRows : List (Element msg)
 tabsRows =
-    [ demoRow "Bar (default)"
+    [ demoRow "nav-008"
+        "Bar (default)"
         [ Tabs.view theme { tabsD | value = "one" } tabsItems ]
-    , demoRow "Line"
+    , demoRow "nav-009"
+        "Line"
         [ Tabs.view theme { tabsD | type_ = Tabs.Line, value = "two" } tabsItems ]
-    , demoRow "Card (closable)"
+    , demoRow "nav-010"
+        "Card (closable)"
         [ Tabs.view theme { tabsD | type_ = Tabs.Card, closable = True, value = "one" } tabsItems ]
-    , demoRow "Segment"
+    , demoRow "nav-011"
+        "Segment"
         [ Tabs.view theme { tabsD | type_ = Tabs.Segment, value = "two" } tabsItems ]
-    , demoRow "Sizes (small / medium / large)"
+    , demoRow "nav-012"
+        "Sizes (small / medium / large)"
         [ Tabs.view theme { tabsD | size = Tabs.Small, value = "one" } tabsItems
         , Tabs.view theme { tabsD | size = Tabs.Large, value = "one" } tabsItems
         ]
-    , demoRow "Placement (bottom / left)"
+    , demoRow "nav-013"
+        "Placement (bottom / left)"
         [ Tabs.view theme { tabsD | placement = Tabs.Bottom, value = "one" } tabsItems
         , Tabs.view theme { tabsD | placement = Tabs.Left, value = "one" } tabsItems
         ]
-    , demoRow "Show directive (all panes mounted)"
+    , demoRow "nav-014"
+        "Show directive (all panes mounted)"
         [ Tabs.view theme { tabsD | displayDirective = Tabs.Show, value = "one" } tabsItems ]
     ]
 
@@ -952,7 +966,8 @@ tabsLiveRow model =
             else
                 model.activeTab
     in
-    demoRow "Tabs · live tab bar (switch / close / add)"
+    demoRow "nav-015"
+        "Tabs · live tab bar (switch / close / add)"
         [ Element.column [ Element.spacing 10, Element.width (Element.px 460) ]
             [ Tabs.view theme opts (List.map toTab model.tabs)
             , chip ("active: " ++ activeLabel)
@@ -969,7 +984,8 @@ tabsLiveSection model =
 
 menuRows : List (Element msg)
 menuRows =
-    [ demoRow "Vertical (fixed state: path expanded, leaf selected)"
+    [ demoRow "nav-016"
+        "Vertical (fixed state: path expanded, leaf selected)"
         [ cell
             (Element.el [ Element.width (Element.px 240) ]
                 (Menu.view theme
@@ -981,7 +997,8 @@ menuRows =
                 )
             )
         ]
-    , demoRow "Accordion + expand-all / value-path init"
+    , demoRow "nav-017"
+        "Accordion + expand-all / value-path init"
         [ cell
             (Element.el [ Element.width (Element.px 240) ]
                 (Menu.view theme
@@ -1002,7 +1019,8 @@ menuRows =
                 )
             )
         ]
-    , demoRow "Collapsed (icon-only centering) + indent tuning"
+    , demoRow "nav-018"
+        "Collapsed (icon-only centering) + indent tuning"
         [ cell
             (Element.el [ Element.width (Element.px 64) ]
                 (Menu.view theme
@@ -1023,7 +1041,8 @@ menuRows =
                 )
             )
         ]
-    , demoRow "Horizontal + inverted"
+    , demoRow "nav-019"
+        "Horizontal + inverted"
         [ cell
             (Element.el [ Element.width Element.fill ]
                 (Menu.view theme
@@ -1043,7 +1062,8 @@ menuRows =
                 )
             )
         ]
-    , demoRow "Menu disabled (submenu dead, root leaf alive — upstream quirk)"
+    , demoRow "nav-020"
+        "Menu disabled (submenu dead, root leaf alive — upstream quirk)"
         [ cell
             (Element.el [ Element.width (Element.px 240) ]
                 (Menu.view theme
@@ -1076,7 +1096,8 @@ menuLiveRow model =
         small =
             { btn | size = T.Small }
     in
-    demoRow "Menu · navigate (select + expand)"
+    demoRow "nav-021"
+        "Menu · navigate (select + expand)"
         [ Element.column [ Element.spacing 10 ]
             [ Menu.view theme
                 { menuD
@@ -1134,17 +1155,20 @@ anchorRows =
             , aLink "API" "#anchor-api" []
             ]
     in
-    [ demoRow "Rail (default)"
+    [ demoRow "nav-022"
+        "Rail (default)"
         [ Anchor.view theme
             { anchorD | activeHref = Just "#anchor-basic" }
             demoLinks
         ]
-    , demoRow "Block"
+    , demoRow "nav-023"
+        "Block"
         [ Anchor.view theme
             { anchorD | type_ = Anchor.Block, activeHref = Just "#anchor-block" }
             demoLinks
         ]
-    , demoRow "No rail / no background"
+    , demoRow "nav-024"
+        "No rail / no background"
         [ Anchor.view theme
             { anchorD | showRail = False }
             demoLinks
@@ -1152,8 +1176,10 @@ anchorRows =
             { anchorD | showBackground = False, activeHref = Just "#anchor-api" }
             demoLinks
         ]
-    , demoRow "Affix wrap"
-        [ demoBox 200
+    , demoRow "nav-025"
+        "Affix wrap"
+        [ demoBox "nav-026"
+            200
             (Anchor.view theme
                 { anchorD
                     | affix = Just { affixD | affixed = True, top = Just 88 }
@@ -1188,7 +1214,8 @@ anchorLiveRow model =
                 , attributes = [ Element.htmlAttribute (HA.id id) ]
             }
     in
-    demoRow "Anchor · simulated scroll (caller-owned activeHref)"
+    demoRow "nav-027"
+        "Anchor · simulated scroll (caller-owned activeHref)"
         [ Element.column [ Element.spacing 10 ]
             [ Element.row [ Element.spacing 32 ]
                 [ Anchor.view theme (opts "live-anchor" Anchor.Rail) links

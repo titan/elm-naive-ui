@@ -1383,7 +1383,8 @@ pad2 n =
 
 progressRows : List (Element msg)
 progressRows =
-    [ demoRow "Line"
+    [ demoRow "mot-001"
+        "Line"
         [ Element.el [ Element.width (Element.px 260) ]
             (Progress.view theme { progD | percentage = 50 } [])
         , Element.el [ Element.width (Element.px 260) ]
@@ -1406,7 +1407,8 @@ progressRows =
                 []
             )
         ]
-    , demoRow "Statuses"
+    , demoRow "mot-002"
+        "Statuses"
         [ Element.el [ Element.width (Element.px 260) ]
             (Progress.view theme
                 { progD | percentage = 100, status = Progress.Success }
@@ -1418,11 +1420,13 @@ progressRows =
                 []
             )
         ]
-    , demoRow "Circle & dashboard"
+    , demoRow "mot-003"
+        "Circle & dashboard"
         [ Progress.view theme { progD | type_ = Progress.Circle, percentage = 75 } []
         , Progress.view theme { progD | type_ = Progress.Dashboard, percentage = 60 } []
         ]
-    , demoRow "Multiple circle"
+    , demoRow "mot-004"
+        "Multiple circle"
         [ Progress.view theme
             { progD
                 | type_ = Progress.MultipleCircle
@@ -1446,7 +1450,8 @@ progressRows =
             }
             []
         ]
-    , demoRow "Gradients"
+    , demoRow "mot-005"
+        "Gradients"
         [ Element.el [ Element.width (Element.px 260) ]
             (Progress.view theme
                 { progD
@@ -1491,12 +1496,13 @@ progressLiveSection : Model -> Element Msg
 progressLiveSection model =
     section "Progress"
         "Line, circle, dashboard and multiple-circle meters."
-        (progressRows ++ [ demoRow "Progress · drive" [ progressDemo theme model ] ])
+        (progressRows ++ [ demoRow "mot-006" "Progress · drive" [ progressDemo theme model ] ])
 
 
 skeletonRows : List (Element msg)
 skeletonRows =
-    [ demoRow "Default"
+    [ demoRow "mot-007"
+        "Default"
         [ Skeleton.view theme
             { skelD
                 | width = Just (Skeleton.Px 240)
@@ -1504,12 +1510,14 @@ skeletonRows =
             }
             []
         ]
-    , demoRow "Text & repeat"
+    , demoRow "mot-008"
+        "Text & repeat"
         [ Skeleton.view theme
             { skelD | text = True, width = Just (Skeleton.Px 150), repeat = 3 }
             []
         ]
-    , demoRow "Shapes & states"
+    , demoRow "mot-009"
+        "Shapes & states"
         [ Skeleton.view theme { skelD | circle = True, width = Just (Skeleton.Px 40) } []
         , Skeleton.view theme
             { skelD
@@ -1541,20 +1549,23 @@ skeletonLiveSection : Model -> Element Msg
 skeletonLiveSection model =
     section "Skeleton"
         "Placeholder shimmer for loading content."
-        (skeletonRows ++ [ demoRow "Skeleton · load" [ skeletonDemo theme model ] ])
+        (skeletonRows ++ [ demoRow "mot-010" "Skeleton · load" [ skeletonDemo theme model ] ])
 
 
 spinRows : List (Element msg)
 spinRows =
-    [ demoRow "Standalone"
+    [ demoRow "mot-011"
+        "Standalone"
         [ Spin.view theme spinD []
         , Spin.view theme { spinD | size = Spin.Small } []
         , Spin.view theme { spinD | size = Spin.Large } []
         ]
-    , demoRow "With description"
+    , demoRow "mot-012"
+        "With description"
         [ Spin.view theme { spinD | description = Just (Element.text "Loading") } []
         ]
-    , demoRow "Wrapping content"
+    , demoRow "mot-013"
+        "Wrapping content"
         [ Element.el [ Element.width (Element.px 320), Element.height (Element.px 110) ]
             (Spin.view theme
                 spinD
@@ -1578,7 +1589,7 @@ spinLiveSection : Model -> Element Msg
 spinLiveSection model =
     section "Spin"
         "Loading spinners, standalone or wrapping content."
-        (spinRows ++ [ demoRow "Spin · toggle" [ spinDemo theme model ] ])
+        (spinRows ++ [ demoRow "mot-014" "Spin · toggle" [ spinDemo theme model ] ])
 
 
 marqueeRows : List (Element msg)
@@ -1605,17 +1616,19 @@ marqueeLiveSection : Model -> Element Msg
 marqueeLiveSection model =
     section "Marquee"
         "Scrolling content (duration is caller-owned)."
-        (marqueeRows ++ [ demoRow "Marquee · play" [ marqueeDemo theme model ] ])
+        (marqueeRows ++ [ demoRow "mot-015" "Marquee · play" [ marqueeDemo theme model ] ])
 
 
 countdownRows : List (Element msg)
 countdownRows =
-    [ demoRow "Precisions"
+    [ demoRow "mot-016"
+        "Precisions"
         [ Countdown.view theme { countdownD | distance = 90000, precision = 0 } []
         , Countdown.view theme { countdownD | distance = 90000, precision = 1 } []
         , Countdown.view theme { countdownD | distance = 90000, precision = 3 } []
         ]
-    , demoRow "Custom render"
+    , demoRow "mot-017"
+        "Custom render"
         [ Countdown.view theme
             { countdownD
                 | distance = 5000
@@ -1642,12 +1655,13 @@ countdownLiveSection : Model -> Element Msg
 countdownLiveSection model =
     section "Countdown"
         "Remaining time (the caller owns the clock)."
-        (countdownRows ++ [ demoRow "Countdown · live clock" [ countdownDemo theme model ] ])
+        (countdownRows ++ [ demoRow "mot-018" "Countdown · live clock" [ countdownDemo theme model ] ])
 
 
 numberAnimationRows : List (Element msg)
 numberAnimationRows =
-    [ demoRow "Grouped"
+    [ demoRow "mot-019"
+        "Grouped"
         [ NumberAnimation.view theme
             { numberAnimationD
                 | from = 0
@@ -1659,7 +1673,8 @@ numberAnimationRows =
             }
             []
         ]
-    , demoRow "Precision"
+    , demoRow "mot-020"
+        "Precision"
         [ NumberAnimation.view theme
             { numberAnimationD
                 | from = 10
@@ -1687,7 +1702,7 @@ numberAnimationLiveSection : Model -> Element Msg
 numberAnimationLiveSection model =
     section "Number Animation"
         "A tweened number (the clock is caller-owned — pass `elapsed`). No classes or variables of its own."
-        (numberAnimationRows ++ [ demoRow "NumberAnimation · tween" [ numberDemo theme model ] ])
+        (numberAnimationRows ++ [ demoRow "mot-021" "NumberAnimation · tween" [ numberDemo theme model ] ])
 
 
 carouselRows : Model -> List (Element Msg)
@@ -1713,21 +1728,29 @@ carouselRows model =
                 , attributes = [ HA.id "live-carousel-custom" ]
             }
     in
-    [ demoRow "Basic (loop, 4 slides + clones)"
+    [ demoRow "mot-022"
+        "Basic (loop, 4 slides + clones)"
         [ spec CarBasicRow ]
-    , demoRow "Vertical + dots right"
+    , demoRow "mot-023"
+        "Vertical + dots right"
         [ spec CarVerticalRow ]
-    , demoRow "Arrows + line dots"
+    , demoRow "mot-024"
+        "Arrows + line dots"
         [ spec CarArrowsRow ]
-    , demoRow "Loop off (previous arrow disabled)"
+    , demoRow "mot-025"
+        "Loop off (previous arrow disabled)"
         [ spec CarNoLoopRow ]
-    , demoRow "slidesPerView 3 + spaceBetween 20"
+    , demoRow "mot-026"
+        "slidesPerView 3 + spaceBetween 20"
         [ spec CarPerViewRow ]
-    , demoRow "Fade"
+    , demoRow "mot-027"
+        "Fade"
         [ spec CarFadeRow ]
-    , demoRow "Card (previous/next slide styles)"
+    , demoRow "mot-028"
+        "Card (previous/next slide styles)"
         [ spec CarCardRow ]
-    , demoRow "Custom (usercontrol) + renderDots"
+    , demoRow "mot-029"
+        "Custom (usercontrol) + renderDots"
         [ Element.el [ Element.width (Element.px 920) ]
             (Carousel.view theme
                 customD
@@ -1735,7 +1758,8 @@ carouselRows model =
                 slides
             )
         ]
-    , demoRow "defaultIndex 2 (seeded)"
+    , demoRow "mot-030"
+        "defaultIndex 2 (seeded)"
         [ spec CarDefaultIxRow ]
     ]
 
@@ -1745,15 +1769,16 @@ carouselLiveSection model =
     section "Carousel"
         "A slide track over a caller-owned clock and measurement — autoplay, drag and resize are the caller's to own."
         (carouselRows model
-            ++ [ demoRow "Carousel · autoplay + arrows + dots + wheel" [ carouselDemo theme model ]
-               , demoRow "Carousel · pointer drag" [ dragDemo theme model ]
+            ++ [ demoRow "mot-031" "Carousel · autoplay + arrows + dots + wheel" [ carouselDemo theme model ]
+               , demoRow "mot-032" "Carousel · pointer drag" [ dragDemo theme model ]
                ]
         )
 
 
 logSectionRows : List (Element msg)
 logSectionRows =
-    [ demoRow "Lines (fixed rows)"
+    [ demoRow "mot-033"
+        "Lines (fixed rows)"
         [ Element.el [ Element.width (Element.px 420) ]
             (Log.view theme
                 { logD
@@ -1762,7 +1787,8 @@ logSectionRows =
                 }
             )
         ]
-    , demoRow "Highlighted + loading"
+    , demoRow "mot-034"
+        "Highlighted + loading"
         [ Element.el [ Element.width (Element.px 420) ]
             (Log.view theme
                 { logD
@@ -1792,7 +1818,7 @@ logLiveSection : Model -> Element Msg
 logLiveSection model =
     section "Log"
         "A scrolling log pane (Code + Scrollbar + loader) — scrolling, wheel and load events are the caller's to own."
-        (logSectionRows ++ [ demoRow "Log · scroll + load" [ logDemo theme model ] ])
+        (logSectionRows ++ [ demoRow "mot-035" "Log · scroll + load" [ logDemo theme model ] ])
 
 
 {-| The family body in Main.body order — live variants for every section

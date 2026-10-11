@@ -252,7 +252,8 @@ gridItem =
 breadcrumbSection : Element msg
 breadcrumbSection =
     section "Breadcrumb" "Navigation trails." <|
-        [ demoRow "Default"
+        [ demoRow "dsp-001"
+            "Default"
             [ Breadcrumb.view theme
                 bcD
                 [ { bcItem | href = Just "/", content = [ Element.text "Home" ] }
@@ -260,7 +261,8 @@ breadcrumbSection =
                 , { bcItem | content = [ Element.text "Data" ] }
                 ]
             ]
-        , demoRow "Custom separator (per item)"
+        , demoRow "dsp-002"
+            "Custom separator (per item)"
             [ Breadcrumb.view theme
                 { bcD | separator = "›" }
                 [ { bcItem | separator = Just "›", href = Just "/", content = [ Element.text "Root" ] }
@@ -338,7 +340,8 @@ pageHeaderSection =
 -}
 pageHeaderLiveRow : Model -> Element Msg
 pageHeaderLiveRow model =
-    demoRow "PageHeader · back clicks (live)"
+    demoRow "dsp-003"
+        "PageHeader · back clicks (live)"
         [ Element.el [ Element.width Element.fill ]
             (PageHeader.view theme
                 { pageHeaderD
@@ -365,7 +368,8 @@ pageHeaderLiveSection model =
 affixSection : Element msg
 affixSection =
     section "Affix" "Pins content while scrolling (the affixed state is caller-owned). The preview box is the containing block — the fixed button stays inside it." <|
-        [ demoBox 150
+        [ demoBox "dsp-004"
+            150
             (Element.el [ Element.padding 12 ]
                 (Affix.view theme
                     { affixD | affixed = True, top = Just 12 }
@@ -380,22 +384,26 @@ flexSection =
     section "Flex"
         "Naive UI's flexbox primitive — an inline flex container (no stylesheet rule; the layout is inline `display`/`gap`)."
     <|
-        [ demoRow "Gap"
+        [ demoRow "dsp-005"
+            "Gap"
             [ Flex.view theme
                 flexD
                 [ chip "One", chip "Two", chip "Three" ]
             ]
-        , demoRow "Justify · space-between"
+        , demoRow "dsp-006"
+            "Justify · space-between"
             [ Flex.view theme
                 { flexD | justify = Flex.SpaceBetween, size = Flex.Number 16 }
                 [ chip "Left", chip "Right" ]
             ]
-        , demoRow "Vertical · centered"
+        , demoRow "dsp-007"
+            "Vertical · centered"
             [ Flex.view theme
                 { flexD | direction = Flex.Vertical, size = Flex.Number 8, align = Just Flex.Center }
                 [ chip "Top", chip "Middle", chip "Bottom" ]
             ]
-        , demoRow "Inline · reversed"
+        , demoRow "dsp-008"
+            "Inline · reversed"
             [ Flex.view theme
                 { flexD | inline = True, size = Flex.Number2 4 12, reverse = True }
                 [ chip "A", chip "B", chip "C" ]
@@ -408,7 +416,8 @@ gridSection =
     section "Grid"
         "A 24-column CSS grid (inline `display:grid`, no stylesheet rule); span/offset and the responsive collapse algorithm are caller-driven."
     <|
-        [ demoRow "Spans (12-col tracks)"
+        [ demoRow "dsp-009"
+            "Spans (12-col tracks)"
             [ Grid.view
                 { gridD | cols = Grid.Number 12, xGap = Grid.Number 16, yGap = Grid.Number 16 }
                 [ { gridItem | span = Grid.Number 6, content = [ chip "span 6" ] }
@@ -417,7 +426,8 @@ gridSection =
                 , { gridItem | span = Grid.Number 8, content = [ chip "span 8" ] }
                 ]
             ]
-        , demoRow "Collapsed (responsive overflow → suffix rest)"
+        , demoRow "dsp-010"
+            "Collapsed (responsive overflow → suffix rest)"
             [ Grid.view
                 { gridD
                     | cols = Grid.Number 12
@@ -438,7 +448,8 @@ gridSection =
 qrCodeSection : Element msg
 qrCodeSection =
     section "QrCode" "QR codes, encoded by the ported Nayuki library and drawn as inline SVG." <|
-        [ demoRow "Values"
+        [ demoRow "dsp-011"
+            "Values"
             [ QrCode.view theme { qrD | value = "https://www.naiveui.com/" }
             , QrCode.view theme
                 { qrD
@@ -447,12 +458,14 @@ qrCodeSection =
                     , backgroundColor = "#F5F5F5"
                 }
             ]
-        , demoRow "Size & error correction"
+        , demoRow "dsp-012"
+            "Size & error correction"
             [ QrCode.view theme { qrD | value = "The rain dampened the sky", size = 140 }
             , QrCode.view theme
                 { qrD | value = "雨淋湿了天空", errorCorrectionLevel = QrCode.H }
             ]
-        , demoRow "Icon"
+        , demoRow "dsp-013"
+            "Icon"
             [ QrCode.view theme
                 { qrD
                     | value = "https://www.naiveui.com/"
@@ -465,7 +478,8 @@ qrCodeSection =
 
 floatButtonRows : List (Element msg)
 floatButtonRows =
-    [ demoRow "Shapes & types"
+    [ demoRow "dsp-014"
+        "Shapes & types"
         [ FloatButton.view theme { floatButtonD | position = FloatButton.Relative } [ Element.text "+" ]
         , FloatButton.view theme
             { floatButtonD | position = FloatButton.Relative, shape = FloatButton.Square }
@@ -474,12 +488,14 @@ floatButtonRows =
             { floatButtonD | position = FloatButton.Relative, type_ = FloatButton.Primary }
             [ Element.text "+" ]
         ]
-    , demoRow "Description"
+    , demoRow "dsp-015"
+        "Description"
         [ FloatButton.view theme
             { floatButtonD | position = FloatButton.Relative, description = Just (Element.text "Top") }
             [ Element.text "↑" ]
         ]
-    , demoRow "Menu"
+    , demoRow "dsp-016"
+        "Menu"
         -- Resting state (showMenu = False): the body icon shows and the
         -- close glyph stays hidden until the menu opens. A second demo
         -- renders the open state in a non-clipping box so the popped menu
@@ -538,7 +554,8 @@ floatButtonSection =
 -}
 floatButtonLiveRow : Model -> Element Msg
 floatButtonLiveRow model =
-    demoRow "FloatButton · click menu (live)"
+    demoRow "dsp-017"
+        "FloatButton · click menu (live)"
         [ Element.el
             [ Element.paddingEach { top = 170, bottom = 20, left = 20, right = 20 }
             , Element.htmlAttribute
@@ -587,7 +604,8 @@ floatButtonLiveSection model =
 layoutSection : Model -> Element Msg
 layoutSection model =
     section "Layout" "App shell — header, sider, content and footer (the sider's collapsed state is caller-owned)." <|
-        [ demoRow "Basic (header · sider · content · footer)"
+        [ demoRow "dsp-018"
+            "Basic (header · sider · content · footer)"
             [ Element.el [ Element.width Element.fill ]
                 (Layout.view theme
                     layD
@@ -608,7 +626,8 @@ layoutSection model =
                     ]
                 )
             ]
-        , demoRow "Collapsed sider (right placement · bar trigger)"
+        , demoRow "dsp-019"
+            "Collapsed sider (right placement · bar trigger)"
             [ Element.el [ Element.width Element.fill ]
                 (Layout.view theme
                     { layD | hasSider = True }
@@ -632,7 +651,8 @@ layoutSection model =
                     ]
                 )
             ]
-        , demoRow "Embedded (inset shell)"
+        , demoRow "dsp-020"
+            "Embedded (inset shell)"
             [ Element.el [ Element.width Element.fill ]
                 (Layout.view theme
                     { layD | embedded = True }
@@ -649,14 +669,16 @@ floatButtonGroupSection =
     section "Float Button Group"
         "A group of float buttons (shape, position and offsets are caller-owned)."
     <|
-        [ demoRow "Circle"
+        [ demoRow "dsp-021"
+            "Circle"
             [ FloatButtonGroup.view theme
                 { floatButtonGroupD | position = FloatButton.Relative, shape = FloatButton.Circle }
                 [ FloatButton.view theme { floatButtonD | position = FloatButton.Relative } [ Element.text "+" ]
                 , FloatButton.view theme { floatButtonD | position = FloatButton.Relative } [ Element.text "?" ]
                 ]
             ]
-        , demoRow "Square"
+        , demoRow "dsp-022"
+            "Square"
             [ FloatButtonGroup.view theme
                 { floatButtonGroupD | position = FloatButton.Relative, shape = FloatButton.Square }
                 [ FloatButton.view theme { floatButtonD | position = FloatButton.Relative, shape = FloatButton.Square } [ Element.text "A" ]
@@ -671,15 +693,18 @@ heatmapSection =
     section "Heatmap"
         "GitHub-style contribution calendar: a real `table` of day rects coloured by `value / maxValue`, with week/month labels and a less/more indicator. Time is caller-owned (`zone`/`now`)."
     <|
-        [ demoRow "Default"
+        [ demoRow "dsp-023"
+            "Default"
             [ Heatmap.view theme { heatmapD | data = heatmapSample, now = sampleNow } []
             ]
-        , demoRow "Loading"
+        , demoRow "dsp-024"
+            "Loading"
             [ Heatmap.view theme
                 { heatmapD | loading = True, loadingData = Just [], now = sampleNow }
                 []
             ]
-        , demoRow "Small + custom palette + gaps filled"
+        , demoRow "dsp-025"
+            "Small + custom palette + gaps filled"
             [ Heatmap.view theme
                 { heatmapD
                     | data = heatmapSample
@@ -721,7 +746,8 @@ descriptionsSection =
     section "Descriptions"
         "Labelled field/value tables. `span` and `column` pack the rows; the packer is the pure `Descriptions.layout`."
     <|
-        [ demoRow "Basic (title + a span-2 cell)"
+        [ demoRow "dsp-026"
+            "Basic (title + a span-2 cell)"
             [ Descriptions.view theme
                 { descD | title = Just (Element.text "Description") }
                 [ { descItemD | label = Just (Element.text "Breakfast"), content = [ Element.text "Apple" ] }
@@ -731,7 +757,8 @@ descriptionsSection =
                 , { descItemD | label = Just (Element.text "Midnight Snack"), content = [ Element.text "Apple" ] }
                 ]
             ]
-        , demoRow "Bordered"
+        , demoRow "dsp-027"
+            "Bordered"
             [ Descriptions.view theme
                 { descD | bordered = True }
                 [ { descItemD | label = Just (Element.text "Name"), content = [ Element.text "Naive UI" ] }
@@ -739,14 +766,16 @@ descriptionsSection =
                 , { descItemD | label = Just (Element.text "License"), content = [ Element.text "MIT" ] }
                 ]
             ]
-        , demoRow "Left label placement (bordered)"
+        , demoRow "dsp-028"
+            "Left label placement (bordered)"
             [ Descriptions.view theme
                 { descD | labelPlacement = Descriptions.Left, bordered = True }
                 [ { descItemD | label = Just (Element.text "Name"), content = [ Element.text "Naive UI" ] }
                 , { descItemD | label = Just (Element.text "Version"), content = [ Element.text "0.19" ] }
                 ]
             ]
-        , demoRow "Columns = 4"
+        , demoRow "dsp-029"
+            "Columns = 4"
             [ Descriptions.view theme
                 { descD | columns = Just 4 }
                 (List.map
@@ -762,7 +791,8 @@ scrollbarSection =
     section "Scrollbar"
         "A styled scroll container with custom rails. The caller owns whether each bar is shown and its measured geometry."
     <|
-        [ demoRow "Vertical bar shown"
+        [ demoRow "dsp-030"
+            "Vertical bar shown"
             [ Element.el [ Element.height (Element.px 120), Element.width Element.fill ]
                 (Scrollbar.view theme
                     { scrollbarD
@@ -772,7 +802,8 @@ scrollbarSection =
                     [ Element.paragraph [] (List.repeat 3 (Element.text scrollbarCopy)) ]
                 )
             ]
-        , demoRow "Both rails (x-scrollable)"
+        , demoRow "dsp-031"
+            "Both rails (x-scrollable)"
             -- a fixed-px cell (not `width fill`): a fill cell keeps
             -- `flex-basis: 0%` + `min-width: auto`, and the nowrap content's
             -- min-content inflates the cell to content width instead of
@@ -793,7 +824,8 @@ scrollbarSection =
                     ]
                 )
             ]
-        , demoRow "Rails only (left / top)"
+        , demoRow "dsp-032"
+            "Rails only (left / top)"
             [ Element.el [ Element.height (Element.px 100), Element.width Element.fill ]
                 (Scrollbar.view theme
                     { scrollbarD | yPlacement = Scrollbar.Left }
@@ -820,7 +852,8 @@ watermarkSection =
     section "Watermark"
         "Naive UI's watermark — the `div.n-watermark-container` (the `--selectable` / `--global-rotate` / `--fullscreen` modifiers; bare overlay when fullscreen without global rotation) wrapping the content plus the tiled `div.n-watermark` overlay (`background-size` tiling, the `cross` offset pair, the `max(142vh, 142vw)` rotated positioning, `z-index` handoff between the two nodes). The tile itself is upstream's canvas `toDataURL` seam, rebuilt purely: an SVG of the canvas dimensions — one `<text>` per line with the full font stack — base64-encoded in-library; `image` is referenced directly instead of re-rasterised. No `--n-*` vars — the theme's single `fontFamily` feeds the tile's font fallback."
     <|
-        [ demoRow "Basic · upstream demo tile (192×128, cross)"
+        [ demoRow "dsp-033"
+            "Basic · upstream demo tile (192×128, cross)"
             [ Watermark.view theme
                 { watermarkD
                     | content = Just "Naive UI"
@@ -835,7 +868,8 @@ watermarkSection =
                 }
                 [ watermarkedText ]
             ]
-        , demoRow "Two lines · centered · gaps · cross"
+        , demoRow "dsp-034"
+            "Two lines · centered · gaps · cross"
             [ Watermark.view theme
                 { watermarkD
                     | content = Just "elm-naive-ui\nwatermark"
@@ -853,7 +887,8 @@ watermarkSection =
                 }
                 [ watermarkedText ]
             ]
-        , demoRow "Font stack · debug · not selectable"
+        , demoRow "dsp-035"
+            "Font stack · debug · not selectable"
             [ Watermark.view theme
                 { watermarkD
                     | content = Just "Seemly"
@@ -871,7 +906,8 @@ watermarkSection =
                 }
                 [ watermarkedText ]
             ]
-        , demoRow "Global rotate (overflow-hidden container)"
+        , demoRow "dsp-036"
+            "Global rotate (overflow-hidden container)"
             [ Watermark.view theme
                 { watermarkD
                     | content = Just "45°"
@@ -900,7 +936,8 @@ codeSection : Element msg
 codeSection =
     section "Code"
         "A code block over a caller-supplied highlight.js — highlighting is the caller's to own."
-        [ demoRow "Basic (highlighted)"
+        [ demoRow "dsp-037"
+            "Basic (highlighted)"
             [ Code.view theme
                 { codeD
                     | code = "const message = 'hello'"
@@ -909,7 +946,8 @@ codeSection =
                 }
                 []
             ]
-        , demoRow "Inline"
+        , demoRow "dsp-038"
+            "Inline"
             [ Element.text "Call "
             , Code.view theme
                 { codeD
@@ -921,7 +959,8 @@ codeSection =
                 []
             , Element.text " to run it."
             ]
-        , demoRow "Line numbers"
+        , demoRow "dsp-039"
+            "Line numbers"
             [ Code.view theme
                 { codeD
                     | code = "const a = 1\nconst b = 2\nconst c = 3"
@@ -931,7 +970,8 @@ codeSection =
                 }
                 []
             ]
-        , demoRow "Word wrap (line numbers suppressed)"
+        , demoRow "dsp-040"
+            "Word wrap (line numbers suppressed)"
             [ Element.el [ Element.width (Element.px 220) ]
                 (Code.view theme
                     { codeD
@@ -944,7 +984,8 @@ codeSection =
                     []
                 )
             ]
-        , demoRow "URI encoded"
+        , demoRow "dsp-041"
+            "URI encoded"
             [ Code.view theme
                 { codeD
                     | code = "const%20x%20%3D%201"
@@ -954,7 +995,8 @@ codeSection =
                 }
                 []
             ]
-        , demoRow "Trim off"
+        , demoRow "dsp-042"
+            "Trim off"
             [ Code.view theme
                 { codeD
                     | code = "    const spaced = true    "
@@ -964,7 +1006,8 @@ codeSection =
                 }
                 []
             ]
-        , demoRow "No hljs (plain text)"
+        , demoRow "dsp-043"
+            "No hljs (plain text)"
             [ Code.view theme
                 { codeD | code = "const plain = 1", language = Just "javascript" }
                 []
@@ -976,11 +1019,14 @@ equationSection : Element msg
 equationSection =
     section "Equation"
         "KaTeX-rendered math via a caller-supplied renderToString closure (the component ships no KaTeX)."
-        [ demoRow "Inline (fake katex)"
+        [ demoRow "dsp-044"
+            "Inline (fake katex)"
             [ Equation.view theme { equationD | value = "E = mc^2", katex = Just fakeKatex } ]
-        , demoRow "Display wrapper"
+        , demoRow "dsp-045"
+            "Display wrapper"
             [ Equation.view theme { equationD | value = "x^2 + y^2 = z^2", katex = Just fakeKatexDisplay } ]
-        , demoRow "No katex"
+        , demoRow "dsp-046"
+            "No katex"
             [ Equation.view theme { equationD | value = "a^2 + b^2 = c^2" } ]
         ]
 

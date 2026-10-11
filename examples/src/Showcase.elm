@@ -33,12 +33,15 @@ Main.elm; this module owns the pieces every section shares:
     stretching the page, the label is the card's footer bar.
   - `demoBox` — the bounded preview box for position:fixed/absolute demos
     (Affix, BackTop, anchor affix): relative + translated so fixed descendants
-    pin to the box, overflow-hidden so their geometry stays inside it.
+    pin to the box, overflow-hidden so their geometry stays inside it. Now a
+    keyed column with the same footer/code toggle as `demoRow`.
 
 -}
 
+import DemoCode
 import Element exposing (Element)
 import Element.Font as Font
+import ElmSyntax
 import Html
 import Html.Attributes as HA
 import NUI.Code as Code
@@ -110,6 +113,32 @@ chromeCssNode =
                 -- resolves 0); height:100% restores the upstream "fills
                 -- its mount parent" semantics.
                 , ".n-drawer-container{height:100% !important}"
+
+                -- Demo-card footer bar + code toggle (see `footerBar` /
+                -- `codeToggle`): one flex row, baseline-aligned, so the
+                -- uppercase label and the toggle's chip sit on one
+                -- typographic baseline in both toggle states; the toggle
+                -- is a native <details> laid out as an end-aligned flex
+                -- column, so the chip hugs the right edge while the
+                -- expanded panel anchors to the footer's RIGHT edge —
+                -- the one anchor that is identical on every card (a
+                -- left anchor would jitter with each label's width).
+                , ".sc-foot{width:100%;box-sizing:border-box;display:flex;align-items:baseline;gap:12px;padding:9px 16px;border-top:1px solid #efeff5}"
+                , ".sc-foot-label{font-size:11px;color:#7c8087;letter-spacing:.6px;white-space:nowrap}"
+                , ".sc-code{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;align-items:flex-end;font-size:11px;color:#7c8087}"
+                , ".sc-code>summary{list-style:none;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border:1px solid transparent;border-radius:3px;font-size:11px;letter-spacing:.4px;line-height:16px;color:inherit;transition:color .15s ease,border-color .15s ease,background-color .15s ease}"
+                , ".sc-code>summary::-webkit-details-marker{display:none}"
+                , ".sc-code>summary:hover{color:#18a058;background:#f6f8fa;border-color:#e3e3ea}"
+                , ".sc-code[open]>summary{color:#18a058;background:#f0faf5;border-color:#d5e9de}"
+                , ".sc-code>summary:focus-visible{outline:1px solid #18a058;outline-offset:2px}"
+                , ".sc-code .sc-code-chev{flex:none;transition:transform .18s ease}"
+                , ".sc-code[open] .sc-code-chev{transform:rotate(90deg)}"
+                , ".sc-code>pre{max-width:min(780px,100%);margin:8px 0 2px;padding:12px 14px;background:#f6f8fa;border:1px solid #efeff5;border-left:2px solid rgba(24,160,88,.45);border-radius:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;line-height:1.65;color:#24292f;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere}"
+                , ".sc-code>pre .tok-com{color:#6a737d;font-style:italic}"
+                , ".sc-code>pre .tok-str,.sc-code>pre .tok-chr{color:#0e8a54}"
+                , ".sc-code>pre .tok-num{color:#9a6700}"
+                , ".sc-code>pre .tok-kw,.sc-code>pre .tok-pun{color:#cf222e}"
+                , ".sc-code>pre .tok-typ,.sc-code>pre .tok-fn{color:#8250df}"
                 ]
             )
         ]
@@ -172,9 +201,16 @@ section title desc examples =
 intrinsic content outgrows the column (elm-ui rows never shrink below
 min-content, so wide demos must be fenced here), with the label as the
 footer bar.
+
+The card's demo items are keyed (`demoRow "gen-017" "Label" …` — keys
+inserted by tools/gen-demo-code.mjs): the footer carries a `<details>`
+code toggle that expands the items' own Elm source, looked up in the
+generated DemoCode dictionary. Pure CSS open/close — no model state, no
+messages, so the toggle is inert to the page's update loop.
+
 -}
-demoRow : String -> List (Element msg) -> Element msg
-demoRow label items =
+demoRow : String -> String -> List (Element msg) -> Element msg
+demoRow key label items =
     Element.column
         [ Element.width Element.fill
         , Element.htmlAttribute
@@ -193,43 +229,136 @@ demoRow label items =
                 )
             ]
             items
-        , footerBar label
+        , footerBar key label
         ]
 
 
-footerBar : String -> Element msg
-footerBar label =
+{-| The card's footer bar: the uppercase label left, the code toggle
+right, on one baseline. Rendered as one raw HTML block (styled entirely
+by the `.sc-foot` rules in `chromeCssNode`) rather than an elm-ui row:
+elm-ui's `alignRight` wrapper centers its content against the row's
+full height, which would float the label down the panel when the toggle
+opens — a plain flex row with `align-items:baseline` keeps both texts on
+one typographic baseline in both states, and the 9/16 padding matches
+the pre-toggle footer exactly. The `Element.el width fill` wrapper is
+load-bearing: `Element.html` alone shrink-wraps to content, which would
+clip the footer's border-top to the label's width instead of the card's.
+-}
+footerBar : String -> String -> Element msg
+footerBar key label =
     Element.el
-        [ Element.width Element.fill
-        , Element.paddingXY 16 9
-        , Element.htmlAttribute
-            (HA.attribute "style" "border-top:1px solid #efeff5")
-        ]
-        (Element.el
-            [ Font.size 11
-            , Font.color (Element.rgb255 0x7C 0x80 0x87)
-            , Font.letterSpacing 0.6
-            ]
-            (Element.text (String.toUpper label))
+        [ Element.width Element.fill ]
+        (Element.html
+            (Html.div
+                [ HA.class "sc-foot" ]
+                [ Html.span
+                    [ HA.class "sc-foot-label" ]
+                    [ Html.text (String.toUpper label) ]
+                , codeToggle key
+                ]
+            )
         )
+
+
+{-| The footer's code toggle: a native `<details>` (pure CSS open/close —
+no model state, no messages, inert to the page's update loop) whose
+summary is a quiet chip — "</> Elm" plus a chevron that rotates on open
+— and whose panel is the items' own Elm source, looked up in the
+generated DemoCode dictionary and syntax-highlighted by the pure-Elm
+tokenizer in `ElmSyntax` (no dependencies, no JavaScript — default runs
+render as plain text nodes, classified runs as `tok-*` spans). The
+panel is `white-space:pre-wrap` and capped at 780px, so wide lines wrap
+instead of scrolling the page under the sticky top bar. Empty snippet
+(unknown key) → no toggle at all. All styling lives in the `.sc-code`
+rules in `chromeCssNode`.
+-}
+codeToggle : String -> Html.Html msg
+codeToggle key =
+    let
+        code =
+            DemoCode.get key
+    in
+    if String.isEmpty code then
+        Html.text ""
+
+    else
+        Html.details
+            [ HA.class "sc-code" ]
+            [ Html.summary
+                []
+                [ Html.text "</> Elm"
+                , chevronDown
+                ]
+            , Html.pre [] (List.map tokenNode (ElmSyntax.tokens code))
+            ]
+
+
+{-| One token as a DOM node: default runs (empty class) stay plain text,
+classified runs become a `span.tok-*` whose text is a separate text
+node. Text nodes are HTML-inert by construction — the browser escapes
+at the `createTextNode` layer — so `&`, `<`, `>` and quotes render
+literally with no string escaping in Elm (wrapping token text in an
+Elm-side `&amp;`-style escaper would double-escape and visibly corrupt
+the code).
+-}
+tokenNode : ElmSyntax.Token -> Html.Html msg
+tokenNode t =
+    if t.cls == "" then
+        Html.text t.text
+
+    else
+        Html.span [ HA.class t.cls ] [ Html.text t.text ]
+
+
+{-| The toggle's disclosure chevron — rotates 90° while open (CSS only,
+`.sc-code[open] .sc-code-chev`). Text comes first in the summary so the
+baseline the footer row aligns the label against is the text's own
+baseline, not an SVG's synthesized bottom edge.
+-}
+chevronDown : Html.Html msg
+chevronDown =
+    Svg.svg
+        [ SA.viewBox "0 0 16 16"
+        , SA.width "9"
+        , SA.height "9"
+        , SA.class "sc-code-chev"
+        , HA.attribute "aria-hidden" "true"
+        ]
+        [ Svg.path
+            [ SA.fill "none"
+            , SA.stroke "currentColor"
+            , SA.strokeWidth "1.5"
+            , SA.strokeLinecap "round"
+            , SA.strokeLinejoin "round"
+            , SA.d "M6 4l4 4-4 4"
+            ]
+            []
+        ]
 
 
 {-| The bounded preview box for fixed/absolute-position demos: `relative` +
 `transform` makes it the containing block for `position: fixed` descendants,
-`overflow: hidden` keeps their geometry inside the box.
+`overflow: hidden` keeps their geometry inside the box. Keyed like `demoRow`,
+with the code toggle in its footer.
 -}
-demoBox : Int -> Element msg -> Element msg
-demoBox heightPx content =
-    Element.el
+demoBox : String -> Int -> Element msg -> Element msg
+demoBox key heightPx content =
+    Element.column
         [ Element.width Element.fill
-        , Element.height (Element.px heightPx)
         , Element.htmlAttribute
             (HA.attribute
                 "style"
-                "position:relative;transform:translate(0,0);overflow:hidden;border:1px solid #efeff5;border-radius:4px;background:#fafafc"
+                "position:relative;transform:translate(0,0);border:1px solid #efeff5;border-radius:4px;background:#fafafc"
             )
         ]
-        content
+        [ Element.el
+            [ Element.width Element.fill
+            , Element.height (Element.px heightPx)
+            , Element.htmlAttribute (HA.attribute "style" "overflow:hidden")
+            ]
+            content
+        , footerBar key ""
+        ]
 
 
 chip : String -> Element msg

@@ -977,7 +977,8 @@ tagsDemo theme model =
 
 dynamicTagsRows : Model -> List (Element Msg)
 dynamicTagsRows model =
-    [ demoRow "Tags"
+    [ demoRow "dat-001"
+        "Tags"
         [ DynamicTags.view theme
             { dtagsD
                 | value = model.tagsSamples
@@ -993,7 +994,8 @@ dynamicTagsRows model =
             }
             []
         ]
-    , demoRow "Input shown (caller owns the draft)"
+    , demoRow "dat-002"
+        "Input shown (caller owns the draft)"
         [ DynamicTags.view theme
             { dtagsD
                 | value = model.tagsInputSamples
@@ -1018,7 +1020,7 @@ dynamicTagsSection model =
 
 tagsLiveRow : Model -> Element Msg
 tagsLiveRow model =
-    demoRow "Dynamic Tags · add / confirm / close" [ tagsDemo theme model ]
+    demoRow "dat-003" "Dynamic Tags · add / confirm / close" [ tagsDemo theme model ]
 
 
 dynamicTagsLiveSection : Model -> Element Msg
@@ -1094,7 +1096,7 @@ calendarSection model =
 
 calendarLiveRow : Model -> Element Msg
 calendarLiveRow model =
-    demoRow "Calendar · panel + date" [ calendarDemo theme model ]
+    demoRow "dat-004" "Calendar · panel + date" [ calendarDemo theme model ]
 
 
 calendarLiveSection : Model -> Element Msg
@@ -1146,7 +1148,8 @@ pairDemo theme model =
 
 dynamicInputRows : Model -> List (Element Msg)
 dynamicInputRows model =
-    [ demoRow "Preset: input"
+    [ demoRow "dat-005"
+        "Preset: input"
         [ DynamicInput.viewInput theme
             { diD
                 | value = model.stringsSamples
@@ -1155,7 +1158,8 @@ dynamicInputRows model =
                 , onRemove = Just StringsSampleRemove
             }
         ]
-    , demoRow "Preset: pair"
+    , demoRow "dat-006"
+        "Preset: pair"
         [ DynamicInput.viewPair theme
             { diPairD
                 | value = model.pairsSamples
@@ -1165,7 +1169,8 @@ dynamicInputRows model =
                 , onRemove = Just PairsSampleRemove
             }
         ]
-    , demoRow "Max + sort buttons"
+    , demoRow "dat-007"
+        "Max + sort buttons"
         [ DynamicInput.viewInput theme
             { diD
                 | value = model.onlyThree
@@ -1175,7 +1180,8 @@ dynamicInputRows model =
                 , onRemove = Just OnlyThreeRemove
             }
         ]
-    , demoRow "Empty (Create button)"
+    , demoRow "dat-008"
+        "Empty (Create button)"
         [ DynamicInput.viewInput theme { diD | value = [] }
         ]
     ]
@@ -1190,7 +1196,7 @@ dynamicInputSection model =
 
 pairLiveRow : Model -> Element Msg
 pairLiveRow model =
-    demoRow "Dynamic Input · pair list editor" [ pairDemo theme model ]
+    demoRow "dat-009" "Dynamic Input · pair list editor" [ pairDemo theme model ]
 
 
 dynamicInputLiveSection : Model -> Element Msg
@@ -1249,21 +1255,26 @@ tableDemo theme model =
 
 tableRows : List (Element msg)
 tableRows =
-    [ demoRow "Basic (defaults: bordered, bottom-bordered, single-line)"
+    [ demoRow "dat-010"
+        "Basic (defaults: bordered, bottom-bordered, single-line)"
         [ Table.view theme tableD tableContent
         ]
-    , demoRow "Sizes · un-bordered · multi-line"
+    , demoRow "dat-011"
+        "Sizes · un-bordered · multi-line"
         [ Table.view theme { tableD | size = Table.Small } tableContent
         , Table.view theme { tableD | size = Table.Large, bordered = False, bottomBordered = False } tableContent
         ]
-    , demoRow "Striped · single-column · multi-line cells"
+    , demoRow "dat-012"
+        "Striped · single-column · multi-line cells"
         [ Table.view theme { tableD | striped = True, singleLine = False } tableContent
         , Table.view theme { tableD | singleColumn = True } tableContent
         ]
-    , demoRow "Colspan / rowspan"
+    , demoRow "dat-013"
+        "Colspan / rowspan"
         [ Table.view theme tableD spanContent
         ]
-    , demoRow "RTL"
+    , demoRow "dat-014"
+        "RTL"
         [ Table.view theme { tableD | rtl = True } tableContent
         ]
     ]
@@ -1278,7 +1289,7 @@ tableSection =
 
 tableLiveRow : Model -> Element Msg
 tableLiveRow model =
-    demoRow "Table · row state (Row.attributes seam)" [ tableDemo theme model ]
+    demoRow "dat-015" "Table · row state (Row.attributes seam)" [ tableDemo theme model ]
 
 
 tableLiveSection : Model -> Element Msg
@@ -1438,7 +1449,8 @@ treeDemo theme model =
 
 treeRows : Model -> List (Element Msg)
 treeRows model =
-    [ demoRow "Basic · checkable (cascade, Child strategy)"
+    [ demoRow "dat-016"
+        "Basic · checkable (cascade, Child strategy)"
         [ Tree.view theme
             { treeD | data = treeOptions, expandedKeys = [ "beatles", "stones" ] }
         , Tree.view theme
@@ -1452,7 +1464,8 @@ treeRows model =
                 , nodeProps = Just (sampleNodeProps True False TreeExpandedCheckableToggle)
             }
         ]
-    , demoRow "Multiple selection · showLine"
+    , demoRow "dat-017"
+        "Multiple selection · showLine"
         [ Tree.view theme
             { treeD
                 | data = treeOptions
@@ -1464,7 +1477,8 @@ treeRows model =
         , Tree.view theme
             { treeD | data = treeOptions, expandedKeys = model.treeExpandedLine, showLine = True }
         ]
-    , demoRow "block-line + ellipsis · pending + highlight"
+    , demoRow "dat-018"
+        "block-line + ellipsis · pending + highlight"
         [ Tree.view theme
             { treeD
                 | data = treeOptions
@@ -1476,7 +1490,8 @@ treeRows model =
                 , nodeProps = Just (sampleNodeProps False False TreeExpandedBlockToggle)
             }
         ]
-    , demoRow "Loading switcher · empty"
+    , demoRow "dat-019"
+        "Loading switcher · empty"
         [ Tree.view theme
             { treeD | data = treeOptions, expandedKeys = model.treeExpandedLoading, loadingKeys = [ "stones" ] }
         , Tree.view theme { treeD | attributes = [ Element.width (Element.px 240) ] }
@@ -1493,7 +1508,7 @@ treeSection model =
 
 treeLiveRow : Model -> Element Msg
 treeLiveRow model =
-    demoRow "Tree · check + expand + select (nodeProps seam)" [ treeDemo theme model ]
+    demoRow "dat-020" "Tree · check + expand + select (nodeProps seam)" [ treeDemo theme model ]
 
 
 treeLiveSection : Model -> Element Msg
@@ -1632,7 +1647,8 @@ previewDemo theme model =
 
 imageRows : List (Element msg)
 imageRows =
-    [ demoRow "Basic + object-fit (fixed state)"
+    [ demoRow "dat-021"
+        "Basic + object-fit (fixed state)"
         [ cell
             (Image.view theme
                 { imageD
@@ -1661,7 +1677,8 @@ imageRows =
                 }
             )
         ]
-    , demoRow "Error → fallbackSrc + error slot (fixed state)"
+    , demoRow "dat-022"
+        "Error → fallbackSrc + error slot (fixed state)"
         [ cell
             (Image.view theme
                 { imageD
@@ -1683,7 +1700,8 @@ imageRows =
                 }
             )
         ]
-    , demoRow "Placeholder (img hidden 0×0 until loaded) + preview-disabled + lazy"
+    , demoRow "dat-023"
+        "Placeholder (img hidden 0×0 until loaded) + preview-disabled + lazy"
         [ cell
             (Image.view theme
                 { imageD
@@ -1724,7 +1742,7 @@ imageSection =
 
 previewLiveRow : Model -> Element Msg
 previewLiveRow model =
-    demoRow "Image · click to preview (full toolbar)" [ previewDemo theme model ]
+    demoRow "dat-024" "Image · click to preview (full toolbar)" [ previewDemo theme model ]
 
 
 imageLiveSection : Model -> Element Msg
@@ -1798,7 +1816,8 @@ groupDemo theme model =
 
 imagePreviewRows : List (Element msg)
 imagePreviewRows =
-    [ demoRow "Standalone preview (fixed state: open, zoom identity)"
+    [ demoRow "dat-025"
+        "Standalone preview (fixed state: open, zoom identity)"
         [ modalHost []
             (ImagePreview.view theme
                 { previewD
@@ -1807,7 +1826,8 @@ imagePreviewRows =
                 }
             )
         ]
-    , demoRow "Zoom/rotate state + previewed-img props (8px white frame)"
+    , demoRow "dat-026"
+        "Zoom/rotate state + previewed-img props (8px white frame)"
         [ modalHost []
             (ImagePreview.view theme
                 { previewD
@@ -1819,7 +1839,8 @@ imagePreviewRows =
                 }
             )
         ]
-    , demoRow "Toolbar suppressed + drag state (grabbing cursor, no transition)"
+    , demoRow "dat-027"
+        "Toolbar suppressed + drag state (grabbing cursor, no transition)"
         [ modalHost []
             (ImagePreview.view theme
                 { previewD
@@ -1839,7 +1860,8 @@ imagePreviewRows =
                 }
             )
         ]
-    , demoRow "Group (srcList registry, second image current; slot thumbnails beside)"
+    , demoRow "dat-028"
+        "Group (srcList registry, second image current; slot thumbnails beside)"
         [ cell
             (Element.row [ Element.spacing 8 ]
                 [ Image.view theme
@@ -1873,7 +1895,7 @@ imagePreviewSection =
 
 groupLiveRow : Model -> Element Msg
 groupLiveRow model =
-    demoRow "Image Group · gallery walk" [ groupDemo theme model ]
+    demoRow "dat-029" "Image Group · gallery walk" [ groupDemo theme model ]
 
 
 imagePreviewLiveSection : Model -> Element Msg
@@ -2119,11 +2141,13 @@ dataTableRows model =
         dtPg =
             Pagination.defaults
     in
-    [ demoRow "Basic"
+    [ demoRow "dat-030"
+        "Basic"
         [ DataTable.view theme
             { dtD | columns = columns, data = people_, rowKey = .name }
         ]
-    , demoRow "Striped + bordered"
+    , demoRow "dat-031"
+        "Striped + bordered"
         [ DataTable.view theme
             { dtD
                 | columns = columns
@@ -2132,11 +2156,13 @@ dataTableRows model =
                 , striped = True
             }
         ]
-    , demoRow "Empty"
+    , demoRow "dat-032"
+        "Empty"
         [ DataTable.view theme
             { dtD | columns = columns, data = [], rowKey = .name }
         ]
-    , demoRow "Sorting"
+    , demoRow "dat-033"
+        "Sorting"
         [ DataTable.view theme
             { dtD
                 | columns = sortableColumns
@@ -2167,7 +2193,8 @@ dataTableRows model =
                 , onSorterChange = Just DtSortSampleChange
             }
         ]
-    , demoRow "Pagination"
+    , demoRow "dat-034"
+        "Pagination"
         [ DataTable.view theme
             { dtD
                 | columns = columns
@@ -2176,7 +2203,8 @@ dataTableRows model =
                 , pagination = Just { dtPg | pageSize = Just 2 }
             }
         ]
-    , demoRow "Sort + pagination"
+    , demoRow "dat-035"
+        "Sort + pagination"
         [ DataTable.view theme
             { dtD
                 | columns = sortableColumns
@@ -2197,7 +2225,8 @@ dataTableRows model =
                 , onSorterChange = Just DtSortPageSampleChange
             }
         ]
-    , demoRow "Filter"
+    , demoRow "dat-036"
+        "Filter"
         [ DataTable.view theme
             { dtD | columns = filterColumns, data = people_, rowKey = .name }
         , DataTable.view theme
@@ -2208,7 +2237,8 @@ dataTableRows model =
                 , filterStates = [ ( "address", DataTable.FilterMany [ "Bellevue" ] ) ]
             }
         ]
-    , demoRow "Selection"
+    , demoRow "dat-037"
+        "Selection"
         [ DataTable.view theme
             { dtD
                 | columns =
@@ -2223,7 +2253,8 @@ dataTableRows model =
                 , onUpdateCheckedRowKeys = Just DtCheckedSelectionChange
             }
         ]
-    , demoRow "Selection (single)"
+    , demoRow "dat-038"
+        "Selection (single)"
         [ DataTable.view theme
             { dtD
                 | columns =
@@ -2237,7 +2268,8 @@ dataTableRows model =
                 , onUpdateCheckedRowKeys = Just DtCheckedSingleChange
             }
         ]
-    , demoRow "Selection extra"
+    , demoRow "dat-039"
+        "Selection extra"
         [ DataTable.view theme
             { dtD
                 | columns =
@@ -2254,7 +2286,8 @@ dataTableRows model =
                 , onUpdateCheckedRowKeys = Just DtCheckedExtraChange
             }
         ]
-    , demoRow "Expand"
+    , demoRow "dat-040"
+        "Expand"
         [ DataTable.view theme
             { dtD
                 | columns =
@@ -2272,7 +2305,8 @@ dataTableRows model =
                 , onUpdateExpandedRowKeys = Just DtExpandedToggle
             }
         ]
-    , demoRow "Scroll X + fixed columns"
+    , demoRow "dat-041"
+        "Scroll X + fixed columns"
         [ DataTable.view theme
             { dtD
                 | columns =
@@ -2286,7 +2320,8 @@ dataTableRows model =
                 , scrollX = Just 600
             }
         ]
-    , demoRow "Max height (discrete header)"
+    , demoRow "dat-042"
+        "Max height (discrete header)"
         [ DataTable.view theme
             { dtD
                 | columns = columns
@@ -2295,7 +2330,8 @@ dataTableRows model =
                 , maxHeight = Just 120
             }
         ]
-    , demoRow "Flex height"
+    , demoRow "dat-043"
+        "Flex height"
         [ Element.el [ Element.height (Element.px 220), Element.width Element.fill ]
             (DataTable.view theme
                 { dtD
@@ -2306,7 +2342,8 @@ dataTableRows model =
                 }
             )
         ]
-    , demoRow "Ellipsis"
+    , demoRow "dat-044"
+        "Ellipsis"
         [ DataTable.view theme
             { dtD
                 | columns =
@@ -2323,7 +2360,8 @@ dataTableRows model =
                 , rowKey = .name
             }
         ]
-    , demoRow "Loading"
+    , demoRow "dat-045"
+        "Loading"
         [ DataTable.view theme
             { dtD
                 | columns = columns
@@ -2332,7 +2370,8 @@ dataTableRows model =
                 , loading = True
             }
         ]
-    , demoRow "Table layout fixed"
+    , demoRow "dat-046"
+        "Table layout fixed"
         [ DataTable.view theme
             { dtD
                 | columns = columns
@@ -2341,7 +2380,8 @@ dataTableRows model =
                 , tableLayout = DataTable.TableFixed
             }
         ]
-    , demoRow "Group header"
+    , demoRow "dat-047"
+        "Group header"
         [ DataTable.view theme
             { dtD
                 | columns =
@@ -2371,7 +2411,8 @@ dataTableRows model =
                 , rowKey = .name
             }
         ]
-    , demoRow "Summary (Σ45 · bottom / top)"
+    , demoRow "dat-048"
+        "Summary (Σ45 · bottom / top)"
         [ DataTable.view theme
             { dtD
                 | columns = summaryColumns
@@ -2395,7 +2436,8 @@ dataTableRows model =
     -- row-span, so every row still paints its own Age cell and no row is
     -- left with zero cells (the old colspan=3 across the Age track swallowed
     -- Age for both spanned rows and blanked row 1 completely).
-    , demoRow "Merge cells (row 0 · colspan 2 / rowspan 2)"
+    , demoRow "dat-049"
+        "Merge cells (row 0 · colspan 2 / rowspan 2)"
         [ DataTable.view theme
             { dtD
                 | columns =
@@ -2439,7 +2481,7 @@ dataTableSection model =
 
 dataTableLiveRow : Model -> Element Msg
 dataTableLiveRow model =
-    demoRow "Data Table · selection + sort + pagination" [ dataTableDemo theme model ]
+    demoRow "dat-050" "Data Table · selection + sort + pagination" [ dataTableDemo theme model ]
 
 
 dataTableLiveSection : Model -> Element Msg
@@ -2514,7 +2556,8 @@ transferRows model =
             , { label = "Disabled", value = "4", disabled = True }
             ]
     in
-    [ demoRow "Basic"
+    [ demoRow "dat-051"
+        "Basic"
         [ Transfer.view theme
             { trD
                 | options = opts
@@ -2524,7 +2567,8 @@ transferRows model =
                 , onCheck = Just TransferSamplesCheck
             }
         ]
-    , demoRow "Filterable + large"
+    , demoRow "dat-052"
+        "Filterable + large"
         [ Transfer.view theme
             { trD
                 | options = opts
@@ -2536,7 +2580,8 @@ transferRows model =
                 , onCheck = Just TransferLargeCheck
             }
         ]
-    , demoRow "Disabled + empty target"
+    , demoRow "dat-053"
+        "Disabled + empty target"
         [ Transfer.view theme
             { trD
                 | options = opts
@@ -2544,11 +2589,13 @@ transferRows model =
                 , sourceTitle = Just "Source"
             }
         ]
-    , demoRow "Empty options"
+    , demoRow "dat-054"
+        "Empty options"
         [ Transfer.view theme
             { trD | sourceTitle = Just "Source", targetTitle = Just "Target" }
         ]
-    , demoRow "All checked + custom texts"
+    , demoRow "dat-055"
+        "All checked + custom texts"
         [ Transfer.view theme
             { trD
                 | options = opts
@@ -2570,7 +2617,7 @@ transferSection model =
 
 transferLiveRow : Model -> Element Msg
 transferLiveRow model =
-    demoRow "Transfer · move + filter" [ transferDemo theme model ]
+    demoRow "dat-056" "Transfer · move + filter" [ transferDemo theme model ]
 
 
 transferLiveSection : Model -> Element Msg
@@ -2748,7 +2795,8 @@ uploadRows =
         withId id opts =
             { opts | attributes = [ Element.htmlAttribute (HA.id id) ] }
     in
-    [ demoRow "Text list (all statuses)"
+    [ demoRow "dat-057"
+        "Text list (all statuses)"
         [ Upload.view theme
             (withId "live-upload"
                 { upD
@@ -2762,7 +2810,8 @@ uploadRows =
                 }
             )
         ]
-    , demoRow "Uploading (line progress + cancel)"
+    , demoRow "dat-058"
+        "Uploading (line progress + cancel)"
         [ Upload.view theme
             (withId "live-upload-uploading"
                 { upD
@@ -2770,7 +2819,8 @@ uploadRows =
                 }
             )
         ]
-    , demoRow "Error (error kind + retry)"
+    , demoRow "dat-059"
+        "Error (error kind + retry)"
         [ Upload.view theme
             (withId "live-upload-error"
                 { upD
@@ -2778,7 +2828,8 @@ uploadRows =
                 }
             )
         ]
-    , demoRow "Image type"
+    , demoRow "dat-060"
+        "Image type"
         [ Upload.view theme
             (withId "live-upload-image"
                 { upD
@@ -2788,7 +2839,8 @@ uploadRows =
                 }
             )
         ]
-    , demoRow "Image card (thumbnail anchor / icon)"
+    , demoRow "dat-061"
+        "Image card (thumbnail anchor / icon)"
         [ Upload.view theme
             (withId "live-upload-image-card"
                 { upD
@@ -2806,7 +2858,8 @@ uploadRows =
                 }
             )
         ]
-    , demoRow "Dragger trigger"
+    , demoRow "dat-062"
+        "Dragger trigger"
         [ Upload.view theme
             (withId "live-upload-dragger"
                 { upD
@@ -2815,7 +2868,8 @@ uploadRows =
                 }
             )
         ]
-    , demoRow "Disabled"
+    , demoRow "dat-063"
+        "Disabled"
         [ Upload.view theme
             (withId "live-upload-disabled"
                 { upD
@@ -2824,7 +2878,8 @@ uploadRows =
                 }
             )
         ]
-    , demoRow "Max reached (trigger disabled)"
+    , demoRow "dat-064"
+        "Max reached (trigger disabled)"
         [ Upload.view theme
             (withId "live-upload-max"
                 { upD
@@ -2833,11 +2888,13 @@ uploadRows =
                 }
             )
         ]
-    , demoRow "Directory"
+    , demoRow "dat-065"
+        "Directory"
         [ Upload.view theme
             (withId "live-upload-directory" { upD | directory = True })
         ]
-    , demoRow "renderIcon + alwaysShowActions"
+    , demoRow "dat-066"
+        "renderIcon + alwaysShowActions"
         [ Upload.view theme
             (withId "live-upload-rendericon"
                 { upD
@@ -2853,7 +2910,8 @@ uploadRows =
                 }
             )
         ]
-    , demoRow "Abstract trigger"
+    , demoRow "dat-067"
+        "Abstract trigger"
         (Upload.viewAbstract theme
             upD
             (Element.el [ Element.htmlAttribute (HA.id "live-upload-abstract-slot") ]
@@ -2872,7 +2930,7 @@ uploadSection =
 
 uploadLiveRow : Model -> Element Msg
 uploadLiveRow model =
-    demoRow "Upload · simulated file list" [ uploadDemo theme model ]
+    demoRow "dat-068" "Upload · simulated file list" [ uploadDemo theme model ]
 
 
 uploadLiveSection : Model -> Element Msg

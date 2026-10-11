@@ -603,24 +603,28 @@ cell content =
 
 buttonRows : List (Element msg)
 buttonRows =
-    [ demoRow "Sizes"
+    [ demoRow "ctl-001"
+        "Sizes"
         [ Button.view theme { btn | size = T.Tiny } [ Element.text "Tiny" ]
         , Button.view theme { btn | size = T.Small } [ Element.text "Small" ]
         , Button.view theme { btn | size = T.Medium } [ Element.text "Medium" ]
         , Button.view theme { btn | size = T.Large } [ Element.text "Large" ]
         ]
-    , demoRow "Types"
+    , demoRow "ctl-002"
+        "Types"
         (List.map
             (\k -> Button.view theme { btn | kind = k } [ Element.text (capitalize (T.kindClass k)) ])
             [ T.Default, T.Primary, T.Info, T.Success, T.Warning, T.Error ]
         )
-    , demoRow "Variants"
+    , demoRow "ctl-003"
+        "Variants"
         [ Button.view theme { btn | kind = T.Primary, variant = Button.Secondary } [ Element.text "Secondary" ]
         , Button.view theme { btn | kind = T.Primary, variant = Button.Tertiary } [ Element.text "Tertiary" ]
         , Button.view theme { btn | kind = T.Primary, variant = Button.Quaternary } [ Element.text "Quaternary" ]
         , Button.view theme { btn | kind = T.Primary, variant = Button.Text } [ Element.text "Text" ]
         ]
-    , demoRow "Shapes & states"
+    , demoRow "ctl-004"
+        "Shapes & states"
         [ Button.view theme { btn | round = True } [ Element.text "Round" ]
         , Button.view theme { btn | circle = True } [ Element.text "C" ]
         , Button.view theme { btn | dashed = True } [ Element.text "Dashed" ]
@@ -630,7 +634,8 @@ buttonRows =
         ]
     , Element.el [ Element.width (Element.px 320) ]
         (Button.view theme { btn | block = True } [ Element.text "Block" ])
-    , demoRow "Group (horizontal)"
+    , demoRow "ctl-005"
+        "Group (horizontal)"
         [ ButtonGroup.view theme
             ButtonGroup.defaults
             [ Button.view theme { btn | kind = T.Primary } [ Element.text "Left" ]
@@ -638,7 +643,8 @@ buttonRows =
             , Button.view theme { btn | kind = T.Primary } [ Element.text "Right" ]
             ]
         ]
-    , demoRow "Group (vertical)"
+    , demoRow "ctl-006"
+        "Group (vertical)"
         [ ButtonGroup.view theme
             { bgD | vertical = True }
             [ Button.view theme btn [ Element.text "Top" ]
@@ -657,7 +663,8 @@ buttonSection =
 -}
 buttonPressRow : Model -> Element Msg
 buttonPressRow model =
-    demoRow "Button · press counter"
+    demoRow "ctl-007"
+        "Button · press counter"
         [ Button.view theme
             { btn
                 | kind = T.Primary
@@ -681,13 +688,15 @@ buttonLiveSection model =
 
 inputRows : List (Element msg)
 inputRows =
-    [ demoRow "Basics"
+    [ demoRow "ctl-008"
+        "Basics"
         [ Element.el [ Element.width (Element.px 220) ]
             (Input.view theme { inputD | placeholder = Just "Placeholder" })
         , Element.el [ Element.width (Element.px 220) ]
             (Input.view theme { inputD | value = "Hello" })
         ]
-    , demoRow "Statuses"
+    , demoRow "ctl-009"
+        "Statuses"
         [ Element.el [ Element.width (Element.px 220) ]
             (Input.view theme { inputD | value = "Success", status = Just Input.Success })
         , Element.el [ Element.width (Element.px 220) ]
@@ -695,7 +704,8 @@ inputRows =
         , Element.el [ Element.width (Element.px 220) ]
             (Input.view theme { inputD | value = "Error", status = Just Input.Error })
         ]
-    , demoRow "States"
+    , demoRow "ctl-010"
+        "States"
         [ Element.el [ Element.width (Element.px 220) ]
             (Input.view theme { inputD | value = "Disabled", disabled = True })
         , Element.el [ Element.width (Element.px 220) ]
@@ -721,7 +731,8 @@ inputSection =
 -}
 inputControlledRow : Model -> Element Msg
 inputControlledRow model =
-    demoRow "Input · controlled + clear"
+    demoRow "ctl-011"
+        "Input · controlled + clear"
         [ Element.column [ Element.spacing 6, Element.width (Element.px 240) ]
             [ Input.view theme
                 { inputD
@@ -752,7 +763,8 @@ inputControlledRow model =
 -}
 inputPairRow : Model -> Element Msg
 inputPairRow model =
-    demoRow "Input · pair (date-range-like)"
+    demoRow "ctl-012"
+        "Input · pair (date-range-like)"
         [ Element.column [ Element.spacing 6, Element.width (Element.px 320) ]
             [ Input.view theme
                 { inputD
@@ -776,12 +788,14 @@ inputLiveSection model =
 
 inputOtpRows : List (Element msg)
 inputOtpRows =
-    [ demoRow "Lengths & sizes"
+    [ demoRow "ctl-013"
+        "Lengths & sizes"
         [ InputOtp.view theme { iotpD | length = 4, value = [ "1", "2", "3", "4" ] } []
         , InputOtp.view theme { iotpD | length = 6, size = InputOtp.Small, gap = Just (InputOtp.Px 6) } []
         , InputOtp.view theme { iotpD | length = 6, mask = True } []
         ]
-    , demoRow "RTL"
+    , demoRow "ctl-014"
+        "RTL"
         [ InputOtp.view theme { iotpD | rtl = True, length = 6, value = [ "8", "8", "8" ] } []
         ]
     ]
@@ -796,7 +810,8 @@ inputOtpSection =
 -}
 inputOtpCompletionRow : Model -> Element Msg
 inputOtpCompletionRow model =
-    demoRow "InputOtp · completion"
+    demoRow "ctl-015"
+        "InputOtp · completion"
         [ Element.column [ Element.spacing 8 ]
             [ InputOtp.view theme (otpOptions model) []
             , Element.row [ Element.spacing 8 ]
@@ -842,7 +857,8 @@ inputNumberSection =
 -}
 inputNumberStepperRow : Model -> Element Msg
 inputNumberStepperRow model =
-    demoRow "InputNumber · stepper + commit"
+    demoRow "ctl-016"
+        "InputNumber · stepper + commit"
         [ InputNumber.view theme (numberOptions model) []
         , Button.view theme
             { btn
@@ -864,29 +880,34 @@ inputNumberLiveSection model =
 
 selectionRows : List (Element msg)
 selectionRows =
-    [ demoRow "Checkbox"
+    [ demoRow "ctl-017"
+        "Checkbox"
         [ Checkbox.view theme { cbD | checked = True } [ Element.text "Checked" ]
         , Checkbox.view theme cbD [ Element.text "Unchecked" ]
         , Checkbox.view theme { cbD | indeterminate = True } [ Element.text "Indeterminate" ]
         , Checkbox.view theme { cbD | disabled = True, checked = True } [ Element.text "Disabled" ]
         ]
-    , demoRow "Switch"
+    , demoRow "ctl-018"
+        "Switch"
         [ Switch.view theme { swD | value = False } []
         , Switch.view theme { swD | value = True } []
         , Switch.view theme { swD | value = True, loading = True } []
         , Switch.view theme { swD | value = False, disabled = True } []
         ]
-    , demoRow "Radio group"
+    , demoRow "ctl-019"
+        "Radio group"
         [ Radio.group theme
             { radioGD | value = Just "sh" }
             [ Radio.choice "bj" "Beijing", Radio.choice "sh" "Shanghai", Radio.choice "gz" "Guangzhou" ]
         ]
-    , demoRow "Radio button group"
+    , demoRow "ctl-020"
+        "Radio button group"
         [ Radio.group theme
             { radioGD | value = Just "m" }
             [ Radio.button "s" "Small", Radio.button "m" "Medium", Radio.button "l" "Large" ]
         ]
-    , demoRow "Radio standalone"
+    , demoRow "ctl-021"
+        "Radio standalone"
         [ Radio.view theme { radioD | checked = True } [ Element.text "Selected" ]
         , Radio.view theme radioD [ Element.text "Unselected" ]
         , Radio.view theme { radioD | disabled = True } [ Element.text "Disabled" ]
@@ -904,7 +925,8 @@ the switch and the caption stay the only children of the row body).
 -}
 switchToggleRow : Model -> Element Msg
 switchToggleRow model =
-    demoRow "Switch · toggle"
+    demoRow "ctl-022"
+        "Switch · toggle"
         [ Element.el [ Element.htmlAttribute (HA.id "live-switch-toggle") ]
             (Switch.view theme
                 { swD | value = model.switchOn, onChange = Just SwitchToggled }
@@ -924,7 +946,8 @@ switchToggleRow model =
 -}
 checkboxGroupRow : Model -> Element Msg
 checkboxGroupRow model =
-    demoRow "Checkbox · group + indeterminate master"
+    demoRow "ctl-023"
+        "Checkbox · group + indeterminate master"
         [ Element.column [ Element.spacing 8 ]
             [ Element.el [ Element.htmlAttribute (HA.id "live-checkbox-master") ]
                 (Checkbox.view theme
@@ -957,7 +980,8 @@ checkboxGroupRow model =
 -}
 radioPickRow : Model -> Element Msg
 radioPickRow model =
-    demoRow "Radio.Group · pick one"
+    demoRow "ctl-024"
+        "Radio.Group · pick one"
         [ Radio.group theme
             { radioGD
                 | value = model.city
@@ -981,12 +1005,14 @@ selectionLiveSection model =
 
 rateRows : List (Element msg)
 rateRows =
-    [ demoRow "Value"
+    [ demoRow "ctl-025"
+        "Value"
         [ Rate.view theme { rateD | value = Just 4 }
         , Rate.view theme { rateD | value = Just 3, readonly = True }
         , Rate.view theme { rateD | value = Just 2, color = Just "#f0a020" }
         ]
-    , demoRow "Half & sizes"
+    , demoRow "ctl-026"
+        "Half & sizes"
         [ Rate.view theme { rateD | allowHalf = True, value = Just 3.5 }
         , Rate.view theme { rateD | size = Rate.Small, value = Just 5 }
         , Rate.view theme { rateD | size = Rate.Large, value = Just 5 }
@@ -1004,7 +1030,8 @@ button-simulated — see the oracle note above).
 -}
 rateHoverRow : Model -> Element Msg
 rateHoverRow model =
-    demoRow "Rate · hover preview + commit"
+    demoRow "ctl-027"
+        "Rate · hover preview + commit"
         [ Rate.view theme (rateOptions model)
         , Button.view theme
             { btn | size = T.Small, onPress = Just (RateNudge -0.5), attributes = [ Element.htmlAttribute (HA.id "live-rate-hover-minus") ] }
@@ -1033,7 +1060,8 @@ rateLiveSection model =
 
 sliderRows : List (Element msg)
 sliderRows =
-    [ demoRow "Single + range (fixed state; marks feed dots/marks/snap)"
+    [ demoRow "ctl-028"
+        "Single + range (fixed state; marks feed dots/marks/snap)"
         [ cell
             (Element.el [ Element.width (Element.px 240) ]
                 (Slider.view theme
@@ -1054,7 +1082,8 @@ sliderRows =
                 )
             )
         ]
-    , demoRow "Tooltip indicator (pinned via hoverIndex / drag) + disabled"
+    , demoRow "ctl-029"
+        "Tooltip indicator (pinned via hoverIndex / drag) + disabled"
         [ cell
             (Element.el [ Element.width (Element.px 240) ]
                 (Slider.view theme
@@ -1072,7 +1101,8 @@ sliderRows =
                 )
             )
         ]
-    , demoRow "Vertical + reverse (direction keys flip, dots still 34/75)"
+    , demoRow "ctl-030"
+        "Vertical + reverse (direction keys flip, dots still 34/75)"
         [ cell
             (Element.el [ Element.height (Element.px 220) ]
                 (Slider.view theme
@@ -1095,7 +1125,8 @@ sliderRows =
                 )
             )
         ]
-    , demoRow "Range snap (`step: 'mark'`) + >2 values (fill suppressed, dots inactive — upstream quirk)"
+    , demoRow "ctl-031"
+        "Range snap (`step: 'mark'`) + >2 values (fill suppressed, dots inactive — upstream quirk)"
         [ cell
             (Element.el [ Element.width (Element.px 240) ]
                 (Slider.view theme
@@ -1126,7 +1157,8 @@ sliderSection =
 -}
 sliderSingleRow : Model -> Element Msg
 sliderSingleRow model =
-    demoRow "Slider · single (hover/focus indicator + arrow-step algebra)"
+    demoRow "ctl-032"
+        "Slider · single (hover/focus indicator + arrow-step algebra)"
         [ Element.column [ Element.spacing 6, Element.width (Element.px 260) ]
             [ Slider.view theme (sliderOptions model)
             , Element.row [ Element.spacing 8 ]
@@ -1148,7 +1180,8 @@ can cross — see the oracle note above).
 -}
 sliderRangeRow : Model -> Element Msg
 sliderRangeRow model =
-    demoRow "Slider · range (per-handle steps, marks snap)"
+    demoRow "ctl-033"
+        "Slider · range (per-handle steps, marks snap)"
         [ Element.column [ Element.spacing 6, Element.width (Element.px 260) ]
             [ Slider.view theme (rangeOptions model)
             , Element.row [ Element.spacing 8 ]
