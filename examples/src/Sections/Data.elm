@@ -73,7 +73,7 @@ import NUI.Tree as Tree
 import NUI.Types as T
 import NUI.Typography as Typo
 import NUI.Upload as Upload
-import Showcase exposing (chip, demoRow, section, theme)
+import Showcase exposing (chip, demoRow, section)
 
 
 
@@ -962,7 +962,7 @@ tagsDemo : Theme -> Model -> Element Msg
 tagsDemo theme model =
     Element.column [ Element.spacing 10, Element.width (Element.px 480) ]
         [ DynamicTags.view theme (tagsOpts model) []
-        , caption
+        , caption theme
             [ "tags: " ++ listLabel model.tags
             , if model.tagsShowInput then
                 "input: \"" ++ model.tagsDraft ++ "\""
@@ -975,9 +975,10 @@ tagsDemo theme model =
         ]
 
 
-dynamicTagsRows : Model -> List (Element Msg)
-dynamicTagsRows model =
-    [ demoRow "dat-001"
+dynamicTagsRows : Model -> Theme -> List (Element Msg)
+dynamicTagsRows model theme =
+    [ demoRow theme
+        "dat-001"
         "Tags"
         [ DynamicTags.view theme
             { dtagsD
@@ -994,7 +995,8 @@ dynamicTagsRows model =
             }
             []
         ]
-    , demoRow "dat-002"
+    , demoRow theme
+        "dat-002"
         "Input shown (caller owns the draft)"
         [ DynamicTags.view theme
             { dtagsD
@@ -1011,23 +1013,25 @@ dynamicTagsRows model =
     ]
 
 
-dynamicTagsSection : Model -> Element Msg
-dynamicTagsSection model =
-    section "Dynamic Tags"
+dynamicTagsSection : Model -> Theme -> Element Msg
+dynamicTagsSection model theme =
+    section theme
+        "Dynamic Tags"
         "Editable tag lists (the tags, input and draft are caller-owned)."
-        (dynamicTagsRows model)
+        (dynamicTagsRows model theme)
 
 
-tagsLiveRow : Model -> Element Msg
-tagsLiveRow model =
-    demoRow "dat-003" "Dynamic Tags · add / confirm / close" [ tagsDemo theme model ]
+tagsLiveRow : Model -> Theme -> Element Msg
+tagsLiveRow model theme =
+    demoRow theme "dat-003" "Dynamic Tags · add / confirm / close" [ tagsDemo theme model ]
 
 
-dynamicTagsLiveSection : Model -> Element Msg
-dynamicTagsLiveSection model =
-    section "Dynamic Tags"
+dynamicTagsLiveSection : Model -> Theme -> Element Msg
+dynamicTagsLiveSection model theme =
+    section theme
+        "Dynamic Tags"
         "Editable tag lists (the tags, input and draft are caller-owned)."
-        (dynamicTagsRows model ++ [ tagsLiveRow model ])
+        (dynamicTagsRows model theme ++ [ tagsLiveRow model theme ])
 
 
 
@@ -1059,7 +1063,7 @@ calendarDemo : Theme -> Model -> Element Msg
 calendarDemo theme model =
     Element.column [ Element.spacing 10, Element.width (Element.px 420) ]
         [ Calendar.view theme (calOpts model)
-        , caption
+        , caption theme
             [ "panel: " ++ Calendar.enUS.title model.calPanel
             , "selected: " ++ Maybe.withDefault "—" (Maybe.map formatDate model.calValue)
             ]
@@ -1068,8 +1072,8 @@ calendarDemo theme model =
         ]
 
 
-calendarRows : Model -> List (Element Msg)
-calendarRows model =
+calendarRows : Model -> Theme -> List (Element Msg)
+calendarRows model theme =
     [ Element.el [ Element.width (Element.px 420) ]
         (Calendar.view theme
             { calD | panel = { year = 2024, month = 6 }, now = { year = 2024, month = 6, day = 15 } }
@@ -1087,23 +1091,25 @@ calendarRows model =
     ]
 
 
-calendarSection : Model -> Element Msg
-calendarSection model =
-    section "Calendar"
+calendarSection : Model -> Theme -> Element Msg
+calendarSection model theme =
+    section theme
+        "Calendar"
         "A month view (the panel, value and locale are caller-owned)."
-        (calendarRows model)
+        (calendarRows model theme)
 
 
-calendarLiveRow : Model -> Element Msg
-calendarLiveRow model =
-    demoRow "dat-004" "Calendar · panel + date" [ calendarDemo theme model ]
+calendarLiveRow : Model -> Theme -> Element Msg
+calendarLiveRow model theme =
+    demoRow theme "dat-004" "Calendar · panel + date" [ calendarDemo theme model ]
 
 
-calendarLiveSection : Model -> Element Msg
-calendarLiveSection model =
-    section "Calendar"
+calendarLiveSection : Model -> Theme -> Element Msg
+calendarLiveSection model theme =
+    section theme
+        "Calendar"
         "A month view (the panel, value and locale are caller-owned)."
-        (calendarRows model ++ [ calendarLiveRow model ])
+        (calendarRows model theme ++ [ calendarLiveRow model theme ])
 
 
 
@@ -1140,15 +1146,16 @@ pairDemo theme model =
     in
     Element.column [ Element.spacing 10, Element.width (Element.px 480) ]
         [ DynamicInput.viewPair theme (pairOpts model)
-        , caption pairChips
+        , caption theme pairChips
         , note theme
             "Pair preset over a caller-owned list: typing reports the whole list (onUpdateValue with the entry replaced), Create / add / sort presses carry the inserted or moved list (insertAt / moveUp / moveDown inside the component), and the remove press owns its own channel — onRemove carries the index and update applies removeAt itself, the documented split."
         ]
 
 
-dynamicInputRows : Model -> List (Element Msg)
-dynamicInputRows model =
-    [ demoRow "dat-005"
+dynamicInputRows : Model -> Theme -> List (Element Msg)
+dynamicInputRows model theme =
+    [ demoRow theme
+        "dat-005"
         "Preset: input"
         [ DynamicInput.viewInput theme
             { diD
@@ -1158,7 +1165,8 @@ dynamicInputRows model =
                 , onRemove = Just StringsSampleRemove
             }
         ]
-    , demoRow "dat-006"
+    , demoRow theme
+        "dat-006"
         "Preset: pair"
         [ DynamicInput.viewPair theme
             { diPairD
@@ -1169,7 +1177,8 @@ dynamicInputRows model =
                 , onRemove = Just PairsSampleRemove
             }
         ]
-    , demoRow "dat-007"
+    , demoRow theme
+        "dat-007"
         "Max + sort buttons"
         [ DynamicInput.viewInput theme
             { diD
@@ -1180,30 +1189,33 @@ dynamicInputRows model =
                 , onRemove = Just OnlyThreeRemove
             }
         ]
-    , demoRow "dat-008"
+    , demoRow theme
+        "dat-008"
         "Empty (Create button)"
         [ DynamicInput.viewInput theme { diD | value = [] }
         ]
     ]
 
 
-dynamicInputSection : Model -> Element Msg
-dynamicInputSection model =
-    section "DynamicInput"
+dynamicInputSection : Model -> Theme -> Element Msg
+dynamicInputSection model theme =
+    section theme
+        "DynamicInput"
         "A list of values, each row an input (or key / value pair) with add / remove / sort actions. Pure list core: `insertAt` / `removeAt` / `moveUp` / `moveDown`, guarded by `min` / `max`."
-        (dynamicInputRows model)
+        (dynamicInputRows model theme)
 
 
-pairLiveRow : Model -> Element Msg
-pairLiveRow model =
-    demoRow "dat-009" "Dynamic Input · pair list editor" [ pairDemo theme model ]
+pairLiveRow : Model -> Theme -> Element Msg
+pairLiveRow model theme =
+    demoRow theme "dat-009" "Dynamic Input · pair list editor" [ pairDemo theme model ]
 
 
-dynamicInputLiveSection : Model -> Element Msg
-dynamicInputLiveSection model =
-    section "DynamicInput"
+dynamicInputLiveSection : Model -> Theme -> Element Msg
+dynamicInputLiveSection model theme =
+    section theme
+        "DynamicInput"
         "A list of values, each row an input (or key / value pair) with add / remove / sort actions. Pure list core: `insertAt` / `removeAt` / `moveUp` / `moveDown`, guarded by `min` / `max`."
-        (dynamicInputRows model ++ [ pairLiveRow model ])
+        (dynamicInputRows model theme ++ [ pairLiveRow model theme ])
 
 
 
@@ -1247,56 +1259,63 @@ tableDemo theme model =
     in
     Element.column [ Element.spacing 10 ]
         [ Table.view theme tD { head = [ header ], body = rows }
-        , caption [ "picked: " ++ Maybe.withDefault "—" model.tablePick ]
+        , caption theme [ "picked: " ++ Maybe.withDefault "—" model.tablePick ]
         , note theme
             "NUI.Table is the port's fully-static table — no channel in Options by design. The row click rides the documented Row.attributes seam (upstream's bare <tr> wrapper), not a faked channel."
         ]
 
 
-tableRows : List (Element msg)
-tableRows =
-    [ demoRow "dat-010"
+tableRows : Theme -> List (Element msg)
+tableRows theme =
+    [ demoRow theme
+        "dat-010"
         "Basic (defaults: bordered, bottom-bordered, single-line)"
         [ Table.view theme tableD tableContent
         ]
-    , demoRow "dat-011"
+    , demoRow theme
+        "dat-011"
         "Sizes · un-bordered · multi-line"
         [ Table.view theme { tableD | size = Table.Small } tableContent
         , Table.view theme { tableD | size = Table.Large, bordered = False, bottomBordered = False } tableContent
         ]
-    , demoRow "dat-012"
+    , demoRow theme
+        "dat-012"
         "Striped · single-column · multi-line cells"
         [ Table.view theme { tableD | striped = True, singleLine = False } tableContent
         , Table.view theme { tableD | singleColumn = True } tableContent
         ]
-    , demoRow "dat-013"
+    , demoRow theme
+        "dat-013"
         "Colspan / rowspan"
         [ Table.view theme tableD spanContent
         ]
-    , demoRow "dat-014"
+    , demoRow theme
+        "dat-014"
         "RTL"
         [ Table.view theme { tableD | rtl = True } tableContent
         ]
     ]
 
 
-tableSection : Element msg
-tableSection =
-    section "Table"
+tableSection : Theme -> Element msg
+tableSection theme =
+    section theme
+        "Table"
         "Naive UI's static table — the real `<table class=\"n-table\">` root (six modifier classes, the 21 `--n-*` vars with the three size-keyed ones resolved) over a typed `thead` / `tbody` tree of `th` / `td` cells (`colspan` / `rowspan` first-class, `Element` content embedded through `display: contents`). Fully static — nothing runtime."
-        tableRows
+        (tableRows theme)
 
 
-tableLiveRow : Model -> Element Msg
-tableLiveRow model =
-    demoRow "dat-015" "Table · row state (Row.attributes seam)" [ tableDemo theme model ]
+tableLiveRow : Model -> Theme -> Element Msg
+tableLiveRow model theme =
+    demoRow theme "dat-015" "Table · row state (Row.attributes seam)" [ tableDemo theme model ]
 
 
-tableLiveSection : Model -> Element Msg
-tableLiveSection model =
-    section "Table"
+tableLiveSection : Model -> Theme -> Element Msg
+tableLiveSection model theme =
+    section theme
+        "Table"
         "Naive UI's static table — the real `<table class=\"n-table\">` root (six modifier classes, the 21 `--n-*` vars with the three size-keyed ones resolved) over a typed `thead` / `tbody` tree of `th` / `td` cells (`colspan` / `rowspan` first-class, `Element` content embedded through `display: contents`). Fully static — nothing runtime."
-        (tableRows ++ [ tableLiveRow model ])
+        (tableRows theme ++ [ tableLiveRow model theme ])
 
 
 
@@ -1436,7 +1455,7 @@ treeDemo theme model =
     in
     Element.column [ Element.spacing 10 ]
         [ Tree.view theme (treeOpts model)
-        , caption
+        , caption theme
             [ "checked: " ++ listLabel normalized.checkedKeys
             , "half-checked: " ++ listLabel normalized.indeterminateKeys
             , "selected: " ++ listLabel model.treeSelected
@@ -1447,9 +1466,10 @@ treeDemo theme model =
         ]
 
 
-treeRows : Model -> List (Element Msg)
-treeRows model =
-    [ demoRow "dat-016"
+treeRows : Model -> Theme -> List (Element Msg)
+treeRows model theme =
+    [ demoRow theme
+        "dat-016"
         "Basic · checkable (cascade, Child strategy)"
         [ Tree.view theme
             { treeD | data = treeOptions, expandedKeys = [ "beatles", "stones" ] }
@@ -1464,7 +1484,8 @@ treeRows model =
                 , nodeProps = Just (sampleNodeProps True False TreeExpandedCheckableToggle)
             }
         ]
-    , demoRow "dat-017"
+    , demoRow theme
+        "dat-017"
         "Multiple selection · showLine"
         [ Tree.view theme
             { treeD
@@ -1477,7 +1498,8 @@ treeRows model =
         , Tree.view theme
             { treeD | data = treeOptions, expandedKeys = model.treeExpandedLine, showLine = True }
         ]
-    , demoRow "dat-018"
+    , demoRow theme
+        "dat-018"
         "block-line + ellipsis · pending + highlight"
         [ Tree.view theme
             { treeD
@@ -1490,7 +1512,8 @@ treeRows model =
                 , nodeProps = Just (sampleNodeProps False False TreeExpandedBlockToggle)
             }
         ]
-    , demoRow "dat-019"
+    , demoRow theme
+        "dat-019"
         "Loading switcher · empty"
         [ Tree.view theme
             { treeD | data = treeOptions, expandedKeys = model.treeExpandedLoading, loadingKeys = [ "stones" ] }
@@ -1499,23 +1522,25 @@ treeRows model =
     ]
 
 
-treeSection : Model -> Element Msg
-treeSection model =
-    section "Tree"
+treeSection : Model -> Theme -> Element Msg
+treeSection model theme =
+    section theme
+        "Tree"
         "Naive UI's tree — the `div.n-tree` root (17 `--n-*` vars; three derived from the wrapper-padding/height strings) rendering the flattened visible nodes as `n-tree-node-wrapper` rows: a `showLine` indent chain, the switcher (arrow svg, the loading spinner for `loadingKeys` keys — sw20/r85 baseline under the `spin*` overrides), the `data-checkbox`-wrapped `NUI.Checkbox` (cascade-checked via the shipped treemate helpers), and the prefix/label/suffix content. Everything interactive is data: `expandedKeys` / `checkedKeys` / `selectedKeys` / `pendingKey` / `loadingKeys` / `dropMark`; the pure helpers (`flatten`, `getCheckedKeys`, `check` / `uncheck`, `toggleExpand`, `toggleSelect`, `getNonLeafKeys`, `filterTree`) do the treemate math. Not ported: virtual list, expand motion, drag/keyboard events."
-        (treeRows model)
+        (treeRows model theme)
 
 
-treeLiveRow : Model -> Element Msg
-treeLiveRow model =
-    demoRow "dat-020" "Tree · check + expand + select (nodeProps seam)" [ treeDemo theme model ]
+treeLiveRow : Model -> Theme -> Element Msg
+treeLiveRow model theme =
+    demoRow theme "dat-020" "Tree · check + expand + select (nodeProps seam)" [ treeDemo theme model ]
 
 
-treeLiveSection : Model -> Element Msg
-treeLiveSection model =
-    section "Tree"
+treeLiveSection : Model -> Theme -> Element Msg
+treeLiveSection model theme =
+    section theme
+        "Tree"
         "Naive UI's tree — the `div.n-tree` root (17 `--n-*` vars; three derived from the wrapper-padding/height strings) rendering the flattened visible nodes as `n-tree-node-wrapper` rows: a `showLine` indent chain, the switcher (arrow svg, the loading spinner for `loadingKeys` keys — sw20/r85 baseline under the `spin*` overrides), the `data-checkbox`-wrapped `NUI.Checkbox` (cascade-checked via the shipped treemate helpers), and the prefix/label/suffix content. Everything interactive is data: `expandedKeys` / `checkedKeys` / `selectedKeys` / `pendingKey` / `loadingKeys` / `dropMark`; the pure helpers (`flatten`, `getCheckedKeys`, `check` / `uncheck`, `toggleExpand`, `toggleSelect`, `getNonLeafKeys`, `filterTree`) do the treemate math. Not ported: virtual list, expand motion, drag/keyboard events."
-        (treeRows model ++ [ treeLiveRow model ])
+        (treeRows model theme ++ [ treeLiveRow model theme ])
 
 
 
@@ -1629,7 +1654,7 @@ previewDemo theme model =
     in
     Element.column [ Element.spacing 10 ]
         [ Element.row [ Element.spacing 8 ] (List.indexedMap thumb previewSrcs)
-        , caption
+        , caption theme
             [ "src: " ++ String.fromInt model.previewIndex
             , "scale: " ++ String.fromFloat model.previewZoom.scale
             , "rotate: " ++ String.fromFloat model.previewZoom.rotate ++ "°"
@@ -1645,9 +1670,10 @@ previewDemo theme model =
         ]
 
 
-imageRows : List (Element msg)
-imageRows =
-    [ demoRow "dat-021"
+imageRows : Theme -> List (Element msg)
+imageRows theme =
+    [ demoRow theme
+        "dat-021"
         "Basic + object-fit (fixed state)"
         [ cell
             (Image.view theme
@@ -1677,7 +1703,8 @@ imageRows =
                 }
             )
         ]
-    , demoRow "dat-022"
+    , demoRow theme
+        "dat-022"
         "Error → fallbackSrc + error slot (fixed state)"
         [ cell
             (Image.view theme
@@ -1700,7 +1727,8 @@ imageRows =
                 }
             )
         ]
-    , demoRow "dat-023"
+    , demoRow theme
+        "dat-023"
         "Placeholder (img hidden 0×0 until loaded) + preview-disabled + lazy"
         [ cell
             (Image.view theme
@@ -1733,23 +1761,25 @@ imageRows =
     ]
 
 
-imageSection : Element msg
-imageSection =
-    section "Image"
+imageSection : Theme -> Element msg
+imageSection theme =
+    section theme
+        "Image"
         "The img surface (upstream `NImage`): `n-image` root + img with the full upstream attribute pack (`data-error`, `data-preview-src`, `data-group-id`, native `loading`, `object-fit`). Load/error/lazy state is caller-owned — `showError` flips the img to `fallbackSrc` + the `--preview-disabled` class, or swaps in the error slot replacing the img entirely; a `placeholder` renders while `loaded` is False and hides the img 0×0 (upstream bytes). The preview modal is the caller's seam (`onClick` + the preview-container `cssVars`)."
-        imageRows
+        (imageRows theme)
 
 
-previewLiveRow : Model -> Element Msg
-previewLiveRow model =
-    demoRow "dat-024" "Image · click to preview (full toolbar)" [ previewDemo theme model ]
+previewLiveRow : Model -> Theme -> Element Msg
+previewLiveRow model theme =
+    demoRow theme "dat-024" "Image · click to preview (full toolbar)" [ previewDemo theme model ]
 
 
-imageLiveSection : Model -> Element Msg
-imageLiveSection model =
-    section "Image"
+imageLiveSection : Model -> Theme -> Element Msg
+imageLiveSection model theme =
+    section theme
+        "Image"
         "The img surface (upstream `NImage`): `n-image` root + img with the full upstream attribute pack (`data-error`, `data-preview-src`, `data-group-id`, native `loading`, `object-fit`). Load/error/lazy state is caller-owned — `showError` flips the img to `fallbackSrc` + the `--preview-disabled` class, or swaps in the error slot replacing the img entirely; a `placeholder` renders while `loaded` is False and hides the img 0×0 (upstream bytes). The preview modal is the caller's seam (`onClick` + the preview-container `cssVars`)."
-        (imageRows ++ [ previewLiveRow model ])
+        (imageRows theme ++ [ previewLiveRow model theme ])
 
 
 
@@ -1800,7 +1830,7 @@ groupDemo theme model =
     in
     Element.column [ Element.spacing 10 ]
         [ Element.row [ Element.spacing 8 ] (List.indexedMap thumb gallery)
-        , caption
+        , caption theme
             [ "current: p" ++ String.fromInt model.groupCurrent
             , "show: " ++ boolLabel model.groupShow
             ]
@@ -1814,9 +1844,10 @@ groupDemo theme model =
         ]
 
 
-imagePreviewRows : List (Element msg)
-imagePreviewRows =
-    [ demoRow "dat-025"
+imagePreviewRows : Theme -> List (Element msg)
+imagePreviewRows theme =
+    [ demoRow theme
+        "dat-025"
         "Standalone preview (fixed state: open, zoom identity)"
         [ modalHost []
             (ImagePreview.view theme
@@ -1826,7 +1857,8 @@ imagePreviewRows =
                 }
             )
         ]
-    , demoRow "dat-026"
+    , demoRow theme
+        "dat-026"
         "Zoom/rotate state + previewed-img props (8px white frame)"
         [ modalHost []
             (ImagePreview.view theme
@@ -1839,7 +1871,8 @@ imagePreviewRows =
                 }
             )
         ]
-    , demoRow "dat-027"
+    , demoRow theme
+        "dat-027"
         "Toolbar suppressed + drag state (grabbing cursor, no transition)"
         [ modalHost []
             (ImagePreview.view theme
@@ -1860,7 +1893,8 @@ imagePreviewRows =
                 }
             )
         ]
-    , demoRow "dat-028"
+    , demoRow theme
+        "dat-028"
         "Group (srcList registry, second image current; slot thumbnails beside)"
         [ cell
             (Element.row [ Element.spacing 8 ]
@@ -1886,23 +1920,25 @@ imagePreviewRows =
     ]
 
 
-imagePreviewSection : Element msg
-imagePreviewSection =
-    section "Image Preview & Group"
+imagePreviewSection : Theme -> Element msg
+imagePreviewSection theme =
+    section theme
+        "Image Preview & Group"
         "The preview modal family (upstream `NImagePreview`/`NImageGroup`): container (the five toolbar `--n-*` vars) > overlay (click-to-close seat) > toolbar (prev/next only when `onPrev` is set — upstream keys both on `onPrev` — then rotate CCW/CW, original size, zoomOut, zoomIn, download, close) > wrapper > `img.n-image-preview`. The runtime is caller-owned (`NUI.Modal` precedent): `zoom` starts at `zoom0` and moves through the pure transforms (`zoomIn`/`zoomOut`/`rotateClockwise`/`resizeToOriginalSize`/`toggleOriginalSize`/`switchReset`), drag clamps through `moveStrategy` + `derivedOffset`, document keys map through `keyAction`, and `syncTransformOrigin` writes the thumbnail's center into `wrapperStyle`. The group adds the url registry (`srcList` wins with `p${index}` keys, else the caller-threaded `registered` ids) and the wrap-around walk (`nextIndex`/`prevIndex` skip empty urls). Demo cells confine the fixed tree like the modal demos."
-        imagePreviewRows
+        (imagePreviewRows theme)
 
 
-groupLiveRow : Model -> Element Msg
-groupLiveRow model =
-    demoRow "dat-029" "Image Group · gallery walk" [ groupDemo theme model ]
+groupLiveRow : Model -> Theme -> Element Msg
+groupLiveRow model theme =
+    demoRow theme "dat-029" "Image Group · gallery walk" [ groupDemo theme model ]
 
 
-imagePreviewLiveSection : Model -> Element Msg
-imagePreviewLiveSection model =
-    section "Image Preview & Group"
+imagePreviewLiveSection : Model -> Theme -> Element Msg
+imagePreviewLiveSection model theme =
+    section theme
+        "Image Preview & Group"
         "The preview modal family (upstream `NImagePreview`/`NImageGroup`): container (the five toolbar `--n-*` vars) > overlay (click-to-close seat) > toolbar (prev/next only when `onPrev` is set — upstream keys both on `onPrev` — then rotate CCW/CW, original size, zoomOut, zoomIn, download, close) > wrapper > `img.n-image-preview`. The runtime is caller-owned (`NUI.Modal` precedent): `zoom` starts at `zoom0` and moves through the pure transforms (`zoomIn`/`zoomOut`/`rotateClockwise`/`resizeToOriginalSize`/`toggleOriginalSize`/`switchReset`), drag clamps through `moveStrategy` + `derivedOffset`, document keys map through `keyAction`, and `syncTransformOrigin` writes the thumbnail's center into `wrapperStyle`. The group adds the url registry (`srcList` wins with `p${index}` keys, else the caller-threaded `registered` ids) and the wrap-around walk (`nextIndex`/`prevIndex` skip empty urls). Demo cells confine the fixed tree like the modal demos."
-        (imagePreviewRows ++ [ groupLiveRow model ])
+        (imagePreviewRows theme ++ [ groupLiveRow model theme ])
 
 
 
@@ -2031,7 +2067,7 @@ dataTableDemo theme model =
                 { btn | size = T.Tiny, onPress = Just (DtPageSize 8) }
                 [ Element.text "8 / page" ]
             ]
-        , caption
+        , caption theme
             [ "checked: " ++ listLabel opts.checkedRowKeys
             , "anchor: "
                 ++ (if opts.lastSelectedKey == "" then
@@ -2048,8 +2084,8 @@ dataTableDemo theme model =
         ]
 
 
-dataTableRows : Model -> List (Element Msg)
-dataTableRows model =
+dataTableRows : Model -> Theme -> List (Element Msg)
+dataTableRows model theme =
     let
         dtD =
             DataTable.defaults
@@ -2141,12 +2177,14 @@ dataTableRows model =
         dtPg =
             Pagination.defaults
     in
-    [ demoRow "dat-030"
+    [ demoRow theme
+        "dat-030"
         "Basic"
         [ DataTable.view theme
             { dtD | columns = columns, data = people_, rowKey = .name }
         ]
-    , demoRow "dat-031"
+    , demoRow theme
+        "dat-031"
         "Striped + bordered"
         [ DataTable.view theme
             { dtD
@@ -2156,12 +2194,14 @@ dataTableRows model =
                 , striped = True
             }
         ]
-    , demoRow "dat-032"
+    , demoRow theme
+        "dat-032"
         "Empty"
         [ DataTable.view theme
             { dtD | columns = columns, data = [], rowKey = .name }
         ]
-    , demoRow "dat-033"
+    , demoRow theme
+        "dat-033"
         "Sorting"
         [ DataTable.view theme
             { dtD
@@ -2193,7 +2233,8 @@ dataTableRows model =
                 , onSorterChange = Just DtSortSampleChange
             }
         ]
-    , demoRow "dat-034"
+    , demoRow theme
+        "dat-034"
         "Pagination"
         [ DataTable.view theme
             { dtD
@@ -2203,7 +2244,8 @@ dataTableRows model =
                 , pagination = Just { dtPg | pageSize = Just 2 }
             }
         ]
-    , demoRow "dat-035"
+    , demoRow theme
+        "dat-035"
         "Sort + pagination"
         [ DataTable.view theme
             { dtD
@@ -2225,7 +2267,8 @@ dataTableRows model =
                 , onSorterChange = Just DtSortPageSampleChange
             }
         ]
-    , demoRow "dat-036"
+    , demoRow theme
+        "dat-036"
         "Filter"
         [ DataTable.view theme
             { dtD | columns = filterColumns, data = people_, rowKey = .name }
@@ -2237,7 +2280,8 @@ dataTableRows model =
                 , filterStates = [ ( "address", DataTable.FilterMany [ "Bellevue" ] ) ]
             }
         ]
-    , demoRow "dat-037"
+    , demoRow theme
+        "dat-037"
         "Selection"
         [ DataTable.view theme
             { dtD
@@ -2253,7 +2297,8 @@ dataTableRows model =
                 , onUpdateCheckedRowKeys = Just DtCheckedSelectionChange
             }
         ]
-    , demoRow "dat-038"
+    , demoRow theme
+        "dat-038"
         "Selection (single)"
         [ DataTable.view theme
             { dtD
@@ -2268,7 +2313,8 @@ dataTableRows model =
                 , onUpdateCheckedRowKeys = Just DtCheckedSingleChange
             }
         ]
-    , demoRow "dat-039"
+    , demoRow theme
+        "dat-039"
         "Selection extra"
         [ DataTable.view theme
             { dtD
@@ -2286,7 +2332,8 @@ dataTableRows model =
                 , onUpdateCheckedRowKeys = Just DtCheckedExtraChange
             }
         ]
-    , demoRow "dat-040"
+    , demoRow theme
+        "dat-040"
         "Expand"
         [ DataTable.view theme
             { dtD
@@ -2305,7 +2352,8 @@ dataTableRows model =
                 , onUpdateExpandedRowKeys = Just DtExpandedToggle
             }
         ]
-    , demoRow "dat-041"
+    , demoRow theme
+        "dat-041"
         "Scroll X + fixed columns"
         [ DataTable.view theme
             { dtD
@@ -2320,7 +2368,8 @@ dataTableRows model =
                 , scrollX = Just 600
             }
         ]
-    , demoRow "dat-042"
+    , demoRow theme
+        "dat-042"
         "Max height (discrete header)"
         [ DataTable.view theme
             { dtD
@@ -2330,7 +2379,8 @@ dataTableRows model =
                 , maxHeight = Just 120
             }
         ]
-    , demoRow "dat-043"
+    , demoRow theme
+        "dat-043"
         "Flex height"
         [ Element.el [ Element.height (Element.px 220), Element.width Element.fill ]
             (DataTable.view theme
@@ -2342,7 +2392,8 @@ dataTableRows model =
                 }
             )
         ]
-    , demoRow "dat-044"
+    , demoRow theme
+        "dat-044"
         "Ellipsis"
         [ DataTable.view theme
             { dtD
@@ -2360,7 +2411,8 @@ dataTableRows model =
                 , rowKey = .name
             }
         ]
-    , demoRow "dat-045"
+    , demoRow theme
+        "dat-045"
         "Loading"
         [ DataTable.view theme
             { dtD
@@ -2370,7 +2422,8 @@ dataTableRows model =
                 , loading = True
             }
         ]
-    , demoRow "dat-046"
+    , demoRow theme
+        "dat-046"
         "Table layout fixed"
         [ DataTable.view theme
             { dtD
@@ -2380,7 +2433,8 @@ dataTableRows model =
                 , tableLayout = DataTable.TableFixed
             }
         ]
-    , demoRow "dat-047"
+    , demoRow theme
+        "dat-047"
         "Group header"
         [ DataTable.view theme
             { dtD
@@ -2411,7 +2465,8 @@ dataTableRows model =
                 , rowKey = .name
             }
         ]
-    , demoRow "dat-048"
+    , demoRow theme
+        "dat-048"
         "Summary (Σ45 · bottom / top)"
         [ DataTable.view theme
             { dtD
@@ -2436,7 +2491,8 @@ dataTableRows model =
     -- row-span, so every row still paints its own Age cell and no row is
     -- left with zero cells (the old colspan=3 across the Age track swallowed
     -- Age for both spanned rows and blanked row 1 completely).
-    , demoRow "dat-049"
+    , demoRow theme
+        "dat-049"
         "Merge cells (row 0 · colspan 2 / rowspan 2)"
         [ DataTable.view theme
             { dtD
@@ -2472,23 +2528,25 @@ dataTableRows model =
     ]
 
 
-dataTableSection : Model -> Element Msg
-dataTableSection model =
-    section "Data Table"
+dataTableSection : Model -> Theme -> Element Msg
+dataTableSection model theme =
+    section theme
+        "Data Table"
         "The advanced table (upstream `NDataTable`) — column definitions drive the colgroup, header cells and body cells; `rowKey` keys rows and the empty state renders `NEmpty`. Selection (checkbox / radio / extra menu), row expansion, scroll-X / fixed columns / max-height / flex-height (the discrete-header split), ellipsis columns, the loading overlay, the filter surface (trigger, pipeline, exported `filterMenu` body) and the structure extras — group headers (`children`), summary rows (`summary` / `summaryPlacement`) and merge cells (`colSpan` / `rowSpan` / `titleColSpan` — a swallowed slot renders no td) — ship in this batch, on top of sorting and pagination. The sort / page / checked / expanded / filter state is caller-owned — this page is static, so nothing is wired (the open menu is the caller's `NUI.Popover` runtime)."
-        (dataTableRows model)
+        (dataTableRows model theme)
 
 
-dataTableLiveRow : Model -> Element Msg
-dataTableLiveRow model =
-    demoRow "dat-050" "Data Table · selection + sort + pagination" [ dataTableDemo theme model ]
+dataTableLiveRow : Model -> Theme -> Element Msg
+dataTableLiveRow model theme =
+    demoRow theme "dat-050" "Data Table · selection + sort + pagination" [ dataTableDemo theme model ]
 
 
-dataTableLiveSection : Model -> Element Msg
-dataTableLiveSection model =
-    section "Data Table"
+dataTableLiveSection : Model -> Theme -> Element Msg
+dataTableLiveSection model theme =
+    section theme
+        "Data Table"
         "The advanced table (upstream `NDataTable`) — column definitions drive the colgroup, header cells and body cells; `rowKey` keys rows and the empty state renders `NEmpty`. Selection (checkbox / radio / extra menu), row expansion, scroll-X / fixed columns / max-height / flex-height (the discrete-header split), ellipsis columns, the loading overlay, the filter surface (trigger, pipeline, exported `filterMenu` body) and the structure extras — group headers (`children`), summary rows (`summary` / `summaryPlacement`) and merge cells (`colSpan` / `rowSpan` / `titleColSpan` — a swallowed slot renders no td) — ship in this batch, on top of sorting and pagination. The sort / page / checked / expanded / filter state is caller-owned — this page is static, so nothing is wired (the open menu is the caller's `NUI.Popover` runtime)."
-        (dataTableRows model ++ [ dataTableLiveRow model ])
+        (dataTableRows model theme ++ [ dataTableLiveRow model theme ])
 
 
 
@@ -2533,7 +2591,7 @@ transferDemo : Theme -> Model -> Element Msg
 transferDemo theme model =
     Element.column [ Element.spacing 10 ]
         [ Transfer.view theme (transferOpts model)
-        , caption
+        , caption theme
             [ "value: " ++ listLabel model.transferValue
             , "source filter: \"" ++ model.transferSourcePattern ++ "\""
             , "target filter: \"" ++ model.transferTargetPattern ++ "\""
@@ -2543,8 +2601,8 @@ transferDemo theme model =
         ]
 
 
-transferRows : Model -> List (Element Msg)
-transferRows model =
+transferRows : Model -> Theme -> List (Element Msg)
+transferRows model theme =
     let
         trD =
             Transfer.defaults
@@ -2556,7 +2614,8 @@ transferRows model =
             , { label = "Disabled", value = "4", disabled = True }
             ]
     in
-    [ demoRow "dat-051"
+    [ demoRow theme
+        "dat-051"
         "Basic"
         [ Transfer.view theme
             { trD
@@ -2567,7 +2626,8 @@ transferRows model =
                 , onCheck = Just TransferSamplesCheck
             }
         ]
-    , demoRow "dat-052"
+    , demoRow theme
+        "dat-052"
         "Filterable + large"
         [ Transfer.view theme
             { trD
@@ -2580,7 +2640,8 @@ transferRows model =
                 , onCheck = Just TransferLargeCheck
             }
         ]
-    , demoRow "dat-053"
+    , demoRow theme
+        "dat-053"
         "Disabled + empty target"
         [ Transfer.view theme
             { trD
@@ -2589,12 +2650,14 @@ transferRows model =
                 , sourceTitle = Just "Source"
             }
         ]
-    , demoRow "dat-054"
+    , demoRow theme
+        "dat-054"
         "Empty options"
         [ Transfer.view theme
             { trD | sourceTitle = Just "Source", targetTitle = Just "Target" }
         ]
-    , demoRow "dat-055"
+    , demoRow theme
+        "dat-055"
         "All checked + custom texts"
         [ Transfer.view theme
             { trD
@@ -2608,23 +2671,25 @@ transferRows model =
     ]
 
 
-transferSection : Model -> Element Msg
-transferSection model =
-    section "Transfer"
+transferSection : Model -> Theme -> Element Msg
+transferSection model theme =
+    section theme
+        "Transfer"
         "Two lists with select-all / clear — value and patterns are caller-owned."
-        (transferRows model)
+        (transferRows model theme)
 
 
-transferLiveRow : Model -> Element Msg
-transferLiveRow model =
-    demoRow "dat-056" "Transfer · move + filter" [ transferDemo theme model ]
+transferLiveRow : Model -> Theme -> Element Msg
+transferLiveRow model theme =
+    demoRow theme "dat-056" "Transfer · move + filter" [ transferDemo theme model ]
 
 
-transferLiveSection : Model -> Element Msg
-transferLiveSection model =
-    section "Transfer"
+transferLiveSection : Model -> Theme -> Element Msg
+transferLiveSection model theme =
+    section theme
+        "Transfer"
         "Two lists with select-all / clear — value and patterns are caller-owned."
-        (transferRows model ++ [ transferLiveRow model ])
+        (transferRows model theme ++ [ transferLiveRow model theme ])
 
 
 
@@ -2749,7 +2814,7 @@ uploadDemo theme model =
                 { btn | size = T.Tiny, onPress = Just UploadAdvance }
                 [ Element.text "Advance progress" ]
             ]
-        , caption (List.map statusLabel model.files ++ [ model.uploadNote ])
+        , caption theme (List.map statusLabel model.files ++ [ model.uploadNote ])
         , note theme
             "Real pickers and XHR need JS — simulated per the port's caller-owned contract: the trigger click appends a fake pending file (pendingFile + appendFile), the ticker walks the mark* state machine (Uploading → Finished, or Error for broken-*.zip to drive the retry button), and onRemove / onRetry / onPreview / onDownload carry file ids."
         ]
@@ -2774,8 +2839,8 @@ statusName status =
             "error"
 
 
-uploadRows : List (Element msg)
-uploadRows =
+uploadRows : Theme -> List (Element msg)
+uploadRows theme =
     let
         upD =
             Upload.defaults
@@ -2795,7 +2860,8 @@ uploadRows =
         withId id opts =
             { opts | attributes = [ Element.htmlAttribute (HA.id id) ] }
     in
-    [ demoRow "dat-057"
+    [ demoRow theme
+        "dat-057"
         "Text list (all statuses)"
         [ Upload.view theme
             (withId "live-upload"
@@ -2810,7 +2876,8 @@ uploadRows =
                 }
             )
         ]
-    , demoRow "dat-058"
+    , demoRow theme
+        "dat-058"
         "Uploading (line progress + cancel)"
         [ Upload.view theme
             (withId "live-upload-uploading"
@@ -2819,7 +2886,8 @@ uploadRows =
                 }
             )
         ]
-    , demoRow "dat-059"
+    , demoRow theme
+        "dat-059"
         "Error (error kind + retry)"
         [ Upload.view theme
             (withId "live-upload-error"
@@ -2828,7 +2896,8 @@ uploadRows =
                 }
             )
         ]
-    , demoRow "dat-060"
+    , demoRow theme
+        "dat-060"
         "Image type"
         [ Upload.view theme
             (withId "live-upload-image"
@@ -2839,7 +2908,8 @@ uploadRows =
                 }
             )
         ]
-    , demoRow "dat-061"
+    , demoRow theme
+        "dat-061"
         "Image card (thumbnail anchor / icon)"
         [ Upload.view theme
             (withId "live-upload-image-card"
@@ -2858,7 +2928,8 @@ uploadRows =
                 }
             )
         ]
-    , demoRow "dat-062"
+    , demoRow theme
+        "dat-062"
         "Dragger trigger"
         [ Upload.view theme
             (withId "live-upload-dragger"
@@ -2868,7 +2939,8 @@ uploadRows =
                 }
             )
         ]
-    , demoRow "dat-063"
+    , demoRow theme
+        "dat-063"
         "Disabled"
         [ Upload.view theme
             (withId "live-upload-disabled"
@@ -2878,7 +2950,8 @@ uploadRows =
                 }
             )
         ]
-    , demoRow "dat-064"
+    , demoRow theme
+        "dat-064"
         "Max reached (trigger disabled)"
         [ Upload.view theme
             (withId "live-upload-max"
@@ -2888,12 +2961,14 @@ uploadRows =
                 }
             )
         ]
-    , demoRow "dat-065"
+    , demoRow theme
+        "dat-065"
         "Directory"
         [ Upload.view theme
             (withId "live-upload-directory" { upD | directory = True })
         ]
-    , demoRow "dat-066"
+    , demoRow theme
+        "dat-066"
         "renderIcon + alwaysShowActions"
         [ Upload.view theme
             (withId "live-upload-rendericon"
@@ -2910,7 +2985,8 @@ uploadRows =
                 }
             )
         ]
-    , demoRow "dat-067"
+    , demoRow theme
+        "dat-067"
         "Abstract trigger"
         (Upload.viewAbstract theme
             upD
@@ -2921,23 +2997,25 @@ uploadRows =
     ]
 
 
-uploadSection : Element msg
-uploadSection =
-    section "Upload"
+uploadSection : Theme -> Element msg
+uploadSection theme =
+    section theme
+        "Upload"
         "A file trigger over a caller-owned file list — pick/drag, upload state and thumbnails are the caller's to own."
-        uploadRows
+        (uploadRows theme)
 
 
-uploadLiveRow : Model -> Element Msg
-uploadLiveRow model =
-    demoRow "dat-068" "Upload · simulated file list" [ uploadDemo theme model ]
+uploadLiveRow : Model -> Theme -> Element Msg
+uploadLiveRow model theme =
+    demoRow theme "dat-068" "Upload · simulated file list" [ uploadDemo theme model ]
 
 
-uploadLiveSection : Model -> Element Msg
-uploadLiveSection model =
-    section "Upload"
+uploadLiveSection : Model -> Theme -> Element Msg
+uploadLiveSection model theme =
+    section theme
+        "Upload"
         "A file trigger over a caller-owned file list — pick/drag, upload state and thumbnails are the caller's to own."
-        (uploadRows ++ [ uploadLiveRow model ])
+        (uploadRows theme ++ [ uploadLiveRow model theme ])
 
 
 
@@ -3118,7 +3196,7 @@ formDemo theme model =
                     [ Element.text "Submit" ]
                 ]
             ]
-        , caption [ submitted ]
+        , caption theme [ submitted ]
         , note theme
             "The pure engine runs in update per the header's recipe: typing / blurring validate the triggered rules (validateValue with OnInput / OnBlur / OnChange), Submit runs every rule through validateForm and only collects the values when both fields are clean; the feedback rides back into the items' validation slot."
         ]
@@ -3128,9 +3206,9 @@ formDemo theme model =
 -- CAPTION HELPERS
 
 
-caption : List String -> Element Msg
-caption labels =
-    Element.row [ Element.spacing 6 ] (List.map chip labels)
+caption : Theme -> List String -> Element Msg
+caption theme labels =
+    Element.row [ Element.spacing 6 ] (List.map (chip theme) labels)
 
 
 note : Theme -> String -> Element Msg
@@ -3179,16 +3257,16 @@ formatDate d =
 variant (the Form live demo moved with its helpers but renders nowhere
 this phase; Main.elm is untouched, integration wires it later).
 -}
-sections : Model -> List (Element Msg)
-sections model =
-    [ dynamicTagsLiveSection model
-    , calendarLiveSection model
-    , dynamicInputLiveSection model
-    , tableLiveSection model
-    , treeLiveSection model
-    , imageLiveSection model
-    , imagePreviewLiveSection model
-    , dataTableLiveSection model
-    , transferLiveSection model
-    , uploadLiveSection model
+sections : Model -> Theme -> List (Element Msg)
+sections model theme =
+    [ dynamicTagsLiveSection model theme
+    , calendarLiveSection model theme
+    , dynamicInputLiveSection model theme
+    , tableLiveSection model theme
+    , treeLiveSection model theme
+    , imageLiveSection model theme
+    , imagePreviewLiveSection model theme
+    , dataTableLiveSection model theme
+    , transferLiveSection model theme
+    , uploadLiveSection model theme
     ]

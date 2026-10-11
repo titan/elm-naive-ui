@@ -54,7 +54,7 @@ import NUI.Slider as Slider
 import NUI.Switch as Switch
 import NUI.Theme exposing (Theme)
 import NUI.Types as T
-import Showcase exposing (capitalize, demoRow, section, theme)
+import Showcase exposing (capitalize, demoRow, section)
 
 
 
@@ -601,29 +601,33 @@ cell content =
 -- SECTIONS (static rows verbatim; live variants append the live demo rows)
 
 
-buttonRows : List (Element msg)
-buttonRows =
-    [ demoRow "ctl-001"
+buttonRows : Theme -> List (Element msg)
+buttonRows theme =
+    [ demoRow theme
+        "ctl-001"
         "Sizes"
         [ Button.view theme { btn | size = T.Tiny } [ Element.text "Tiny" ]
         , Button.view theme { btn | size = T.Small } [ Element.text "Small" ]
         , Button.view theme { btn | size = T.Medium } [ Element.text "Medium" ]
         , Button.view theme { btn | size = T.Large } [ Element.text "Large" ]
         ]
-    , demoRow "ctl-002"
+    , demoRow theme
+        "ctl-002"
         "Types"
         (List.map
             (\k -> Button.view theme { btn | kind = k } [ Element.text (capitalize (T.kindClass k)) ])
             [ T.Default, T.Primary, T.Info, T.Success, T.Warning, T.Error ]
         )
-    , demoRow "ctl-003"
+    , demoRow theme
+        "ctl-003"
         "Variants"
         [ Button.view theme { btn | kind = T.Primary, variant = Button.Secondary } [ Element.text "Secondary" ]
         , Button.view theme { btn | kind = T.Primary, variant = Button.Tertiary } [ Element.text "Tertiary" ]
         , Button.view theme { btn | kind = T.Primary, variant = Button.Quaternary } [ Element.text "Quaternary" ]
         , Button.view theme { btn | kind = T.Primary, variant = Button.Text } [ Element.text "Text" ]
         ]
-    , demoRow "ctl-004"
+    , demoRow theme
+        "ctl-004"
         "Shapes & states"
         [ Button.view theme { btn | round = True } [ Element.text "Round" ]
         , Button.view theme { btn | circle = True } [ Element.text "C" ]
@@ -634,7 +638,8 @@ buttonRows =
         ]
     , Element.el [ Element.width (Element.px 320) ]
         (Button.view theme { btn | block = True } [ Element.text "Block" ])
-    , demoRow "ctl-005"
+    , demoRow theme
+        "ctl-005"
         "Group (horizontal)"
         [ ButtonGroup.view theme
             ButtonGroup.defaults
@@ -643,7 +648,8 @@ buttonRows =
             , Button.view theme { btn | kind = T.Primary } [ Element.text "Right" ]
             ]
         ]
-    , demoRow "ctl-006"
+    , demoRow theme
+        "ctl-006"
         "Group (vertical)"
         [ ButtonGroup.view theme
             { bgD | vertical = True }
@@ -654,16 +660,17 @@ buttonRows =
     ]
 
 
-buttonSection : Element msg
-buttonSection =
-    section "Button" "Sizes, types, variants and shapes." buttonRows
+buttonSection : Theme -> Element msg
+buttonSection theme =
+    section theme "Button" "Sizes, types, variants and shapes." (buttonRows theme)
 
 
 {-| Live: `#live-button-counter` / `#live-button-reset`.
 -}
-buttonPressRow : Model -> Element Msg
-buttonPressRow model =
-    demoRow "ctl-007"
+buttonPressRow : Model -> Theme -> Element Msg
+buttonPressRow model theme =
+    demoRow theme
+        "ctl-007"
         "Button · press counter"
         [ Button.view theme
             { btn
@@ -681,21 +688,23 @@ buttonPressRow model =
         ]
 
 
-buttonLiveSection : Model -> Element Msg
-buttonLiveSection model =
-    section "Button" "Sizes, types, variants and shapes." (buttonRows ++ [ buttonPressRow model ])
+buttonLiveSection : Model -> Theme -> Element Msg
+buttonLiveSection model theme =
+    section theme "Button" "Sizes, types, variants and shapes." (buttonRows theme ++ [ buttonPressRow model theme ])
 
 
-inputRows : List (Element msg)
-inputRows =
-    [ demoRow "ctl-008"
+inputRows : Theme -> List (Element msg)
+inputRows theme =
+    [ demoRow theme
+        "ctl-008"
         "Basics"
         [ Element.el [ Element.width (Element.px 220) ]
             (Input.view theme { inputD | placeholder = Just "Placeholder" })
         , Element.el [ Element.width (Element.px 220) ]
             (Input.view theme { inputD | value = "Hello" })
         ]
-    , demoRow "ctl-009"
+    , demoRow theme
+        "ctl-009"
         "Statuses"
         [ Element.el [ Element.width (Element.px 220) ]
             (Input.view theme { inputD | value = "Success", status = Just Input.Success })
@@ -704,7 +713,8 @@ inputRows =
         , Element.el [ Element.width (Element.px 220) ]
             (Input.view theme { inputD | value = "Error", status = Just Input.Error })
         ]
-    , demoRow "ctl-010"
+    , demoRow theme
+        "ctl-010"
         "States"
         [ Element.el [ Element.width (Element.px 220) ]
             (Input.view theme { inputD | value = "Disabled", disabled = True })
@@ -722,16 +732,17 @@ inputRows =
     ]
 
 
-inputSection : Element msg
-inputSection =
-    section "Input" "Text fields, statuses and a textarea." inputRows
+inputSection : Theme -> Element msg
+inputSection theme =
+    section theme "Input" "Text fields, statuses and a textarea." (inputRows theme)
 
 
 {-| Live: `#live-input-controlled`.
 -}
-inputControlledRow : Model -> Element Msg
-inputControlledRow model =
-    demoRow "ctl-011"
+inputControlledRow : Model -> Theme -> Element Msg
+inputControlledRow model theme =
+    demoRow theme
+        "ctl-011"
         "Input · controlled + clear"
         [ Element.column [ Element.spacing 6, Element.width (Element.px 240) ]
             [ Input.view theme
@@ -761,9 +772,10 @@ inputControlledRow model =
 
 {-| Live: the pair input (no own id — the caption is the observable).
 -}
-inputPairRow : Model -> Element Msg
-inputPairRow model =
-    demoRow "ctl-012"
+inputPairRow : Model -> Theme -> Element Msg
+inputPairRow model theme =
+    demoRow theme
+        "ctl-012"
         "Input · pair (date-range-like)"
         [ Element.column [ Element.spacing 6, Element.width (Element.px 320) ]
             [ Input.view theme
@@ -779,38 +791,42 @@ inputPairRow model =
         ]
 
 
-inputLiveSection : Model -> Element Msg
-inputLiveSection model =
-    section "Input"
+inputLiveSection : Model -> Theme -> Element Msg
+inputLiveSection model theme =
+    section theme
+        "Input"
         "Text fields, statuses and a textarea."
-        (inputRows ++ [ inputControlledRow model, inputPairRow model ])
+        (inputRows theme ++ [ inputControlledRow model theme, inputPairRow model theme ])
 
 
-inputOtpRows : List (Element msg)
-inputOtpRows =
-    [ demoRow "ctl-013"
+inputOtpRows : Theme -> List (Element msg)
+inputOtpRows theme =
+    [ demoRow theme
+        "ctl-013"
         "Lengths & sizes"
         [ InputOtp.view theme { iotpD | length = 4, value = [ "1", "2", "3", "4" ] } []
         , InputOtp.view theme { iotpD | length = 6, size = InputOtp.Small, gap = Just (InputOtp.Px 6) } []
         , InputOtp.view theme { iotpD | length = 6, mask = True } []
         ]
-    , demoRow "ctl-014"
+    , demoRow theme
+        "ctl-014"
         "RTL"
         [ InputOtp.view theme { iotpD | rtl = True, length = 6, value = [ "8", "8", "8" ] } []
         ]
     ]
 
 
-inputOtpSection : Element msg
-inputOtpSection =
-    section "Input OTP" "One-time-code inputs (the value and focus are caller-owned)." inputOtpRows
+inputOtpSection : Theme -> Element msg
+inputOtpSection theme =
+    section theme "Input OTP" "One-time-code inputs (the value and focus are caller-owned)." (inputOtpRows theme)
 
 
 {-| Live: `#live-input-otp` / `#live-input-otp-reset` / `#live-input-otp-mask`.
 -}
-inputOtpCompletionRow : Model -> Element Msg
-inputOtpCompletionRow model =
-    demoRow "ctl-015"
+inputOtpCompletionRow : Model -> Theme -> Element Msg
+inputOtpCompletionRow model theme =
+    demoRow theme
+        "ctl-015"
         "InputOtp · completion"
         [ Element.column [ Element.spacing 8 ]
             [ InputOtp.view theme (otpOptions model) []
@@ -823,15 +839,16 @@ inputOtpCompletionRow model =
         ]
 
 
-inputOtpLiveSection : Model -> Element Msg
-inputOtpLiveSection model =
-    section "Input OTP"
+inputOtpLiveSection : Model -> Theme -> Element Msg
+inputOtpLiveSection model theme =
+    section theme
+        "Input OTP"
         "One-time-code inputs (the value and focus are caller-owned)."
-        (inputOtpRows ++ [ inputOtpCompletionRow model ])
+        (inputOtpRows theme ++ [ inputOtpCompletionRow model theme ])
 
 
-inputNumberRows : List (Element msg)
-inputNumberRows =
+inputNumberRows : Theme -> List (Element msg)
+inputNumberRows theme =
     [ InputNumber.view theme { inD | value = Just 3 } []
     , InputNumber.view theme
         { inD
@@ -848,16 +865,17 @@ inputNumberRows =
     ]
 
 
-inputNumberSection : Element msg
-inputNumberSection =
-    section "Input Number" "Numeric entry (the text buffer is caller-owned)." inputNumberRows
+inputNumberSection : Theme -> Element msg
+inputNumberSection theme =
+    section theme "Input Number" "Numeric entry (the text buffer is caller-owned)." (inputNumberRows theme)
 
 
 {-| Live: `#live-input-number-stepper` / `#live-input-number-commit`.
 -}
-inputNumberStepperRow : Model -> Element Msg
-inputNumberStepperRow model =
-    demoRow "ctl-016"
+inputNumberStepperRow : Model -> Theme -> Element Msg
+inputNumberStepperRow model theme =
+    demoRow theme
+        "ctl-016"
         "InputNumber · stepper + commit"
         [ InputNumber.view theme (numberOptions model) []
         , Button.view theme
@@ -871,42 +889,48 @@ inputNumberStepperRow model =
         ]
 
 
-inputNumberLiveSection : Model -> Element Msg
-inputNumberLiveSection model =
-    section "Input Number"
+inputNumberLiveSection : Model -> Theme -> Element Msg
+inputNumberLiveSection model theme =
+    section theme
+        "Input Number"
         "Numeric entry (the text buffer is caller-owned)."
-        (inputNumberRows ++ [ inputNumberStepperRow model ])
+        (inputNumberRows theme ++ [ inputNumberStepperRow model theme ])
 
 
-selectionRows : List (Element msg)
-selectionRows =
-    [ demoRow "ctl-017"
+selectionRows : Theme -> List (Element msg)
+selectionRows theme =
+    [ demoRow theme
+        "ctl-017"
         "Checkbox"
         [ Checkbox.view theme { cbD | checked = True } [ Element.text "Checked" ]
         , Checkbox.view theme cbD [ Element.text "Unchecked" ]
         , Checkbox.view theme { cbD | indeterminate = True } [ Element.text "Indeterminate" ]
         , Checkbox.view theme { cbD | disabled = True, checked = True } [ Element.text "Disabled" ]
         ]
-    , demoRow "ctl-018"
+    , demoRow theme
+        "ctl-018"
         "Switch"
         [ Switch.view theme { swD | value = False } []
         , Switch.view theme { swD | value = True } []
         , Switch.view theme { swD | value = True, loading = True } []
         , Switch.view theme { swD | value = False, disabled = True } []
         ]
-    , demoRow "ctl-019"
+    , demoRow theme
+        "ctl-019"
         "Radio group"
         [ Radio.group theme
             { radioGD | value = Just "sh" }
             [ Radio.choice "bj" "Beijing", Radio.choice "sh" "Shanghai", Radio.choice "gz" "Guangzhou" ]
         ]
-    , demoRow "ctl-020"
+    , demoRow theme
+        "ctl-020"
         "Radio button group"
         [ Radio.group theme
             { radioGD | value = Just "m" }
             [ Radio.button "s" "Small", Radio.button "m" "Medium", Radio.button "l" "Large" ]
         ]
-    , demoRow "ctl-021"
+    , demoRow theme
+        "ctl-021"
         "Radio standalone"
         [ Radio.view theme { radioD | checked = True } [ Element.text "Selected" ]
         , Radio.view theme radioD [ Element.text "Unselected" ]
@@ -915,17 +939,18 @@ selectionRows =
     ]
 
 
-selectionSection : Element msg
-selectionSection =
-    section "Checkbox · Switch · Radio" "Selection controls." selectionRows
+selectionSection : Theme -> Element msg
+selectionSection theme =
+    section theme "Checkbox · Switch · Radio" "Selection controls." (selectionRows theme)
 
 
 {-| Live: `#live-switch-toggle` (caption read via the row's textContent —
 the switch and the caption stay the only children of the row body).
 -}
-switchToggleRow : Model -> Element Msg
-switchToggleRow model =
-    demoRow "ctl-022"
+switchToggleRow : Model -> Theme -> Element Msg
+switchToggleRow model theme =
+    demoRow theme
+        "ctl-022"
         "Switch · toggle"
         [ Element.el [ Element.htmlAttribute (HA.id "live-switch-toggle") ]
             (Switch.view theme
@@ -944,9 +969,10 @@ switchToggleRow model =
 
 {-| Live: `#live-checkbox-master` / `#live-checkbox-item-<i>` (generated).
 -}
-checkboxGroupRow : Model -> Element Msg
-checkboxGroupRow model =
-    demoRow "ctl-023"
+checkboxGroupRow : Model -> Theme -> Element Msg
+checkboxGroupRow model theme =
+    demoRow theme
+        "ctl-023"
         "Checkbox · group + indeterminate master"
         [ Element.column [ Element.spacing 8 ]
             [ Element.el [ Element.htmlAttribute (HA.id "live-checkbox-master") ]
@@ -978,9 +1004,10 @@ checkboxGroupRow model =
 
 {-| Live: `#live-radio-group`.
 -}
-radioPickRow : Model -> Element Msg
-radioPickRow model =
-    demoRow "ctl-024"
+radioPickRow : Model -> Theme -> Element Msg
+radioPickRow model theme =
+    demoRow theme
+        "ctl-024"
         "Radio.Group · pick one"
         [ Radio.group theme
             { radioGD
@@ -996,22 +1023,25 @@ radioPickRow model =
         ]
 
 
-selectionLiveSection : Model -> Element Msg
-selectionLiveSection model =
-    section "Checkbox · Switch · Radio"
+selectionLiveSection : Model -> Theme -> Element Msg
+selectionLiveSection model theme =
+    section theme
+        "Checkbox · Switch · Radio"
         "Selection controls."
-        (selectionRows ++ [ switchToggleRow model, checkboxGroupRow model, radioPickRow model ])
+        (selectionRows theme ++ [ switchToggleRow model theme, checkboxGroupRow model theme, radioPickRow model theme ])
 
 
-rateRows : List (Element msg)
-rateRows =
-    [ demoRow "ctl-025"
+rateRows : Theme -> List (Element msg)
+rateRows theme =
+    [ demoRow theme
+        "ctl-025"
         "Value"
         [ Rate.view theme { rateD | value = Just 4 }
         , Rate.view theme { rateD | value = Just 3, readonly = True }
         , Rate.view theme { rateD | value = Just 2, color = Just "#f0a020" }
         ]
-    , demoRow "ctl-026"
+    , demoRow theme
+        "ctl-026"
         "Half & sizes"
         [ Rate.view theme { rateD | allowHalf = True, value = Just 3.5 }
         , Rate.view theme { rateD | size = Rate.Small, value = Just 5 }
@@ -1020,17 +1050,18 @@ rateRows =
     ]
 
 
-rateSection : Element msg
-rateSection =
-    section "Rate" "Star ratings (the value and hover are caller-owned)." rateRows
+rateSection : Theme -> Element msg
+rateSection theme =
+    section theme "Rate" "Star ratings (the value and hover are caller-owned)." (rateRows theme)
 
 
 {-| Live: `#live-rate` / `#live-rate-hover-*` (hover preview is
 button-simulated — see the oracle note above).
 -}
-rateHoverRow : Model -> Element Msg
-rateHoverRow model =
-    demoRow "ctl-027"
+rateHoverRow : Model -> Theme -> Element Msg
+rateHoverRow model theme =
+    demoRow theme
+        "ctl-027"
         "Rate · hover preview + commit"
         [ Rate.view theme (rateOptions model)
         , Button.view theme
@@ -1051,16 +1082,18 @@ rateHoverRow model =
         ]
 
 
-rateLiveSection : Model -> Element Msg
-rateLiveSection model =
-    section "Rate"
+rateLiveSection : Model -> Theme -> Element Msg
+rateLiveSection model theme =
+    section theme
+        "Rate"
         "Star ratings (the value and hover are caller-owned)."
-        (rateRows ++ [ rateHoverRow model ])
+        (rateRows theme ++ [ rateHoverRow model theme ])
 
 
-sliderRows : List (Element msg)
-sliderRows =
-    [ demoRow "ctl-028"
+sliderRows : Theme -> List (Element msg)
+sliderRows theme =
+    [ demoRow theme
+        "ctl-028"
         "Single + range (fixed state; marks feed dots/marks/snap)"
         [ cell
             (Element.el [ Element.width (Element.px 240) ]
@@ -1082,7 +1115,8 @@ sliderRows =
                 )
             )
         ]
-    , demoRow "ctl-029"
+    , demoRow theme
+        "ctl-029"
         "Tooltip indicator (pinned via hoverIndex / drag) + disabled"
         [ cell
             (Element.el [ Element.width (Element.px 240) ]
@@ -1101,7 +1135,8 @@ sliderRows =
                 )
             )
         ]
-    , demoRow "ctl-030"
+    , demoRow theme
+        "ctl-030"
         "Vertical + reverse (direction keys flip, dots still 34/75)"
         [ cell
             (Element.el [ Element.height (Element.px 220) ]
@@ -1125,7 +1160,8 @@ sliderRows =
                 )
             )
         ]
-    , demoRow "ctl-031"
+    , demoRow theme
+        "ctl-031"
         "Range snap (`step: 'mark'`) + >2 values (fill suppressed, dots inactive — upstream quirk)"
         [ cell
             (Element.el [ Element.width (Element.px 240) ]
@@ -1146,18 +1182,20 @@ sliderRows =
     ]
 
 
-sliderSection : Element msg
-sliderSection =
-    section "Slider"
+sliderSection : Theme -> Element msg
+sliderSection theme =
+    section theme
+        "Slider"
         "The rail/fill/handles numeric input (upstream `NSlider`). Drag is caller-owned runtime (`NUI.Split` precedent): `value`/`activeIndex`/`hoverIndex`/`dragging` in, discrete handle events + the root mousedown signal out; `pointerToValue`/`sanitizeValue`/`stepValue` carry the pointer→snap math. The value indicator renders inline (the teleported follower is the caller's popover seam)."
-        sliderRows
+        (sliderRows theme)
 
 
 {-| Live: `#live-slider-single` / `#live-slider-minus` / `#live-slider-plus`.
 -}
-sliderSingleRow : Model -> Element Msg
-sliderSingleRow model =
-    demoRow "ctl-032"
+sliderSingleRow : Model -> Theme -> Element Msg
+sliderSingleRow model theme =
+    demoRow theme
+        "ctl-032"
         "Slider · single (hover/focus indicator + arrow-step algebra)"
         [ Element.column [ Element.spacing 6, Element.width (Element.px 260) ]
             [ Slider.view theme (sliderOptions model)
@@ -1178,9 +1216,10 @@ sliderSingleRow model =
 {-| Live: `#live-slider-range` / `#live-range-*` (per-handle steps; handles
 can cross — see the oracle note above).
 -}
-sliderRangeRow : Model -> Element Msg
-sliderRangeRow model =
-    demoRow "ctl-033"
+sliderRangeRow : Model -> Theme -> Element Msg
+sliderRangeRow model theme =
+    demoRow theme
+        "ctl-033"
         "Slider · range (per-handle steps, marks snap)"
         [ Element.column [ Element.spacing 6, Element.width (Element.px 260) ]
             [ Slider.view theme (rangeOptions model)
@@ -1199,23 +1238,24 @@ sliderRangeRow model =
         ]
 
 
-sliderLiveSection : Model -> Element Msg
-sliderLiveSection model =
-    section "Slider"
+sliderLiveSection : Model -> Theme -> Element Msg
+sliderLiveSection model theme =
+    section theme
+        "Slider"
         "The rail/fill/handles numeric input (upstream `NSlider`). Drag is caller-owned runtime (`NUI.Split` precedent): `value`/`activeIndex`/`hoverIndex`/`dragging` in, discrete handle events + the root mousedown signal out; `pointerToValue`/`sanitizeValue`/`stepValue` carry the pointer→snap math. The value indicator renders inline (the teleported follower is the caller's popover seam)."
-        (sliderRows ++ [ sliderSingleRow model, sliderRangeRow model ])
+        (sliderRows theme ++ [ sliderSingleRow model theme, sliderRangeRow model theme ])
 
 
 {-| The family body in Main.body order — live variants where live demos
 exist, legacy sections elsewhere (here every section has a live variant).
 -}
-sections : Model -> List (Element Msg)
-sections model =
-    [ buttonLiveSection model
-    , inputLiveSection model
-    , inputOtpLiveSection model
-    , inputNumberLiveSection model
-    , selectionLiveSection model
-    , rateLiveSection model
-    , sliderLiveSection model
+sections : Model -> Theme -> List (Element Msg)
+sections model theme =
+    [ buttonLiveSection model theme
+    , inputLiveSection model theme
+    , inputOtpLiveSection model theme
+    , inputNumberLiveSection model theme
+    , selectionLiveSection model theme
+    , rateLiveSection model theme
+    , sliderLiveSection model theme
     ]
