@@ -697,6 +697,16 @@ switcherNode opts state flat =
         , Element.htmlAttribute
             (HA.style "width" (String.fromInt opts.indent ++ "px"))
         , Element.htmlAttribute (HA.attribute "data-switcher" "true")
+
+        -- Upstream's switcher is a plain `span.n-tree-node-switcher` whose
+        -- centering (`display:inline-flex; justify-content:center`) runs on
+        -- the HORIZONTAL axis. The port's `Element.el` also carries elm-ui's
+        -- `.s.e { flex-direction:column }` (later in the sheet, so it wins
+        -- the tie against Naive UI's rule), flipping the axis vertical —
+        -- the 14px arrow then hugs the slot's LEFT edge (0px in the 24px+
+        -- indent) instead of centering. Inline `flex-direction:row` restores
+        -- upstream's axis (same fix as the cascader `__prefix`).
+        , Element.htmlAttribute (HA.style "flex-direction" "row")
         ]
         (Element.el
             [ I.classes [ "n-tree-node-switcher__icon" ] ]
@@ -779,6 +789,11 @@ checkboxNode theme opts state flat checkable disabled =
             , Element.htmlAttribute
                 (HA.style "width" (String.fromInt opts.indent ++ "px"))
             , Element.htmlAttribute (HA.attribute "data-checkbox" "true")
+
+            -- Same `.s.e` column-axis flip as the switcher above: the
+            -- checkbox cell's `justify-content:center` must run horizontally
+            -- or the 16px box hugs the indent slot's left edge.
+            , Element.htmlAttribute (HA.style "flex-direction" "row")
             ]
             (NUI.Checkbox.view theme
                 { d

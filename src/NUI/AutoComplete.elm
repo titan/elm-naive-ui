@@ -33,9 +33,13 @@ the `NUI.Select` composition minus the BaseSelection couplings).
         ]
 
 Trigger (`view`) DOM — the `.n-auto-complete` wrapper is bare (no vars, no
-state classes; all styling lives on the `.n-input` and the menu):
+state classes; all styling lives on the `.n-input` and the menu). The
+caller's `attributes` land on an OUTER elm-ui node (the explicit-width
+seam in `view`'s docstring — the wrapper's `width: 100%` cssr beats an
+elm-ui width class on the same node):
 
-    div.n
+    div (caller width)
+        └─ div.n
         - auto
         - complete
         └─ NUI.Input.view (see its docstring for the full tree)
@@ -160,6 +164,18 @@ type alias Options msg =
     , rtl : Bool
     , inputAttributes : List (Html.Attribute msg)
     , attributes : List (Element.Attribute msg)
+
+    -- caller-owned show-gate seams: `focused-typed` needs the raw focus /
+    -- blur events (upstream `Input.tsx` handleFocus / handleBlur feed
+    -- `canBeActivated`; focus alone never opens — typing does), and
+    -- `getShow` is the caller's replacement predicate for `value ≠ ""`
+    -- (AutoComplete.tsx:194-200, receives `value || ""`). Both are inert
+    -- on the trigger's own render — they exist so the demo's gate can
+    -- mirror the frozen formula.
+    , onFocus : Maybe msg
+    , onBlur : Maybe msg
+    , getShow : Maybe (String -> Bool)
+    , showEmpty : Bool
     }
 
 
@@ -184,6 +200,10 @@ defaults =
     , rtl = False
     , inputAttributes = []
     , attributes = []
+    , onFocus = Nothing
+    , onBlur = Nothing
+    , getShow = Nothing
+    , showEmpty = False
     }
 
 
@@ -194,6 +214,7 @@ not multiple, no loading, showCheckmark default).
 type alias MenuOptions msg =
     { empty : Maybe (Element msg)
     , onToggle : Maybe (String -> msg)
+    , renderOption : Maybe (SelectMenu.BuiltRow msg -> Element msg)
     , scrollbarProps : Maybe (NUI.Scrollbar.Options msg -> NUI.Scrollbar.Options msg)
     , transition : Maybe I.TransitionPhase
     , rtl : Bool
@@ -207,6 +228,7 @@ menuDefaults : MenuOptions msg
 menuDefaults =
     { empty = Nothing
     , onToggle = Nothing
+    , renderOption = Nothing
     , scrollbarProps = Nothing
     , transition = Nothing
     , rtl = False
@@ -220,12 +242,31 @@ menuDefaults =
 
 {-| The bare `.n-auto-complete` wrapper + the `NUI.Input` trigger, mapped
 per the module docstring.
+
+**Explicit-width seam** (the `NUI.Mention` precedent, fix2-misc): the
+wrapper's cssr is `.nui-root.nui-root .n-auto-complete { width: 100% }`
+(specificity 0,3,0), which beats elm-ui's own `Element.width (px n)`
+class on the same node (`.we.width-px-n`, 0,1,0) — an explicit trigger
+width `Element.width`ed onto `attributes` was silently dropped and every
+trigger rendered full-width. The caller's `attributes` therefore land on
+an OUTER elm-ui node and the `n-auto-complete` wrapper stays on the inner
+one: a caller width sizes the outer node (no competing rule) and the
+inner wrapper still fills it via its `width: 100%` rule (upstream's
+display: inline-flex is preserved by the wrapper keeping its class). The
+default (no caller width) fills the available width (`Element.width
+Element.fill` prepended — elm-ui reverses the attribute list and keeps
+the FIRST `Width` attribute it reaches, so a caller `Element.width` in
+`attributes` still wins over the default fill).
+
 -}
 view : Theme -> Options msg -> Element msg
 view theme opts =
     Element.el
-        ([ I.classes [ "n-auto-complete" ] ] ++ opts.attributes)
-        (NUI.Input.view theme (inputOptions opts))
+        (Element.width Element.fill :: opts.attributes)
+        (Element.el
+            [ I.classes [ "n-auto-complete" ] ]
+            (NUI.Input.view theme (inputOptions opts))
+        )
 
 
 {-| The trigger's options — `Options` onto `NUI.Input.Options` per the
@@ -260,6 +301,8 @@ inputOptions opts =
         , suffix = opts.suffix
         , rtl = opts.rtl
         , inputAttributes = opts.inputAttributes
+        , onFocus = opts.onFocus
+        , onBlur = opts.onBlur
     }
 
 
@@ -321,6 +364,7 @@ menuOptions theme mopts =
         , loading = False
         , empty = mopts.empty
         , onToggle = mopts.onToggle
+        , renderOption = mopts.renderOption
         , rtl = mopts.rtl
         , extraClasses =
             "n-auto-complete-menu"

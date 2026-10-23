@@ -394,6 +394,12 @@ dotsNode ctx =
                 ([ "n-slider-dots" ]
                     ++ I.classIf ctx.opts.dotTransitionDisabled "n-slider-dots--transition-disabled"
                 )
+
+            -- the fill's fix, same mechanics: `.s.c > .wc { align-self:
+            -- flex-start }` (elm-ui's column-child flex rule) defeats the
+            -- abs-pos stretch the cssr relies on — vertical mode collapses
+            -- the container to height 0 and every dot stacks at one spot.
+            , Element.htmlAttribute (HA.style "align-self" "auto")
             ]
             (List.map (dotNode ctx) ctx.opts.marks)
         ]
@@ -421,7 +427,15 @@ marksNode ctx =
 
     else
         [ Element.column
-            [ I.classes [ "n-slider-marks" ] ]
+            [ I.classes [ "n-slider-marks" ]
+
+            -- the fill's fix, same mechanics: `.s.c > .wc { align-self:
+            -- flex-start }` (elm-ui's column-child flex rule) defeats the
+            -- abs-pos stretch the cssr relies on — vertical mode collapses
+            -- the container to height 0 and every mark label stacks at one
+            -- spot (the reported overlap).
+            , Element.htmlAttribute (HA.style "align-self" "auto")
+            ]
             (List.map (markNode ctx) ctx.opts.marks)
         ]
 
@@ -445,7 +459,15 @@ markNode ctx mark =
 handlesNode : Ctx msg -> Element msg
 handlesNode ctx =
     Element.column
-        [ I.classes [ "n-slider-handles" ] ]
+        [ I.classes [ "n-slider-handles" ]
+
+        -- the fill's fix, same mechanics: `.s.c > .wc { align-self:
+        -- flex-start }` (elm-ui's column-child flex rule) defeats the
+        -- abs-pos stretch the cssr relies on — vertical mode collapses
+        -- the container to height 0 and the handle's `bottom: n%` pins
+        -- to the rail's top instead of tracking the value.
+        , Element.htmlAttribute (HA.style "align-self" "auto")
+        ]
         (List.indexedMap (handleNode ctx) ctx.arrified)
 
 

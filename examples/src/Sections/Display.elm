@@ -1,6 +1,7 @@
 module Sections.Display exposing
     ( Model
     , Msg
+    , affixLiveSection
     , affixSection
     , breadcrumbSection
     , codeSection
@@ -29,20 +30,26 @@ module Sections.Display exposing
 The static rows moved verbatim from Main.elm — that surface feeds the
 check-dom gate, so every root keeps rendering exactly as before. The live
 demo rows run a real update loop owned by this module (FloatButton's
-`onUpdateShowMenu` menu channel, PageHeader's `onBack`). Phase 2 wires the
+`onUpdateShowMenu` menu channel, PageHeader's `onBack`, Affix's simulated
+scroll). Phase 2 wires the
 Layout "Basic" row's sider collapse trigger to the same model
 (`LayoutSider.onToggleCollapsed`; init keeps the expanded literal, so the
 initial DOM is byte-identical). The rest of this family is non-interactive
 by design: Breadcrumb/Timeline/List (no click channel exists — `clickable`
-is a class flag only)/PageHeader static row/Affix/Flex/Grid/QrCode/
+is a class flag only)/PageHeader static row/Flex/Grid/QrCode/
 FloatButton "Menu" resting+open specimens (the live row covers the toggle)/
-FloatButtonGroup (no channels)/Heatmap/Descriptions/Scrollbar (no onScroll
-channel)/Watermark/Code/Equation keep their static form.
+FloatButtonGroup (no channels)/Heatmap/Descriptions/Watermark/Code/Equation keep their static form. Phase 3: the Scrollbar rows went live — the port is CSS-only, so the demo owns upstream's runtime (`Browser.Dom.getViewportOf` snapshots drive the bar geometry; a bar drag mousedown → document mousemove/mouseup → `setViewportOf` runs upstream's drag algebra — see the SCROLLBAR LIVE RUNTIME block below).
 
 -}
 
+import Browser.Dom
+import Browser.Events
+import Dict
 import Element exposing (Element)
+import Html
 import Html.Attributes as HA
+import Html.Events as HE
+import Json.Decode
 import NUI.Affix as Affix
 import NUI.Breadcrumb as Breadcrumb
 import NUI.Button as Button
@@ -66,7 +73,8 @@ import NUI.Theme exposing (Theme)
 import NUI.Timeline as Timeline
 import NUI.Types as T
 import NUI.Watermark as Watermark
-import Showcase exposing (chip, codeHljs, demoBox, demoRow, fakeKatex, fakeKatexDisplay, section)
+import Showcase exposing (chip, codeHljs, demoBox, demoRow, demoRowUnfenced, fakeKatex, fakeKatexDisplay, section)
+import Task
 import Time
 
 
@@ -78,6 +86,8 @@ type alias Model =
     { backClicks : Int
     , floatMenuOpen : Bool
     , siderCollapsed : Bool
+    , affixScroll : Int
+    , scrollbar : ScrollbarState
     }
 
 
@@ -86,6 +96,8 @@ init =
     { backClicks = 0
     , floatMenuOpen = False
     , siderCollapsed = False
+    , affixScroll = 0
+    , scrollbar = scrollbarInit
     }
 
 
@@ -97,24 +109,56 @@ type Msg
     = PageBack
     | FloatMenuToggled Bool
     | SiderToggled Bool
+    | AffixScrollBy Int
+    | ScrollbarMsg ScrollbarEvent
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         PageBack ->
-            { model | backClicks = model.backClicks + 1 }
+            ( { model | backClicks = model.backClicks + 1 }, Cmd.none )
 
         FloatMenuToggled open ->
-            { model | floatMenuOpen = open }
+            ( { model | floatMenuOpen = open }, Cmd.none )
 
         SiderToggled collapsed ->
-            { model | siderCollapsed = collapsed }
+            ( { model | siderCollapsed = collapsed }, Cmd.none )
+
+        AffixScrollBy delta ->
+            ( { model | affixScroll = clamp 0 affixMaxScroll (model.affixScroll + delta) }, Cmd.none )
+
+        ScrollbarMsg event ->
+            scrollbarUpdate event model
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.none
+subscriptions model =
+    Sub.batch
+        [ case model.scrollbar.drag of
+            Just drag ->
+                -- upstream's window mousemove/mouseup pair (capture true);
+                -- the vertical drag tracks clientY, the horizontal clientX
+                Sub.batch
+                    [ Browser.Events.onMouseMove
+                        (Json.Decode.map
+                            (ScrollbarMsg << ScrollbarMove)
+                            (Json.Decode.field
+                                (if drag.vertical then
+                                    "clientY"
+
+                                 else
+                                    "clientX"
+                                )
+                                Json.Decode.float
+                            )
+                        )
+                    , Browser.Events.onMouseUp (Json.Decode.succeed (ScrollbarMsg ScrollbarUp))
+                    ]
+
+            Nothing ->
+                Sub.none
+        ]
 
 
 
@@ -278,42 +322,54 @@ breadcrumbSection theme =
 timelineSection : Theme -> Element msg
 timelineSection theme =
     section theme "Timeline" "Vertical event trails." <|
-        [ Timeline.view theme
-            tlD
-            [ { tlItem | time = Just "2023-01-01", content = [ Element.text "Project created" ] }
-            , { tlItem
-                | type_ = Timeline.Success
-                , title = Just "Deployed"
-                , time = Just "2023-01-02"
-                , content = [ Element.text "Shipped to production." ]
-              }
-            , { tlItem
-                | type_ = Timeline.Warning
-                , lineType = Timeline.Dashed
-                , content = [ Element.text "Investigating a warning" ]
-              }
+        [ demoRow theme
+            "dsp-047"
+            "Default"
+            [ Timeline.view theme
+                tlD
+                [ { tlItem | time = Just "2023-01-01", content = [ Element.text "Project created" ] }
+                , { tlItem
+                    | type_ = Timeline.Success
+                    , title = Just "Deployed"
+                    , time = Just "2023-01-02"
+                    , content = [ Element.text "Shipped to production." ]
+                  }
+                , { tlItem
+                    | type_ = Timeline.Warning
+                    , lineType = Timeline.Dashed
+                    , content = [ Element.text "Investigating a warning" ]
+                  }
+                ]
             ]
-        , Timeline.view theme
-            { tlD | itemPlacement = Timeline.Right }
-            [ { tlItem | time = Just "1", content = [ Element.text "Right aligned" ] } ]
+        , demoRow theme
+            "dsp-048"
+            "Right placement"
+            [ Timeline.view theme
+                { tlD | itemPlacement = Timeline.Right }
+                [ { tlItem | time = Just "1", content = [ Element.text "Right aligned" ] } ]
+            ]
         ]
 
 
 listSection : Theme -> Element msg
 listSection theme =
     section theme "List" "Bordered, hoverable item lists." <|
-        [ Element.el [ Element.width (Element.px 360) ]
-            (NList.view theme
-                { nlistD | bordered = True, hoverable = True }
-                [ { nlistItem | content = [ Element.text "First item" ] }
-                , { nlistItem
-                    | prefix = Just (Element.text "•")
-                    , content = [ Element.text "Second item" ]
-                    , suffix = Just (Element.text "→")
-                  }
-                , { nlistItem | content = [ Element.text "Third item" ] }
-                ]
-            )
+        [ demoRow theme
+            "dsp-049"
+            "Bordered + hoverable"
+            [ Element.el [ Element.width (Element.px 360) ]
+                (NList.view theme
+                    { nlistD | bordered = True, hoverable = True }
+                    [ { nlistItem | content = [ Element.text "First item" ] }
+                    , { nlistItem
+                        | prefix = Just (Element.text "•")
+                        , content = [ Element.text "Second item" ]
+                        , suffix = Just (Element.text "→")
+                      }
+                    , { nlistItem | content = [ Element.text "Third item" ] }
+                    ]
+                )
+            ]
         ]
 
 
@@ -371,19 +427,99 @@ pageHeaderLiveSection model theme =
         (pageHeaderRows theme ++ [ pageHeaderLiveRow model theme ])
 
 
+affixPinThreshold : Int
+affixPinThreshold =
+    40
+
+
+{-| Three scroll-down steps of headroom — past that the update clamps.
+-}
+affixMaxScroll : Int
+affixMaxScroll =
+    360
+
+
+affixRows : Theme -> List (Element msg)
+affixRows theme =
+    [ demoBox theme
+        "dsp-004"
+        150
+        (Element.el [ Element.padding 12 ]
+            (Affix.view theme
+                { affixD | affixed = True, top = Just 12 }
+                [ Button.view theme { btn | kind = T.Primary } [ Element.text "Affixed" ] ]
+            )
+        )
+    ]
+
+
 affixSection : Theme -> Element msg
 affixSection theme =
     section theme "Affix" "Pins content while scrolling (the affixed state is caller-owned). The preview box is the containing block — the fixed button stays inside it." <|
-        [ demoBox theme
-            "dsp-004"
-            150
-            (Element.el [ Element.padding 12 ]
-                (Affix.view theme
-                    { affixD | affixed = True, top = Just 12 }
-                    [ Button.view theme { btn | kind = T.Primary } [ Element.text "Affixed" ] ]
+        affixRows theme
+
+
+{-| Live: `#live-affix-scroll` — scroll buttons stand in for the scroll
+listener (the port's caller-owned runtime, BackTop's pattern): past the
+threshold the Affix leaves the flow and pins to the box's top edge, and the
+trailing paragraph closes the gap it vacated.
+-}
+affixLiveRow : Model -> Theme -> Element Msg
+affixLiveRow model theme =
+    let
+        small =
+            { btn | size = T.Small }
+
+        pinned =
+            model.affixScroll > affixPinThreshold
+    in
+    demoRow theme
+        "dsp-050"
+        "Affix · live pin (scroll past 40px)"
+        [ Element.column [ Element.spacing 10, Element.width Element.fill ]
+            [ Element.row [ Element.spacing 8 ]
+                [ Button.view theme { small | onPress = Just (AffixScrollBy 120) } [ Element.text "Scroll down 120" ]
+                , Button.view theme { small | onPress = Just (AffixScrollBy -120) } [ Element.text "Scroll up 120" ]
+                , chip theme
+                    ("scrollTop: "
+                        ++ String.fromInt model.affixScroll
+                        ++ " px · "
+                        ++ (if pinned then
+                                "pinned"
+
+                            else
+                                "in flow"
+                           )
+                    )
+                ]
+            , demoBox theme
+                "dsp-051"
+                200
+                (Element.column
+                    [ Element.padding 12, Element.spacing 16, Element.width Element.fill ]
+                    [ Element.paragraph []
+                        [ Element.text "Paragraph one. Scroll down: once the scroll position passes the threshold, the button below leaves the flow and pins to the top edge of this box." ]
+                    , Affix.view theme
+                        { affixD
+                            | affixed = pinned
+                            , top = Just 12
+                            , attributes = [ Element.htmlAttribute (HA.id "live-affix-scroll") ]
+                        }
+                        [ Button.view theme { btn | kind = T.Primary } [ Element.text "Affixed" ] ]
+                    , Element.paragraph []
+                        [ Element.text "Paragraph two. Its slot collapses when the button pins, so this text slides up under it — scroll back up to release." ]
+                    ]
                 )
-            )
+            ]
         ]
+
+
+affixLiveSection : Model -> Theme -> Element Msg
+affixLiveSection model theme =
+    section theme
+        "Affix"
+        "Pins content while scrolling (the affixed state is caller-owned). The preview box is the containing block — the fixed button stays inside it."
+        (affixRows theme ++ [ affixLiveRow model theme ])
 
 
 flexSection : Theme -> Element msg
@@ -825,69 +961,448 @@ descriptionsSection theme =
         ]
 
 
-scrollbarSection : Theme -> Element msg
-scrollbarSection theme =
+scrollbarSection : Model -> Theme -> Element Msg
+scrollbarSection model theme =
     section theme
         "Scrollbar"
-        "A styled scroll container with custom rails. The caller owns whether each bar is shown and its measured geometry."
+        "A styled scroll container with custom rails. The port is CSS-only; the demo owns upstream's runtime — bars track the live container scroll and dragging a bar (or wheel-scrolling) moves it."
     <|
-        [ demoRow theme
-            "dsp-030"
-            "Vertical bar shown"
-            [ Element.el [ Element.height (Element.px 120), Element.width Element.fill ]
-                (Scrollbar.view theme
-                    { scrollbarD
-                        | showYBar = True
-                        , yBarStyle = Just "height:48px;top:8px"
-                    }
-                    [ Element.paragraph [] (List.repeat 3 (Element.text scrollbarCopy)) ]
-                )
-            ]
-        , demoRow theme
-            "dsp-031"
-            "Both rails (x-scrollable)"
-            -- a fixed-px cell (not `width fill`): a fill cell keeps
-            -- `flex-basis: 0%` + `min-width: auto`, and the nowrap content's
-            -- min-content inflates the cell to content width instead of
-            -- letting the scroll container clip it
-            [ Element.el [ Element.height (Element.px 120), Element.width (Element.px 460) ]
-                (Scrollbar.view theme
-                    { scrollbarD
-                        | xScrollable = True
-                        , showYBar = True
-                        , yBarStyle = Just "height:48px;top:8px"
-                        , showXBar = True
-                        , xBarStyle = Just "width:80px;left:0"
-                    }
-                    -- a long nowrap line so the row genuinely overflows and
-                    -- the horizontal thumb has something to thumb
-                    [ Element.el [ Element.htmlAttribute (HA.attribute "style" "white-space:nowrap") ]
-                        (Element.text (scrollbarCopy ++ "  " ++ scrollbarCopy))
-                    ]
-                )
-            ]
-        , demoRow theme
-            "dsp-032"
-            "Rails only (left / top)"
-            [ Element.el [ Element.height (Element.px 100), Element.width Element.fill ]
-                (Scrollbar.view theme
-                    { scrollbarD | yPlacement = Scrollbar.Left }
-                    [ Element.paragraph [] [ Element.text scrollbarCopy ] ]
-                )
-            , Element.el [ Element.height (Element.px 100), Element.width (Element.px 460) ]
-                (Scrollbar.view theme
-                    { scrollbarD | xScrollable = True, xPlacement = Scrollbar.Top }
-                    [ Element.el [ Element.htmlAttribute (HA.attribute "style" "white-space:nowrap") ]
-                        (Element.text scrollbarCopy)
-                    ]
-                )
-            ]
+        scrollbarRows model.scrollbar theme
+
+
+{-| The live rows: one vertical-bar demo (dsp-030) and one both-rails
+x-scrollable (dsp-031) — each with its own container id so the runtime
+tracks them independently — plus the static rails-only placement pair
+(dsp-032; no bars to drag).
+-}
+scrollbarRows : ScrollbarState -> Theme -> List (Element Msg)
+scrollbarRows st theme =
+    [ demoRow theme
+        "dsp-030"
+        "Vertical bar (draggable; wheel-scroll tracks too)"
+        [ Element.el [ Element.height (Element.px 120), Element.width Element.fill ]
+            (Scrollbar.view theme
+                (scrollbarOptions verticalContainerId False st)
+                [ Element.paragraph [] (List.repeat 6 (Element.text scrollbarCopy)) ]
+            )
         ]
+    , demoRow theme
+        "dsp-031"
+        "Both rails (x-scrollable; both draggable)"
+        -- a fixed-px cell (not `width fill`): a fill cell keeps
+        -- `flex-basis: 0%` + `min-width: auto`, and the nowrap content's
+        -- min-content inflates the cell to content width instead of
+        -- letting the scroll container clip it
+        [ Element.el [ Element.height (Element.px 120), Element.width (Element.px 460) ]
+            (Scrollbar.view theme
+                (scrollbarOptions horizontalContainerId True st)
+                -- a long nowrap line so the row genuinely overflows and
+                -- the horizontal thumb has something to thumb
+                [ Element.el [ Element.htmlAttribute (HA.attribute "style" "white-space:nowrap") ]
+                    (Element.text (scrollbarCopy ++ "  " ++ scrollbarCopy))
+                ]
+            )
+        ]
+    , demoRow theme
+        "dsp-032"
+        "Rails only (left / top)"
+        [ Element.el [ Element.height (Element.px 100), Element.width Element.fill ]
+            (Scrollbar.view theme
+                { scrollbarD | yPlacement = Scrollbar.Left }
+                [ Element.paragraph [] [ Element.text scrollbarCopy ] ]
+            )
+        , Element.el [ Element.height (Element.px 100), Element.width (Element.px 460) ]
+            (Scrollbar.view theme
+                { scrollbarD | xScrollable = True, xPlacement = Scrollbar.Top }
+                [ Element.el [ Element.htmlAttribute (HA.attribute "style" "white-space:nowrap") ]
+                    (Element.text scrollbarCopy)
+                ]
+            )
+        ]
+    ]
 
 
 scrollbarCopy : String
 scrollbarCopy =
     "And as I sat there, brooding on the old unknown world, I thought of Gatsby's wonder when he first picked out the green light at the end of Daisy's dock."
+
+
+
+-- SCROLLBAR LIVE RUNTIME (upstream Scrollbar.tsx, caller-owned per the port's contract)
+--
+-- ONE generic runtime over the two draggable rows (the Slider spec-table
+-- precedent): each live row's scroll container carries a DOM id, the model
+-- holds one snapshot per id, and the bar geometry / drag algebra read it.
+
+
+{-| The demo's scrollbar state: one measurement per live container (upstream's
+`syncPositionState`/`syncScrollState` refs) and the live drag memo (upstream's
+`yBarPressed`/`memoYTop`/`memoMouseY` block).
+-}
+type alias ScrollbarState =
+    { snaps : Dict.Dict String ScrollSnap
+    , drag : Maybe BarDrag
+    }
+
+
+{-| One measurement of a scroll container — the numbers upstream's computed
+refs hold (`containerHeightRef`, `contentHeightRef`, `containerScrollTopRef`,
+…). `Browser.Dom.getViewportOf` gives `scene` (the full scrollable content
+size) and `viewport` (the visible box + scroll offset) in one read — exactly
+upstream's content\_/container\_ ref pairs.
+-}
+type alias ScrollSnap =
+    { width : Float
+    , height : Float
+    , scrollWidth : Float
+    , scrollHeight : Float
+    , scrollTop : Float
+    , scrollLeft : Float
+    }
+
+
+{-| The press memo: which container, which axis, the scroll offset at press,
+and the pointer coordinate at press (upstream `memoYTop`/`memoMouseY`,
+`memoXLeft`/`memoMouseX`).
+-}
+type alias BarDrag =
+    { containerId : String
+    , vertical : Bool
+    , memoScroll : Float
+    , memoPointer : Float
+    }
+
+
+scrollbarInit : ScrollbarState
+scrollbarInit =
+    { snaps = Dict.empty, drag = Nothing }
+
+
+type ScrollbarEvent
+    = ScrollbarSync String
+    | ScrollbarSnap String (Result Browser.Dom.Error Browser.Dom.Viewport)
+    | ScrollbarPress String Bool Float
+    | ScrollbarMove Float
+    | ScrollbarUp
+    | ScrollbarNoop
+
+
+{-| The two live containers' DOM ids — the `containerAttributes` seam carries
+them so `Browser.Dom` can address the scroll elements (the module doc's
+stated seam).
+-}
+verticalContainerId : String
+verticalContainerId =
+    "live-scrollbar-y"
+
+
+horizontalContainerId : String
+horizontalContainerId =
+    "live-scrollbar-x"
+
+
+scrollbarUpdate : ScrollbarEvent -> Model -> ( Model, Cmd Msg )
+scrollbarUpdate event model =
+    let
+        st =
+            model.scrollbar
+    in
+    case event of
+        ScrollbarSync id ->
+            -- upstream handleMouseEnterWrapper / handleScroll: sync()
+            ( model, snapCmd id )
+
+        ScrollbarSnap id result ->
+            ( { model
+                | scrollbar =
+                    { st
+                        | snaps =
+                            Dict.update id
+                                (always (snapOf result))
+                                st.snaps
+                    }
+              }
+            , Cmd.none
+            )
+
+        ScrollbarPress id vertical pointer ->
+            -- upstream handleY/XScrollMouseDown: memoize scroll + pointer,
+            -- arm the window listeners. The press-time scroll offset rides
+            -- the snapshot (kept fresh by sync on enter/scroll), the press
+            -- ALSO refreshes it, so a wheel scroll between events is
+            -- absorbed.
+            ( { model
+                | scrollbar =
+                    { st
+                        | drag =
+                            Just
+                                { containerId = id
+                                , vertical = vertical
+                                , memoScroll = currentScrollOf id vertical st
+                                , memoPointer = pointer
+                                }
+                    }
+              }
+            , snapCmd id
+            )
+
+        ScrollbarMove pointer ->
+            ( model, moveCmd st pointer )
+
+        ScrollbarUp ->
+            -- upstream mouseup: release + sync()
+            ( { model | scrollbar = { st | drag = Nothing } }
+            , case st.drag of
+                Just drag ->
+                    snapCmd drag.containerId
+
+                Nothing ->
+                    Cmd.none
+            )
+
+        ScrollbarNoop ->
+            -- the drag-write task needs a message; upstream's write is a
+            -- bare property assignment (no callback)
+            ( model, Cmd.none )
+
+
+snapOf : Result Browser.Dom.Error Browser.Dom.Viewport -> Maybe ScrollSnap
+snapOf result =
+    Result.toMaybe result
+        |> Maybe.map
+            (\vp ->
+                { width = vp.viewport.width
+                , height = vp.viewport.height
+                , scrollWidth = vp.scene.width
+                , scrollHeight = vp.scene.height
+                , scrollTop = vp.viewport.y
+                , scrollLeft = vp.viewport.x
+                }
+            )
+
+
+snapCmd : String -> Cmd Msg
+snapCmd id =
+    Task.attempt (ScrollbarMsg << ScrollbarSnap id) (Browser.Dom.getViewportOf id)
+
+
+{-| upstream `handleYScrollMouseMove`/`handleXScrollMouseMove`: the pointer
+delta scaled by `(content - container) / (container - bar)` into the target
+scroll offset, clamped to `[0, content - container]`, applied with
+`setViewportOf` (Elm's write-only seam for `container.scrollTop = …`).
+-}
+moveCmd : ScrollbarState -> Float -> Cmd Msg
+moveCmd st pointer =
+    case ( st.drag, st.drag |> Maybe.andThen (\d -> Dict.get d.containerId st.snaps) ) of
+        ( Just drag, Just snap ) ->
+            let
+                axis =
+                    if drag.vertical then
+                        { container = snap.height
+                        , content = snap.scrollHeight
+                        , bar = yBarSizePx snap
+                        }
+
+                    else
+                        { container = snap.width
+                        , content = snap.scrollWidth
+                        , bar = xBarSizePx snap
+                        }
+
+                denominator =
+                    axis.container - axis.bar
+            in
+            if axis.content <= axis.container || denominator <= 0 then
+                Cmd.none
+
+            else
+                let
+                    delta =
+                        (pointer - drag.memoPointer) * (axis.content - axis.container) / denominator
+
+                    target =
+                        clamp 0 (axis.content - axis.container) (drag.memoScroll + delta)
+                in
+                if drag.vertical then
+                    Task.attempt (always (ScrollbarMsg ScrollbarNoop)) (Browser.Dom.setViewportOf drag.containerId 0 target)
+
+                else
+                    Task.attempt (always (ScrollbarMsg ScrollbarNoop)) (Browser.Dom.setViewportOf drag.containerId target 0)
+
+        _ ->
+            Cmd.none
+
+
+{-| upstream `yBarSizeRef`: `min(container, rail * container / content +
+width * 1.5)` — the rail spans the container box minus its insets (2px per
+side on the travel axis); the theme width/height is 5px (both modes), so the
++7.5 term is `depx(width) * 1.5`.
+-}
+yBarSizePx : ScrollSnap -> Float
+yBarSizePx snap =
+    min snap.height (railOf snap.height * snap.height / snap.scrollHeight + 7.5)
+
+
+{-| upstream `xBarSizeRef` — same algebra on the horizontal axis.
+-}
+xBarSizePx : ScrollSnap -> Float
+xBarSizePx snap =
+    railOf snap.width * snap.width / snap.scrollWidth + 7.5
+
+
+railOf : Float -> Float
+railOf container =
+    container - 4
+
+
+{-| The scroll offset the press memoizes, from the container's last snapshot.
+-}
+currentScrollOf : String -> Bool -> ScrollbarState -> Float
+currentScrollOf id vertical st =
+    case Dict.get id st.snaps of
+        Just snap ->
+            if vertical then
+                snap.scrollTop
+
+            else
+                snap.scrollLeft
+
+        Nothing ->
+            0
+
+
+{-| clientY (vertical press) / clientX (horizontal press) out of the bar's
+mousedown — upstream reads `e.clientX`/`e.clientY` in the same handlers.
+-}
+scrollbarPressDecoder : String -> Bool -> Json.Decode.Decoder Msg
+scrollbarPressDecoder id vertical =
+    Json.Decode.map (ScrollbarMsg << ScrollbarPress id vertical)
+        (Json.Decode.field
+            (if vertical then
+                "clientY"
+
+             else
+                "clientX"
+            )
+            Json.Decode.float
+        )
+
+
+{-| The bar's inline geometry as raw CSS (`yBarStyle`/`xBarStyle`): size and
+offset, upstream's `yBarSizePxRef`/`yBarTopPxRef` algebra — offset =
+`scroll / (content - container) * (rail - bar)`. No snapshot yet (or no
+overflow) yields a zero-size bar — upstream renders nothing until measured,
+and `show*Bar` gates the div anyway.
+-}
+barStyle : Bool -> Maybe ScrollSnap -> String
+barStyle vertical maybeSnap =
+    let
+        zero =
+            if vertical then
+                "height:0;top:0"
+
+            else
+                "width:0;left:0"
+    in
+    case maybeSnap of
+        Nothing ->
+            zero
+
+        Just snap ->
+            let
+                axis =
+                    if vertical then
+                        { container = snap.height
+                        , content = snap.scrollHeight
+                        , scroll = snap.scrollTop
+                        , bar = yBarSizePx snap
+                        }
+
+                    else
+                        { container = snap.width
+                        , content = snap.scrollWidth
+                        , scroll = snap.scrollLeft
+                        , bar = xBarSizePx snap
+                        }
+
+                overflow =
+                    axis.content - axis.container
+
+                travel =
+                    railOf axis.container - axis.bar
+            in
+            if overflow <= 0 || travel <= 0 then
+                zero
+
+            else
+                let
+                    offset =
+                        (axis.scroll / overflow) * travel
+                in
+                if vertical then
+                    "height:"
+                        ++ String.fromFloat axis.bar
+                        ++ "px;top:"
+                        ++ String.fromFloat offset
+                        ++ "px"
+
+                else
+                    "width:"
+                        ++ String.fromFloat axis.bar
+                        ++ "px;left:"
+                        ++ String.fromFloat offset
+                        ++ "px"
+
+
+{-| `True` when the snapshot says the content overflows on the axis — upstream
+`needYBarRef`/`needXBarRef` (`content > container`).
+-}
+needsBar : Bool -> Maybe ScrollSnap -> Bool
+needsBar vertical maybeSnap =
+    case maybeSnap of
+        Just snap ->
+            if vertical then
+                snap.scrollHeight > snap.height + 1
+
+            else
+                snap.scrollWidth > snap.width + 1
+
+        Nothing ->
+            False
+
+
+{-| The shared live options builder: bars shown when the snapshot says the
+axis overflows, geometry from the snapshot, the container id + sync-on-
+enter/scroll listeners on the seams.
+-}
+scrollbarOptions : String -> Bool -> ScrollbarState -> Scrollbar.Options Msg
+scrollbarOptions containerId xScrollable st =
+    let
+        snap =
+            Dict.get containerId st.snaps
+    in
+    { scrollbarD
+        | xScrollable = xScrollable
+        , showYBar = needsBar True snap
+        , yBarStyle = Just (barStyle True snap)
+        , yBarAttributes =
+            [ HE.preventDefaultOn "mousedown"
+                (Json.Decode.map (\m -> ( m, True )) (scrollbarPressDecoder containerId True))
+            ]
+        , showXBar =
+            xScrollable
+                && needsBar False snap
+        , xBarStyle = Just (barStyle False snap)
+        , xBarAttributes =
+            [ HE.preventDefaultOn "mousedown"
+                (Json.Decode.map (\m -> ( m, True )) (scrollbarPressDecoder containerId False))
+            ]
+        , containerAttributes =
+            [ HA.id containerId
+            , HE.on "mouseenter" (Json.Decode.succeed (ScrollbarMsg (ScrollbarSync containerId)))
+            , HE.on "scroll" (Json.Decode.succeed (ScrollbarMsg (ScrollbarSync containerId)))
+            ]
+    }
 
 
 watermarkSection : Theme -> Element msg
@@ -1101,7 +1616,7 @@ sections model theme =
     , timelineSection theme
     , listSection theme
     , pageHeaderLiveSection model theme
-    , affixSection theme
+    , affixLiveSection model theme
     , flexSection theme
     , gridSection theme
     , qrCodeSection theme
@@ -1110,7 +1625,7 @@ sections model theme =
     , floatButtonGroupSection theme
     , heatmapSection theme
     , descriptionsSection theme
-    , scrollbarSection theme
+    , scrollbarSection model theme
     , watermarkSection theme
     , codeSection theme
     , equationSection theme

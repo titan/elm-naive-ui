@@ -500,8 +500,24 @@ itemNode theme state it =
     Element.row
         ([ I.classes ([ "n-message-wrapper" ] ++ phaseClasses it.phase)
          , I.cssVars
-            (( "align-items", alignItems state.placement )
+            ((( "align-items", alignItems state.placement )
                 :: cssVarsFor theme it.options.kind
+             )
+                ++ -- `align-self: auto` (port-added): the container's per-placement
+                   -- `align-items` (top: centred, top-left: start, *-right/bottom:
+                   -- end — upstream's own container CSS) is what aligns each
+                   -- wrapper in the column's cross axis, but elm-ui's
+                   -- `.s.c > .wc` pins every wrapped child to
+                   -- `align-self: flex-start`, overriding the container's
+                   -- alignment for that child — every message stacked at the
+                   -- container's left edge. `auto` defers back to the
+                   -- container's `align-items`; inline beats the class rule.
+                   -- Appended AFTER the upstream declarations so the upstream
+                   -- style prefix stays byte-identical. (The leading
+                   -- `align-items` is upstream's own inline style on the
+                   -- wrapper — it styles the wrapper's own row content, not
+                   -- this axis, so the two never collide.)
+                   [ ( "align-self", "auto" ) ]
             )
          ]
             ++ hoverListeners (Maybe.withDefault state.keepAliveOnHover it.options.keepAliveOnHover)

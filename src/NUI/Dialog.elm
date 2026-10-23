@@ -453,7 +453,18 @@ actionNode theme opts =
     else
         Just <|
             Element.row
-                ([ I.classes [ "n-dialog__action" ] ] ++ opts.actionAttributes)
+                ([ I.classes [ "n-dialog__action" ]
+
+                 -- upstream's action row is a plain block div: it fills the
+                 -- card, so its `justify-content` (flex-end; center under
+                 -- --icon-top) positions the buttons. An elm-ui row
+                 -- shrink-wraps to max-content instead, pinning the buttons
+                 -- to the card's left padding edge — the fill restores the
+                 -- width and lets the CSS place the row.
+                 , Element.width Element.fill
+                 ]
+                    ++ opts.actionAttributes
+                )
                 (case opts.action of
                     Just children ->
                         List.map wrapSlot children

@@ -1,5 +1,28 @@
 # elm-naive-ui — batch todo (older closed trails below)
 
+## Visual fix wave + browser-env recovery — CLOSED (1 commit, batch verified + 1 audit fix)
+- [x] browser env RECOVERED — headless Chromium launches again via agent-browser 0.38.2
+      (the 2026-10-02 GPU-fatal condition is gone; `--filename` stray PNG + tools/verify/tmp-*
+      scratch moved to /tmp/debris). TRAP: long-lived bg processes must be `setsid`-detached
+      or the session reaper kills them mid-run (verify.sh + http.server both died once).
+- [x] batch gate ×2 — 8/8, **4400/4400 + 2524 DOM, 0 failures** (batch +143 inspect.mjs probes
+      incl. the new LIVE/DSP driver phase, +2 eq pins, 36 files +3.8k/−1.4k).
+- [x] full visual audit — 87/87 sections captured (1440x900 sweep) + observer review
+      (VLM + live-DOM-geometry fallback). One REAL defect found & fixed in-session:
+      log rows painted over the Live·Log card's helper text — bridge rule 10's
+      elm-ui `min-height:min-content` beats `height:inherit` mechanism, but the rule
+      only covered `.n-dropdown-menu`/`.n-popover`; `.n-log > .n-scrollbar` is the
+      same family (upstream sizes it via the global `.n-scrollbar { height: inherit }`
+      against the log's inline `height: calc(rows*…)`) → joined the selector list,
+      extract re-run, rebuilt, elementsFromPoint re-verified (helper paints clean),
+      gate re-run green. Marquee "clip" report = animation mid-frame (viewport
+      overflow:hidden by design), checkbox label / popover slot / otp-slot / qr probes
+      all land. Observer false-positive to remember: getBoundingClientRect intersects
+      do NOT account for ancestor overflow clipping — confirm with elementsFromPoint.
+- [x] + 2 sub-lane incidents: two observer spawns hit broken vision paths (MiniMax key
+      `2049 invalid api key` on intl endpoint; CN endpoint works) and one stalled —
+      live-DOM audit via agent-browser eval is a valid observer fallback lane.
+
 ## Input OTP slot padding — CLOSED (1 commit, in-context fix)
 - [x] fix — `7d60da5` (user report “example 中 Input OTP 显示效果很有问题”: digits
 crammed into a sliver of each 24–36px cell. Upstream zeroes every inner NInput's

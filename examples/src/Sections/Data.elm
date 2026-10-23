@@ -103,6 +103,7 @@ type alias Model =
     , groupCurrent : Int
     , groupZoom : ImagePreview.Zoom
     , files : List Upload.FileInfo
+    , abstractFiles : List Upload.FileInfo
     , uploadSeq : Int
     , uploadNote : String
     , previewNote : String
@@ -170,6 +171,7 @@ init =
     , groupCurrent = 0
     , groupZoom = ImagePreview.zoom0
     , files = []
+    , abstractFiles = []
     , uploadSeq = 0
     , uploadNote = "no file action yet"
     , previewNote = "no toolbar action yet"
@@ -251,6 +253,9 @@ type Msg
       -- Upload (simulated file list)
     | UploadAdd
     | UploadPick
+    | UploadAbstractPick
+    | UploadAbstractRemove String
+    | UploadAbstractAdvance
     | UploadAddFailing
     | UploadAdvance
     | UploadRemove String
@@ -496,6 +501,24 @@ update msg model =
 
         UploadPick ->
             addFakeFile model (\n -> fakeFile n "picked.txt" "text/plain")
+
+        UploadAbstractPick ->
+            -- abstract trigger: the caller owns the click; same simulated
+            -- handleFileAddition (pendingFile + appendFile) as the live row
+            { model
+                | abstractFiles =
+                    Upload.appendFile
+                        (fakeFile model.uploadSeq "abstract-pick.txt" "text/plain")
+                        model.abstractFiles
+                , uploadSeq = model.uploadSeq + 1
+                , uploadNote = "abstract trigger clicked"
+            }
+
+        UploadAbstractRemove id ->
+            { model | abstractFiles = Upload.removeFileById id model.abstractFiles }
+
+        UploadAbstractAdvance ->
+            { model | abstractFiles = List.map advanceFile model.abstractFiles }
 
         UploadAddFailing ->
             addFakeFile model (\n -> fakeFile n ("broken-" ++ String.fromInt n ++ ".zip") "application/zip")
@@ -748,59 +771,6 @@ calD =
     Calendar.defaults
 
 
-tableD : Table.Options msg
-tableD =
-    Table.defaults
-
-
-{-| A two-column demo table (head + three body rows).
--}
-tableContent : Table.Table msg
-tableContent =
-    { head =
-        [ { rowD | cells = [ tableCell "Name", tableCell "Origin" ] } ]
-    , body =
-        [ { rowD | cells = [ tableCell "Naive", tableCell "Vue" ] }
-        , { rowD | cells = [ tableCell "elm-naive-ui", tableCell "Elm" ] }
-        , { rowD | cells = [ tableCell "Seemly", tableCell "Utils" ] }
-        ]
-    }
-
-
-{-| The colspan / rowspan demo (naive-ui docs' merge-cell shape).
--}
-spanContent : Table.Table msg
-spanContent =
-    { head =
-        [ { rowD | cells = [ tableCell "", cellD, cellD ] } ]
-    , body =
-        [ { rowD
-            | cells =
-                [ { cellD | content = [ Element.text "Guitar" ], rowspan = Just 2 }
-                , tableCell "1998"
-                , tableCell "Songs"
-                ]
-          }
-        , { rowD | cells = [ tableCell "2001", { cellD | colspan = Just 2, content = [ Element.text "Albums + Tours" ] } ] }
-        ]
-    }
-
-
-rowD : Table.Row msg
-rowD =
-    Table.rowDefaults
-
-
-cellD : Table.Cell msg
-cellD =
-    Table.cellDefaults
-
-
-tableCell : String -> Table.Cell msg
-tableCell label =
-    { cellD | content = [ Element.text label ] }
-
-
 treeD : Tree.Options msg
 treeD =
     Tree.defaults
@@ -958,23 +928,6 @@ tagsOpts model =
     }
 
 
-tagsDemo : Theme -> Model -> Element Msg
-tagsDemo theme model =
-    Element.column [ Element.spacing 10, Element.width (Element.px 480) ]
-        [ DynamicTags.view theme (tagsOpts model) []
-        , caption theme
-            [ "tags: " ++ listLabel model.tags
-            , if model.tagsShowInput then
-                "input: \"" ++ model.tagsDraft ++ "\""
-
-              else
-                "input: hidden"
-            ]
-        , note theme
-            "The add trigger activates the built-in input (onActivate → showInput), typing feeds the caller-owned draft (onInputValue), Enter confirms (append + hide + clear, the header's recipe), and a tag's close reports the next list (onUpdateValue)."
-        ]
-
-
 dynamicTagsRows : Model -> Theme -> List (Element Msg)
 dynamicTagsRows model theme =
     [ demoRow theme
@@ -1023,7 +976,23 @@ dynamicTagsSection model theme =
 
 tagsLiveRow : Model -> Theme -> Element Msg
 tagsLiveRow model theme =
-    demoRow theme "dat-003" "Dynamic Tags · add / confirm / close" [ tagsDemo theme model ]
+    demoRow theme
+        "dat-003"
+        "Dynamic Tags · add / confirm / close"
+        [ Element.column [ Element.spacing 10, Element.width (Element.px 480) ]
+            [ DynamicTags.view theme (tagsOpts model) []
+            , caption theme
+                [ "tags: " ++ listLabel model.tags
+                , if model.tagsShowInput then
+                    "input: \"" ++ model.tagsDraft ++ "\""
+
+                  else
+                    "input: hidden"
+                ]
+            , note theme
+                "The add trigger activates the built-in input (onActivate → showInput), typing feeds the caller-owned draft (onInputValue), Enter confirms (append + hide + clear, the header's recipe), and a tag's close reports the next list (onUpdateValue)."
+            ]
+        ]
 
 
 dynamicTagsLiveSection : Model -> Theme -> Element Msg
@@ -1059,35 +1028,30 @@ calOpts model =
     }
 
 
-calendarDemo : Theme -> Model -> Element Msg
-calendarDemo theme model =
-    Element.column [ Element.spacing 10, Element.width (Element.px 420) ]
-        [ Calendar.view theme (calOpts model)
-        , caption theme
-            [ "panel: " ++ Calendar.enUS.title model.calPanel
-            , "selected: " ++ Maybe.withDefault "—" (Maybe.map formatDate model.calValue)
-            ]
-        , note theme
-            "The header buttons emit onPanelChange with the target panel; clicking a cell emits onUpdateValue (clicking an other-month cell also moves the panel — the header's two-message recipe, applied in update)."
-        ]
-
-
 calendarRows : Model -> Theme -> List (Element Msg)
 calendarRows model theme =
-    [ Element.el [ Element.width (Element.px 420) ]
-        (Calendar.view theme
-            { calD | panel = { year = 2024, month = 6 }, now = { year = 2024, month = 6, day = 15 } }
-        )
-    , Element.el [ Element.width (Element.px 420) ]
-        (Calendar.view theme
-            { calD
-                | panel = model.calSamplesPanel
-                , now = { year = 2024, month = 6, day = 15 }
-                , value = model.calSamplesValue
-                , onUpdateValue = Just CalSamplesPick
-                , onPanelChange = Just CalSamplesPanel
-            }
-        )
+    [ demoRow theme
+        "dat-069"
+        "Basic (panel + now)"
+        [ Element.el [ Element.width (Element.px 420) ]
+            (Calendar.view theme
+                { calD | panel = { year = 2024, month = 6 }, now = { year = 2024, month = 6, day = 15 } }
+            )
+        ]
+    , demoRow theme
+        "dat-070"
+        "Selected date (caller-owned value + events)"
+        [ Element.el [ Element.width (Element.px 420) ]
+            (Calendar.view theme
+                { calD
+                    | panel = model.calSamplesPanel
+                    , now = { year = 2024, month = 6, day = 15 }
+                    , value = model.calSamplesValue
+                    , onUpdateValue = Just CalSamplesPick
+                    , onPanelChange = Just CalSamplesPanel
+                }
+            )
+        ]
     ]
 
 
@@ -1101,7 +1065,19 @@ calendarSection model theme =
 
 calendarLiveRow : Model -> Theme -> Element Msg
 calendarLiveRow model theme =
-    demoRow theme "dat-004" "Calendar · panel + date" [ calendarDemo theme model ]
+    demoRow theme
+        "dat-004"
+        "Calendar · panel + date"
+        [ Element.column [ Element.spacing 10, Element.width (Element.px 420) ]
+            [ Calendar.view theme (calOpts model)
+            , caption theme
+                [ "panel: " ++ Calendar.enUS.title model.calPanel
+                , "selected: " ++ Maybe.withDefault "—" (Maybe.map formatDate model.calValue)
+                ]
+            , note theme
+                "The header buttons emit onPanelChange with the target panel; clicking a cell emits onUpdateValue (clicking an other-month cell also moves the panel — the header's two-message recipe, applied in update)."
+            ]
+        ]
 
 
 calendarLiveSection : Model -> Theme -> Element Msg
@@ -1132,24 +1108,6 @@ pairOpts model =
         , onUpdateValue = Just SetPairs
         , onRemove = Just PairRemove
     }
-
-
-pairDemo : Theme -> Model -> Element Msg
-pairDemo theme model =
-    let
-        pairChips =
-            if List.isEmpty model.pairs then
-                [ "empty — press Create" ]
-
-            else
-                List.map (\( k, v ) -> k ++ " = " ++ v) model.pairs
-    in
-    Element.column [ Element.spacing 10, Element.width (Element.px 480) ]
-        [ DynamicInput.viewPair theme (pairOpts model)
-        , caption theme pairChips
-        , note theme
-            "Pair preset over a caller-owned list: typing reports the whole list (onUpdateValue with the entry replaced), Create / add / sort presses carry the inserted or moved list (insertAt / moveUp / moveDown inside the component), and the remove press owns its own channel — onRemove carries the index and update applies removeAt itself, the documented split."
-        ]
 
 
 dynamicInputRows : Model -> Theme -> List (Element Msg)
@@ -1207,7 +1165,24 @@ dynamicInputSection model theme =
 
 pairLiveRow : Model -> Theme -> Element Msg
 pairLiveRow model theme =
-    demoRow theme "dat-009" "Dynamic Input · pair list editor" [ pairDemo theme model ]
+    demoRow theme
+        "dat-009"
+        "Dynamic Input · pair list editor"
+        [ let
+            pairChips =
+                if List.isEmpty model.pairs then
+                    [ "empty — press Create" ]
+
+                else
+                    List.map (\( k, v ) -> k ++ " = " ++ v) model.pairs
+          in
+          Element.column [ Element.spacing 10, Element.width (Element.px 480) ]
+            [ DynamicInput.viewPair theme (pairOpts model)
+            , caption theme pairChips
+            , note theme
+                "Pair preset over a caller-owned list: typing reports the whole list (onUpdateValue with the entry replaced), Create / add / sort presses carry the inserted or moved list (insertAt / moveUp / moveDown inside the component), and the remove press owns its own channel — onRemove carries the index and update applies removeAt itself, the documented split."
+            ]
+        ]
 
 
 dynamicInputLiveSection : Model -> Theme -> Element Msg
@@ -1222,77 +1197,157 @@ dynamicInputLiveSection model theme =
 -- 1 · TABLE
 
 
-tableDemo : Theme -> Model -> Element Msg
-tableDemo theme model =
-    let
-        tD =
-            Table.defaults
-
-        cD =
-            Table.cellDefaults
-
-        rD =
-            Table.rowDefaults
-
-        header =
-            { rD
-                | cells =
-                    [ { cD | content = [ Element.text "Fruit" ] }
-                    , { cD | content = [ Element.text "Taste" ] }
-                    ]
-            }
-
-        fruitRow ( name, taste ) =
-            { rD
-                | attributes =
-                    [ HE.onClick (TablePick name)
-                    , HA.id ("live-data-table-row-" ++ name)
-                    ]
-                , cells =
-                    [ { cD | content = [ Element.text name ] }
-                    , { cD | content = [ Element.text taste ] }
-                    ]
-            }
-
-        rows =
-            List.map fruitRow [ ( "Yuzu", "sharp" ), ( "Mango", "sweet" ), ( "Umeboshi", "sour" ) ]
-    in
-    Element.column [ Element.spacing 10 ]
-        [ Table.view theme tD { head = [ header ], body = rows }
-        , caption theme [ "picked: " ++ Maybe.withDefault "—" model.tablePick ]
-        , note theme
-            "NUI.Table is the port's fully-static table — no channel in Options by design. The row click rides the documented Row.attributes seam (upstream's bare <tr> wrapper), not a faked channel."
-        ]
-
-
 tableRows : Theme -> List (Element msg)
 tableRows theme =
     [ demoRow theme
         "dat-010"
         "Basic (defaults: bordered, bottom-bordered, single-line)"
-        [ Table.view theme tableD tableContent
+        [ let
+            rD =
+                Table.rowDefaults
+
+            cD =
+                Table.cellDefaults
+
+            textCell label =
+                { cD | content = [ Element.text label ] }
+
+            table =
+                { head =
+                    [ { rD | cells = [ textCell "Name", textCell "Origin" ] } ]
+                , body =
+                    [ { rD | cells = [ textCell "Naive", textCell "Vue" ] }
+                    , { rD | cells = [ textCell "elm-naive-ui", textCell "Elm" ] }
+                    , { rD | cells = [ textCell "Seemly", textCell "Utils" ] }
+                    ]
+                }
+          in
+          Table.view theme Table.defaults table
         ]
     , demoRow theme
         "dat-011"
         "Sizes · un-bordered · multi-line"
-        [ Table.view theme { tableD | size = Table.Small } tableContent
-        , Table.view theme { tableD | size = Table.Large, bordered = False, bottomBordered = False } tableContent
+        [ let
+            tD =
+                Table.defaults
+
+            rD =
+                Table.rowDefaults
+
+            cD =
+                Table.cellDefaults
+
+            textCell label =
+                { cD | content = [ Element.text label ] }
+
+            table =
+                { head =
+                    [ { rD | cells = [ textCell "Name", textCell "Origin" ] } ]
+                , body =
+                    [ { rD | cells = [ textCell "Naive", textCell "Vue" ] }
+                    , { rD | cells = [ textCell "elm-naive-ui", textCell "Elm" ] }
+                    , { rD | cells = [ textCell "Seemly", textCell "Utils" ] }
+                    ]
+                }
+          in
+          Element.row [ Element.spacing 16 ]
+            [ Table.view theme { tD | size = Table.Small } table
+            , Table.view theme { tD | size = Table.Large, bordered = False, bottomBordered = False } table
+            ]
         ]
     , demoRow theme
         "dat-012"
         "Striped · single-column · multi-line cells"
-        [ Table.view theme { tableD | striped = True, singleLine = False } tableContent
-        , Table.view theme { tableD | singleColumn = True } tableContent
+        [ let
+            tD =
+                Table.defaults
+
+            rD =
+                Table.rowDefaults
+
+            cD =
+                Table.cellDefaults
+
+            textCell label =
+                { cD | content = [ Element.text label ] }
+
+            table =
+                { head =
+                    [ { rD | cells = [ textCell "Name", textCell "Origin" ] } ]
+                , body =
+                    [ { rD | cells = [ textCell "Naive", textCell "Vue" ] }
+                    , { rD | cells = [ textCell "elm-naive-ui", textCell "Elm" ] }
+                    , { rD | cells = [ textCell "Seemly", textCell "Utils" ] }
+                    ]
+                }
+          in
+          Element.row [ Element.spacing 16 ]
+            [ Table.view theme { tD | striped = True, singleLine = False } table
+            , Table.view theme { tD | singleColumn = True } table
+            ]
         ]
     , demoRow theme
         "dat-013"
         "Colspan / rowspan"
-        [ Table.view theme tableD spanContent
+        [ let
+            rD =
+                Table.rowDefaults
+
+            cD =
+                Table.cellDefaults
+
+            textCell label =
+                { cD | content = [ Element.text label ] }
+
+            table =
+                { head =
+                    [ { rD | cells = [ textCell "", cD, cD ] } ]
+                , body =
+                    [ { rD
+                        | cells =
+                            [ { cD | content = [ Element.text "Guitar" ], rowspan = Just 2 }
+                            , textCell "1998"
+                            , textCell "Songs"
+                            ]
+                      }
+                    , { rD
+                        | cells =
+                            [ textCell "2001"
+                            , { cD | content = [ Element.text "Albums + Tours" ], colspan = Just 2 }
+                            ]
+                      }
+                    ]
+                }
+          in
+          Table.view theme Table.defaults table
         ]
     , demoRow theme
         "dat-014"
         "RTL"
-        [ Table.view theme { tableD | rtl = True } tableContent
+        [ let
+            tD =
+                Table.defaults
+
+            rD =
+                Table.rowDefaults
+
+            cD =
+                Table.cellDefaults
+
+            textCell label =
+                { cD | content = [ Element.text label ] }
+
+            table =
+                { head =
+                    [ { rD | cells = [ textCell "Name", textCell "Origin" ] } ]
+                , body =
+                    [ { rD | cells = [ textCell "Naive", textCell "Vue" ] }
+                    , { rD | cells = [ textCell "elm-naive-ui", textCell "Elm" ] }
+                    , { rD | cells = [ textCell "Seemly", textCell "Utils" ] }
+                    ]
+                }
+          in
+          Table.view theme { tD | rtl = True } table
         ]
     ]
 
@@ -1307,7 +1362,49 @@ tableSection theme =
 
 tableLiveRow : Model -> Theme -> Element Msg
 tableLiveRow model theme =
-    demoRow theme "dat-015" "Table · row state (Row.attributes seam)" [ tableDemo theme model ]
+    demoRow theme
+        "dat-015"
+        "Table · row state (Row.attributes seam)"
+        [ let
+            tD =
+                Table.defaults
+
+            cD =
+                Table.cellDefaults
+
+            rD =
+                Table.rowDefaults
+
+            header =
+                { rD
+                    | cells =
+                        [ { cD | content = [ Element.text "Fruit" ] }
+                        , { cD | content = [ Element.text "Taste" ] }
+                        ]
+                }
+
+            fruitRow ( name, taste ) =
+                { rD
+                    | attributes =
+                        [ HE.onClick (TablePick name)
+                        , HA.id ("live-data-table-row-" ++ name)
+                        ]
+                    , cells =
+                        [ { cD | content = [ Element.text name ] }
+                        , { cD | content = [ Element.text taste ] }
+                        ]
+                }
+
+            rows =
+                List.map fruitRow [ ( "Yuzu", "sharp" ), ( "Mango", "sweet" ), ( "Umeboshi", "sour" ) ]
+          in
+          Element.column [ Element.spacing 10 ]
+            [ Table.view theme tD { head = [ header ], body = rows }
+            , caption theme [ "picked: " ++ Maybe.withDefault "—" model.tablePick ]
+            , note theme
+                "NUI.Table is the port's fully-static table — no channel in Options by design. The row click rides the documented Row.attributes seam (upstream's bare <tr> wrapper), not a faked channel."
+            ]
+        ]
 
 
 tableLiveSection : Model -> Theme -> Element Msg
@@ -1447,25 +1544,6 @@ treeOpts model =
     }
 
 
-treeDemo : Theme -> Model -> Element Msg
-treeDemo theme model =
-    let
-        normalized =
-            Tree.getCheckedKeys True Tree.All False model.treeChecked treeData
-    in
-    Element.column [ Element.spacing 10 ]
-        [ Tree.view theme (treeOpts model)
-        , caption theme
-            [ "checked: " ++ listLabel normalized.checkedKeys
-            , "half-checked: " ++ listLabel normalized.indeterminateKeys
-            , "selected: " ++ listLabel model.treeSelected
-            , "expanded: " ++ listLabel model.treeExpanded
-            ]
-        , note theme
-            "The port renders every tree state as data — switcher and checkbox clicks are not channelled, so the row click (nodeProps, on the node div under blockLine) drives all three: expand (toggleExpand), select (toggleSelect) and check (treemate check/uncheck under checkOnClick, with the cascade re-normalized through getCheckedKeys)."
-        ]
-
-
 treeRows : Model -> Theme -> List (Element Msg)
 treeRows model theme =
     [ demoRow theme
@@ -1532,7 +1610,25 @@ treeSection model theme =
 
 treeLiveRow : Model -> Theme -> Element Msg
 treeLiveRow model theme =
-    demoRow theme "dat-020" "Tree · check + expand + select (nodeProps seam)" [ treeDemo theme model ]
+    demoRow theme
+        "dat-020"
+        "Tree · check + expand + select (nodeProps seam)"
+        [ let
+            normalized =
+                Tree.getCheckedKeys True Tree.All False model.treeChecked treeData
+          in
+          Element.column [ Element.spacing 10 ]
+            [ Tree.view theme (treeOpts model)
+            , caption theme
+                [ "checked: " ++ listLabel normalized.checkedKeys
+                , "half-checked: " ++ listLabel normalized.indeterminateKeys
+                , "selected: " ++ listLabel model.treeSelected
+                , "expanded: " ++ listLabel model.treeExpanded
+                ]
+            , note theme
+                "The port renders every tree state as data — switcher and checkbox clicks are not channelled, so the row click (nodeProps, on the node div under blockLine) drives all three: expand (toggleExpand), select (toggleSelect) and check (treemate check/uncheck under checkOnClick, with the cascade re-normalized through getCheckedKeys)."
+            ]
+        ]
 
 
 treeLiveSection : Model -> Theme -> Element Msg
@@ -1636,40 +1732,6 @@ previewOpts model =
     }
 
 
-previewDemo : Theme -> Model -> Element Msg
-previewDemo theme model =
-    let
-        imageD_ =
-            Image.defaults
-
-        thumb index src =
-            Image.view theme
-                { imageD_
-                    | src = Just src
-                    , width = Just "120"
-                    , height = Just "90"
-                    , onClick = Just (PreviewOpen index)
-                    , attributes = [ Element.htmlAttribute (HA.id ("live-data-image-" ++ String.fromInt index)) ]
-                }
-    in
-    Element.column [ Element.spacing 10 ]
-        [ Element.row [ Element.spacing 8 ] (List.indexedMap thumb previewSrcs)
-        , caption theme
-            [ "src: " ++ String.fromInt model.previewIndex
-            , "scale: " ++ String.fromFloat model.previewZoom.scale
-            , "rotate: " ++ String.fromFloat model.previewZoom.rotate ++ "°"
-            , model.previewNote
-            ]
-        , note theme
-            "The full toolbar algebra is pure state: zoomIn / zoomOut (with the derivedOffset clamp step over simulated measurements — real measurement is the caller's port), rotate both ways, resize/toggle original size, prev/next with switchReset, and dblclick's toggleOriginalSize. Open preview mounts as a fixed overlay; close unmounts it (displayDirective: 'if')."
-        , if model.previewShow then
-            ImagePreview.view theme (previewOpts model)
-
-          else
-            Element.none
-        ]
-
-
 imageRows : Theme -> List (Element msg)
 imageRows theme =
     [ demoRow theme
@@ -1771,7 +1833,40 @@ imageSection theme =
 
 previewLiveRow : Model -> Theme -> Element Msg
 previewLiveRow model theme =
-    demoRow theme "dat-024" "Image · click to preview (full toolbar)" [ previewDemo theme model ]
+    demoRow theme
+        "dat-024"
+        "Image · click to preview (full toolbar)"
+        [ let
+            imageD_ =
+                Image.defaults
+
+            thumb index src =
+                Image.view theme
+                    { imageD_
+                        | src = Just src
+                        , width = Just "120"
+                        , height = Just "90"
+                        , onClick = Just (PreviewOpen index)
+                        , attributes = [ Element.htmlAttribute (HA.id ("live-data-image-" ++ String.fromInt index)) ]
+                    }
+          in
+          Element.column [ Element.spacing 10 ]
+            [ Element.row [ Element.spacing 8 ] (List.indexedMap thumb previewSrcs)
+            , caption theme
+                [ "src: " ++ String.fromInt model.previewIndex
+                , "scale: " ++ String.fromFloat model.previewZoom.scale
+                , "rotate: " ++ String.fromFloat model.previewZoom.rotate ++ "°"
+                , model.previewNote
+                ]
+            , note theme
+                "The full toolbar algebra is pure state: zoomIn / zoomOut (with the derivedOffset clamp step over simulated measurements — real measurement is the caller's port), rotate both ways, resize/toggle original size, prev/next with switchReset, and dblclick's toggleOriginalSize. Open preview mounts as a fixed overlay; close unmounts it (displayDirective: 'if')."
+            , if model.previewShow then
+                ImagePreview.view theme (previewOpts model)
+
+              else
+                Element.none
+            ]
+        ]
 
 
 imageLiveSection : Model -> Theme -> Element Msg
@@ -1810,38 +1905,6 @@ groupOpts model =
         , onClose = Just GroupClose
         , attributes = [ Element.htmlAttribute (HA.id "live-data-image-group") ]
     }
-
-
-groupDemo : Theme -> Model -> Element Msg
-groupDemo theme model =
-    let
-        imageD_ =
-            Image.defaults
-
-        thumb index src =
-            Image.view theme
-                { imageD_
-                    | src = Just src
-                    , width = Just "100"
-                    , height = Just "75"
-                    , onClick = Just (GroupOpen index)
-                    , attributes = [ Element.htmlAttribute (HA.id ("live-data-group-thumb-" ++ String.fromInt index)) ]
-                }
-    in
-    Element.column [ Element.spacing 10 ]
-        [ Element.row [ Element.spacing 8 ] (List.indexedMap thumb gallery)
-        , caption theme
-            [ "current: p" ++ String.fromInt model.groupCurrent
-            , "show: " ++ boolLabel model.groupShow
-            ]
-        , note theme
-            "Click a thumbnail to open the group preview at that index (showImage over the p${index} registry); the toolbar prev/next route through the reset + go step (switchReset then ImageGroup.go, the wrap-around walk that skips empty urls); close unmounts."
-        , if model.groupShow then
-            ImageGroup.view theme (groupOpts model)
-
-          else
-            Element.none
-        ]
 
 
 imagePreviewRows : Theme -> List (Element msg)
@@ -1930,7 +1993,38 @@ imagePreviewSection theme =
 
 groupLiveRow : Model -> Theme -> Element Msg
 groupLiveRow model theme =
-    demoRow theme "dat-029" "Image Group · gallery walk" [ groupDemo theme model ]
+    demoRow theme
+        "dat-029"
+        "Image Group · gallery walk"
+        [ let
+            imageD_ =
+                Image.defaults
+
+            thumb index src =
+                Image.view theme
+                    { imageD_
+                        | src = Just src
+                        , width = Just "100"
+                        , height = Just "75"
+                        , onClick = Just (GroupOpen index)
+                        , attributes = [ Element.htmlAttribute (HA.id ("live-data-group-thumb-" ++ String.fromInt index)) ]
+                    }
+          in
+          Element.column [ Element.spacing 10 ]
+            [ Element.row [ Element.spacing 8 ] (List.indexedMap thumb gallery)
+            , caption theme
+                [ "current: p" ++ String.fromInt model.groupCurrent
+                , "show: " ++ boolLabel model.groupShow
+                ]
+            , note theme
+                "Click a thumbnail to open the group preview at that index (showImage over the p${index} registry); the toolbar prev/next route through the reset + go step (switchReset then ImageGroup.go, the wrap-around walk that skips empty urls); close unmounts."
+            , if model.groupShow then
+                ImageGroup.view theme (groupOpts model)
+
+              else
+                Element.none
+            ]
+        ]
 
 
 imagePreviewLiveSection : Model -> Theme -> Element Msg
@@ -2026,62 +2120,6 @@ dtOpts model =
         , onUpdatePageSize = Just DtPageSize
         , attributes = [ Element.htmlAttribute (HA.id "live-data-table") ]
     }
-
-
-dataTableDemo : Theme -> Model -> Element Msg
-dataTableDemo theme model =
-    let
-        opts =
-            dtOpts model
-
-        lastPage =
-            ceiling (toFloat (List.length people) / toFloat (DataTable.mergedPageSize opts))
-
-        sortLabel =
-            case List.filter (\s -> s.order /= DataTable.NoSort) opts.sortStates of
-                s :: _ ->
-                    "sort: "
-                        ++ s.columnKey
-                        ++ " "
-                        ++ (if s.order == DataTable.Descend then
-                                "↓"
-
-                            else
-                                "↑"
-                           )
-
-                [] ->
-                    "sort: none"
-
-        btn =
-            Button.defaults
-    in
-    Element.column [ Element.spacing 10, Element.width (Element.px 780) ]
-        [ DataTable.view theme opts
-        , Element.row
-            [ Element.spacing 6 ]
-            [ Button.view theme
-                { btn | size = T.Tiny, onPress = Just (DtPageSize 4) }
-                [ Element.text "4 / page" ]
-            , Button.view theme
-                { btn | size = T.Tiny, onPress = Just (DtPageSize 8) }
-                [ Element.text "8 / page" ]
-            ]
-        , caption theme
-            [ "checked: " ++ listLabel opts.checkedRowKeys
-            , "anchor: "
-                ++ (if opts.lastSelectedKey == "" then
-                        "—"
-
-                    else
-                        opts.lastSelectedKey
-                   )
-            , "page: " ++ String.fromInt (DataTable.boundedPage opts) ++ " / " ++ String.fromInt lastPage
-            , sortLabel
-            ]
-        , note theme
-            "One table, three live behaviors: the checkbox column (header + rows + the shift-click range), the Age sorter header click (sort runs in the render pipeline off sortStates), and the pager (rows slice through paginatedData — boundedPage clamps). The pager's own size picker is documented-unported, so page size rides the same onUpdatePageSize channel from the two buttons."
-        ]
 
 
 dataTableRows : Model -> Theme -> List (Element Msg)
@@ -2538,7 +2576,62 @@ dataTableSection model theme =
 
 dataTableLiveRow : Model -> Theme -> Element Msg
 dataTableLiveRow model theme =
-    demoRow theme "dat-050" "Data Table · selection + sort + pagination" [ dataTableDemo theme model ]
+    demoRow theme
+        "dat-050"
+        "Data Table · selection + sort + pagination"
+        [ let
+            opts =
+                dtOpts model
+
+            lastPage =
+                ceiling (toFloat (List.length people) / toFloat (DataTable.mergedPageSize opts))
+
+            sortLabel =
+                case List.filter (\s -> s.order /= DataTable.NoSort) opts.sortStates of
+                    s :: _ ->
+                        "sort: "
+                            ++ s.columnKey
+                            ++ " "
+                            ++ (if s.order == DataTable.Descend then
+                                    "↓"
+
+                                else
+                                    "↑"
+                               )
+
+                    [] ->
+                        "sort: none"
+
+            btn =
+                Button.defaults
+          in
+          Element.column [ Element.spacing 10, Element.width (Element.px 780) ]
+            [ DataTable.view theme opts
+            , Element.row
+                [ Element.spacing 6 ]
+                [ Button.view theme
+                    { btn | size = T.Tiny, onPress = Just (DtPageSize 4) }
+                    [ Element.text "4 / page" ]
+                , Button.view theme
+                    { btn | size = T.Tiny, onPress = Just (DtPageSize 8) }
+                    [ Element.text "8 / page" ]
+                ]
+            , caption theme
+                [ "checked: " ++ listLabel opts.checkedRowKeys
+                , "anchor: "
+                    ++ (if opts.lastSelectedKey == "" then
+                            "—"
+
+                        else
+                            opts.lastSelectedKey
+                       )
+                , "page: " ++ String.fromInt (DataTable.boundedPage opts) ++ " / " ++ String.fromInt lastPage
+                , sortLabel
+                ]
+            , note theme
+                "One table, three live behaviors: the checkbox column (header + rows + the shift-click range), the Age sorter header click (sort runs in the render pipeline off sortStates), and the pager (rows slice through paginatedData — boundedPage clamps). The pager's own size picker is documented-unported, so page size rides the same onUpdatePageSize channel from the two buttons."
+            ]
+        ]
 
 
 dataTableLiveSection : Model -> Theme -> Element Msg
@@ -2585,20 +2678,6 @@ transferOpts model =
         , onTargetFilterInput = Just TransferTargetFilter
         , attributes = [ Element.htmlAttribute (HA.id "live-data-transfer") ]
     }
-
-
-transferDemo : Theme -> Model -> Element Msg
-transferDemo theme model =
-    Element.column [ Element.spacing 10 ]
-        [ Transfer.view theme (transferOpts model)
-        , caption theme
-            [ "value: " ++ listLabel model.transferValue
-            , "source filter: \"" ++ model.transferSourcePattern ++ "\""
-            , "target filter: \"" ++ model.transferTargetPattern ++ "\""
-            ]
-        , note theme
-            "Item toggles, select-all / unselect-all and clear all collapse into the single onCheck channel with the next value list (upstream doUpdateValue); the two filter inputs feed onSourceFilterInput / onTargetFilterInput and ride back in as patterns."
-        ]
 
 
 transferRows : Model -> Theme -> List (Element Msg)
@@ -2681,7 +2760,20 @@ transferSection model theme =
 
 transferLiveRow : Model -> Theme -> Element Msg
 transferLiveRow model theme =
-    demoRow theme "dat-056" "Transfer · move + filter" [ transferDemo theme model ]
+    demoRow theme
+        "dat-056"
+        "Transfer · move + filter"
+        [ Element.column [ Element.spacing 10 ]
+            [ Transfer.view theme (transferOpts model)
+            , caption theme
+                [ "value: " ++ listLabel model.transferValue
+                , "source filter: \"" ++ model.transferSourcePattern ++ "\""
+                , "target filter: \"" ++ model.transferTargetPattern ++ "\""
+                ]
+            , note theme
+                "Item toggles, select-all / unselect-all and clear all collapse into the single onCheck channel with the next value list (upstream doUpdateValue); the two filter inputs feed onSourceFilterInput / onTargetFilterInput and ride back in as patterns."
+            ]
+        ]
 
 
 transferLiveSection : Model -> Theme -> Element Msg
@@ -2788,36 +2880,6 @@ uploadOpts theme model =
         , onDownload = Just UploadDownload
         , attributes = [ Element.htmlAttribute (HA.id "live-data-upload") ]
     }
-
-
-uploadDemo : Theme -> Model -> Element Msg
-uploadDemo theme model =
-    let
-        btn =
-            Button.defaults
-
-        statusLabel file =
-            file.name
-                ++ " · "
-                ++ statusName file.status
-                ++ " "
-                ++ String.fromInt (Maybe.withDefault 0 file.percentage)
-                ++ "%"
-    in
-    Element.column [ Element.spacing 10, Element.width Element.fill ]
-        [ Upload.view theme (uploadOpts theme model)
-        , Element.row [ Element.spacing 6 ]
-            [ Button.view theme
-                { btn | size = T.Tiny, onPress = Just UploadAddFailing }
-                [ Element.text "Add failing file" ]
-            , Button.view theme
-                { btn | size = T.Tiny, onPress = Just UploadAdvance }
-                [ Element.text "Advance progress" ]
-            ]
-        , caption theme (List.map statusLabel model.files ++ [ model.uploadNote ])
-        , note theme
-            "Real pickers and XHR need JS — simulated per the port's caller-owned contract: the trigger click appends a fake pending file (pendingFile + appendFile), the ticker walks the mark* state machine (Uploading → Finished, or Error for broken-*.zip to drive the retry button), and onRemove / onRetry / onPreview / onDownload carry file ids."
-        ]
 
 
 statusName : Upload.Status -> String
@@ -2985,15 +3047,6 @@ uploadRows theme =
                 }
             )
         ]
-    , demoRow theme
-        "dat-067"
-        "Abstract trigger"
-        (Upload.viewAbstract theme
-            upD
-            (Element.el [ Element.htmlAttribute (HA.id "live-upload-abstract-slot") ]
-                (Element.text "Click to pick a file")
-            )
-        )
     ]
 
 
@@ -3005,9 +3058,91 @@ uploadSection theme =
         (uploadRows theme)
 
 
+uploadAbstractRow : Model -> Theme -> Element Msg
+uploadAbstractRow model theme =
+    let
+        upD =
+            Upload.defaults
+
+        btn =
+            Button.defaults
+
+        statusLabel file =
+            file.name
+                ++ " · "
+                ++ statusName file.status
+                ++ " "
+                ++ String.fromInt (Maybe.withDefault 0 file.percentage)
+                ++ "%"
+    in
+    demoRow theme
+        "dat-067"
+        "Abstract trigger (simulated pick)"
+        [ Element.column [ Element.spacing 10, Element.width Element.fill ]
+            (Upload.viewAbstract theme
+                { upD
+                    | fileList = model.abstractFiles
+                    , showFileList = False
+                    , onFileChange = Just UploadAbstractPick
+                    , onRemove = Just UploadAbstractRemove
+                }
+                (Element.el
+                    [ Element.htmlAttribute (HA.id "live-upload-abstract-slot")
+                    , Element.htmlAttribute (HE.onClick UploadAbstractPick)
+                    , Element.pointer
+                    ]
+                    (Element.text "Click to add a simulated file")
+                )
+                ++ [ Upload.viewFileList theme
+                        { upD
+                            | fileList = model.abstractFiles
+                            , onRemove = Just UploadAbstractRemove
+                        }
+                   , Element.row [ Element.spacing 6 ]
+                        [ Button.view theme
+                            { btn | size = T.Tiny, onPress = Just UploadAbstractAdvance }
+                            [ Element.text "Advance progress" ]
+                        ]
+                   , caption theme (List.map statusLabel model.abstractFiles)
+                   , note theme
+                        "Abstract mode renders a Fragment — the hidden file input plus your slot, no .n-upload root. The click is the caller's (wire it on the slot; here it appends a simulated pending file), onFileChange rides the hidden input's change, and the file list is placed separately through viewFileList. Real pickers and XHR are host JS — see the port's caller-owned contract."
+                   ]
+            )
+        ]
+
+
 uploadLiveRow : Model -> Theme -> Element Msg
 uploadLiveRow model theme =
-    demoRow theme "dat-068" "Upload · simulated file list" [ uploadDemo theme model ]
+    demoRow theme
+        "dat-068"
+        "Upload · simulated file list"
+        [ let
+            btn =
+                Button.defaults
+
+            statusLabel file =
+                file.name
+                    ++ " · "
+                    ++ statusName file.status
+                    ++ " "
+                    ++ String.fromInt (Maybe.withDefault 0 file.percentage)
+                    ++ "%"
+          in
+          Element.column [ Element.spacing 10, Element.width Element.fill ]
+            [ Upload.view theme (uploadOpts theme model)
+            , Element.row [ Element.spacing 6 ]
+                [ Button.view theme
+                    { btn | size = T.Tiny, onPress = Just UploadAddFailing }
+                    [ Element.text "Add failing file" ]
+                , Button.view theme
+                    { btn | size = T.Tiny, onPress = Just UploadAdvance }
+                    [ Element.text "Advance progress" ]
+                ]
+            , caption theme (List.map statusLabel model.files ++ [ model.uploadNote ])
+            , note theme
+                "Real pickers and XHR need JS — simulated per the port's caller-owned contract: the trigger click appends a fake pending file (pendingFile + appendFile), the ticker walks the mark* state machine (Uploading → Finished, or Error for broken-*.zip to drive the retry button), and onRemove / onRetry / onPreview / onDownload carry file ids."
+            ]
+        ]
 
 
 uploadLiveSection : Model -> Theme -> Element Msg
@@ -3015,7 +3150,7 @@ uploadLiveSection model theme =
     section theme
         "Upload"
         "A file trigger over a caller-owned file list — pick/drag, upload state and thumbnails are the caller's to own."
-        (uploadRows theme ++ [ uploadLiveRow model theme ])
+        (uploadRows theme ++ [ uploadAbstractRow model theme, uploadLiveRow model theme ])
 
 
 

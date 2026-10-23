@@ -46,9 +46,14 @@ oracle-round divergences (tasks/recon/live-oracle.md):
     family's twin demo resets to page 1 instead. Clamp is the upstream-
     faithful recipe.
 
-  - **Anchor / BackTop** — scroll position is model state (`activeHref` /
-    `scrollTop`); scroll buttons stand in for the scroll listener, the
-    threshold is upstream's default visibility height (180px).
+  - **Anchor** — scroll position is model state (`activeHref`); scroll buttons
+    stand in for the scroll listener.
+
+  - **BackTop** — the port is pure, so the caller owns `show`/`onClick`/offsets;
+    the live demo wires them to a REAL scrolling container: an `on "scroll"`
+    listener feeds the model's scrollTop, `show = scrollTop >= 180` (upstream's
+    default visibility height), and the click scrolls the container back to
+    top via `Browser.Dom.setViewportOf` (Elm's write-only `scrollTop` seam).
 
   - **Split** — `Options` carries no drag channels at all (no
     `onDragStateChange` / `onMousedown` seam), and real pointer tracking needs
@@ -60,8 +65,12 @@ oracle-round divergences (tasks/recon/live-oracle.md):
 
 -}
 
+import Browser.Dom
 import Element exposing (Element)
+import Html
 import Html.Attributes as HA
+import Html.Events as HE
+import Json.Decode
 import NUI.Affix as Affix
 import NUI.Anchor as Anchor
 import NUI.BackTop as BackTop
@@ -75,6 +84,7 @@ import NUI.Tabs as Tabs
 import NUI.Theme exposing (Theme)
 import NUI.Types as T
 import Showcase exposing (chip, demoBox, demoRow, section, starIcon)
+import Task
 
 
 
@@ -176,30 +186,33 @@ type Msg
     | WizardNext
     | WizardJump Int
     | AnchorGo String
-    | ScrollBy Int
+    | ScrollTo Float
+    | NoOp
     | BackTopPress
     | SplitNudge Float
     | SplitReset
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         -- The port documents that a close click also fires onChange (no
         -- stopPropagation in Elm), so only switch to tabs that still exist —
         -- whichever order the two messages arrive in, closing wins.
         TabChange name ->
-            if List.any (\t -> t.name == name) model.tabs then
+            ( if List.any (\t -> t.name == name) model.tabs then
                 { model | activeTab = name }
 
-            else
+              else
                 model
+            , Cmd.none
+            )
 
         -- Upstream's addable demo reassigns the value only when the closed
         -- tab IS the active one — closing a background tab never moves the
         -- selection (oracle S1).
         TabClose name ->
-            { model
+            ( { model
                 | tabs = List.filter (\t -> t.name /= name) model.tabs
                 , activeTab =
                     if model.activeTab == name then
@@ -207,70 +220,80 @@ update msg model =
 
                     else
                         model.activeTab
-            }
+              }
+            , Cmd.none
+            )
 
         TabAdd ->
             let
                 name =
                     "tab-" ++ String.fromInt model.tabCounter
             in
-            { model
+            ( { model
                 | tabs = model.tabs ++ [ { name = name, title = "Tab " ++ String.fromInt model.tabCounter, closable = True } ]
                 , activeTab = name
                 , tabCounter = model.tabCounter + 1
-            }
+              }
+            , Cmd.none
+            )
 
         -- Accordion = at most one open (a single-name expandedNames, the port's
         -- documented recipe); clicking the open panel closes it.
         AccordionToggle name ->
-            { model
+            ( { model
                 | accordionNames =
                     if List.member name model.accordionNames then
                         []
 
                     else
                         [ name ]
-            }
+              }
+            , Cmd.none
+            )
 
         MultiToggle name ->
-            { model
+            ( { model
                 | multiNames =
                     if List.member name model.multiNames then
                         List.filter ((/=) name) model.multiNames
 
                     else
                         model.multiNames ++ [ name ]
-            }
+              }
+            , Cmd.none
+            )
 
         MenuSelect key ->
-            { model | menuValue = Just key }
+            ( { model | menuValue = Just key }, Cmd.none )
 
         -- The view already applies Menu.toggleExpanded (upstream toggleExpand)
         -- before emitting — store the whole new list, no re-derivation.
         MenuExpanded keys ->
-            { model | menuExpanded = keys }
+            ( { model | menuExpanded = keys }, Cmd.none )
 
         MenuReveal ->
-            { model
+            ( { model
                 | menuExpanded =
                     Menu.expandTo False
                         menuOptions
                         (Maybe.withDefault "" model.menuValue)
                         model.menuExpanded
-            }
+              }
+            , Cmd.none
+            )
 
         PageSet page ->
-            { model | page = page, jumper = String.fromInt page }
+            ( { model | page = page, jumper = String.fromInt page }, Cmd.none )
 
         PageSizeSet size ->
             let
                 page =
                     min model.page (Pagination.pageCount { itemCount = demoItemCount, pageSize = size })
             in
-            { model | pageSize = size, page = page, jumper = String.fromInt page }
+            ( { model | pageSize = size, page = page, jumper = String.fromInt page }, Cmd.none )
 
         JumperInput text ->
-            { model | jumper = text }
+            ( { model | jumper = text }, Cmd.none )
 
         -- The port has no change event on the jumper input, so committing the
         -- jump is the caller's concern (documented gap) — the Go button is it.
@@ -282,34 +305,44 @@ update msg model =
                         page =
                             clamp 1 (Pagination.pageCount { itemCount = demoItemCount, pageSize = model.pageSize }) target
                     in
-                    { model | page = page, jumper = "" }
+                    ( { model | page = page, jumper = "" }, Cmd.none )
 
                 Nothing ->
-                    model
+                    ( model, Cmd.none )
 
         WizardPrev ->
-            { model | wizardStep = max 1 (model.wizardStep - 1) }
+            ( { model | wizardStep = max 1 (model.wizardStep - 1) }, Cmd.none )
 
         WizardNext ->
-            { model | wizardStep = min (List.length wizardTitles) (model.wizardStep + 1) }
+            ( { model | wizardStep = min (List.length wizardTitles) (model.wizardStep + 1) }, Cmd.none )
 
         WizardJump step ->
-            { model | wizardStep = clamp 1 (List.length wizardTitles) step }
+            ( { model | wizardStep = clamp 1 (List.length wizardTitles) step }, Cmd.none )
 
         AnchorGo href ->
-            { model | activeHref = href }
+            ( { model | activeHref = href }, Cmd.none )
 
-        ScrollBy delta ->
-            { model | scrollTop = max 0 (model.scrollTop + delta) }
+        -- A real container scroll: the DOM reports its scrollTop, the model
+        -- stores it, `show = scrollTop >= 180` decides the button.
+        ScrollTo y ->
+            ( { model | scrollTop = round y }, Cmd.none )
 
+        -- The click: scrollTop back to 0 in the model AND the real container
+        -- scrolled to top via Browser.Dom.setViewportOf (Elm's write-only
+        -- `scrollTop` seam — Display's Scrollbar demo uses the same recipe).
         BackTopPress ->
-            { model | scrollTop = 0 }
+            ( { model | scrollTop = 0 }
+            , Task.attempt (\_ -> NoOp) (Browser.Dom.setViewportOf scrollContainerId 0 0)
+            )
 
         SplitNudge delta ->
-            { model | splitRatio = clamp 0.1 0.9 (model.splitRatio + delta) }
+            ( { model | splitRatio = clamp 0.1 0.9 (model.splitRatio + delta) }, Cmd.none )
 
         SplitReset ->
-            { model | splitRatio = 0.3 }
+            ( { model | splitRatio = 0.3 }, Cmd.none )
+
+        NoOp ->
+            ( model, Cmd.none )
 
 
 {-| After closing `name`, activate its neighbour: the tab that took its place,
@@ -563,19 +596,31 @@ menuOptions =
 
 paginationRows : Theme -> List (Element msg)
 paginationRows theme =
-    [ Pagination.view theme { pgD | itemCount = Just 153, currentPage = 2 } []
-    , Pagination.view theme { pgD | itemCount = Just 153, currentPage = 6 } []
-    , Pagination.view theme { pgD | itemCount = Just 42, currentPage = 3, simple = True } []
-    , Pagination.view theme
-        { pgD
-            | itemCount = Just 500
-            , currentPage = 12
-            , showQuickJumper = True
-            , jumperValue = "12"
-            , suffix = Just (Element.text "items")
-        }
-        []
-    , Pagination.view theme { pgD | itemCount = Just 90, currentPage = 4, disabled = True } []
+    [ demoRow theme
+        "nav-032"
+        "Basic (page windows)"
+        [ Pagination.view theme { pgD | itemCount = Just 153, currentPage = 2 } []
+        , Pagination.view theme { pgD | itemCount = Just 153, currentPage = 6 } []
+        , Pagination.view theme { pgD | itemCount = Just 42, currentPage = 3, simple = True } []
+        ]
+    , demoRow theme
+        "nav-033"
+        "Jumper + suffix"
+        [ Pagination.view theme
+            { pgD
+                | itemCount = Just 500
+                , currentPage = 12
+                , showQuickJumper = True
+                , jumperValue = "12"
+                , suffix = Just (Element.text "items")
+            }
+            []
+        ]
+    , demoRow theme
+        "nav-034"
+        "Disabled"
+        [ Pagination.view theme { pgD | itemCount = Just 90, currentPage = 4, disabled = True } []
+        ]
     ]
 
 
@@ -646,13 +691,17 @@ paginationLiveSection model theme =
 
 splitRows : Theme -> List (Element msg)
 splitRows theme =
-    [ Element.el [ Element.height (Element.px 120), Element.width Element.fill ]
-        (Split.view theme
-            { splitD
-                | pane1 = [ Element.el [ Element.padding 8 ] (Element.text "Pane 1") ]
-                , pane2 = [ Element.el [ Element.padding 8 ] (Element.text "Pane 2") ]
-            }
-        )
+    [ demoRow theme
+        "nav-028"
+        "Basic (default ratio)"
+        [ Element.el [ Element.height (Element.px 120), Element.width Element.fill ]
+            (Split.view theme
+                { splitD
+                    | pane1 = [ Element.el [ Element.padding 8 ] (Element.text "Pane 1") ]
+                    , pane2 = [ Element.el [ Element.padding 8 ] (Element.text "Pane 2") ]
+                }
+            )
+        ]
     ]
 
 
@@ -698,11 +747,15 @@ splitLiveSection model theme =
 
 stepsRows : Theme -> List (Element msg)
 stepsRows theme =
-    [ Steps.view theme
-        { stepsD | current = Just 2 }
-        [ { stepsItem | title = Just "First", description = Just "Details" }
-        , { stepsItem | title = Just "Second" }
-        , { stepsItem | title = Just "Third" }
+    [ demoRow theme
+        "nav-029"
+        "Basic (current = 2)"
+        [ Steps.view theme
+            { stepsD | current = Just 2 }
+            [ { stepsItem | title = Just "First", description = Just "Details" }
+            , { stepsItem | title = Just "Second" }
+            , { stepsItem | title = Just "Third" }
+            ]
         ]
     ]
 
@@ -762,32 +815,54 @@ backTopRows theme =
     [ demoBox theme
         "nav-004"
         160
-        (Element.el [ Element.padding 12 ]
-            (BackTop.view theme { backTopD | show = True } [ Element.text "Up" ])
+        (Element.column
+            [ Element.padding 12, Element.width Element.fill ]
+            [ Element.paragraph []
+                [ Element.text "Two pinned specimens: the default arrow icon (default right/bottom 40px) and a custom slot with tuned offsets. `show = True` keeps them mounted; hover for the shadow/hover states. The box is the containing block — the buttons pin to its bottom-right corner."
+                ]
+            , BackTop.view theme { backTopD | show = True } []
+            , BackTop.view theme
+                { backTopD | show = True, right = "112px", bottom = "40px" }
+                [ Element.text "Up" ]
+            ]
         )
     ]
 
 
 backTopSection : Theme -> Element msg
 backTopSection theme =
-    section theme "BackTop" "A fixed back-to-top button (the scroll state is caller-owned). The preview box is the containing block — the button pins to its corner." (backTopRows theme)
+    section theme "BackTop" "A fixed back-to-top button (the scroll state is caller-owned). The preview box is the containing block — the button pins to its corner. This specimen shows the default arrow and a custom slot with tuned right/bottom offsets." (backTopRows theme)
 
 
-{-| Live: `#live-backtop` (simulated scrollTop; visible past 180px).
+{-| Live: `#live-backtop` — a REAL scrolling container drives the port's
+caller-owned runtime: the container's `scroll` event feeds the model's
+scrollTop (upstream's scroll listener), `show = scrollTop >= 180` is
+upstream's default visibility height, and the click scrolls the container
+back to top via `Browser.Dom.setViewportOf`. The transformed column is the
+fixed button's containing block — it pins to the scroll box's corner.
 -}
 backTopLiveRow : Model -> Theme -> Element Msg
 backTopLiveRow model theme =
-    let
-        small =
-            { btn | size = T.Small }
-    in
     demoRow theme
         "nav-005"
-        ("BackTop · simulated scroll (visible past " ++ String.fromInt backTopThreshold ++ "px)")
-        [ Element.row [ Element.spacing 12 ]
-            [ Button.view theme { small | onPress = Just (ScrollBy 300) } [ Element.text "Scroll down 300" ]
-            , Button.view theme { small | onPress = Just (ScrollBy -300) } [ Element.text "Scroll up 300" ]
-            , chip theme ("scrollTop: " ++ String.fromInt model.scrollTop ++ " px")
+        ("BackTop · real scroll (visible past " ++ String.fromInt backTopThreshold ++ "px)")
+        [ Element.column
+            [ Element.width (Element.px 460)
+            , Element.spacing 10
+            , Element.htmlAttribute (HA.style "position" "relative")
+            , Element.htmlAttribute (HA.style "transform" "translate(0,0)")
+            ]
+            [ scrollBox
+            , Element.row [ Element.spacing 8 ]
+                [ chip theme ("scrollTop: " ++ String.fromInt model.scrollTop ++ " px")
+                , chip theme
+                    (if model.scrollTop >= backTopThreshold then
+                        "visible — click the corner button to scroll back"
+
+                     else
+                        "hidden — scroll the box down past 180px"
+                    )
+                ]
             , BackTop.view theme
                 { backTopD
                     | show = model.scrollTop >= backTopThreshold
@@ -799,45 +874,93 @@ backTopLiveRow model theme =
         ]
 
 
+{-| The scroll box the button serves: a plain `overflow-y:auto` div whose
+`scroll` events report the real `target.scrollTop` (upstream listens on the
+scroll target; here the listener rides the container itself).
+-}
+scrollBox : Element Msg
+scrollBox =
+    Element.html
+        (Html.div
+            [ HA.id scrollContainerId
+            , HA.style "height" "220px"
+            , HA.style "overflow-y" "auto"
+            , HA.style "border" "1px solid #efeff5"
+            , HA.style "border-radius" "4px"
+            , HA.style "padding" "8px 12px"
+            , HE.on "scroll"
+                (Json.Decode.map ScrollTo
+                    (Json.Decode.at [ "target", "scrollTop" ] Json.Decode.float)
+                )
+            ]
+            (List.range 1 30
+                |> List.map
+                    (\n ->
+                        Html.p
+                            [ HA.style "margin" "0 0 8px 0" ]
+                            [ Html.text
+                                ("Content line "
+                                    ++ String.fromInt n
+                                    ++ " of 30 — keep scrolling; the back-top button appears past 180px and clicking it returns here."
+                                )
+                            ]
+                    )
+            )
+        )
+
+
+scrollContainerId : String
+scrollContainerId =
+    "live-backtop-scroll"
+
+
 backTopLiveSection : Model -> Theme -> Element Msg
 backTopLiveSection model theme =
     section theme
         "BackTop"
-        "A fixed back-to-top button (the scroll state is caller-owned). The preview box is the containing block — the button pins to its corner."
+        "A fixed back-to-top button (the scroll state is caller-owned). The live demo wires it to a real scrolling container: scroll the box down — the button appears past 180px and clicking it scrolls the box back to top."
         (backTopRows theme ++ [ backTopLiveRow model theme ])
 
 
 collapseRows : Theme -> List (Element msg)
 collapseRows theme =
-    [ Collapse.view theme
-        { collapseD | expandedNames = [ "1" ] }
-        [ { collapseItem
-            | name = "1"
-            , title = Just "First panel"
-            , content = [ Element.text "The first panel is expanded by default." ]
-          }
-        , { collapseItem
-            | name = "2"
-            , title = Just "Second panel"
-            , content = [ Element.text "Click the header, the extra or the arrow to toggle." ]
-          }
-        , { collapseItem
-            | name = "3"
-            , title = Just "Disabled panel"
-            , disabled = True
-            , content = [ Element.text "A disabled panel cannot be toggled." ]
-          }
+    [ demoRow theme
+        "nav-030"
+        "Basic (one expanded, disabled panel)"
+        [ Collapse.view theme
+            { collapseD | expandedNames = [ "1" ] }
+            [ { collapseItem
+                | name = "1"
+                , title = Just "First panel"
+                , content = [ Element.text "The first panel is expanded by default." ]
+              }
+            , { collapseItem
+                | name = "2"
+                , title = Just "Second panel"
+                , content = [ Element.text "Click the header, the extra or the arrow to toggle." ]
+              }
+            , { collapseItem
+                | name = "3"
+                , title = Just "Disabled panel"
+                , disabled = True
+                , content = [ Element.text "A disabled panel cannot be toggled." ]
+              }
+            ]
         ]
-    , Collapse.view theme
-        { collapseD
-            | arrowPlacement = Collapse.ArrowRight
-            , displayDirective = Collapse.ShowContent
-        }
-        [ { collapseItem
-            | name = "a"
-            , title = Just "Arrow on the right"
-            , content = [ Element.text "The arrow sits after the title." ]
-          }
+    , demoRow theme
+        "nav-031"
+        "Arrow right (content mounted)"
+        [ Collapse.view theme
+            { collapseD
+                | arrowPlacement = Collapse.ArrowRight
+                , displayDirective = Collapse.ShowContent
+            }
+            [ { collapseItem
+                | name = "a"
+                , title = Just "Arrow on the right"
+                , content = [ Element.text "The arrow sits after the title." ]
+              }
+            ]
         ]
     ]
 
@@ -929,6 +1052,7 @@ tabsRows theme =
         "nav-012"
         "Sizes (small / medium / large)"
         [ Tabs.view theme { tabsD | size = Tabs.Small, value = "one" } tabsItems
+        , Tabs.view theme { tabsD | size = Tabs.Medium, value = "one" } tabsItems
         , Tabs.view theme { tabsD | size = Tabs.Large, value = "one" } tabsItems
         ]
     , demoRow theme

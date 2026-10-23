@@ -2716,6 +2716,26 @@ inputOtpMaskOpts =
     { d | length = 4, mask = True }
 
 
+{-| The `slotInputAttributes` seam: per-index raw attrs onto each built-in
+slot's inner `<input>` (upstream has no `inputProps` prop on `n-input-otp`
+itself — the ids exist for the demo's `Browser.Dom.focus` auto-advance).
+-}
+inputOtpSlotAttrsOpts : InputOtp.Options msg
+inputOtpSlotAttrsOpts =
+    let
+        d =
+            InputOtp.defaults
+    in
+    { d
+        | length = 4
+        , slotInputAttributes =
+            \i ->
+                [ HA.id ("live-input-otp-slot-attrs-" ++ String.fromInt i)
+                , HA.attribute "data-slot" (String.fromInt i)
+                ]
+    }
+
+
 dynamicTagsLiveOpts : DynamicTags.Options msg
 dynamicTagsLiveOpts =
     let
@@ -5268,6 +5288,7 @@ selMenuD =
     , action = Nothing
     , empty = Nothing
     , onToggle = Nothing
+    , renderOption = Nothing
     , scrollbarProps = Nothing
     , transition = Nothing
     , rtl = False
@@ -7921,6 +7942,7 @@ checks =
         , ( "background-color", "#FFF" )
         , ( "width", "100px" )
         , ( "height", "100px" )
+        , ( "box-sizing", "content-box" )
         , ( "--n-border-radius", common.borderRadius )
         ]
         qrVars
@@ -8026,6 +8048,12 @@ checks =
     , eq "input-otp --n-input-width Medium literal 30px" (Just "30px") (lookup "--n-input-width" iotVars)
     , eq "input-otp --n-input-width Large literal 36px" (Just "36px") (lookup "--n-input-width" iotLargeVars)
     , eq "input-otp --n-input-width unaffected by gap override" (Just "30px") (lookup "--n-input-width" iotPxVars)
+    , eq "input-otp defaults.slotInputAttributes = always empty"
+        []
+        (InputOtp.defaults.slotInputAttributes 0)
+    , eq "input-otp cssVarsFor ignores slotInputAttributes"
+        [ "--n-gap", "--n-input-width" ]
+        (InputOtp.cssVarsFor light inputOtpSlotAttrsOpts |> varKeys)
 
     -- 31. NUI.DynamicTags cssVarsFor --------------------------------------------
     , eq "dynamic-tags cssVarsFor has 1 var" 1 (List.length dtVars)
@@ -13836,6 +13864,8 @@ liveNodes =
                     (InputOtp.view Theme.default inputOtpRtlBlockOpts [])
                 , Element.el [ Element.htmlAttribute (HA.id "live-input-otp-mask") ]
                     (InputOtp.view Theme.default inputOtpMaskOpts [])
+                , Element.el [ Element.htmlAttribute (HA.id "live-input-otp-slot-attrs") ]
+                    (InputOtp.view Theme.default inputOtpSlotAttrsOpts [])
                 , Element.el [ Element.htmlAttribute (HA.id "live-dynamic-tags") ]
                     (DynamicTags.view Theme.default dynamicTagsLiveOpts [])
                 , Element.el [ Element.htmlAttribute (HA.id "live-dynamic-tags-input") ]

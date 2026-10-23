@@ -840,303 +840,6 @@ naDuration =
 
 
 
--- VIEW (live demo cells — verbatim from Live/Motion.elm; each lands in a
--- demoRow with its original label, appended to its family section)
-
-
-carouselDemo : Theme -> Model -> Element Msg
-carouselDemo theme model =
-    let
-        opts =
-            carouselOpts model.autoplay
-
-        env =
-            Carousel.envOf opts model.carousel model.carousel.slideCount
-
-        caption =
-            "slide "
-                ++ String.fromInt (env.displayIndex + 1)
-                ++ " / "
-                ++ String.fromInt env.displayTotalView
-                ++ " · real "
-                ++ String.fromInt env.realIndex
-                ++ (if model.carouselPaused then
-                        " · paused"
-
-                    else
-                        ""
-                   )
-                ++ (case model.announce of
-                        Just a ->
-                            " · " ++ a
-
-                        Nothing ->
-                            ""
-                   )
-    in
-    Element.column [ Element.spacing 8 ]
-        [ Element.row [ Element.spacing 12 ]
-            [ Switch.view theme
-                { swD | size = T.Small, value = model.autoplay, onChange = Just ToggleAutoplay }
-                []
-            , Element.text caption
-            ]
-        , carouselBand carSize (Carousel.view theme opts model.carousel slides)
-        ]
-
-
-dragDemo : Theme -> Model -> Element Msg
-dragDemo theme model =
-    Element.column [ Element.spacing 8 ]
-        [ Element.text
-            "Mousedown on the track, move, release — document listeners feed the port's dragStart / dragMove / dragEnd (flick included)."
-        , carouselBand dragSize (Carousel.view theme dragOpts model.drag slides)
-        , Element.text
-            ("drag offset "
-                ++ String.fromFloat model.drag.dragOffset
-                ++ " px"
-                ++ (if model.dragging then
-                        " · dragging"
-
-                    else
-                        ""
-                   )
-            )
-        ]
-
-
-logDemo : Theme -> Model -> Element Msg
-logDemo theme model =
-    Element.column [ Element.spacing 8 ]
-        [ Element.row [ Element.spacing 8 ]
-            [ smallBtn theme "Scroll up 120 px" (LogScrollStep -120)
-            , smallBtn theme "Scroll down 120 px" (LogScrollStep 120)
-            , Element.text
-                ("scrollTop "
-                    ++ String.fromInt (round model.logScrollTop)
-                    ++ " px · "
-                    ++ String.fromInt (List.length model.logLines)
-                    ++ " lines"
-                    ++ (case model.logPending of
-                            Just Log.Top ->
-                                " · loading older…"
-
-                            Just Log.Bottom ->
-                                " · loading newer…"
-
-                            Nothing ->
-                                ""
-                       )
-                )
-            ]
-        , Element.el [ Element.width (Element.px 420) ]
-            (Log.view theme
-                { logD
-                    | lines = model.logLines
-                    , rows = logRows
-                    , loading = model.logPending /= Nothing
-                    , attributes =
-                        [ Element.htmlAttribute (HA.id "live-log")
-                        , Element.htmlAttribute
-                            (HE.on "wheel"
-                                (Decode.map LogWheel (Decode.field "deltaY" Decode.float))
-                            )
-                        ]
-                }
-            )
-        , Element.text "Wheel inside the pane too — the same RequireMoreFrom algebra via Log.wheelEvents."
-        ]
-
-
-countdownDemo : Theme -> Model -> Element Msg
-countdownDemo theme model =
-    Element.column [ Element.spacing 8 ]
-        [ Element.row [ Element.spacing 8 ]
-            [ smallBtn theme "Restart 90 s" CountdownRestart
-            , Element.text (String.fromInt (model.countdown // 1000) ++ " s remaining")
-            ]
-        , Countdown.view theme
-            { countdownD
-                | distance = model.countdown
-                , attributes = [ Element.htmlAttribute (HA.id "live-countdown") ]
-            }
-            []
-        , Countdown.view theme
-            { countdownD
-                | distance = model.countdown
-                , precision = 1
-                , render =
-                    Just
-                        (\info ->
-                            Element.text
-                                (pad2 info.hours ++ "h " ++ pad2 info.minutes ++ "m " ++ pad2 info.seconds ++ "s")
-                        )
-                , attributes = [ Element.htmlAttribute (HA.id "live-countdown-custom") ]
-            }
-            []
-        ]
-
-
-numberDemo : Theme -> Model -> Element Msg
-numberDemo theme model =
-    Element.column [ Element.spacing 8 ]
-        [ Element.row [ Element.spacing 8 ]
-            [ smallBtn theme "Animate to 4,200" (NaTarget 4200)
-            , smallBtn theme "Animate to 120,500" (NaTarget 120500)
-            , smallBtn theme "Animate to 64,000,000" (NaTarget 64000000)
-            , Element.text ("target " ++ String.fromFloat model.naTo)
-            ]
-        , NumberAnimation.view theme
-            { naD
-                | from = model.naFrom
-                , to = model.naTo
-                , duration = naDuration
-                , elapsed = model.naElapsed
-                , precision = 0
-                , showSeparator = True
-                , attributes = [ Element.htmlAttribute (HA.id "live-number-animation") ]
-            }
-            []
-        ]
-
-
-progressDemo : Theme -> Model -> Element Msg
-progressDemo theme model =
-    Element.column [ Element.spacing 8 ]
-        [ Element.row [ Element.spacing 8 ]
-            [ smallBtn theme "− 10" (ProgressDelta -10)
-            , smallBtn theme "+ 10" (ProgressDelta 10)
-            , Switch.view theme
-                { swD | size = T.Small, value = model.processing, onChange = Just ProgressProcessing }
-                []
-            , Element.text (String.fromFloat model.progress ++ " %")
-            ]
-        , Progress.view theme
-            { progD
-                | percentage = model.progress
-                , processing = model.processing
-                , height = Just 12
-                , attributes = [ Element.htmlAttribute (HA.id "live-progress-line") ]
-            }
-            []
-        , Progress.view theme
-            { progD
-                | type_ = Progress.Circle
-                , percentage = model.progress
-                , processing = model.processing
-                , attributes = [ Element.htmlAttribute (HA.id "live-progress-circle") ]
-            }
-            []
-        ]
-
-
-spinDemo : Theme -> Model -> Element Msg
-spinDemo theme model =
-    Element.column [ Element.spacing 8 ]
-        [ Checkbox.view theme
-            { cbD | checked = model.spinShow, onCheck = Just SpinToggle }
-            [ Element.text "Spinning" ]
-        , Spin.view theme
-            { spinD
-                | show = model.spinShow
-                , description = Just (Element.text "Loading")
-                , attributes = [ Element.htmlAttribute (HA.id "live-spin") ]
-            }
-            [ Element.column [ Element.spacing 4 ]
-                [ Element.text "Live region content"
-                , Element.text "The overlay dims it while spinning."
-                ]
-            ]
-        ]
-
-
-skeletonDemo : Theme -> Model -> Element Msg
-skeletonDemo theme model =
-    Element.row [ Element.spacing 16, Element.alignTop ]
-        [ Switch.view theme
-            { swD | size = T.Small, value = model.loaded, onChange = Just SkelToggle }
-            []
-        , if model.loaded then
-            Element.row [ Element.spacing 12 ]
-                [ Element.el
-                    [ Element.width (Element.px 40)
-                    , Element.height (Element.px 40)
-                    , Border.rounded 50
-                    , Bg.color (Element.rgb 0.09 0.63 0.35)
-                    ]
-                    Element.none
-                , Element.column [ Element.spacing 6 ]
-                    [ Element.text "Naive UI for Elm"
-                    , Element.text "100 components, pure state, real motion."
-                    , chip theme "loaded"
-                    ]
-                ]
-
-          else
-            Element.row [ Element.spacing 12 ]
-                [ Skeleton.view theme
-                    { skelD
-                        | circle = True
-                        , width = Just (Skeleton.Px 40)
-                        , height = Just (Skeleton.Px 40)
-                        , attributes = [ Element.htmlAttribute (HA.id "live-skeleton-avatar") ]
-                    }
-                    []
-                , Element.column [ Element.spacing 8 ]
-                    [ Skeleton.view theme
-                        { skelD
-                            | text = True
-                            , width = Just (Skeleton.Px 200)
-                            , attributes = [ Element.htmlAttribute (HA.id "live-skeleton-line-1") ]
-                        }
-                        []
-                    , Skeleton.view theme
-                        { skelD
-                            | text = True
-                            , width = Just (Skeleton.Px 150)
-                            , attributes = [ Element.htmlAttribute (HA.id "live-skeleton-line-2") ]
-                        }
-                        []
-                    , Skeleton.view theme
-                        { skelD
-                            | text = True
-                            , width = Just (Skeleton.Px 100)
-                            , attributes = [ Element.htmlAttribute (HA.id "live-skeleton-line-3") ]
-                        }
-                        []
-                    ]
-                ]
-        ]
-
-
-marqueeDemo : Theme -> Model -> Element Msg
-marqueeDemo theme model =
-    Element.column [ Element.spacing 8 ]
-        [ Element.row [ Element.spacing 8 ]
-            [ Switch.view theme
-                { swD | size = T.Small, value = model.marqueePlay, onChange = Just MarqueeToggle }
-                []
-            , Element.text
-                (if model.marqueePlay then
-                    "running"
-
-                 else
-                    "paused"
-                )
-            ]
-        , Element.el [ Element.width (Element.px 260) ]
-            (Marquee.view theme
-                { marqueeD
-                    | duration = 12
-                    , play = model.marqueePlay
-                    , attributes = [ Element.htmlAttribute (HA.id "live-marquee") ]
-                }
-                [ Element.text "Naive UI for Elm — pure state, real motion — every tick owned by the caller — " ]
-            )
-        ]
-
-
-
 -- CAROUSEL WIRING
 
 
@@ -1216,9 +919,8 @@ slides =
     ]
 
 
-{-| The carousel viewport: a plain 640x260 band (`size`), clipped by
-`overflow: hidden` (the previous lane's fix — the off-band neighbour slides
-must stay clipped).
+{-| The carousel viewport: a plain size-band, clipped by `overflow:
+hidden` (the off-band neighbour slides must stay clipped).
 
 The explicit `min-height` is load-bearing. elm-ui's column-child rule
 `.s.c > .s { min-height: min-content }` applies to this wrapper (a flex item
@@ -1230,6 +932,14 @@ ratio — so min-content = 640, which BEATS the declared `height: 260px`
 Pinning `min-height` to the band height lets the whole `height: 100%` chain
 resolve against the declared band instead of the image's intrinsic size.
 
+Every carousel specimen (the static `spec` rows and the usercontrol demo)
+mounts through this band now — not just the live ones. A width-only wrapper
+left `height: 100%` resolving against auto: fade/card collapsed to 0px
+(their images sit `position:absolute`, out of flow → no intrinsic height),
+slide-effect rows ballooned to height = width (the square 1:1 gif's intrinsic
+ratio against a `height:100%;object-fit:cover` chain), and the vertical row
+stacked its whole 6-slide column (6 × 560px) unclipped.
+
 -}
 carouselBand : Carousel.Size -> Element Msg -> Element Msg
 carouselBand size content =
@@ -1237,7 +947,8 @@ carouselBand size content =
         [ Element.width (Element.px (round size.width))
         , Element.height (Element.px (round size.height))
         , Element.htmlAttribute
-            (HA.attribute "style"
+            (HA.attribute
+                "style"
                 ("overflow:hidden;border-radius:3px;min-height:"
                     ++ String.fromInt (round size.height)
                     ++ "px"
@@ -1502,7 +1213,39 @@ progressLiveSection model theme =
     section theme
         "Progress"
         "Line, circle, dashboard and multiple-circle meters."
-        (progressRows theme ++ [ demoRow theme "mot-006" "Progress · drive" [ progressDemo theme model ] ])
+        (progressRows theme
+            ++ [ demoRow theme
+                    "mot-006"
+                    "Progress · drive"
+                    [ Element.column [ Element.spacing 8 ]
+                        [ Element.row [ Element.spacing 8 ]
+                            [ smallBtn theme "− 10" (ProgressDelta -10)
+                            , smallBtn theme "+ 10" (ProgressDelta 10)
+                            , Switch.view theme
+                                { swD | size = T.Small, value = model.processing, onChange = Just ProgressProcessing }
+                                []
+                            , Element.text (String.fromFloat model.progress ++ " %")
+                            ]
+                        , Progress.view theme
+                            { progD
+                                | percentage = model.progress
+                                , processing = model.processing
+                                , height = Just 12
+                                , attributes = [ Element.htmlAttribute (HA.id "live-progress-line") ]
+                            }
+                            []
+                        , Progress.view theme
+                            { progD
+                                | type_ = Progress.Circle
+                                , percentage = model.progress
+                                , processing = model.processing
+                                , attributes = [ Element.htmlAttribute (HA.id "live-progress-circle") ]
+                            }
+                            []
+                        ]
+                    ]
+               ]
+        )
 
 
 skeletonRows : Theme -> List (Element msg)
@@ -1559,7 +1302,68 @@ skeletonLiveSection model theme =
     section theme
         "Skeleton"
         "Placeholder shimmer for loading content."
-        (skeletonRows theme ++ [ demoRow theme "mot-010" "Skeleton · load" [ skeletonDemo theme model ] ])
+        (skeletonRows theme
+            ++ [ demoRow theme
+                    "mot-010"
+                    "Skeleton · load"
+                    [ Element.row [ Element.spacing 16, Element.alignTop ]
+                        [ Switch.view theme
+                            { swD | size = T.Small, value = model.loaded, onChange = Just SkelToggle }
+                            []
+                        , if model.loaded then
+                            Element.row [ Element.spacing 12 ]
+                                [ Element.el
+                                    [ Element.width (Element.px 40)
+                                    , Element.height (Element.px 40)
+                                    , Border.rounded 50
+                                    , Bg.color (Element.rgb 0.09 0.63 0.35)
+                                    ]
+                                    Element.none
+                                , Element.column [ Element.spacing 6 ]
+                                    [ Element.text "Naive UI for Elm"
+                                    , Element.text "100 components, pure state, real motion."
+                                    , chip theme "loaded"
+                                    ]
+                                ]
+
+                          else
+                            Element.row [ Element.spacing 12 ]
+                                [ Skeleton.view theme
+                                    { skelD
+                                        | circle = True
+                                        , width = Just (Skeleton.Px 40)
+                                        , height = Just (Skeleton.Px 40)
+                                        , attributes = [ Element.htmlAttribute (HA.id "live-skeleton-avatar") ]
+                                    }
+                                    []
+                                , Element.column [ Element.spacing 8 ]
+                                    [ Skeleton.view theme
+                                        { skelD
+                                            | text = True
+                                            , width = Just (Skeleton.Px 200)
+                                            , attributes = [ Element.htmlAttribute (HA.id "live-skeleton-line-1") ]
+                                        }
+                                        []
+                                    , Skeleton.view theme
+                                        { skelD
+                                            | text = True
+                                            , width = Just (Skeleton.Px 150)
+                                            , attributes = [ Element.htmlAttribute (HA.id "live-skeleton-line-2") ]
+                                        }
+                                        []
+                                    , Skeleton.view theme
+                                        { skelD
+                                            | text = True
+                                            , width = Just (Skeleton.Px 100)
+                                            , attributes = [ Element.htmlAttribute (HA.id "live-skeleton-line-3") ]
+                                        }
+                                        []
+                                    ]
+                                ]
+                        ]
+                    ]
+               ]
+        )
 
 
 spinRows : Theme -> List (Element msg)
@@ -1603,7 +1407,29 @@ spinLiveSection model theme =
     section theme
         "Spin"
         "Loading spinners, standalone or wrapping content."
-        (spinRows theme ++ [ demoRow theme "mot-014" "Spin · toggle" [ spinDemo theme model ] ])
+        (spinRows theme
+            ++ [ demoRow theme
+                    "mot-014"
+                    "Spin · toggle"
+                    [ Element.column [ Element.spacing 8 ]
+                        [ Checkbox.view theme
+                            { cbD | checked = model.spinShow, onCheck = Just SpinToggle }
+                            [ Element.text "Spinning" ]
+                        , Spin.view theme
+                            { spinD
+                                | show = model.spinShow
+                                , description = Just (Element.text "Loading")
+                                , attributes = [ Element.htmlAttribute (HA.id "live-spin") ]
+                            }
+                            [ Element.column [ Element.spacing 4 ]
+                                [ Element.text "Live region content"
+                                , Element.text "The overlay dims it while spinning."
+                                ]
+                            ]
+                        ]
+                    ]
+               ]
+        )
 
 
 marqueeRows : Theme -> List (Element msg)
@@ -1631,7 +1457,36 @@ marqueeLiveSection model theme =
     section theme
         "Marquee"
         "Scrolling content (duration is caller-owned)."
-        (marqueeRows theme ++ [ demoRow theme "mot-015" "Marquee · play" [ marqueeDemo theme model ] ])
+        (marqueeRows theme
+            ++ [ demoRow theme
+                    "mot-015"
+                    "Marquee · play"
+                    [ Element.column [ Element.spacing 8 ]
+                        [ Element.row [ Element.spacing 8 ]
+                            [ Switch.view theme
+                                { swD | size = T.Small, value = model.marqueePlay, onChange = Just MarqueeToggle }
+                                []
+                            , Element.text
+                                (if model.marqueePlay then
+                                    "running"
+
+                                 else
+                                    "paused"
+                                )
+                            ]
+                        , Element.el [ Element.width (Element.px 260) ]
+                            (Marquee.view theme
+                                { marqueeD
+                                    | duration = 12
+                                    , play = model.marqueePlay
+                                    , attributes = [ Element.htmlAttribute (HA.id "live-marquee") ]
+                                }
+                                [ Element.text "Naive UI for Elm — pure state, real motion — every tick owned by the caller — " ]
+                            )
+                        ]
+                    ]
+               ]
+        )
 
 
 countdownRows : Theme -> List (Element msg)
@@ -1673,7 +1528,38 @@ countdownLiveSection model theme =
     section theme
         "Countdown"
         "Remaining time (the caller owns the clock)."
-        (countdownRows theme ++ [ demoRow theme "mot-018" "Countdown · live clock" [ countdownDemo theme model ] ])
+        (countdownRows theme
+            ++ [ demoRow theme
+                    "mot-018"
+                    "Countdown · live clock"
+                    [ Element.column [ Element.spacing 8 ]
+                        [ Element.row [ Element.spacing 8 ]
+                            [ smallBtn theme "Restart 90 s" CountdownRestart
+                            , Element.text (String.fromInt (model.countdown // 1000) ++ " s remaining")
+                            ]
+                        , Countdown.view theme
+                            { countdownD
+                                | distance = model.countdown
+                                , attributes = [ Element.htmlAttribute (HA.id "live-countdown") ]
+                            }
+                            []
+                        , Countdown.view theme
+                            { countdownD
+                                | distance = model.countdown
+                                , precision = 1
+                                , render =
+                                    Just
+                                        (\info ->
+                                            Element.text
+                                                (pad2 info.hours ++ "h " ++ pad2 info.minutes ++ "m " ++ pad2 info.seconds ++ "s")
+                                        )
+                                , attributes = [ Element.htmlAttribute (HA.id "live-countdown-custom") ]
+                            }
+                            []
+                        ]
+                    ]
+               ]
+        )
 
 
 numberAnimationRows : Theme -> List (Element msg)
@@ -1724,7 +1610,32 @@ numberAnimationLiveSection model theme =
     section theme
         "Number Animation"
         "A tweened number (the clock is caller-owned — pass `elapsed`). No classes or variables of its own."
-        (numberAnimationRows theme ++ [ demoRow theme "mot-021" "NumberAnimation · tween" [ numberDemo theme model ] ])
+        (numberAnimationRows theme
+            ++ [ demoRow theme
+                    "mot-021"
+                    "NumberAnimation · tween"
+                    [ Element.column [ Element.spacing 8 ]
+                        [ Element.row [ Element.spacing 8 ]
+                            [ smallBtn theme "Animate to 4,200" (NaTarget 4200)
+                            , smallBtn theme "Animate to 120,500" (NaTarget 120500)
+                            , smallBtn theme "Animate to 64,000,000" (NaTarget 64000000)
+                            , Element.text ("target " ++ String.fromFloat model.naTo)
+                            ]
+                        , NumberAnimation.view theme
+                            { naD
+                                | from = model.naFrom
+                                , to = model.naTo
+                                , duration = naDuration
+                                , elapsed = model.naElapsed
+                                , precision = 0
+                                , showSeparator = True
+                                , attributes = [ Element.htmlAttribute (HA.id "live-number-animation") ]
+                            }
+                            []
+                        ]
+                    ]
+               ]
+        )
 
 
 carouselRows : Model -> Theme -> List (Element Msg)
@@ -1732,8 +1643,7 @@ carouselRows model theme =
     let
         spec : SpecCarRow -> Element Msg
         spec row =
-            Element.el [ Element.width (Element.px (round (specCarSize row).width)) ]
-                (Carousel.view theme (specCarOpts row) (specCarGet row model) slides)
+            carouselBand (specCarSize row) (Carousel.view theme (specCarOpts row) (specCarGet row model) slides)
 
         customD =
             let
@@ -1781,7 +1691,7 @@ carouselRows model theme =
     , demoRow theme
         "mot-029"
         "Custom (usercontrol) + renderDots"
-        [ Element.el [ Element.width (Element.px 920) ]
+        [ carouselBand { width = 920, height = 360 }
             (Carousel.view theme
                 customD
                 (Carousel.resize customD { width = 920, height = 360 } (Carousel.init customD 4))
@@ -1801,8 +1711,67 @@ carouselLiveSection model theme =
         "Carousel"
         "A slide track over a caller-owned clock and measurement — autoplay, drag and resize are the caller's to own."
         (carouselRows model theme
-            ++ [ demoRow theme "mot-031" "Carousel · autoplay + arrows + dots + wheel" [ carouselDemo theme model ]
-               , demoRow theme "mot-032" "Carousel · pointer drag" [ dragDemo theme model ]
+            ++ [ demoRow theme
+                    "mot-031"
+                    "Carousel · autoplay + arrows + dots + wheel"
+                    [ let
+                        opts =
+                            carouselOpts model.autoplay
+
+                        env =
+                            Carousel.envOf opts model.carousel model.carousel.slideCount
+
+                        caption =
+                            "slide "
+                                ++ String.fromInt (env.displayIndex + 1)
+                                ++ " / "
+                                ++ String.fromInt env.displayTotalView
+                                ++ " · real "
+                                ++ String.fromInt env.realIndex
+                                ++ (if model.carouselPaused then
+                                        " · paused"
+
+                                    else
+                                        ""
+                                   )
+                                ++ (case model.announce of
+                                        Just a ->
+                                            " · " ++ a
+
+                                        Nothing ->
+                                            ""
+                                   )
+                      in
+                      Element.column [ Element.spacing 8 ]
+                        [ Element.row [ Element.spacing 12 ]
+                            [ Switch.view theme
+                                { swD | size = T.Small, value = model.autoplay, onChange = Just ToggleAutoplay }
+                                []
+                            , Element.text caption
+                            ]
+                        , carouselBand carSize (Carousel.view theme opts model.carousel slides)
+                        ]
+                    ]
+               , demoRow theme
+                    "mot-032"
+                    "Carousel · pointer drag"
+                    [ Element.column [ Element.spacing 8 ]
+                        [ Element.text
+                            "Mousedown on the track, move, release — document listeners feed the port's dragStart / dragMove / dragEnd (flick included)."
+                        , carouselBand dragSize (Carousel.view theme dragOpts model.drag slides)
+                        , Element.text
+                            ("drag offset "
+                                ++ String.fromFloat model.drag.dragOffset
+                                ++ " px"
+                                ++ (if model.dragging then
+                                        " · dragging"
+
+                                    else
+                                        ""
+                                   )
+                            )
+                        ]
+                    ]
                ]
         )
 
@@ -1854,7 +1823,52 @@ logLiveSection model theme =
     section theme
         "Log"
         "A scrolling log pane (Code + Scrollbar + loader) — scrolling, wheel and load events are the caller's to own."
-        (logSectionRows theme ++ [ demoRow theme "mot-035" "Log · scroll + load" [ logDemo theme model ] ])
+        (logSectionRows theme
+            ++ [ demoRow theme
+                    "mot-035"
+                    "Log · scroll + load"
+                    [ Element.column [ Element.spacing 8 ]
+                        [ Element.row [ Element.spacing 8 ]
+                            [ smallBtn theme "Scroll up 120 px" (LogScrollStep -120)
+                            , smallBtn theme "Scroll down 120 px" (LogScrollStep 120)
+                            , Element.text
+                                ("scrollTop "
+                                    ++ String.fromInt (round model.logScrollTop)
+                                    ++ " px · "
+                                    ++ String.fromInt (List.length model.logLines)
+                                    ++ " lines"
+                                    ++ (case model.logPending of
+                                            Just Log.Top ->
+                                                " · loading older…"
+
+                                            Just Log.Bottom ->
+                                                " · loading newer…"
+
+                                            Nothing ->
+                                                ""
+                                       )
+                                )
+                            ]
+                        , Element.el [ Element.width (Element.px 420) ]
+                            (Log.view theme
+                                { logD
+                                    | lines = model.logLines
+                                    , rows = logRows
+                                    , loading = model.logPending /= Nothing
+                                    , attributes =
+                                        [ Element.htmlAttribute (HA.id "live-log")
+                                        , Element.htmlAttribute
+                                            (HE.on "wheel"
+                                                (Decode.map LogWheel (Decode.field "deltaY" Decode.float))
+                                            )
+                                        ]
+                                }
+                            )
+                        , Element.text "Wheel inside the pane too — the same RequireMoreFrom algebra via Log.wheelEvents."
+                        ]
+                    ]
+               ]
+        )
 
 
 {-| The family body in Main.body order — live variants for every section

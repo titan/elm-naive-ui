@@ -1303,7 +1303,22 @@ prefixNode theme _ option checked indeterminate disabled =
             NUI.Checkbox.defaults
     in
     Element.el
-        [ I.classes [ "n-cascader-option__prefix" ] ]
+        [ I.classes [ "n-cascader-option__prefix" ]
+
+        -- Upstream's `__prefix` is a plain `div.n-cascader-option__prefix`
+        -- whose ONLY box rules are Naive UI's own (`display:flex;
+        -- justify-content:center`, 4 class selectors). The port renders it
+        -- as an elm-ui `Element.el`, which also tags on the `.s.e` layout
+        -- classes; elm-ui's `.s.e { display:flex; flex-direction:column }
+        -- (one class selector, but it comes LAST in the sheet, so it wins
+        -- the tie against Naive UI's earlier same-specificity rule) flips
+        -- the main axis to vertical — `justify-content:center` then centers
+        -- the 16px checkbox vertically while leaving it glued to the
+        -- slot's LEFT edge (0px inset in the 32px prefix; upstream is 8px).
+        -- Inline `flex-direction: row` (inline beats both stylesheets)
+        -- restores upstream's axis so the centering is horizontal, as shipped.
+        , Element.htmlAttribute (HA.style "flex-direction" "row")
+        ]
         (NUI.Checkbox.view theme
             { checkboxDefaults
                 | focusable = False
@@ -1323,7 +1338,14 @@ cascade checkboxes) the checked checkmark with its transition phase.
 suffixNode : MenuOptions msg -> Option -> Bool -> Element msg
 suffixNode mopts option checked =
     Element.el
-        [ I.classes [ "n-cascader-option__suffix" ] ]
+        [ I.classes [ "n-cascader-option__suffix" ]
+
+        -- Same `.s.e` column-axis flip as the prefix above: the suffix's
+        -- `justify-content:center` must run on the horizontal axis, or the
+        -- 16px arrow/checkmark hugs the slot's left edge (upstream: 8px in
+        -- the 32px suffix).
+        , Element.htmlAttribute (HA.style "flex-direction" "row")
+        ]
         (Element.el
             [ I.classes [ "n-cascader-option-icon-placeholder" ] ]
             (if not (isLeaf option) then

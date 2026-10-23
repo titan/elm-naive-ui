@@ -48,10 +48,16 @@ Simulated runtime (the port's documented caller-owned concerns):
 
 Oracle-round divergences (tasks/recon/live-oracle.md):
 
-  - [oracle D] **AutoComplete hides the empty-state menu** — `acMenuOpen`
-    requires non-empty matches, so the menu's configured `empty` slot is
-    unreachable (upstream shows the empty-state menu while focused with
-    text). The Mention row in this module mounts its `empty` slot correctly.
+  - [oracle D — resolved 2026-11] **AutoComplete hides the empty-state menu**
+    — `acMenuOpen` required non-empty matches, so the menu's configured
+    `empty` slot was unreachable (upstream shows the empty-state menu while
+    focused with text). Fixed: the gate now mirrors the frozen upstream
+    formula (`AutoComplete.tsx:193-207` — `showOptions && canBeActivated &&
+    (showEmpty || options non-empty)`, `canBeActivated` true on focus/input,
+    false on blur / outside click / select) through `acGate`, and the live
+    row's second cell runs it with `showEmpty = True` (`onFocus`/`onBlur`
+    seams added to `NUI.AutoComplete.Options` for `canBeActivated`). The
+    Mention row's `empty` slot was already correct.
   - [oracle D] **dpSingleCloses re-runs `singleDateClick` against
     `Single Nothing`** — sound, because the helper's `close` is type-only
     (closes for Date/Week/Year panels) and the demo discards the re-derived
@@ -90,9 +96,11 @@ import Browser.Events
 import Element exposing (Element)
 import Element.Border as Border
 import Element.Events
+import Element.Font as Font
 import Html.Attributes as HA
 import Json.Decode
 import NUI.AutoComplete as AutoComplete
+import NUI.Avatar as Avatar
 import NUI.BaseSelection as BaseSelection
 import NUI.Button as Button
 import NUI.Cascader as Cascader
@@ -137,6 +145,10 @@ type alias Model =
     , tsPending : Maybe String
     , acText : String
     , acFocused : Bool
+    , specAcShowEmpty : String
+    , specAcShowEmptyFocused : Bool
+    , specAcDefaultGate : String
+    , specAcDefaultGateFocused : Bool
     , mnText : String
     , dpShow : Bool
     , dpValue : DatePicker.Value
@@ -180,8 +192,13 @@ type alias Model =
     , specTsMulti : SelectMenu.Value
     , specTsFilter : SelectMenu.Value
     , specAcBasic : String
+    , specAcCustom : Maybe String
     , specAcGroup : String
     , specAcClearable : String
+    , specAcCommit : String
+    , specAcCommitFocused : Bool
+    , specAcAppend : String
+    , specAcAppendFocused : Bool
     , specMnBasic : String
     , specMnBasic2 : String
     , specMnTextarea : String
@@ -212,6 +229,10 @@ init =
     , tsPending = Nothing
     , acText = ""
     , acFocused = False
+    , specAcShowEmpty = ""
+    , specAcShowEmptyFocused = False
+    , specAcDefaultGate = ""
+    , specAcDefaultGateFocused = False
     , mnText = "Ping "
     , dpShow = False
     , dpValue = DatePicker.Single Nothing
@@ -255,8 +276,13 @@ init =
     , specTsMulti = SelectMenu.Multiple [ "o1-1", "o2" ]
     , specTsFilter = SelectMenu.Single (Just "o1-3")
     , specAcBasic = "Dri"
+    , specAcCustom = Nothing
     , specAcGroup = "In My Life"
     , specAcClearable = "clear me"
+    , specAcCommit = ""
+    , specAcCommitFocused = False
+    , specAcAppend = "Dri"
+    , specAcAppendFocused = False
     , specMnBasic = "@710"
     , specMnBasic2 = ""
     , specMnTextarea = "A textarea.\nPing @710mechgy here."
@@ -293,7 +319,15 @@ type Msg
     | TreeTagDeleted String
     | TreeCleared
     | AcTyped String
+    | AcFocused
+    | AcBlurred
     | AcPicked String
+    | SpecAcShowEmptyTyped String
+    | SpecAcShowEmptyFocused
+    | SpecAcShowEmptyBlurred
+    | SpecAcDefaultGateTyped String
+    | SpecAcDefaultGateFocused
+    | SpecAcDefaultGateBlurred
     | MnTyped String
     | MnPicked String
     | DpFocused
@@ -345,6 +379,14 @@ type Msg
     | SpecAcGroupTyped String
     | SpecAcGroupPicked String
     | SpecAcClearableTyped String
+    | SpecAcCommitTyped String
+    | SpecAcCommitFocused
+    | SpecAcCommitBlurred
+    | SpecAcCommitPicked String
+    | SpecAcAppendTyped String
+    | SpecAcAppendFocused
+    | SpecAcAppendBlurred
+    | SpecAcAppendPicked String
     | SpecAcCustomPicked String
     | SpecMnBasicTyped String
     | SpecMnBasicPicked String
@@ -482,6 +524,31 @@ updatePure msg model =
         AcTyped text ->
             -- focused-typed: on with the input, off after any select
             { model | acText = text, acFocused = True }
+
+        AcFocused ->
+            -- upstream handleFocus: canBeActivated = true (AutoComplete.tsx:298)
+            { model | acFocused = True }
+
+        AcBlurred ->
+            { model | acFocused = False }
+
+        SpecAcShowEmptyTyped text ->
+            { model | specAcShowEmpty = text, specAcShowEmptyFocused = True }
+
+        SpecAcShowEmptyFocused ->
+            { model | specAcShowEmptyFocused = True }
+
+        SpecAcShowEmptyBlurred ->
+            { model | specAcShowEmptyFocused = False }
+
+        SpecAcDefaultGateTyped text ->
+            { model | specAcDefaultGate = text, specAcDefaultGateFocused = True }
+
+        SpecAcDefaultGateFocused ->
+            { model | specAcDefaultGateFocused = True }
+
+        SpecAcDefaultGateBlurred ->
+            { model | specAcDefaultGateFocused = False }
 
         AcPicked key ->
             -- the commit is the option's LABEL (upstream's label commit)
@@ -872,9 +939,43 @@ updatePure msg model =
         SpecAcClearableTyped text ->
             { model | specAcClearable = text }
 
+        SpecAcCommitTyped text ->
+            -- focused-typed: on with the input, off after any select
+            { model | specAcCommit = text, specAcCommitFocused = True }
+
+        SpecAcCommitFocused ->
+            { model | specAcCommitFocused = True }
+
+        SpecAcCommitBlurred ->
+            { model | specAcCommitFocused = False }
+
+        SpecAcCommitPicked _ ->
+            -- the clearAfterSelect commit: onSelect fires, then the value
+            -- clears to "" (the input empties and the hint returns); the
+            -- select also deactivates (canBeActivated false)
+            { model | specAcCommit = "", specAcCommitFocused = False }
+
+        SpecAcAppendTyped text ->
+            { model | specAcAppend = text, specAcAppendFocused = True }
+
+        SpecAcAppendFocused ->
+            { model | specAcAppendFocused = True }
+
+        SpecAcAppendBlurred ->
+            { model | specAcAppendFocused = False }
+
+        SpecAcAppendPicked key ->
+            -- the append commit: no clearAfterSelect — the label appends
+            -- onto the typed value (value ++ label); select deactivates
+            { model
+                | specAcAppend = model.specAcAppend ++ Maybe.withDefault key (selectLabel key songOptions)
+                , specAcAppendFocused = False
+            }
+
         SpecAcCustomPicked key ->
-            -- the label commit for the custom-row menu's plain leaf
-            { model | specAcBasic = key }
+            -- the label commit for the custom-row menus (both lanes — the
+            -- plain leaf and the render lane rows — fire this)
+            { model | specAcCustom = Just key }
 
         SpecMnBasicTyped text ->
             { model | specMnBasic = text }
@@ -1847,6 +1948,8 @@ autoCompleteLiveRow model theme =
                 { acD
                     | value = model.acText
                     , onInput = Just AcTyped
+                    , onFocus = Just AcFocused
+                    , onBlur = Just AcBlurred
                     , clearable = True
                     , placeholder = "Type a song…"
                     , attributes = [ Element.htmlAttribute (HA.id "live-autocomplete") ]
@@ -3305,13 +3408,37 @@ treeIsBranch key =
             False
 
 
+{-| The caller-owned show gate, the frozen upstream formula
+(`AutoComplete.tsx:193-207`): `active = showOptions && focused-typed &&
+(showEmpty || options non-empty)`, where `showOptions = getShow ?
+getShow (value || "") : value ≠ ""` and `focused-typed` (`canBeActivated`)
+turns true on focus AND input, false on blur, outside click and any select.
+The live demo runs the default gate (`value ≠ ""`, no `getShow`); the
+showEmpty seam below runs it with `showEmpty = True` so the empty-state
+menu is reachable — the oracle-D divergence, fixed by mounting the menu
+while the gate passes even with zero matches.
+-}
 acMenuOpen : Model -> Bool
 acMenuOpen model =
-    model.acFocused
-        && model.acText
-        /= ""
-        && not
-            (List.isEmpty (acMatches model.acText))
+    acGate model.acFocused model.acText (acMatches model.acText) False
+
+
+acShowEmptyMenuOpen : Model -> Bool
+acShowEmptyMenuOpen model =
+    acGate model.specAcShowEmptyFocused model.specAcShowEmpty (acMatches model.specAcShowEmpty) True
+
+
+acGate : Bool -> String -> List (SelectMenu.Option Msg) -> Bool -> Bool
+acGate focused text options showEmpty =
+    let
+        -- showOptions = getShow ? getShow (value || "") : value ≠ ""
+        -- (the demo runs the default predicate — no getShow)
+        showOptions =
+            text /= ""
+    in
+    showOptions
+        && focused
+        && (showEmpty || not (List.isEmpty options))
 
 
 acMatches : String -> List (SelectMenu.Option Msg)
@@ -3377,8 +3504,12 @@ mnMatches text =
                 mentionOptions
 
 
-{-| The select splice: replace the whole @-run (the "@" included) with the
-picked value plus the separator space — upstream's handleSelect.
+{-| The select splice: replace the @-run's pattern (the text between the
+"@" and the caret) with the picked value plus the separator space —
+upstream's handleSelect, `String.slice 0 (prefixIndex + 1) ++ option.value
+++ separator`. The marker itself STAYS, and the value goes in verbatim:
+the caller passes the option's value as-is (a pre-marked value doubles the
+marker on every pick).
 -}
 spliceMention : String -> String -> String
 spliceMention text value =
@@ -4298,25 +4429,87 @@ autoCompleteRows model theme =
     , demoRow theme
         "pic-036"
         "Show gate (showEmpty + the empty seam)"
-        -- specimen row: the empty seam + placeholder pin (nothing to select)
-        [ AutoComplete.view theme
-            { acD | placeholder = "Type to open", attributes = [ Element.width (Element.px 220) ] }
-        , AutoComplete.menu theme
-            { acMenuD
-                | empty = Just (Empty.view theme emptyD [])
-                , attributes = [ Element.width (Element.px 220) ]
-            }
-            []
+        -- wired: the show gate run live with showEmpty = True — focus +
+        -- type a no-match prefix and the empty-state menu mounts (the
+        -- oracle-D seam, now reachable); blur or clear closes it. The
+        -- second cell keeps the same gate at showEmpty = False: zero
+        -- matches never open the menu (the default formula)
+        [ cell
+            (Element.column [ Element.spacing 6, Element.width Element.fill ]
+                [ AutoComplete.view theme
+                    { acD
+                        | value = model.specAcShowEmpty
+                        , onInput = Just SpecAcShowEmptyTyped
+                        , onFocus = Just SpecAcShowEmptyFocused
+                        , onBlur = Just SpecAcShowEmptyBlurred
+                        , placeholder = "Type to open"
+                        , attributes = [ Element.width (Element.px 200) ]
+                    }
+                , chip theme "showEmpty → the empty menu while focused-typed"
+                , if acShowEmptyMenuOpen model then
+                    AutoComplete.menu theme
+                        { acMenuD
+                            | empty = Just (Empty.view theme emptyD [])
+                            , attributes = [ Element.width (Element.px 200) ]
+                        }
+                        (acMatches model.specAcShowEmpty)
+
+                  else
+                    Element.none
+                ]
+            )
+        , cell
+            (Element.column [ Element.spacing 6, Element.width Element.fill ]
+                [ AutoComplete.view theme
+                    { acD
+                        | value = model.specAcDefaultGate
+                        , onInput = Just SpecAcDefaultGateTyped
+                        , onFocus = Just SpecAcDefaultGateFocused
+                        , onBlur = Just SpecAcDefaultGateBlurred
+                        , placeholder = "No showEmpty"
+                        , attributes = [ Element.width (Element.px 200) ]
+                    }
+                , chip theme "default gate → no menu on zero matches"
+                , if acGate model.specAcDefaultGateFocused model.specAcDefaultGate (acMatches model.specAcDefaultGate) False then
+                    AutoComplete.menu theme
+                        { acMenuD
+                            | empty = Just (Element.text "unreachable")
+                            , attributes = [ Element.width (Element.px 200) ]
+                        }
+                        (acMatches model.specAcDefaultGate)
+
+                  else
+                    Element.none
+                ]
+            )
         ]
     , demoRow theme
         "pic-037"
         "After select (the caller-owned commit)"
-        -- specimen row: the two chips document the commit semantics (the
-        -- inputs themselves stay inert — the live row exercises the loop)
+        -- wired: both inputs type + commit through their song menus — the
+        -- left runs clearAfterSelect (value → ""), the right the append
+        -- commit (value ++ label); the chips document the semantics
         [ cell
             (Element.column [ Element.spacing 6, Element.width Element.fill ]
                 [ AutoComplete.view theme
-                    { acD | placeholder = "clearAfterSelect → \"\"", attributes = [ Element.width (Element.px 200) ] }
+                    { acD
+                        | value = model.specAcCommit
+                        , onInput = Just SpecAcCommitTyped
+                        , onFocus = Just SpecAcCommitFocused
+                        , onBlur = Just SpecAcCommitBlurred
+                        , placeholder = "clearAfterSelect → \"\""
+                        , attributes = [ Element.width (Element.px 200) ]
+                    }
+                , if acGate model.specAcCommitFocused model.specAcCommit (acMatches model.specAcCommit) False then
+                    AutoComplete.menu theme
+                        { acMenuD
+                            | onToggle = Just SpecAcCommitPicked
+                            , attributes = [ Element.width (Element.px 200) ]
+                        }
+                        (acMatches model.specAcCommit)
+
+                  else
+                    Element.none
                 , chip theme "onSelect \"Drive My Car\" → value = \"\""
                 ]
             )
@@ -4324,30 +4517,94 @@ autoCompleteRows model theme =
             (Element.column [ Element.spacing 6, Element.width Element.fill ]
                 [ AutoComplete.view theme
                     { acD
-                        | value = "Dri"
+                        | value = model.specAcAppend
+                        , onInput = Just SpecAcAppendTyped
+                        , onFocus = Just SpecAcAppendFocused
+                        , onBlur = Just SpecAcAppendBlurred
                         , placeholder = "append ⇒ value ++ label"
                         , attributes = [ Element.width (Element.px 200) ]
                     }
+                , if acGate model.specAcAppendFocused model.specAcAppend (acMatches model.specAcAppend) False then
+                    AutoComplete.menu theme
+                        { acMenuD
+                            | onToggle = Just SpecAcAppendPicked
+                            , attributes = [ Element.width (Element.px 200) ]
+                        }
+                        (acMatches model.specAcAppend)
+
+                  else
+                    Element.none
                 , chip theme "onSelect \"Drive My Car\" → \"DriDrive My Car\""
                 ]
             )
         ]
     , demoRow theme
         "pic-038"
-        "Custom rows (renderLabel / renderOption)"
-        -- wired: the custom-row menu's leaf still selects (commit → the
-        -- basic input's value)
+        "Custom rows (the two render lanes)"
+        -- wired: both menus commit through SpecAcCustomPicked (the
+        -- `pending:` chip) — the render lane rows are selectable exactly
+        -- like the plain leaf (upstream SelectOption.tsx: the option shell
+        -- builds around a render row; `renderOption` then receives that
+        -- built node and its return REPLACES the row). Cell 1 = the
+        -- rawNode.render lane. Cell 2 = the renderOption lane
+        -- (`MenuOptions.renderOption` appends a caption under the same row).
         [ AutoComplete.menu theme
             { acMenuD
                 | onToggle = Just SpecAcCustomPicked
-                , attributes = [ Element.width (Element.px 220) ]
+                , attributes = [ Element.width (Element.px 260) ]
             }
             [ AutoComplete.fromString "A plain row"
             , SelectMenu.Custom
                 { key = "ac-custom"
-                , node = Tag.view theme { tagD | kind = T.Primary } [ Element.text "renderOption row" ]
+                , node =
+                    Element.row [ Element.spacing 10, Element.width Element.fill, Element.paddingXY 8 6 ]
+                        [ Avatar.view theme { avD | size = Avatar.Small, round = True } [ Element.text "R" ]
+                        , Element.column [ Element.spacing 2, Element.centerY ]
+                            [ Element.el [ Font.size 13 ] (Element.text "renderOption row")
+                            , Element.el [ Font.size 11, Font.color (Element.rgb 0.5 0.5 0.5) ] (Element.text "any Element replaces the row")
+                            ]
+                        ]
                 }
             ]
+        , AutoComplete.menu theme
+            { acMenuD
+                | onToggle = Just SpecAcCustomPicked
+                , renderOption =
+                    Just
+                        (\built ->
+                            Element.column [ Element.width Element.fill ]
+                                [ built.node
+                                , Element.el
+                                    [ Element.paddingXY 8 4
+                                    , Font.size 11
+                                    , Font.color (Element.rgb 0.5 0.5 0.5)
+                                    , Border.widthEach { top = 1, bottom = 0, left = 0, right = 0 }
+                                    , Border.color (Element.rgb 0.92 0.92 0.94)
+                                    ]
+                                    (Element.text "renderOption wrapped the row above")
+                                ]
+                        )
+                , attributes = [ Element.width (Element.px 260) ]
+            }
+            [ AutoComplete.fromString "A plain row"
+            , SelectMenu.Custom
+                { key = "ac-custom-2"
+                , node =
+                    Element.row [ Element.spacing 10, Element.width Element.fill, Element.paddingXY 8 6 ]
+                        [ Avatar.view theme { avD | size = Avatar.Small, round = True } [ Element.text "W" ]
+                        , Element.column [ Element.spacing 2, Element.centerY ]
+                            [ Element.el [ Font.size 13 ] (Element.text "renderOption row")
+                            , Element.el [ Font.size 11, Font.color (Element.rgb 0.5 0.5 0.5) ] (Element.text "shell kept — clicks still fire")
+                            ]
+                        ]
+                }
+            ]
+        , case model.specAcCustom of
+            Just key ->
+                chip theme ("pending: " ++ key)
+
+            Nothing ->
+                Element.none
         ]
     ]
 
@@ -4442,7 +4699,9 @@ mentionRows model theme =
         "pic-043"
         "Custom prefix (#@ — the caller gates the option set; the module does no scan)"
         -- wired: the group demo's input types + BOTH mounted menus splice
-        -- into the same run
+        -- into the same run. The option value goes in VERBATIM — the marker
+        -- is the input's, the splice keeps it, so a pre-marked value
+        -- ("#" ++ value) would stack a second "#" on every pick.
         [ cell
             (Element.column [ Element.spacing 6, Element.width Element.fill ]
                 [ Mention.view theme
@@ -4455,7 +4714,7 @@ mentionRows model theme =
                 , chip theme "prefix \"#\" → the tag list"
                 , Mention.menu theme
                     { mnMenuD
-                        | onToggle = Just (\value -> SpecMnGroupTagPicked ("#" ++ value))
+                        | onToggle = Just SpecMnGroupTagPicked
                         , attributes = [ Element.width (Element.px 200) ]
                     }
                     mentionTagOptions
@@ -4473,7 +4732,7 @@ mentionRows model theme =
                 , chip theme "prefix \"@\" → the user list"
                 , Mention.menu theme
                     { mnMenuD
-                        | onToggle = Just (\value -> SpecMnGroupUserPicked ("@" ++ value))
+                        | onToggle = Just SpecMnGroupUserPicked
                         , attributes = [ Element.width (Element.px 200) ]
                     }
                     mentionOptions
@@ -4846,6 +5105,15 @@ acD =
 acMenuD : AutoComplete.MenuOptions msg
 acMenuD =
     AutoComplete.menuDefaults
+
+
+{-| The avatar fixture (General.elm's `avD` convention — a lowercase binding,
+because Elm's record-update syntax `{ expr | field = v }` only parses when
+`expr` starts lowercase; `Avatar.defaults` would parse as a record literal).
+-}
+avD : Avatar.Options msg
+avD =
+    Avatar.defaults
 
 
 mnD : Mention.Options msg

@@ -9765,3 +9765,80 @@ color: var(--n-item-text-color-error);}.nui-root.nui-root .n-upload-file-list .n
     background: var(--n-loading-color-start);
   }
 }
+
+/* 8. Checkbox label line-height (port-added)
+ *
+ * Upstream's `.n-checkbox__label` is a plain div whose raw text node builds
+ * its line box on the component's `--n-label-line-height` (1.6 → 22.4px
+ * @14px) — the same value the box wrapper's `&nbsp;` strut uses, so the
+ * `top: 50%`-centered square and the label glyphs share one vertical center.
+ *
+ * The port's label content arrives as `Element`s, so the text sits inside
+ * elm-ui wrappers (`.s.c`, `.s.t`) that each declare `line-height: 1`: the
+ * half-leading vanishes and the glyphs render ~4.2px (half of 22.4 − 14)
+ * above the square. Re-asserting the label var on the label and every
+ * wrapper below it restores the 22.4px line box. The wrappers carry no
+ * `n-*` class, so no Naive UI rule targets them; the 4-selector specificity
+ * beats both elm-ui's `.s` and bridge rule 2's `inherit`, while staying
+ * clear of any nested component root (a nested `.n-button` label keeps its
+ * own `line-height: 1` — 3 selectors tie, Naive UI's rule is later).
+ */
+.nui-root.nui-root .n-checkbox__label,
+.nui-root.nui-root .n-checkbox__label .s {
+  line-height: var(--n-label-line-height);
+}
+
+/* 9. Upload text-type actions follow the filename (port-added)
+ *
+ * Upstream pins the text-list action strip to the row's right edge
+ * (`position: absolute; right: 0; width: 80px`) with `__name`'s `flex: 1`
+ * reserving the space. In wide containers the hover travel to the far
+ * right edge is inconvenient, so the port re-enters the strip into the
+ * flow right after the name: `position: static; width: auto` hugs the
+ * 1–3 buttons (24px each + 4px gaps), the vertical `padding: inherit`
+ * (a full-height strip concern) drops to 0, and an 8px `margin-left`
+ * mirrors image-type's `__name` padding as the name→buttons gap. The
+ * name gives up its `flex: 1` grow (`flex: 0 1 auto`: content width,
+ * still shrinks + ellipsizes when tight, `overflow: hidden` zeroes its
+ * automatic minimum so the strip never squashes). Image-type keeps its
+ * upstream in-flow strip; image-card keeps its absolute full-cover
+ * overlay (both via their own `--*-type` modifiers, untouched here).
+ * Row-scoped to text-type by mirroring the original selector chain
+ * (`--text-type` replaces the bare `.n-upload-file` link): 6 class
+ * selectors tie Naive's 6, and this file is always appended last.
+ */
+.nui-root.nui-root .n-upload-file-list .n-upload-file--text-type .n-upload-file-info .n-upload-file-info__name {
+  flex: 0 1 auto;
+}
+
+.nui-root.nui-root .n-upload-file-list .n-upload-file--text-type .n-upload-file-info .n-upload-file-info__action {
+  position: static;
+  width: auto;
+  margin-left: 8px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* 10. Scrollbar height in a sized scrollable menu (port-added)
+ *
+ * Upstream's `.n-dropdown-menu > .n-scrollbar { height: inherit }` (and
+ * `.n-popover > .n-scrollbar`, likewise) sizes the scrollbar box to the
+ * caller-capped menu so `overflow: scroll` clips the rows. The port renders
+ * the scrollbar root as an `Element.column` child, and elm-ui's
+ * `.s.c > .s { min-height: min-content }` (one class selector) overrides the
+ * inherited height: min-content (the unscrolled 12-row list, ~416px) wins
+ * over `height: inherit` (120px), and items 4–12 paint below the menu's
+ * surface. Restoring `min-height: 0` inside sized popover-family menus
+ * reinstates the height; Naive UI declares no min-height here, so a
+ * doubly-scoped rule is safe. `.n-log` joins the same family: upstream's
+ * global `.n-scrollbar { height: inherit }` sizes the log's scrollbar to
+ * the log's inline `height: calc(rows * …)` box (Log.tsx mounts NScrollbar
+ * as the log's only flow child); the same elm-ui min-content win paints
+ * the code content past the log pane (showcase: the log rows overlap the
+ * helper text below the card).
+ */
+.nui-root.nui-root .n-dropdown-menu > .n-scrollbar,
+.nui-root.nui-root .n-popover > .n-scrollbar,
+.nui-root.nui-root .n-log > .n-scrollbar {
+  min-height: 0;
+}

@@ -320,14 +320,14 @@ cellEl opts index cell =
                 [ I.classes [ "n-calendar-date__date" ]
                 , Element.htmlAttribute (HA.attribute "title" fullDate)
                 ]
-                (Element.text (String.fromInt cell.date.day))
+                (bareText (String.fromInt cell.date.day))
 
         dayNode =
             Element.el
                 [ I.classes [ "n-calendar-date__day" ]
                 , Element.htmlAttribute (HA.attribute "title" fullDate)
                 ]
-                (Element.text (weekdayName opts.locale cell.date))
+                (bareText (weekdayName opts.locale cell.date))
 
         slotContent =
             case opts.cell of
@@ -352,6 +352,20 @@ cellEl opts index cell =
             :: slotContent
             ++ [ Element.el [ I.classes [ "n-calendar-cell__bar" ] ] Element.none ]
         )
+
+
+{-| The date number and the weekday label. Upstream renders bare text nodes
+(`Calendar.tsx` `{date}` / `{format(ts, 'EEE')}`) as the `.n-calendar-date`
+flex row's only children, which its `justify-content: space-between` and the
+date circle's `justify-content: center` position. elm-ui's `Element.el` wraps
+`Element.text` in a width-fill div (`textElementFill`), stretching it to the
+circle's content box and pinning the digit off-center — so render the bare
+text node through `Element.html`, exactly upstream's DOM (the `pageLabel`
+precedent in `NUI.Pagination`).
+-}
+bareText : String -> Element msg
+bareText s =
+    Element.html (Html.text s)
 
 
 

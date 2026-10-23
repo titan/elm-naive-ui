@@ -382,12 +382,28 @@ scrollbarChild theme contentClasses contentStyle children =
 
 {-| One header / content / footer wrapper div: the BEM class (+ the caller's),
 the raw slot `style`, and the embedded slot children.
+
+The div carries `width:100%;box-sizing:border-box` — upstream's slots are
+plain blocks that fill the popover's content box, while our elm-ui flex root
+would otherwise shrink them to max-content (the popconfirm action row / header
+divider then end short of the bubble's right padding edge). The page's global
+`box-sizing: content-box` (elm-ui's assumption) would make a bare `width:100%`
+overhang the padded header/footer, hence border-box. The caller's `style`
+rides after it, so an explicit caller `width` still wins.
+
 -}
 slotNode : String -> Maybe String -> Maybe String -> List (Html.Html msg) -> Html.Html msg
 slotNode base maybeClass maybeStyle children =
     Html.div
         ([ HA.class (String.join " " (base :: extraClass maybeClass)) ]
-            ++ rawStyleAttr maybeStyle
+            ++ rawStyleAttr
+                (case maybeStyle of
+                    Just style ->
+                        Just ("width:100%;box-sizing:border-box;" ++ style)
+
+                    Nothing ->
+                        Just "width:100%;box-sizing:border-box"
+                )
         )
         children
 

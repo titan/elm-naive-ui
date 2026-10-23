@@ -6,8 +6,9 @@
 // Elm cannot introspect its own source at runtime, so the "show the Elm code
 // behind this demo" toggle is fed by a generated module:
 //
-//   pass 1 (codemod)    every `demoRow "Label" items` / `demoBox 150 content`
-//                       call site in examples/src/Sections/*.elm gains a
+//   pass 1 (codemod)    every `demoRow "Label" items` / `demoRowUnfenced …` /
+//                       `demoBox 150 content` call site in
+//                       examples/src/Sections/*.elm gains a
 //                       stable leading key (`demoRow "gen-017" "Label" …`) —
 //                       existing keys are kept, so re-running never churns.
 //   pass 2 (extractor)  regenerates examples/src/DemoCode.elm, mapping
@@ -129,7 +130,7 @@ const lineAt = (s, i) => s.slice(0, i).split('\n').length
 function scanFile(file, src) {
   const masked = mask(src)
   const sites = []
-  const re = /\b(demoRow|demoBox)\b/g
+  const re = /\b(demoRowUnfenced|demoRow|demoBox)\b/g
   let m
   while ((m = re.exec(masked))) {
     const kind = m[1]
@@ -139,6 +140,9 @@ function scanFile(file, src) {
     // key/label. Absent for `demoRow "gen-001" …` (next char is a quote).
     const lead = /^[A-Za-z_][A-Za-z0-9_']*/.exec(masked.slice(i))
     if (lead) i = skipWs(masked, i + lead[0].length)
+    // Insertion anchor for a NEW key: just past the optional theme ident, so
+    // keying a `demoRow theme …` site writes `demoRow theme "key" …`.
+    const keyAt = i
     // Import/exposing-list mentions carry no argument shape — require one.
     if (!/^("(ctl|dat|dsp|gen|mot|nav|ovr|pic)-\d+"|"|\(|\d)/.test(masked.slice(i))) continue
     // optional existing key
@@ -152,18 +156,19 @@ function scanFile(file, src) {
       }
     }
     let exprStart
-    if (kind === 'demoRow') {
-      // label: string or parenthesized computed label, then the items
-      if (masked[i] === '"') i = skipWs(masked, stringEnd(masked, i))
-      else if (masked[i] === '(') i = skipWs(masked, matchDelim(masked, i, '(', ')'))
-      else throw new Error(`${file}:${lineAt(masked, m.index)}: ${kind} without a label`)
-      if (masked.slice(i, i + 2) === '<|') i = skipWs(masked, i + 2)
-      exprStart = i
-    } else {
+    if (kind === 'demoBox') {
       // demoBox: pixel height, then the content expression
       const mm = /^\d+/.exec(masked.slice(i))
       if (!mm) throw new Error(`${file}:${lineAt(masked, m.index)}: demoBox without a height`)
       i = skipWs(masked, i + mm[0].length)
+      exprStart = i
+    } else {
+      // demoRow / demoRowUnfenced: label (string or parenthesized
+      // computed label), then the items
+      if (masked[i] === '"') i = skipWs(masked, stringEnd(masked, i))
+      else if (masked[i] === '(') i = skipWs(masked, matchDelim(masked, i, '(', ')'))
+      else throw new Error(`${file}:${lineAt(masked, m.index)}: ${kind} without a label`)
+      if (masked.slice(i, i + 2) === '<|') i = skipWs(masked, i + 2)
       exprStart = i
     }
     if (masked[i] !== '[' && masked[i] !== '(') {
@@ -175,7 +180,7 @@ function scanFile(file, src) {
       masked[i] === '['
         ? matchDelim(masked, i, '[', ']')
         : matchDelim(masked, i, '(', ')')
-    sites.push({ kind, tokenEnd: m.index + m[0].length, key, exprStart, exprEnd })
+    sites.push({ kind, tokenEnd: m.index + m[0].length, keyAt, key, exprStart, exprEnd })
   }
   return { masked, sites }
 }
@@ -257,7 +262,7 @@ for (const file of files) {
     if (!s.key) {
       next++
       s.key = `${prefix}-${String(next).padStart(3, '0')}`
-      edits.push({ at: s.tokenEnd, text: ` "${s.key}"` })
+      edits.push({ at: s.keyAt, text: ` "${s.key}"` })
     }
     entries.push([s.key, dedent(src.slice(s.exprStart, s.exprEnd))])
   }

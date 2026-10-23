@@ -1376,10 +1376,11 @@ dTrue(
 )
 const qrcStyle = qrc ? qrc.getAttribute('style') || '' : ''
 dTrue(
-  'DOM: QrCode default padding/width/height + --n-border-radius',
+  'DOM: QrCode default padding/width/height + box-sizing + --n-border-radius',
   qrcStyle.includes('padding:12px') &&
     qrcStyle.includes('width:100px') &&
     qrcStyle.includes('height:100px') &&
+    qrcStyle.includes('box-sizing:content-box') &&
     qrcStyle.includes('--n-border-radius:'),
   qrcStyle
 )
@@ -1668,6 +1669,20 @@ dTrue(
   otpSlot ? otpSlotStyle : 'missing'
 )
 
+// slotInputAttributes seam: per-index attrs land on each built-in slot's
+// inner <input> (the ids the demo's Browser.Dom.focus auto-advance targets).
+const otpSeamSlots = [...doc.querySelectorAll('#live-input-otp-slot-attrs input')]
+dEq(
+  'DOM: InputOtp slotInputAttributes lands per-slot ids on the inner inputs',
+  'live-input-otp-slot-attrs-0,live-input-otp-slot-attrs-1,live-input-otp-slot-attrs-2,live-input-otp-slot-attrs-3',
+  otpSeamSlots.map((el) => el.id).join(',')
+)
+dEq(
+  'DOM: InputOtp slotInputAttributes carries the custom attr per slot',
+  '0,1,2,3',
+  otpSeamSlots.map((el) => el.getAttribute('data-slot')).join(',')
+)
+
 // DynamicTags ----------------------------------------------------------------
 const dt = doc.querySelector('#live-dynamic-tags .n-dynamic-tags')
 dTrue(
@@ -1814,6 +1829,21 @@ dEq(
   'DOM: Calendar disabled cell is 2026-07-10',
   '10',
   calDisabled ? (calDisabled.querySelector('.n-calendar-date__date') || {}).textContent : null
+)
+// Centering lock: upstream renders the digit as a BARE text node inside the
+// `.n-calendar-date__date` flex circle (`Calendar.tsx` `{date}`), which the
+// circle's `justify-content: center` centers. elm-ui's `Element.text` wraps
+// it in a width-fill div (`textElementFill`) that stretches to the circle's
+// content box and pins the digit left — the digit must stay a raw text node
+// (the `pageLabel` precedent, NUI.Pagination).
+const calDateEl = doc.querySelector('#live-calendar .n-calendar-cell--current .n-calendar-date__date')
+dTrue(
+  'DOM: Calendar current-date circle holds a bare text node (no width-fill wrapper — digit centers)',
+  !!calDateEl &&
+    calDateEl.childNodes.length === 1 &&
+    calDateEl.firstChild.nodeType === 3 &&
+    calDateEl.firstElementChild === null,
+  calDateEl ? calDateEl.outerHTML : 'missing'
 )
 
 // Pagination -----------------------------------------------------------------
@@ -6741,7 +6771,12 @@ const pcLabel = (id) =>
     .join('|')
 
 const POPCONFIRM_PANEL_STYLE =
-  '--n-bezier:cubic-bezier(.4, 0, .2, 1)' +
+  // upstream's panel is a plain block div (fills the popover content box,
+  // no width needed); the port rides the fill on the inline style — the
+  // popover wraps the panel in an elm-ui paragraph, whose `.c` child is
+  // inline-flex, so the width-fill elm-ui class would no-op there.
+  'width:100%' +
+  ';--n-bezier:cubic-bezier(.4, 0, .2, 1)' +
   ';--n-font-size:14px' +
   ';--n-icon-size:22px' +
   ';--n-icon-color:#f0a020'
@@ -8180,7 +8215,7 @@ dEq(
 )
 dEq(
   'DOM: Tree switcher carries data-switcher="true" (bare JSX attr — the transfer S2 rule), width = indent (24px), and the __icon cell',
-  'true|width: 24px;|true',
+  'true|width: 24px; flex-direction: row;|true',
   (() => {
     const sw = doc.querySelector('#live-tree-basic .n-tree-node-switcher')
     return [
@@ -12356,6 +12391,23 @@ try {
   ovlClick(s2q('#live-slider-minus')); await ovlSleep(30)
   ctl(/39 \(39%\)/.test(sliderRow()), 'Slider −1 ×2 → 39 (39%)', sliderRow())
 
+  // -- Slider single drag (press → measure → jump → move → up) --
+  // jsdom geometry is all zeros, so the travel box is deterministic
+  // (start 9px, size −18px) and any press converges through sanitizeValue's
+  // clamp — the whole press chain is asserted by the value it lands on.
+  const sliderRoot = () => s2q('#live-slider-single')
+  s2Mouse(sliderRoot(), 'mousedown', 100, 100); await ovlSleep(50)
+  ctl(/0 \(0%\)/.test(sliderRow()), 'Slider press → measured box → jump (jsdom zero-geometry clamps to 0)', sliderRow())
+  ctl(!!sliderRoot() && sliderRoot().classList.contains('n-slider--active'), 'Slider press pins the active handle (n-slider--active + dragging)', sliderRoot() ? sliderRoot().getAttribute('class') : 'missing')
+  ctl(!!sliderRoot().querySelector('.n-slider-handle-indicator'), 'Slider press shows the value indicator (dragging + activeIndex)')
+  s2Mouse(liveDoc, 'mousemove', 60, 100); await ovlSleep(30)
+  ctl(/0 \(0%\)/.test(sliderRow()), 'Slider move tracks (clamp keeps 0 on the degenerate box)', sliderRow())
+  s2Mouse(liveDoc, 'mouseup', 60, 100); await ovlSleep(30)
+  ctl(!sliderRoot().classList.contains('n-slider--active') === false, 'Slider mouseup KEEPS activeIndex (upstream stopDragging clears dragging only; blur clears the rest)', sliderRoot().getAttribute('class'))
+  ctl(!sliderRoot().querySelector('.n-slider-handle-indicator'), 'Slider mouseup hides the indicator (dragging gone)')
+  ovlClick(s2q('#live-slider-plus')); await ovlSleep(30)
+  ctl(/1 \(1%\)/.test(sliderRow()), 'Slider +1 after drag-end steps from the dragged value (1%)', sliderRow())
+
   // -- Slider range (marks snap) --
   const rangeRow = () => s2RowText(s2q('#live-range-lo-plus'))
   ctl(/20 – 60/.test(rangeRow()), 'Slider range starts 20 – 60', rangeRow())
@@ -12364,13 +12416,55 @@ try {
   ovlClick(s2q('#live-range-hi-minus')); await ovlSleep(30)
   ctl(/21 – 59/.test(rangeRow()), 'Slider range hi− → 21 – 59', rangeRow())
 
+  // -- Slider range drag (closest-handle pick on press) --
+  const rangeRoot = () => s2q('#live-slider-range')
+  s2Mouse(rangeRoot(), 'mousedown', 100, 100); await ovlSleep(50)
+  // the degenerate box maps any press far left → closest handle is lo,
+  // sanitize clamps to 0
+  ctl(/0 – 59/.test(rangeRow()), 'Slider range press picks the closest handle (lo) and jumps it (clamp → 0 – 59)', rangeRow())
+  s2Mouse(liveDoc, 'mousemove', 100, 100); await ovlSleep(30)
+  s2Mouse(liveDoc, 'mouseup', 100, 100); await ovlSleep(30)
+  ctl(/0 – 59/.test(rangeRow()), 'Slider range drag-end keeps the dragged pair (0 – 59)', rangeRow())
+
+  // -- Slider static rows are live too (spec-table runtime; jsdom zero-geometry
+  // clamps every press to the axis minimum — value read back via the handle's
+  // aria-valuenow, so each row's axis/snap semantics is what's asserted) --
+  const sVal = (id, i = 0) => {
+    const w = s2q('#' + id + ' .n-slider-handle-wrapper:nth-of-type(' + (i + 1) + ')')
+    return w ? w.getAttribute('aria-valuenow') : 'missing'
+  }
+  s2Mouse(s2q('#live-slider-marked'), 'mousedown', 100, 100); await ovlSleep(50)
+  ctl(sVal('live-slider-marked') === '0', 'Static-row single drag lands (clamp → 0)', sVal('live-slider-marked'))
+  s2Mouse(liveDoc, 'mouseup', 100, 100); await ovlSleep(30)
+  // vertical rows: the y axis — jsdom's innerHeight is 0, so the degenerate
+  // travel box is railStart 9 / railSize −18 → (9−100)/−18 > 1 → clamps to
+  // MAX on the normal axis and MIN reversed (the flip is the assertion)
+  s2Mouse(s2q('#live-slider-vertical'), 'mousedown', 100, 100); await ovlSleep(50)
+  ctl(sVal('live-slider-vertical') === '100', 'Vertical drag runs the y-axis algebra (degenerate box → max 100)', sVal('live-slider-vertical'))
+  s2Mouse(liveDoc, 'mouseup', 100, 100); await ovlSleep(30)
+  s2Mouse(s2q('#live-slider-vertical-reverse'), 'mousedown', 100, 100); await ovlSleep(50)
+  ctl(sVal('live-slider-vertical-reverse') === '0', 'Vertical+reverse drag flips (same box → min 0)', sVal('live-slider-vertical-reverse'))
+  s2Mouse(liveDoc, 'mouseup', 100, 100); await ovlSleep(30)
+  // StepMarks row: press snaps to the closest MARK, not the clamp — 0 is a
+  // mark here (sliderMarks has 34/75... clamped raw candidate competes)
+  s2Mouse(s2q('#live-slider-snap'), 'mousedown', 100, 100); await ovlSleep(50)
+  ctl(/^(34|75|0|100)$/.test(sVal('live-slider-snap', 0)), 'StepMarks press snaps to a mark (34/75 candidates)', sVal('live-slider-snap', 0))
+  s2Mouse(liveDoc, 'mouseup', 100, 100); await ovlSleep(30)
+  // >2 values: closest-handle pick over three, only the picked one moves
+  const multiBefore = [sVal('live-slider-multi', 0), sVal('live-slider-multi', 1), sVal('live-slider-multi', 2)].join()
+  s2Mouse(s2q('#live-slider-multi'), 'mousedown', 100, 100); await ovlSleep(50)
+  const multiAfter = [sVal('live-slider-multi', 0), sVal('live-slider-multi', 1), sVal('live-slider-multi', 2)].join()
+  ctl(multiBefore !== multiAfter, 'Multi-value press moves exactly the closest handle', multiBefore + ' → ' + multiAfter)
+  s2Mouse(liveDoc, 'mouseup', 100, 100); await ovlSleep(30)
+
   // -- InputOtp --
   const otpRow = () => s2RowText(s2q('#live-input-otp-reset'))
   const otpInputs = () => s2qa('#live-input-otp input')
   ctl(otpInputs().length === 6, 'InputOtp renders 6 slot inputs', `${otpInputs().length}`)
   ctl(/0\/6 entered/.test(otpRow()), 'InputOtp caption starts 0/6 entered', otpRow())
   s2FireInput(otpInputs()[0], '5'); await ovlSleep(30)
-  ctl(/1\/6 entered/.test(otpRow()), 'InputOtp digit in slot 0 → 1/6 entered (focus advance is caller-owned)', otpRow())
+  ctl(/1\/6 entered/.test(otpRow()), 'InputOtp digit in slot 0 → 1/6 entered', otpRow())
+  ctl(liveDoc.activeElement === otpInputs()[1], 'InputOtp digit in slot 0 → Browser.Dom.focus advances to slot 1', liveDoc.activeElement ? (liveDoc.activeElement.id || liveDoc.activeElement.className) : 'none')
   ovlClick(s2q('#live-input-otp-mask')); await ovlSleep(30)
   ctl(otpInputs()[0].type === 'password', 'InputOtp mask toggle switches slots to type=password', otpInputs()[0].type)
   ovlClick(s2q('#live-input-otp-reset')); await ovlSleep(30)
@@ -12467,6 +12561,47 @@ try {
   mot(/30 lines/.test(logCaption()), 'Log wheel-triggered load flushes to 30 lines', logCaption())
 } catch (e) {
   domChecks.push({ name: 'LIVE/MOT driver error', ok: false, detail: String((e && e.stack) || e) })
+}
+
+// --- Live round 2b — Display / Affix pin phase --------------------------------
+// Same live showcase instance: the Affix live row's scroll buttons drive the
+// caller-owned affix loop — in flow below threshold, pinned with top:12px
+// past it, back in flow on scroll-up, clamped at the rail bottom.
+try {
+  const dsp = s2Ok('LIVE/DSP')
+  console.log('Live 2 / Display (Affix)')
+
+  const affixBtn = (label) => nearestPreceding('.n-button', (b) => s2Norm(b.textContent).trim() === label, s2q('#live-affix-scroll'))
+  const affixRoot = () => s2q('#live-affix-scroll.n-affix')
+  const affixCap = () => {
+    const hits = [...liveDoc.querySelectorAll('div,span')]
+      .filter((el) => el.children.length === 0)
+      .map((el) => s2Norm(el.textContent).trim())
+      .filter((t) => /^scrollTop: \d+ px · (in flow|pinned)$/.test(t))
+    return hits[0] || ''
+  }
+
+  dsp(!!affixRoot(), 'Affix host rendered (.n-affix)')
+  dsp(affixCap() === 'scrollTop: 0 px · in flow', 'Affix caption starts scrollTop 0 px · in flow', affixCap())
+  dsp(affixRoot().classList.contains('n-affix--affixed') === false, 'Affix below threshold stays in flow (no --affixed class)')
+
+  ovlClick(affixBtn('Scroll down 120')); await ovlSleep(30)
+  dsp(affixCap() === 'scrollTop: 120 px · pinned', 'Affix scroll past 40px → pinned (caption)', affixCap())
+  dsp(affixRoot().classList.contains('n-affix--affixed'), 'Affix pinned carries .n-affix--affixed')
+  dsp((affixRoot().getAttribute('style') || '').includes('top:12px'), 'Affix pinned emits inline top:12px', affixRoot().getAttribute('style'))
+
+  ovlClick(affixBtn('Scroll up 120')); await ovlSleep(30)
+  dsp(affixCap() === 'scrollTop: 0 px · in flow', 'Affix scroll back below threshold → in flow (caption)', affixCap())
+  dsp(affixRoot().classList.contains('n-affix--affixed') === false, 'Affix released drops the --affixed class')
+  dsp(!(affixRoot().getAttribute('style') || '').includes('top:'), 'Affix in flow emits no top offset', affixRoot().getAttribute('style'))
+
+  ovlClick(affixBtn('Scroll down 120')); await ovlSleep(30)
+  ovlClick(affixBtn('Scroll down 120')); await ovlSleep(30)
+  ovlClick(affixBtn('Scroll down 120')); await ovlSleep(30)
+  ovlClick(affixBtn('Scroll down 120')); await ovlSleep(30)
+  dsp(affixCap() === 'scrollTop: 360 px · pinned', 'Affix scroll clamps at the 360px rail bottom', affixCap())
+} catch (e) {
+  domChecks.push({ name: 'LIVE/DSP driver error', ok: false, detail: String((e && e.stack) || e) })
 }
 
 try {

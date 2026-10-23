@@ -26,6 +26,15 @@ rendered (upstream's `needBar && isShowBar && !isIos`) and `yBarStyle` / `xBarSt
 carry the measured geometry as raw CSS (the `NUI.BackTop` / `NUI.Affix`
 caller-owned-runtime precedent). The rails themselves always render.
 
+Upstream also drives the scroll from a bar drag (`handleYScrollMouseDown` /
+`handleXScrollMouseDown`: mousedown on the bar memoizes the scroll offset +
+pointer, the window mousemove scales the pointer delta by
+`(content - container) / (container - bar)` into `container.scrollTop/Left`,
+window mouseup releases). The seams are the same story: `containerAttributes`
+addresses the scrolling div (`Browser.Dom.setViewportOf`) and
+`yBarAttributes` / `xBarAttributes` put the press decoder on the bar div
+itself (upstream binds `onMousedown` exactly there).
+
 **Composition seams.** `extraClasses` (appended after `n-scrollbar`, like a Vue
 fallthrough class) and `attributes` let wrapper components merge themselves onto
 the scrollbar root — `NUI.DrawerContent`'s non-native body uses it for the
@@ -115,6 +124,8 @@ type alias Options msg =
     , yRailStyle : Maybe String
     , xRailStyle : Maybe String
     , containerAttributes : List (Html.Attribute msg)
+    , yBarAttributes : List (Html.Attribute msg)
+    , xBarAttributes : List (Html.Attribute msg)
     , extraClasses : List String
     , attributes : List (Element.Attribute msg)
     }
@@ -138,6 +149,8 @@ defaults =
     , yRailStyle = Nothing
     , xRailStyle = Nothing
     , containerAttributes = []
+    , yBarAttributes = []
+    , xBarAttributes = []
     , extraClasses = []
     , attributes = []
     }
@@ -238,7 +251,7 @@ verticalRailNode opts =
         ]
         opts.yRailStyle
         (if opts.showYBar then
-            barNode opts.yBarStyle
+            barNode opts.yBarStyle opts.yBarAttributes
 
          else
             []
@@ -258,7 +271,7 @@ horizontalRailNode opts =
                 ]
                 opts.xRailStyle
                 (if opts.showXBar then
-                    barNode opts.xBarStyle
+                    barNode opts.xBarStyle opts.xBarAttributes
 
                  else
                     []
@@ -286,11 +299,13 @@ railNode extraClasses maybeStyle children =
 
 
 {-| The draggable bar; its only styles are the caller's measured geometry.
+`yBarAttributes` / `xBarAttributes` land here (upstream binds `onMousedown` on
+this div).
 -}
-barNode : Maybe String -> List (Html.Html msg)
-barNode maybeStyle =
+barNode : Maybe String -> List (Html.Attribute msg) -> List (Html.Html msg)
+barNode maybeStyle barAttributes =
     [ Html.div
-        ([ HA.class "n-scrollbar-rail__scrollbar" ] ++ rawStyleAttr maybeStyle)
+        ([ HA.class "n-scrollbar-rail__scrollbar" ] ++ rawStyleAttr maybeStyle ++ barAttributes)
         []
     ]
 

@@ -149,12 +149,17 @@ Each gets a one-liner for the module docstring.
 
 **Live/Pickers**
 
-- `[oracle D]` **AutoComplete hides the empty-state menu.** `acMenuOpen`
-  requires non-empty matches, so the menu's configured
-  `empty = Just "No match"` slot is unreachable; upstream shows the
-  empty-state menu while focused with text. (The Mention row in the same
-  module mounts its `empty` slot correctly.) Either relax the gate to
-  `acFocused && acText /= ""` or comment the divergence.
+- `[oracle D — resolved 2026-11]` **AutoComplete hides the empty-state
+  menu.** `acMenuOpen` required non-empty matches, so the menu's configured
+  `empty = Just "No match"` slot was unreachable; upstream shows the
+  empty-state menu while focused with text. RESOLVED: the gate now mirrors
+  the frozen upstream formula (`showOptions && canBeActivated &&
+  (showEmpty || options non-empty)`, `AutoComplete.tsx:193-207`) through
+  `acGate`; the live row keeps the default gate (no menu on zero matches)
+  and its second cell runs the same gate with `showEmpty = True`
+  (`onFocus`/`onBlur` seams added to `NUI.AutoComplete.Options` for
+  `canBeActivated`). (The Mention row in the same module mounts its `empty`
+  slot correctly.)
 - `[oracle D]` **`dpSingleCloses` re-runs `singleDateClick` against
   `Single Nothing`.** Sound — the helper's `close` is type-only
   (`List.member type_ [Date, Week, Year]`, `DatePicker.elm:693`) and the

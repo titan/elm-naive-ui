@@ -40,7 +40,10 @@ not part of the generated CSS yet, so its structural rules are ported inline her
 **Composition seams.** `extraClasses` (appended after the card's own classes,
 like a Vue fallthrough class) and `attributes` let wrapper components merge
 themselves onto the card root — `NUI.Modal`'s card preset uses them for the
-`n-modal` class, `role="dialog"` and `aria-modal="true"`.
+`n-modal` class, `role="dialog"` and `aria-modal="true"`. `style` carries
+upstream's fallthrough style fragment (merged into the root `style` AFTER
+the `--n-*` vars — the `NUI.Dialog.rootStyleAttr` precedent; a second
+`style` attribute would clobber the vars in the DOM).
 
 -}
 
@@ -104,6 +107,7 @@ type alias Options msg =
     , size : CardSize
     , segmented : Segmented
     , contentStyle : List ( String, String )
+    , style : Maybe String
     , role : Maybe String
     , rtl : Bool
     , extraClasses : List String
@@ -126,6 +130,7 @@ defaults =
     , size = Medium
     , segmented = noSegmentation
     , contentStyle = []
+    , style = Nothing
     , role = Nothing
     , rtl = False
     , extraClasses = []
@@ -237,7 +242,7 @@ view theme opts children =
     in
     Element.column
         (I.classes (rootClasses opts ++ opts.extraClasses)
-            :: I.cssVars (cssVars theme opts.size (CardTheme.vars theme))
+            :: rootStyleAttr theme opts
             :: maybeRole opts.role
             ++ opts.attributes
         )
@@ -248,6 +253,29 @@ view theme opts children =
             , footerEl
             , actionEl
             ]
+        )
+
+
+{-| The root `style` attribute: the card's `--n-*` custom properties, then
+the caller's `style` fragment verbatim — upstream merges the parent's
+fallthrough `style` (Vue's normal prop merge) into the same attribute after
+the vars; a second `style` attribute would clobber them in the DOM
+(`NUI.Dialog.rootStyleAttr` precedent).
+-}
+rootStyleAttr : Theme -> Options msg -> Element.Attribute msg
+rootStyleAttr theme opts =
+    Element.htmlAttribute
+        (HA.attribute
+            "style"
+            (I.renderVars (cssVars theme opts.size (CardTheme.vars theme))
+                ++ (case opts.style of
+                        Just fragment ->
+                            ";" ++ fragment
+
+                        Nothing ->
+                            ""
+                   )
+            )
         )
 
 

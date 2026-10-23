@@ -899,7 +899,7 @@ viewFileList theme opts =
                 ]
     in
     Element.column
-        (I.classes classes :: fileListStyleAttrs theme opts)
+        (fillWidth :: I.classes classes :: fileListStyleAttrs theme opts)
         (List.indexedMap (fileRow theme opts) opts.fileList
             ++ (if opts.showTrigger && not (maxReached opts) && isImageCard then
                     [ viewTrigger theme opts ]
@@ -964,11 +964,11 @@ fileRow theme opts _ file =
 
         infoDiv =
             Element.row
-                [ I.classes [ "n-upload-file-info" ] ]
+                [ I.classes [ "n-upload-file-info" ], fillWidth ]
                 [ thumbnailNode theme opts file, nameDiv, actionNode theme opts file ]
     in
     Element.column
-        [ I.classes (fileRowClasses opts file status) ]
+        [ I.classes (fileRowClasses opts file status), fillWidth ]
         (infoDiv
             :: (if isImageType then
                     []
@@ -1191,6 +1191,24 @@ thumbnailIcon opts file isImageType =
 
 
 -- ACTION BUTTONS ----------------------------------------------------------------
+
+
+{-| elm-ui's `.s.c > .s.wc` (width-content child of a column) sets
+`align-self: flex-start`, so the file-list, each file row and the
+`__info` row collapse to their content width. Upstream renders all of them
+as plain full-width block divs (`n-upload-file { display: block }`), so the
+`__action` strip's `position: absolute; right: 0; width: 80px` lands at the
+row's right edge and `__name`'s `flex: 1` + `overflow: hidden` ellipsis
+reserve those 80px — collapsed rows instead center the shrunken name
+underneath the button strip (they overlap). `Element.width Element.fill`
+restores the browser default (`.wf → width: 100%` under the column chain,
+`.s.r > .s.wf → flex-grow` inside the info row). Same seam as `Menu` /
+`List` / `Dropdown` / `PageHeader`'s `fillWidth`. The image-card row is
+unaffected: its `width: 96px` comes from a higher-specificity Naive rule.
+-}
+fillWidth : Element.Attribute msg
+fillWidth =
+    Element.width Element.fill
 
 
 actionNode : Theme -> Options msg -> FileInfo -> Element msg

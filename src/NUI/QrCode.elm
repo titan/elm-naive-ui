@@ -117,6 +117,14 @@ view theme opts =
 {-| The entries of the container's inline `style` attribute, in upstream order:
 the plain properties from `QrCode.tsx` (`padding`, `background-color`, `width`,
 `height`) followed by the `--n-*` custom properties.
+
+`box-sizing: content-box` pins the box model upstream relies on: `QrCode.tsx`
+sets `padding` + `width`/`height` on a plain `div`, where the `content-box`
+default makes the symbol (`size × size`) fit inside the padding. Elm-ui
+wrappers force `border-box`, which would shrink the content area to
+`size - 2 * padding` and squeeze/clip the svg — pinning `content-box` keeps
+the box at `size + 2 * padding` with the svg centered, exactly upstream.
+
 -}
 cssVarsFor : Theme -> Options msg -> List ( String, String )
 cssVarsFor theme opts =
@@ -124,6 +132,7 @@ cssVarsFor theme opts =
     , ( "background-color", opts.backgroundColor )
     , ( "width", px opts.size )
     , ( "height", px opts.size )
+    , ( "box-sizing", "content-box" )
     , ( "--n-border-radius", (QrCodeTheme.vars theme).borderRadius )
     ]
 

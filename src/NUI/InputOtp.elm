@@ -36,16 +36,24 @@ custom properties, and `NUI.Css` ships Naive UI's exact CSS. Each slot is an
 **Runtime.** Upstream owns the per-slot value (`useMergedState`) and justifies
 it to `length` entries; this library is pure, so the caller owns `value` (the
 view re-justifies it to `length` slots for rendering). `onUpdateValue` receives
-the value Naive UI reports: the single-character input rule, the
-multi-character (paste / autofill) distribution across slots and the
-`allowInput` filter are ported from upstream's `handleInput`. What stays with
-the caller: slot focus movement (`focusOnChar`, arrow keys, the auto-advance
-after input — needs DOM focus, i.e. ports), upstream's `onFinish` (derive it
+the value Naive UI reports: the single-character input rule, the multi-character
+(paste / autofill) distribution across slots and the `allowInput` filter are
+ported from upstream's `handleInput`. What stays with the caller: slot focus
+movement (`focusOnChar`, arrow keys, the auto-advance after input — DOM
+focus, i.e. `Browser.Dom.focus`), upstream's `onFinish` (derive it
 from `onUpdateValue`: every slot non-empty) and the paste / keydown handlers
 (`NUI.Input` exposes no such hooks). On rejection by `allowInput` the browser
 fires no `input` event, so no message is emitted (matching upstream); a no-op
 `onUpdateValue` is only emitted when an already-empty slot is re-input, which
 upstream fires and then swallows via a shallow-equality check.
+
+The `slotInputAttributes` seam carries raw attributes onto each built-in
+slot's inner `<input>` (upstream's typed default slot lets a caller reach
+the inner `NInput` — there is no `inputProps` on `n-input-otp` itself): pass
+per-index ids (`\i -> [ HA.id ("otp-" ++ String.fromInt i) ]`) so
+`Browser.Dom.focus` can move between slots — the demo app's auto-advance
+recipe (examples/src/Sections/Controls.elm) focuses the first empty slot
+after every `onUpdateValue`.
 
 The children argument models upstream's typed default slot: element _i_
 replaces the built-in input of slot _i_ (pass `[]` for the built-in inputs).
@@ -57,6 +65,7 @@ zeroing if they want the same 24–36px-cell geometry.
 -}
 
 import Element exposing (Element)
+import Html exposing (Html)
 import NUI.Input as Input
 import NUI.Internal as I
 import NUI.Theme exposing (Theme)
@@ -95,6 +104,7 @@ type alias Options msg =
     , placeholder : Maybe String
     , rtl : Bool
     , attributes : List (Element.Attribute msg)
+    , slotInputAttributes : Int -> List (Html.Attribute msg)
     }
 
 
@@ -114,6 +124,7 @@ defaults =
     , placeholder = Nothing
     , rtl = False
     , attributes = []
+    , slotInputAttributes = \_ -> []
     }
 
 
@@ -181,6 +192,7 @@ defaultItem theme opts index =
                 [ ( "--n-padding-left", "0" )
                 , ( "--n-padding-right", "0" )
                 ]
+            , inputAttributes = opts.slotInputAttributes index
         }
 
 

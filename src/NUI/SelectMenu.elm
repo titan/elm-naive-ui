@@ -1,5 +1,6 @@
 module NUI.SelectMenu exposing
-    ( GroupOption
+    ( BuiltRow
+    , GroupOption
     , LeafOption
     , Option(..)
     , Options
@@ -31,6 +32,10 @@ the future `Select` batch extends it).
       │            [--grouped] [--pending] [--show-checkmark]
       │          > div.__content {label, [i.n-base-icon.__check > svg]}
       │                                                        — check iff selected && showCheckmark
+      │          (a Custom row builds the same shell around its node;
+      │           `renderOption` then swaps the whole row for the callback's
+      │           return — upstream hands the built node to the callback,
+      │           so the shell — its click, hover, selection — survives a wrap)
       │    (empty list → div.__empty [data-empty] {empty | NUI.Empty})
       └─ div.n-base-select-menu__action [data-action]          — iff action
           + div[width:0;height:0][tabindex=0]                  — NFocusDetector, inert
@@ -47,8 +52,12 @@ replaces the middle with the `__loading` row — header and action still
 mount. `--grouped` is computed from the tree;
 `--show-checkmark` lands on EVERY option while `showCheckmark` (upstream
 default true — the padding rule needs it). Options carry `value : String`
-keys (upstream allows numbers); `Custom` renders its node verbatim with no
-toggle wiring. Empty = zero flattened rows, group headers included — a
+keys (upstream allows numbers); `Custom` renders its node inside the option
+shell — `__content` carries the node, `onToggle` fires with its `key` (a
+render lane row has no `value`, so it never marks `--selected`, matching
+upstream's `isSelected` on a valueless rawNode). When `renderOption` is set,
+every row — custom rows included — is swapped for the callback's return
+(upstream `SelectOption.tsx`'s render tail: `renderOption({ node, … })`). Empty = zero flattened rows, group headers included — a
 childless group renders its header, never the empty fallback.
 
 -}
@@ -119,12 +128,28 @@ type alias GroupOption msg =
     }
 
 
-{-| Upstream `rawNode.render` / `renderOption` — the node replaces the row
-outright (no toggle wiring; it still counts as a row for emptiness).
+{-| Upstream `rawNode.render` — the render lane option: its node rides the
+option shell's `__content` and `onToggle` fires with its `key` (it counts as
+a row for emptiness). A render lane row carries no `value`, so it never
+marks `--selected` — upstream's `isSelected` reads `rawNode[valueField]`,
+which a render-only option lacks.
 -}
 type alias RenderOption msg =
     { key : String
     , node : Element msg
+    }
+
+
+{-| What the menu-level `renderOption` callback receives (upstream
+`renderOption({ node, option, selected })`; the rawNode is unportable and a
+render lane row never selects, so the payload reduces to the built row + its
+key). The callback's return replaces the row outright — upstream demos wrap
+(`NTooltip` with `trigger: () => node`), keeping the shell's click/hover/
+selection alive.
+-}
+type alias BuiltRow msg =
+    { node : Element msg
+    , key : String
     }
 
 
@@ -142,6 +167,7 @@ type alias Options msg =
     , action : Maybe (Element msg)
     , empty : Maybe (Element msg)
     , onToggle : Maybe (String -> msg)
+    , renderOption : Maybe (BuiltRow msg -> Element msg)
     , checkmarkTransition : Maybe I.TransitionPhase
     , rtl : Bool
     , extraClasses : List String
@@ -164,6 +190,7 @@ defaults =
     , action = Nothing
     , empty = Nothing
     , onToggle = Nothing
+    , renderOption = Nothing
     , checkmarkTransition = Nothing
     , rtl = False
     , extraClasses = []
@@ -398,7 +425,7 @@ focusDetectorNode =
 
 
 {-| One flattened menu row — a leaf (with its computed `--grouped` flag), a
-group header, or a verbatim custom node.
+group header, or a render lane option.
 -}
 type Row msg
     = RowOption Bool (LeafOption msg)
@@ -409,9 +436,9 @@ type Row msg
 {-| Treemate's flatten/traverse: every node becomes a row. A leaf carries
 its `--grouped` flag, a group's header is always a row followed by its
 children as siblings — nested groups flatten recursively, contributing
-their own header rows (never dropped) — and a custom passes through.
-Emptiness counts headers too: a childless group is one header row, and only
-zero rows make the menu empty.
+their own header rows (never dropped) — and a render lane option passes
+through like a leaf. Emptiness counts headers too: a childless group is one
+header row, and only zero rows make the menu empty.
 -}
 flatten : Bool -> List (Option msg) -> List (Row msg)
 flatten grouped options =
@@ -441,7 +468,49 @@ rowNode opts row =
             groupHeaderNode group
 
         RowCustom custom ->
-            custom.node
+            customRowNode opts custom
+
+
+{-| One render lane row — the option shell built around the custom node
+(`__content` carries it; the class list matches `optionNode` minus the
+state modifiers a valueless row can never earn: `--selected`, `--grouped`,
+`--disabled`), the click firing `onToggle` with the row's `key`, then the
+menu-level `renderOption` swap (upstream `SelectOption.tsx`'s render tail —
+`rawNode.render ? rawNode.render(…) : renderOption ? renderOption({ node })
+: node`; the port's `Custom` IS the `rawNode.render` lane, the shell always
+builds).
+-}
+customRowNode : Options msg -> RenderOption msg -> Element msg
+customRowNode opts custom =
+    let
+        node =
+            Element.row
+                ([ I.classes
+                    ([ "n-base-select-option" ]
+                        ++ I.classIf opts.showCheckmark "n-base-select-option--show-checkmark"
+                    )
+                 ]
+                    ++ (case opts.onToggle of
+                            Just toggle ->
+                                [ Element.Events.onClick (toggle custom.key) ]
+
+                            Nothing ->
+                                []
+                       )
+                )
+                [ Element.el
+                    [ I.classes [ "n-base-select-option__content" ]
+                    , Element.width Element.fill
+                    ]
+                    custom.node
+                ]
+    in
+    case opts.renderOption of
+        Just render ->
+            render { node = node, key = custom.key }
+
+        Nothing ->
+            node
 
 
 {-| One selectable row — the modifiers (everything but `--pending`, which

@@ -149,20 +149,46 @@ view theme opts children =
                             Nothing ->
                                 []
                        )
-        in
-        (case opts.direction of
-            Horizontal ->
-                Element.row
 
-            Vertical ->
-                Element.column
-        )
-            ([ I.classes ("n-flex" :: I.classIf opts.rtl "n-flex--rtl")
-             , Element.htmlAttribute (HA.attribute "role" "none")
-             ]
-                ++ List.map Element.htmlAttribute styles
-                ++ opts.attributes
-            )
+            container =
+                (case opts.direction of
+                    Horizontal ->
+                        Element.row
+
+                    Vertical ->
+                        Element.column
+                )
+                    ([ I.classes ("n-flex" :: I.classIf opts.rtl "n-flex--rtl")
+                     , Element.htmlAttribute (HA.attribute "role" "none")
+                     ]
+                        ++ List.map Element.htmlAttribute styles
+                        ++ opts.attributes
+                    )
+        in
+        container (childShim opts.align children)
+
+
+{-| elm-ui's stylesheet pins every content-sized child's cross axis
+(`.s.e > .wc` / `.s.c > .wc` → `align-self: flex-start`), and a child
+`align-self` beats the parent's inline `align-items` — so with `align = Just`
+the declared alignment never lands (the children hug the cross-axis start;
+Naive UI's own docs demos center them). Wrapping each child in an elm-ui `el`
+that re-declares `align-self` inline outranks any stylesheet rule (the same
+seam `NUI.Empty` uses for its centered slots); gap/wrap/justify are unaffected
+because the wrappers are content-sized. Without `align`, children pass
+through untouched.
+-}
+childShim : Maybe Align -> List (Element msg) -> List (Element msg)
+childShim maybeAlign children =
+    case maybeAlign of
+        Just a ->
+            let
+                self =
+                    I.cssVars [ ( "align-self", alignCss a ) ]
+            in
+            List.map (\child -> Element.el [ self ] child) children
+
+        Nothing ->
             children
 
 

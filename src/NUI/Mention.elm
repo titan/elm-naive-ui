@@ -228,6 +228,7 @@ type alias MenuOptions msg =
     { loading : Bool
     , empty : Maybe (Element msg)
     , onToggle : Maybe (String -> msg)
+    , renderOption : Maybe (SelectMenu.BuiltRow msg -> Element msg)
     , scrollbarProps : Maybe (NUI.Scrollbar.Options msg -> NUI.Scrollbar.Options msg)
     , transition : Maybe I.TransitionPhase
     , rtl : Bool
@@ -242,6 +243,7 @@ menuDefaults =
     { loading = False
     , empty = Nothing
     , onToggle = Nothing
+    , renderOption = Nothing
     , scrollbarProps = Nothing
     , transition = Nothing
     , rtl = False
@@ -390,6 +392,7 @@ menuOptions theme mopts =
         , loading = mopts.loading
         , empty = mopts.empty
         , onToggle = mopts.onToggle
+        , renderOption = mopts.renderOption
         , rtl = mopts.rtl
         , extraClasses =
             "n-mention-menu"

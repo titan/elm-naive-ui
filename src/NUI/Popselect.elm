@@ -167,6 +167,7 @@ menuOptions theme opts =
         Maybe.map
             (\update key -> update (toggleValue opts.multiple opts.cancelable opts.value key))
             opts.onUpdateValue
+    , renderOption = Nothing
     , checkmarkTransition = Nothing
     , rtl = opts.rtl
     , extraClasses = popoverSharedClasses opts

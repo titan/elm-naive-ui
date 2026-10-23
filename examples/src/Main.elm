@@ -135,16 +135,28 @@ update msg model =
             ( { model | general = Sections.General.update m model.general }, Cmd.none )
 
         ControlsMsg m ->
-            ( { model | controls = Sections.Controls.update m model.controls }, Cmd.none )
+            let
+                ( nextControls, controlsCmd ) =
+                    Sections.Controls.update m model.controls
+            in
+            ( { model | controls = nextControls }, Cmd.map ControlsMsg controlsCmd )
 
         DataMsg m ->
             ( { model | data = Sections.Data.update m model.data }, Cmd.none )
 
         DisplayMsg m ->
-            ( { model | display = Sections.Display.update m model.display }, Cmd.none )
+            let
+                ( nextDisplay, displayCmd ) =
+                    Sections.Display.update m model.display
+            in
+            ( { model | display = nextDisplay }, Cmd.map DisplayMsg displayCmd )
 
         NavMsg m ->
-            ( { model | nav = Sections.Nav.update m model.nav }, Cmd.none )
+            let
+                ( nextNav, navCmd ) =
+                    Sections.Nav.update m model.nav
+            in
+            ( { model | nav = nextNav }, Cmd.map NavMsg navCmd )
 
         OverlaysMsg m ->
             ( { model | overlays = Sections.Overlays.update m model.overlays }, Cmd.none )

@@ -183,6 +183,7 @@ type alias MenuOptions msg =
     , action : Maybe (Element msg)
     , empty : Maybe (Element msg)
     , onToggle : Maybe (String -> msg)
+    , renderOption : Maybe (SelectMenu.BuiltRow msg -> Element msg)
     , scrollbarProps : Maybe (NUI.Scrollbar.Options msg -> NUI.Scrollbar.Options msg)
     , transition : Maybe I.TransitionPhase
     , rtl : Bool
@@ -204,6 +205,7 @@ menuDefaults =
     , action = Nothing
     , empty = Nothing
     , onToggle = Nothing
+    , renderOption = Nothing
     , scrollbarProps = Nothing
     , transition = Nothing
     , rtl = False

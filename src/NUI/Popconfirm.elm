@@ -136,7 +136,14 @@ panelNode : Theme -> Options msg -> List (Element msg) -> Element msg
 panelNode theme opts children =
     Element.column
         [ I.classes [ "n-popconfirm__panel" ]
-        , I.cssVars (cssVars theme)
+
+        -- upstream's panel is a plain block div: it fills the popover
+        -- content box, so the flex-end action row lands on the bubble's
+        -- right padding edge. The popover wraps this panel in an
+        -- elm-ui paragraph, whose `.c` child renders inline-flex —
+        -- elm-ui's own width-fill no-ops there, so the fill rides the
+        -- inline style (the same attribute the 4 panel vars live on).
+        , I.cssVars (( "width", "100%" ) :: cssVars theme)
         ]
         (List.filterMap identity
             [ bodyNode opts children
@@ -197,7 +204,17 @@ fallback is `[]`, truthy, so even all-`Hidden` texts leave an empty row);
 actionNode : Theme -> Options msg -> Element msg
 actionNode theme opts =
     Element.row
-        [ I.classes [ "n-popconfirm__action" ] ]
+        [ I.classes [ "n-popconfirm__action" ]
+
+        -- upstream's action row is a plain block div that fills the panel,
+        -- so its `justify-content: flex-end` pushes the buttons to the
+        -- right edge. The port centers instead (the house convention, a
+        -- deliberate divergence), so the row SHRINK-WRAPS to max-content
+        -- and `centerX` centers it within the panel column — a width-fill
+        -- here would resurrect the right-edge alignment under the
+        -- centering.
+        , Element.centerX
+        ]
         (case opts.action of
             Just els ->
                 -- slot children in wrapping paragraphs (the `bodyNode` note)

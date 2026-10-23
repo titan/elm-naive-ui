@@ -67,6 +67,10 @@ every overlay root still renders open from init — the check-dom gate):
     channels the presets expose (Card/DrawerContent `onClose`, the drawer's
     real `onMaskClick`, the dialog presets' positive/negative/×) — the
     container roots always render, so closing only unmounts mask + body.
+    Modal's rows additionally ride the scaled preview cell (`modalPreview`)
+    so the fixed tree shows at real proportions instead of a squashed
+    full-width card; the check-dom gate still finds every `.n-modal-container`
+    open from init (the tree is mounted, only the host geometry changed).
   - **Popover / Popconfirm / Tooltip static rows** stay pure specimens: their
     Options carry no show/close channel at all (the popover runtime is
     caller-owned upstream — the live rows ARE that runtime), and the pinned
@@ -79,6 +83,7 @@ every overlay root still renders open from init — the check-dom gate):
 
 import Element exposing (Element)
 import Element.Events
+import Html exposing (Html)
 import Html.Attributes as HA
 import Html.Events as HE
 import Json.Decode
@@ -102,6 +107,7 @@ import NUI.Theme exposing (Theme)
 import NUI.Tooltip as Tooltip
 import NUI.Types as T
 import NUI.Typography as Typo
+import Set
 import Showcase exposing (chip, darkTheme, demoRow, section)
 import Svg
 import Svg.Attributes as SA
@@ -232,7 +238,7 @@ type alias Model =
     , modalDialogOpen : Bool
     , modalConfirmOpen : Bool
     , dialogSamplesOpen : Bool
-    , drawerStaticOpen : Bool
+    , drawerStaticOpen : Set.Set String
     }
 
 
@@ -329,7 +335,10 @@ init =
     , modalDialogOpen = True
     , modalConfirmOpen = True
     , dialogSamplesOpen = True
-    , drawerStaticOpen = True
+    , drawerStaticOpen =
+        -- one flag per drawer specimen — a close (✕ or mask) unmounts exactly
+        -- that drawer, never its row siblings (check-dom: all open from init)
+        Set.fromList [ "right", "left", "top", "bottom", "transparent", "hidden", "z-index" ]
     }
 
 
@@ -389,7 +398,7 @@ type Msg
     | ModalDialogClose
     | ModalConfirmClose
     | DialogSampleClose
-    | DrawerStaticClose
+    | DrawerStaticClose String
 
 
 update : Msg -> Model -> Model
@@ -685,8 +694,8 @@ update msg model =
         DialogSampleClose ->
             { model | dialogSamplesOpen = False }
 
-        DrawerStaticClose ->
-            { model | drawerStaticOpen = False }
+        DrawerStaticClose specimen ->
+            { model | drawerStaticOpen = Set.remove specimen model.drawerStaticOpen }
 
 
 {-| One message pushed through the provider transforms: the typed helper
@@ -910,7 +919,7 @@ popoverHost placement attrs content =
          , Element.htmlAttribute
             (HA.attribute
                 "style"
-                "position:relative;padding:34px 28px;min-height:120px;min-width:180px;border:1px dashed #dcdae2;border-radius:4px;background:#fafafc"
+                "position:relative;padding:34px 28px;min-height:120px;min-width:180px;flex-basis:auto;border:1px dashed #dcdae2;border-radius:4px;background:#fafafc"
             )
          ]
             ++ attrs
@@ -997,14 +1006,19 @@ popconfirmRows theme =
     [ demoRow theme
         "ovr-009"
         "Default + no icon / action slot"
-        [ popoverHost Popover.Top
-            []
+        [ -- The host must be at least bubble-width + its 28px horizontal
+          -- padding: the port caps a pinned popover width at the host's
+          -- content box (max-width:100%), so a 180px min-width host squeezes
+          -- the 220px bubble to ~124px and the non-shrinking flex-end action
+          -- row spills out the start edge. 280px → 224px content ≥ 220px.
+          popoverHost Popover.Top
+            [ Element.width (Element.px 280) ]
             (Popconfirm.view theme
                 { popconfirmD | popover = { popoverD | width = Just "220px" } }
                 [ Element.text "Delete it?" ]
             )
         , popoverHost Popover.Top
-            []
+            [ Element.width (Element.px 280) ]
             (Popconfirm.view theme
                 { popconfirmD
                     | popover = { popoverD | width = Just "220px" }
@@ -1017,8 +1031,9 @@ popconfirmRows theme =
     , demoRow theme
         "ovr-010"
         "Custom texts + button-props overrides"
-        [ popoverHost Popover.Top
-            []
+        [ -- 240px bubble + 56px host padding + 4px headroom.
+          popoverHost Popover.Top
+            [ Element.width (Element.px 300) ]
             (Popconfirm.view theme
                 { popconfirmD
                     | popover = { popoverD | width = Just "240px" }
@@ -1520,15 +1535,30 @@ demoIcon =
 
 {-| One static message demo cell: a fresh provider state in the given
 placement; the fixed container is pinned into the cell with `position:
-relative` (the LoadingBar demo's trick).
+absolute` (the LoadingBar demo's trick, one step further). The host height
+is caller-set: the container itself is `height: 0` with visible overflow
+(upstream's geometry), so a stack taller than the box is clipped by the
+host's `overflow: hidden` — rows with many items (the six-kind stack
+measures ≈ 316px) pass a taller box instead of losing the tail of the
+queue.
+
+Why absolute, not the LoadingBar demo's `relative`: a relative pin only
+shifts the container's static-position box (host top), but the Bottom\*
+placements anchor with `bottom: 4px` + `justify-content: flex-end` — the
+zero-height box's stack grows UPWARD from its anchor, i.e. straight out
+through the host's top edge (clipped to an empty cell). `absolute` makes
+the host the containing block, so `bottom`/`right` resolve against the
+host's edges and every placement's geometry matches the viewport's.
+
 -}
-messageState : Theme -> Message.Placement -> List (Message.Item Msg) -> Element Msg
-messageState theme placement items =
-    modalHost []
+messageState : Int -> Theme -> Message.Placement -> List (Message.Item Msg) -> Element Msg
+messageState height theme placement items =
+    hostBox height
+        []
         (Message.view theme
             { messageS
                 | placement = placement
-                , containerStyle = Just "position:relative;"
+                , containerStyle = Just "position:absolute;"
                 , items = items
             }
         )
@@ -1547,7 +1577,8 @@ messageRows model theme =
     [ demoRow theme
         "ovr-021"
         "Kinds (one container, stacked)"
-        [ messageState theme
+        [ messageState 340
+            theme
             Message.Top
             [ messageOf "d" Message.Default "A default message — no icon wrapper"
             , messageOf "i" Message.Info "An info message"
@@ -1556,7 +1587,8 @@ messageRows model theme =
             , messageOf "e" Message.Error "An error message"
             , messageOf "l" Message.Loading "A loading message — n-base-loading spinner"
             ]
-        , messageState theme
+        , messageState 210
+            theme
             Message.BottomRight
             [ messageOf "b1" Message.Info "Bottom-right placement"
             , messageOf "b2" Message.Success "align-items flips to flex-end"
@@ -1565,12 +1597,13 @@ messageRows model theme =
     , demoRow theme
         "ovr-022"
         "Closable (onClose fires; you destroy)"
-        [ messageState theme Message.Top model.staticMessages
+        [ messageState 210 theme Message.Top model.staticMessages
         ]
     , demoRow theme
         "ovr-023"
         "Transition phases (caller clock)"
-        [ messageState theme
+        [ messageState 210
+            theme
             Message.Top
             [ messageOf "idle" Message.Info "Settled — no phase class"
             , { messageI
@@ -1588,7 +1621,8 @@ messageRows model theme =
     , demoRow theme
         "ovr-024"
         "Custom icon + render (replaces the whole body)"
-        [ messageState theme
+        [ messageState 210
+            theme
             Message.Top
             [ { messageI
                 | key = "icon"
@@ -1604,14 +1638,31 @@ messageRows model theme =
                     { messageD
                         | render =
                             Just
-                                [ Element.el
-                                    [ Element.htmlAttribute
-                                        (HA.attribute
+                                [ Element.html
+                                    (Html.div
+                                        [ HA.attribute
                                             "style"
-                                            "background:var(--n-color);box-shadow:var(--n-box-shadow);border-radius:3px;padding:10px 20px;color:var(--n-text-color)"
-                                        )
-                                    ]
-                                    (Element.text "render — no .n-message tree, no icon/content/close")
+                                            -- plain HTML, deliberately: the pill must size to its
+                                            -- content capped at the cell (320px minus headroom) —
+                                            -- through elm-ui the shrink-wrap chain breaks
+                                            -- (`.s.c > .s {flex-basis:0}` squeezes the paragraph
+                                            -- to ~134px → 4 lines) and the page font overflows
+                                            -- the centered Top placement on BOTH sides. A raw
+                                            -- div caps cleanly and takes the message's own ramp;
+                                            -- white-space:normal — the showcase root sets
+                                            -- `pre` (elm-ui text) and it inherits down here, so
+                                            -- without it the label is ONE unbreakable line;
+                                            -- width/min-width — the port wraps the slot in a
+                                            -- widthContent column, so a plain width:auto div
+                                            -- resolves the shrink-to-fit cycle to its min-content
+                                            -- (one char, with overflow-wrap:anywhere); pinning
+                                            -- min-width to the cap lets it size up and max-width
+                                            -- holds it at the cell (320 minus headroom), where
+                                            -- the label wraps in two
+                                            "max-width:288px;min-width:288px;white-space:normal;overflow-wrap:anywhere;background:var(--n-color);box-shadow:var(--n-box-shadow);border-radius:3px;padding:6px 16px;color:var(--n-text-color);font-size:var(--n-font-size);line-height:var(--n-line-height)"
+                                        ]
+                                        [ Html.text "render — replaces the .n-message tree (no icon/content/close)" ]
+                                    )
                                 ]
                     }
               }
@@ -1637,7 +1688,7 @@ messageQueueRow model theme =
         , Button.view theme { btn | kind = T.Primary, onPress = Just MessageSuccess } [ Element.text "success" ]
         , Button.view theme { btn | kind = T.Error, onPress = Just MessageError } [ Element.text "error" ]
         , Button.view theme { btn | size = T.Small, onPress = Just MessageClear } [ Element.text "clear" ]
-        , overlayCell "live-message-queue" (Message.view theme model.messages)
+        , overlayCellH "live-message-queue" 260 (Message.view theme model.messages)
         , chip theme model.messageOutcome
         ]
 
@@ -1651,11 +1702,19 @@ messageLiveSection model theme =
 
 
 {-| One static notification demo cell — the message demo's trick: a fresh
-provider state per cell, pinned into it with `position: relative`.
+provider state per cell, pinned into it with `position: relative`. Height
+is caller-set for the same reason as `messageState` (a stack taller than
+the box is clipped by the host's `overflow: hidden`), and the box is 420px
+wide (not 320) because `--n-width` is upstream's fixed `365px` and the
+side placements add their own margins (top/bottom-right: `28px + 16px`,
+left mirrored) — a 320px host clips ~89px off the card's pinned side
+(close × included).
 -}
-notificationState : Theme -> Notification.Placement -> List (Notification.Item Msg) -> Element Msg
-notificationState theme placement items =
-    modalHost []
+notificationState : Int -> Theme -> Notification.Placement -> List (Notification.Item Msg) -> Element Msg
+notificationState height theme placement items =
+    hostBoxW height
+        420
+        []
         (Notification.view theme
             { notificationS
                 | placement = placement
@@ -1678,7 +1737,8 @@ notificationRows model theme =
     [ demoRow theme
         "ovr-026"
         "Kinds (top-right — scrollable, so the n-scrollbar tree shows)"
-        [ notificationState theme
+        [ notificationState 330
+            theme
             Notification.TopRight
             [ notificationOf "d" "A default notification" Notification.Default
             , notificationOf "i" "An info notification" Notification.Info
@@ -1690,25 +1750,29 @@ notificationRows model theme =
     , demoRow theme
         "ovr-027"
         "Closable + description / content-in-pre / meta + action"
-        [ notificationState theme Notification.TopRight model.staticNotifications
+        [ notificationState 290 theme Notification.TopRight model.staticNotifications
         ]
     , demoRow theme
         "ovr-028"
         "Placements (top/bottom centers force the scrollbar off)"
-        [ notificationState theme
+        [ notificationState 210
+            theme
             Notification.TopLeft
             [ notificationOf "tl" "Top-left — scrollable" Notification.Success ]
-        , notificationState theme
+        , notificationState 210
+            theme
             Notification.Top
             [ notificationOf "tc" "Top center — scrollable forced off (no scrollbar tree)" Notification.Warning ]
-        , notificationState theme
+        , notificationState 210
+            theme
             Notification.BottomRight
             [ notificationOf "br" "Bottom-right — align flips" Notification.Error ]
         ]
     , demoRow theme
         "ovr-029"
         "Transition phases (caller clock) + the container's transitioning class"
-        [ notificationState theme
+        [ notificationState 260
+            theme
             Notification.TopRight
             [ notificationOf "idle" "Settled — no phase class" Notification.Info
             , { notificationI
@@ -1743,7 +1807,12 @@ notificationQueueRow model theme =
         , Button.view theme { btn | kind = T.Primary, onPress = Just NotificationSuccess } [ Element.text "success" ]
         , Button.view theme { btn | kind = T.Error, onPress = Just NotificationError } [ Element.text "error" ]
         , Button.view theme { btn | size = T.Small, onPress = Just NotificationClear } [ Element.text "clear" ]
-        , overlayCell "live-notification-queue" (Notification.view theme model.notifications)
+
+        -- 3 × ~108px cards (all pushes carry a meta row; the error one adds
+        -- a content <pre> too) + 12px gaps + the wrapper's 13px end margins
+        -- ≈ 348px — 290 clipped the third card's bottom (close × survived,
+        -- but "exit code 1" sat on the cut line).
+        , overlayCellWH "live-notification-queue" 350 420 (Notification.view theme model.notifications)
         , chip theme model.notificationOutcome
         ]
 
@@ -1764,9 +1833,28 @@ Width/height ride elm-ui's px classes (raw inline width collapses under
 -}
 modalHost : List (Element.Attribute msg) -> Element msg -> Element msg
 modalHost attrs content =
+    hostBox 210 attrs content
+
+
+{-| `modalHost`/`overlayCell` at a caller-set height — stacked
+message/notification queues grow past the shared 210px cell (the container
+is `height: 0` with visible overflow, so the host's `overflow: hidden`
+clips the stack's tail; the six-message kinds row measures ≈ 316px), so
+those rows pass a taller box. Width stays 320.
+-}
+hostBox : Int -> List (Element.Attribute msg) -> Element msg -> Element msg
+hostBox height attrs content =
+    hostBoxW height 320 attrs content
+
+
+{-| `hostBox` with a caller-set width — notification cards are upstream's
+fixed `365px` wide (`--n-width`), so their hosts pass ≥ 365 + headroom.
+-}
+hostBoxW : Int -> Int -> List (Element.Attribute msg) -> Element msg -> Element msg
+hostBoxW height width attrs content =
     Element.el
-        ([ Element.width (Element.px 320)
-         , Element.height (Element.px 210)
+        ([ Element.width (Element.px width)
+         , Element.height (Element.px height)
          , Element.htmlAttribute
             (HA.attribute
                 "style"
@@ -1776,6 +1864,45 @@ modalHost attrs content =
             ++ attrs
         )
         content
+
+
+{-| A Modal preview cell — the full fixed tree (mask + flex-centred body)
+shown scaled to fit, instead of the squashed 100%-width card / clipped 446px
+dialog the raw 320px cell produces.
+
+The host is the usual translated containing box (`overflow: hidden`); inside
+it one absolutely-positioned scale layer — sized to the VIRTUAL viewport
+(`host / scale`, so the mask/body-wrapper `inset: 0` and the scroll
+content's `min-height: 100%` resolve to a 533×350 world) and scaled back
+down (`transform-origin: top left`) to map into the cell. The layer's
+`transform` claims the containing block for the modal's `position: fixed`
+tree (nearest transformed ancestor), so the card flex-centres in the
+virtual viewport: the 446px dialog (`max-width: calc(100vw - 32px)` never
+binds — vw units still measure the real viewport) shows with its margins,
+and card/custom bodies keep a readable ~300px effective width instead of
+filling the panel. An elm-ui `el` (inline `style` overrides the `.s`
+`position: relative`), so the modal stays an ordinary child.
+
+-}
+modalPreview : Float -> Element msg -> Element msg
+modalPreview scale content =
+    scaledHost [] scale content
+
+
+{-| The scale layer's inline style: absolute over the host, sized to the
+virtual viewport (host / scale), scaled back down with a `top left` origin.
+The virtual size is fixed at the host's 320×210 — the layer always matches
+its cell.
+-}
+scaleLayerStyle : Float -> String
+scaleLayerStyle scale =
+    "position:absolute;left:0;top:0;width:"
+        ++ String.fromInt (round (320 / scale))
+        ++ "px;height:"
+        ++ String.fromInt (round (210 / scale))
+        ++ "px;transform:scale("
+        ++ String.fromFloat scale
+        ++ ");transform-origin:top left;"
 
 
 {-| A plain demo cell for a standalone `.n-dialog` body (no fixed tree to
@@ -1796,7 +1923,7 @@ modalRows model theme =
     [ demoRow theme
         "ovr-031"
         "Custom content + card preset"
-        [ modalHost []
+        [ modalPreview 0.6
             (Modal.view theme
                 { modalD | show = True }
                 (Modal.Custom
@@ -1809,7 +1936,7 @@ modalRows model theme =
                     [ Element.text "Custom content — you own the box; the wrapper carries `n-modal`." ]
                 )
             )
-        , modalHost []
+        , modalPreview 0.6
             (Modal.view theme
                 { modalD | show = model.modalCardOpen }
                 (Modal.Card
@@ -1818,6 +1945,7 @@ modalRows model theme =
                         , footer = Just (Element.text "#footer")
                         , closable = True
                         , onClose = Just ModalCardClose
+                        , style = Just "width:420px"
                     }
                     [ Element.text "Unbordered by default — upstream spreads the dialog props last." ]
                 )
@@ -1826,18 +1954,19 @@ modalRows model theme =
     , demoRow theme
         "ovr-032"
         "Card variants (bordered opt-in, segmented, dark)"
-        [ modalHost []
+        [ modalPreview 0.6
             (Modal.view theme
                 { modalD | show = True }
                 (Modal.Card
                     { modalCardD
                         | title = Just (Element.text "Bordered")
                         , bordered = True
+                        , style = Just "width:360px"
                     }
                     [ Element.text "Opt back into the card border." ]
                 )
             )
-        , modalHost []
+        , modalPreview 0.6
             (Modal.view theme
                 { modalD | show = True }
                 (Modal.Card
@@ -1849,15 +1978,19 @@ modalRows model theme =
                             , action = Card.Off
                             }
                         , footer = Just (Element.text "#footer")
+                        , style = Just "width:360px"
                     }
                     [ Element.text "Content/footer separators." ]
                 )
             )
-        , modalHost []
+        , modalPreview 0.6
             (Modal.view darkTheme
                 { modalD | show = True }
                 (Modal.Card
-                    { modalCardD | title = Just (Element.text "Dark theme") }
+                    { modalCardD
+                        | title = Just (Element.text "Dark theme")
+                        , style = Just "width:360px"
+                    }
                     [ Element.text "rgb(44, 44, 50) surface, .82 white text." ]
                 )
             )
@@ -1865,7 +1998,7 @@ modalRows model theme =
     , demoRow theme
         "ovr-033"
         "No mask (mask-hidden) + z-index"
-        [ modalHost []
+        [ modalPreview 0.6
             (Modal.view theme
                 { modalD | show = True, showMask = False }
                 (Modal.Custom
@@ -1878,7 +2011,7 @@ modalRows model theme =
                     [ Element.text "No mask: --mask-hidden passes clicks through around the content." ]
                 )
             )
-        , modalHost []
+        , modalPreview 0.6
             (Modal.view theme
                 { modalD | show = True, zIndex = Just 100 }
                 (Modal.Custom
@@ -1895,7 +2028,7 @@ modalRows model theme =
     , demoRow theme
         "ovr-034"
         "Enter-active phases (caller clock)"
-        [ modalHost []
+        [ modalPreview 0.6
             (Modal.view theme
                 { modalD
                     | show = True
@@ -1903,7 +2036,10 @@ modalRows model theme =
                     , bodyTransition = Just I.EnterActive
                 }
                 (Modal.Card
-                    { modalCardD | title = Just (Element.text "Entering") }
+                    { modalCardD
+                        | title = Just (Element.text "Entering")
+                        , style = Just "width:420px"
+                    }
                     [ Element.text "fade-in + fade-in-scale-up enter-active classes." ]
                 )
             )
@@ -1915,7 +2051,7 @@ modalSection : Model -> Theme -> Element Msg
 modalSection model theme =
     section theme
         "Modal"
-        "The mount-body family — its own fixed tree (container > mask > body-wrapper > scrollbar > content), self-positioned and centred by flex. The caller owns mounting, the show state, the transition clock (one clock drives the mask and body tuples), outside-click closing and Esc; the `dialog`/`confirm` presets compose `NUI.Dialog` (its section follows). The demo cells confine the fixed tree with a `transform: translate(0,0)` containing block."
+        "The mount-body family — its own fixed tree (container > mask > body-wrapper > scrollbar > content), self-positioned and centred by flex. The caller owns mounting, the show state, the transition clock (one clock drives the mask and body tuples), outside-click closing and Esc; the `dialog`/`confirm` presets compose `NUI.Dialog` (its section follows). The demo cells show the full tree scaled to fit: a `transform: translate(0,0)` host confines the fixed tree, and a scale layer inside it (sized to a virtual viewport, scaled back down) keeps the centred card and the 446px dialog at their real proportions."
         (modalRows model theme)
 
 
@@ -1927,7 +2063,7 @@ modalRow model theme =
         [ Button.view theme
             { btn | kind = T.Primary, onPress = Just ModalOpen }
             [ Element.text "Open modal" ]
-        , overlayCell "live-modal" <|
+        , overlayCellScaled "live-modal" <|
             if model.modalOpen then
                 Modal.view theme
                     { modalD
@@ -1942,6 +2078,7 @@ modalRow model theme =
                             | title = Just (Element.text "Live modal")
                             , closable = True
                             , onClose = Just ModalClose
+                            , style = Just "width:420px"
                             , attributes = [ swallowClicks ]
                         }
                         [ Element.text ("Ticks while open: " ++ String.fromInt model.modalCount)
@@ -1961,19 +2098,21 @@ modalLiveSection : Model -> Theme -> Element Msg
 modalLiveSection model theme =
     section theme
         "Modal"
-        "The mount-body family — its own fixed tree (container > mask > body-wrapper > scrollbar > content), self-positioned and centred by flex. The caller owns mounting, the show state, the transition clock (one clock drives the mask and body tuples), outside-click closing and Esc; the `dialog`/`confirm` presets compose `NUI.Dialog` (its section follows). The demo cells confine the fixed tree with a `transform: translate(0,0)` containing block."
+        "The mount-body family — its own fixed tree (container > mask > body-wrapper > scrollbar > content), self-positioned and centred by flex. The caller owns mounting, the show state, the transition clock (one clock drives the mask and body tuples), outside-click closing and Esc; the `dialog`/`confirm` presets compose `NUI.Dialog` (its section follows). The demo cells show the full tree scaled to fit: a `transform: translate(0,0)` host confines the fixed tree, and a scale layer inside it (sized to a virtual viewport, scaled back down) keeps the centred card and the 446px dialog at their real proportions."
         (modalRows model theme ++ [ modalRow model theme ])
 
 
-{-| The drawer's `NDrawerContent` body — title, closable header, footer.
+{-| The drawer's `NDrawerContent` body — title, closable header, footer. The
+specimen id makes the ✕ close exactly that drawer; `Nothing` (a pinned
+specimen mounted on a `show = True` literal) renders no close button, likethe modal specimens.
 -}
-drawerBody : Theme -> Element Msg
-drawerBody theme =
+drawerBody : Theme -> Maybe String -> Element Msg
+drawerBody theme specimen =
     DrawerContent.view theme
         { drawerContentD
             | title = Just (Element.text "A drawer")
-            , closable = True
-            , onClose = Just DrawerStaticClose
+            , closable = specimen /= Nothing
+            , onClose = Maybe.map DrawerStaticClose specimen
             , footer = Just (Element.text "#footer")
         }
         [ Element.text "Edge-anchored, sized on the placement's axis." ]
@@ -1986,23 +2125,23 @@ drawerRows model theme =
         "Four placements (NDrawerContent composition)"
         [ modalHost []
             (Drawer.view theme
-                { drawerD | show = model.drawerStaticOpen, placement = Drawer.Right, width = Just "200px", onMaskClick = Just DrawerStaticClose }
-                [ drawerBody theme ]
+                { drawerD | show = Set.member "right" model.drawerStaticOpen, placement = Drawer.Right, width = Just "200px", onMaskClick = Just (DrawerStaticClose "right") }
+                [ drawerBody theme (Just "right") ]
             )
         , modalHost []
             (Drawer.view theme
-                { drawerD | show = model.drawerStaticOpen, placement = Drawer.Left, width = Just "200px", onMaskClick = Just DrawerStaticClose }
-                [ drawerBody theme ]
+                { drawerD | show = Set.member "left" model.drawerStaticOpen, placement = Drawer.Left, width = Just "200px", onMaskClick = Just (DrawerStaticClose "left") }
+                [ drawerBody theme (Just "left") ]
             )
         , modalHost []
             (Drawer.view theme
-                { drawerD | show = model.drawerStaticOpen, placement = Drawer.Top, height = Just "120px", onMaskClick = Just DrawerStaticClose }
-                [ drawerBody theme ]
+                { drawerD | show = Set.member "top" model.drawerStaticOpen, placement = Drawer.Top, height = Just "120px", onMaskClick = Just (DrawerStaticClose "top") }
+                [ drawerBody theme (Just "top") ]
             )
         , modalHost []
             (Drawer.view theme
-                { drawerD | show = model.drawerStaticOpen, placement = Drawer.Bottom, height = Just "120px", onMaskClick = Just DrawerStaticClose }
-                [ drawerBody theme ]
+                { drawerD | show = Set.member "bottom" model.drawerStaticOpen, placement = Drawer.Bottom, height = Just "120px", onMaskClick = Just (DrawerStaticClose "bottom") }
+                [ drawerBody theme (Just "bottom") ]
             )
         ]
     , demoRow theme
@@ -2012,13 +2151,21 @@ drawerRows model theme =
             (Drawer.view theme
                 { drawerD | show = True, placement = Drawer.Right, width = Just "220px" }
                 [ Element.el
-                    [ Element.htmlAttribute
+                    [ Element.width Element.fill
+                    , Element.htmlAttribute
                         (HA.attribute
                             "style"
                             "background:var(--n-color);box-shadow:var(--n-box-shadow);border-radius:3px 0 0 3px;padding:14px 18px;color:var(--n-text-color);height:100%;box-sizing:border-box"
                         )
                     ]
-                    (Element.text "You own the box; the wrapper carries `n-drawer-content-wrapper`.")
+                    -- paragraph, not a bare text: elm-ui text carries
+                    -- `white-space: pre` and the one-line sentence would
+                    -- overflow the 220px panel (the drawer's raw slot is a
+                    -- plain block-flow div upstream — wrapping is the
+                    -- caller's job, exactly like the Modal.Custom presets).
+                    (Element.paragraph []
+                        [ Element.text "You own the box; the wrapper carries `n-drawer-content-wrapper`." ]
+                    )
                 ]
             )
         ]
@@ -2028,28 +2175,28 @@ drawerRows model theme =
         [ modalHost []
             (Drawer.view theme
                 { drawerD
-                    | show = model.drawerStaticOpen
+                    | show = Set.member "transparent" model.drawerStaticOpen
                     , placement = Drawer.Right
                     , width = Just "180px"
                     , showMask = Drawer.Transparent
-                    , onMaskClick = Just DrawerStaticClose
+                    , onMaskClick = Just (DrawerStaticClose "transparent")
                 }
-                [ drawerBody theme ]
+                [ drawerBody theme (Just "transparent") ]
             )
         , modalHost []
             (Drawer.view theme
                 { drawerD
-                    | show = model.drawerStaticOpen
+                    | show = Set.member "hidden" model.drawerStaticOpen
                     , placement = Drawer.Right
                     , width = Just "180px"
                     , showMask = Drawer.Hidden
                 }
-                [ drawerBody theme ]
+                [ drawerBody theme (Just "hidden") ]
             )
         , modalHost []
             (Drawer.view theme
-                { drawerD | show = model.drawerStaticOpen, placement = Drawer.Right, width = Just "180px", zIndex = Just 100 }
-                [ drawerBody theme ]
+                { drawerD | show = Set.member "z-index" model.drawerStaticOpen, placement = Drawer.Right, width = Just "180px", zIndex = Just 100 }
+                [ drawerBody theme (Just "z-index") ]
             )
         ]
     , demoRow theme
@@ -2080,7 +2227,7 @@ drawerRows model theme =
                     , resizable = True
                     , showResizeTriggerHover = True
                 }
-                [ drawerBody theme ]
+                [ drawerBody theme Nothing ]
             )
         ]
     , demoRow theme
@@ -2095,7 +2242,7 @@ drawerRows model theme =
                     , maskTransition = Just I.EnterActive
                     , bodyTransition = Just I.EnterActive
                 }
-                [ drawerBody theme ]
+                [ drawerBody theme Nothing ]
             )
         ]
     ]
@@ -2156,7 +2303,7 @@ drawerLiveSection model theme =
 
 dialogState : Theme -> List (DialogProvider.Item msg) -> Element msg
 dialogState theme items =
-    modalHost []
+    modalPreview 0.6
         (Element.column [] (DialogProvider.view theme { dialogPS | items = items }))
 
 
@@ -2215,7 +2362,7 @@ dialogRows model theme =
     , demoRow theme
         "ovr-043"
         "Modal dialog/confirm presets"
-        [ modalHost []
+        [ modalPreview 0.6
             (Modal.view theme
                 { modalD | show = model.modalDialogOpen }
                 (Modal.Dialog
@@ -2229,7 +2376,7 @@ dialogRows model theme =
                     }
                 )
             )
-        , modalHost []
+        , modalPreview 0.6
             (Modal.view theme
                 { modalD | show = model.modalConfirmOpen }
                 (Modal.Confirm
@@ -2374,7 +2521,7 @@ dialogRow model theme =
         [ Button.view theme
             { btn | onPress = Just DialogOpen }
             [ Element.text "Open dialog" ]
-        , overlayCell "live-dialog" <|
+        , overlayCellScaled "live-dialog" <|
             if model.dialogOpen then
                 Modal.view theme
                     { modalD
@@ -2433,10 +2580,28 @@ the demo cell.
 -}
 overlayCell : String -> Element msg -> Element msg
 overlayCell id content =
+    overlayCellH id 210 content
+
+
+{-| `overlayCell` with a caller-set height — see `hostBox` (a queue that
+outgrows the 210px cell clips its tail).
+-}
+overlayCellH : String -> Int -> Element msg -> Element msg
+overlayCellH id height content =
+    overlayCellWH id height 320 content
+
+
+{-| `overlayCellH` with a caller-set width — the notification queue rides
+upstream's fixed 365px card (`--n-width`) plus the placement margins
+(28+16 on the sides), so its host needs 420px or the pinned side clips
+(close × included).
+-}
+overlayCellWH : String -> Int -> Int -> Element msg -> Element msg
+overlayCellWH id height width content =
     Element.el
         [ Element.htmlAttribute (HA.id id)
-        , Element.width (Element.px 320)
-        , Element.height (Element.px 210)
+        , Element.width (Element.px width)
+        , Element.height (Element.px height)
         , Element.htmlAttribute
             (HA.attribute
                 "style"
@@ -2444,6 +2609,44 @@ overlayCell id content =
             )
         ]
         content
+
+
+{-| `overlayCell` for the scaled Modal previews — same id'd 320×210 host,
+with the modal riding the scale layer (`modalPreview`'s geometry).
+-}
+overlayCellScaled : String -> Element msg -> Element msg
+overlayCellScaled id content =
+    scaledHost [ Element.htmlAttribute (HA.id id) ] 0.6 content
+
+
+{-| The shared scaled-preview host: the usual translated cell plus the scale
+layer (`modalPreview`'s geometry).
+-}
+scaledHost : List (Element.Attribute msg) -> Float -> Element msg -> Element msg
+scaledHost attrs scale content =
+    Element.el
+        (hostBoxAttrs 320 210 ++ attrs)
+        (Element.el
+            [ Element.htmlAttribute
+                (HA.attribute "style" (scaleLayerStyle scale))
+            ]
+            content
+        )
+
+
+{-| The preview-host box attributes shared by `modalPreview` /
+`overlayCellScaled`: a sized, relative, translated, clipping cell.
+-}
+hostBoxAttrs : Int -> Int -> List (Element.Attribute msg)
+hostBoxAttrs width height =
+    [ Element.width (Element.px width)
+    , Element.height (Element.px height)
+    , Element.htmlAttribute
+        (HA.attribute
+            "style"
+            "position:relative;transform:translate(0,0);overflow:hidden;border:1px solid #efeff5;border-radius:4px;background:#fafafc"
+        )
+    ]
 
 
 {-| What an unmounted overlay cell shows instead of empty gray: a muted

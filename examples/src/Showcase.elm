@@ -8,6 +8,7 @@ module Showcase exposing
     , darkTheme
     , demoBox
     , demoRow
+    , demoRowUnfenced
     , fakeKatex
     , fakeKatexDisplay
     , fillWidth
@@ -39,7 +40,11 @@ Main.elm; this module owns the pieces every section shares:
     from the title; the sidebar nav and the scrollspy use the same derivation).
   - `demoRow` — one bordered "demo card" per labelled example group: the
     examples sit in a padded body that scrolls horizontally instead of
-    stretching the page, the label is the card's footer bar.
+    stretching the page, the label is the card's footer bar. `demoRowUnfenced`
+    is the same card without that horizontal fence — for demos whose floating
+    chrome (the slider's value indicator, any inline popover seam) must escape
+    the body box; CSS turns any non-visible overflow axis into a clipper, so
+    a fenced body would cut them off.
   - `demoBox` — the bounded preview box for position:fixed/absolute demos
     (Affix, BackTop, anchor affix): relative + translated so fixed descendants
     pin to the box, overflow-hidden so their geometry stays inside it. Now a
@@ -214,7 +219,13 @@ chromeCssNode t =
             (String.join
                 ""
                 [ "html{scroll-behavior:smooth}"
-                , ".sc-sec{scroll-margin-top:78px}"
+
+                -- Anchor offset: 32px sticky bar + 14px headroom above
+                -- the section box; the section's own top padding (see
+                -- `section`) then puts the title at 110px, leaving the
+                -- tail of the previous section's last card visible above
+                -- it for orientation.
+                , ".sc-sec{scroll-margin-top:46px}"
 
                 -- elm-ui's height-content class (`.s.e > .hc{height:
                 -- auto}`, specificity 0,3,0, re-embedded in per-view
@@ -332,6 +343,15 @@ section t title desc examples =
     Element.column
         [ Element.spacing 16
         , Element.width Element.fill
+
+        -- Breathing room above the title: family sections stack in a
+        -- spacing-0 column (Main.body / familyNode), so this inset IS the
+        -- gap from the previous section's last demo card — the only
+        -- external gap a section gets, and deliberately ~4x the internal
+        -- 16/20px rhythm so a heading visibly belongs to what's below it.
+        -- scroll-margin-top absorbs it on anchor jumps (`.sc-sec` in
+        -- chromeCssNode).
+        , Element.paddingEach { top = 64, bottom = 0, left = 0, right = 0 }
         , Element.htmlAttribute (HA.id (sectionId title))
         , Element.htmlAttribute (HA.class "sc-sec")
         ]
@@ -357,6 +377,54 @@ messages, so the toggle is inert to the page's update loop.
 -}
 demoRow : Theme -> String -> String -> List (Element msg) -> Element msg
 demoRow t key label items =
+    demoCard t
+        key
+        label
+        (Element.wrappedRow
+            [ Element.spacing 16
+            , Element.width Element.fill
+
+            -- The horizontal fence: wide demos scroll inside the card
+            -- instead of stretching the page. One non-visible overflow
+            -- axis forces the other to `auto` (CSS overflow spec), so this
+            -- row is a two-axis clipper — floating chrome that pokes above
+            -- the body (the slider's value indicator) must use
+            -- `demoRowUnfenced` instead.
+            , Element.htmlAttribute
+                (HA.attribute
+                    "style"
+                    "overflow-x:auto;padding:20px"
+                )
+            ]
+            items
+        )
+
+
+{-| `demoRow` without the horizontal fence: the body is a plain padded
+wrappedRow, so absolutely-positioned chrome anchored inside it (the
+slider's value indicator pokes ~37px above the handle) renders unclipped.
+Still page-safe: elm-ui rows wrap at min-content, and every demo routed
+here stays narrower than the column.
+-}
+demoRowUnfenced : Theme -> String -> String -> List (Element msg) -> Element msg
+demoRowUnfenced t key label items =
+    demoCard t
+        key
+        label
+        (Element.wrappedRow
+            [ Element.spacing 16
+            , Element.width Element.fill
+            , Element.padding 20
+            ]
+            items
+        )
+
+
+{-| The shared demo-card shell: the bordered card box with the body on top
+and the footer bar below.
+-}
+demoCard : Theme -> String -> String -> Element msg -> Element msg
+demoCard t key label body =
     Element.column
         [ Element.width Element.fill
         , Element.htmlAttribute
@@ -369,16 +437,7 @@ demoRow t key label items =
                 )
             )
         ]
-        [ Element.wrappedRow
-            [ Element.spacing 16
-            , Element.width Element.fill
-            , Element.htmlAttribute
-                (HA.attribute
-                    "style"
-                    "overflow-x:auto;padding:20px"
-                )
-            ]
-            items
+        [ body
         , footerBar t key label
         ]
 

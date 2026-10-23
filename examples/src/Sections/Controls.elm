@@ -18,14 +18,42 @@ module Sections.Controls exposing
 Checkbox · Switch · Radio, Rate, Slider.
 
 The static rows moved verbatim from Main.elm — that surface feeds the
-check-dom gate, so every root keeps rendering exactly as before. The live
-demo rows (moved verbatim from Live/Controls.elm — same demoRow labels,
+check-dom gate, so every root keeps rendering exactly as before (the six
+draggable slider rows now carry live state underneath; at rest they render
+the same fixed values). The live demo rows (moved verbatim from Live/Controls.elm — same demoRow labels,
 same `#live-*` ids) run a real update loop owned by this module: caller-
 owned state per the port's contract (the component renders whatever the
 model says; every channel feeds one Msg constructor). Where the port ships
 the interaction algebra as pure helpers, update uses those instead of
 re-deriving semantics (`InputNumber.inputUpdate` /
 `deriveValueFromDisplayedValue`, `Slider.stepValue`).
+
+The update returns `( Model, Cmd Msg )` (the Pickers precedent) for
+runtime concerns the pure port cannot own: InputOtp's focus auto-advance —
+upstream's `focusOnChar` needs DOM focus, so `OtpChanged` derives the next
+slot (first empty, else last) and focuses it through `Browser.Dom.focus`
+(`otpAdvance`) — and the Slider drag's press-time rect measurement (below).
+
+The Slider drag runs the port's documented caller-owned runtime for real
+(upstream `Slider.tsx` `handleRailMouseDown`/`startDragging`/
+`handleMouseMove`) — ONE generic runtime over a spec table (`specs`
+below; every draggable row, horizontal or vertical): the `attributes`
+seam carries a `preventDefaultOn "mousedown"` decoder that reads the
+press's clientX/Y (the port's `onMousedown` seam is a bare signal — no
+coordinates), a follow-up `Browser.Dom.getElement` measures the root's box
+(page space; `travelOf` rebases it by the scroll offset so it pairs with
+the events' client coords), the handles travel box is the root inset by
+`handleSize/2` on the travel axis (the cssr `.n-slider-handles` inset
+rule; `handleSizePx` below), the press picks the closest handle
+(`Slider.closestMark` over the row's values; a single value is always
+handle 0) and jumps it through `Slider.pointerToValue` + `sanitizeValue`;
+the document mousemove/mouseup pair then runs via `Browser.Events` (the
+ColorPicker precedent) against the press-cached box — upstream re-reads
+the rect per move, the press snapshot is the established demo compromise.
+Touch drags are out of scope: elm/browser ships no touchmove/touchend
+subscription seam (touchstart's preventDefault still suppresses scroll on
+press). The only deliberately dead sliders are ctl-029's two cells (the
+pinned indicator and the disabled rail are state fixtures, not demos).
 
 Oracle-round divergences (tasks/recon/live-oracle.md):
 
@@ -40,8 +68,14 @@ Oracle-round divergences (tasks/recon/live-oracle.md):
 
 -}
 
+import Browser.Dom
+import Browser.Events
+import Dict
 import Element exposing (Element)
+import Html
 import Html.Attributes as HA
+import Html.Events as HE
+import Json.Decode
 import NUI.Button as Button
 import NUI.ButtonGroup as ButtonGroup
 import NUI.Checkbox as Checkbox
@@ -54,7 +88,64 @@ import NUI.Slider as Slider
 import NUI.Switch as Switch
 import NUI.Theme exposing (Theme)
 import NUI.Types as T
-import Showcase exposing (capitalize, demoRow, section)
+import Showcase exposing (capitalize, demoRow, demoRowUnfenced, section)
+import Task
+
+
+
+-- SLIDER SPEC TABLE (the shared drag runtime's data)
+
+
+{-| One draggable slider row: the DOM/`Browser.Dom` id, the option flags
+the runtime must honor (axes, snap grid) and the initial arrified value.
+Rendering, press handling and move tracking all read this table — adding a
+draggable row is adding an entry. The ctl-029 state fixtures are
+deliberately absent (they pin `hoverIndex`/`dragging`/`disabled`).
+-}
+type alias Spec =
+    { id : String
+    , range : Bool
+    , vertical : Bool
+    , reverse : Bool
+    , min : Float
+    , max : Float
+    , step : Slider.Step
+    , marks : List Slider.Mark
+    , init : List Float
+    }
+
+
+specs : List Spec
+specs =
+    [ { id = "live-slider-marked", range = False, vertical = False, reverse = False, min = 0, max = 100, step = Slider.Step 1, marks = sliderMarks, init = [ 40 ] }
+    , { id = "live-slider-range-marks", range = True, vertical = False, reverse = False, min = 0, max = 100, step = Slider.Step 1, marks = sliderMarks, init = [ 24, 49 ] }
+    , { id = "live-slider-vertical", range = False, vertical = True, reverse = False, min = 0, max = 100, step = Slider.Step 1, marks = sliderMarks, init = [ 77 ] }
+    , { id = "live-slider-vertical-reverse", range = False, vertical = True, reverse = True, min = 0, max = 100, step = Slider.Step 1, marks = sliderMarks, init = [ 77 ] }
+    , { id = "live-slider-snap", range = True, vertical = False, reverse = False, min = 0, max = 100, step = Slider.StepMarks, marks = sliderMarks, init = [ 34, 75 ] }
+    , { id = "live-slider-multi", range = True, vertical = False, reverse = False, min = 0, max = 100, step = Slider.Step 1, marks = sliderMarks, init = [ 10, 50, 90 ] }
+    , singleSpec
+    , { id = "live-slider-range", range = True, vertical = False, reverse = False, min = 0, max = 100, step = Slider.Step 1, marks = rangeMarks, init = [ 20, 60 ] }
+    ]
+
+
+singleSpec : Spec
+singleSpec =
+    { id = "live-slider-single", range = False, vertical = False, reverse = False, min = 0, max = 100, step = Slider.Step 1, marks = [], init = [ 40 ] }
+
+
+specOf : String -> Spec
+specOf id =
+    -- rendered ids all come from `specs`; the fallback keeps the lookup total
+    Maybe.withDefault singleSpec (List.head (List.filter (\s -> s.id == id) specs))
+
+
+configOf : Spec -> { step : Slider.Step, min : Float, max : Float, markValues : List Float }
+configOf spec =
+    { step = spec.step
+    , min = spec.min
+    , max = spec.max
+    , markValues = List.map .value spec.marks
+    }
 
 
 
@@ -74,16 +165,31 @@ type alias Model =
     , city : Maybe String
     , rateValue : Maybe Float
     , rateHover : Maybe Float
-    , slider : Float
-    , sliderActive : Int
-    , sliderHover : Int
-    , sliderDragging : Bool
-    , range : ( Float, Float )
-    , rangeActive : Int
-    , rangeHover : Int
-    , rangeDragging : Bool
+    , sliders : Dict.Dict String RowState
     , otp : List String
     , otpMasked : Bool
+    }
+
+
+{-| One draggable slider row's caller-owned state (the port's contract:
+the component renders whatever this says).
+-}
+type alias RowState =
+    { value : List Float
+    , active : Int
+    , hover : Int
+    , drag : Maybe DragRail
+    }
+
+
+{-| The cached rail geometry a live drag tracks against — the handles
+travel box measured once at press (client space, rebased by `travelOf` so
+it pairs with the events' clientX/clientY directly). The dragged handle
+lives on the row (`RowState.active`, upstream `activeIndexRef`).
+-}
+type alias DragRail =
+    { railStart : Float
+    , railSize : Float
     }
 
 
@@ -101,14 +207,9 @@ init =
     , city = Nothing
     , rateValue = Nothing
     , rateHover = Nothing
-    , slider = 40
-    , sliderActive = -1
-    , sliderHover = -1
-    , sliderDragging = False
-    , range = ( 20, 60 )
-    , rangeActive = -1
-    , rangeHover = -1
-    , rangeDragging = False
+    , sliders =
+        Dict.fromList
+            (List.map (\s -> ( s.id, { value = s.init, active = -1, hover = -1, drag = Nothing } )) specs)
     , otp = []
     , otpMasked = False
     }
@@ -135,48 +236,55 @@ type Msg
     | RateSelected Float
     | RateNudge Float
     | RatePreviewClear
-    | SliderStep Int
-    | SliderMousedown
-    | SliderFocus
-    | SliderBlur
-    | SliderEnter
-    | SliderLeave
-    | RangeStep Int Int
-    | RangeMousedown
-    | RangeFocus Int
-    | RangeBlur Int
-    | RangeEnter Int
-    | RangeLeave Int
+    | SliderMsg String SliderEvent
     | OtpChanged (List String)
     | OtpReset
     | OtpMaskToggled
+    | OtpFocused
+    | DragIgnored
 
 
-update : Msg -> Model -> Model
+{-| One slider row's channel, keyed by the row id at the `SliderMsg` tag:
+the press/measure/move/up drag sequence plus the port's discrete handle
+events and the ±1 step buttons (`Nudge handle ratio` — `Slider.stepValue`).
+-}
+type SliderEvent
+    = RailPress Float Float
+    | Measured Float Float Browser.Dom.Element
+    | Move Float Float
+    | Up
+    | Focus Int
+    | Blur Int
+    | Enter Int
+    | Leave Int
+    | Nudge Int Int
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Press ->
-            { model | presses = model.presses + 1 }
+            ( { model | presses = model.presses + 1 }, Cmd.none )
 
         ResetPresses ->
-            { model | presses = 0 }
+            ( { model | presses = 0 }, Cmd.none )
 
         InputChanged raw ->
-            { model | inputText = raw }
+            ( { model | inputText = raw }, Cmd.none )
 
         InputFocused ->
-            { model | inputFocused = True }
+            ( { model | inputFocused = True }, Cmd.none )
 
         InputBlurred ->
-            { model | inputFocused = False }
+            ( { model | inputFocused = False }, Cmd.none )
 
         PairInput first second source ->
-            { model | pair = ( first, second ), pairSource = Just source }
+            ( { model | pair = ( first, second ), pairSource = Just source }, Cmd.none )
 
         NumberInput raw ->
             -- the port's handleUpdateDisplayedValue: keep the raw buffer,
             -- live-sync value when the option allows it
-            { model
+            ( { model
                 | numberBuffer = Just raw
                 , numberValue =
                     case InputNumber.inputUpdate (numberOptions model) raw of
@@ -185,19 +293,21 @@ update msg model =
 
                         Nothing ->
                             model.numberValue
-            }
+              }
+            , Cmd.none
+            )
 
         NumberChanged payload ->
             -- add / minus buttons (via addUpdate / minusUpdate inside view)
-            { model | numberValue = payload, numberBuffer = Nothing }
+            ( { model | numberValue = payload, numberBuffer = Nothing }, Cmd.none )
 
         NumberCommit ->
             -- the caller-owned blur / Enter commit, verbatim upstream args
-            case
+            ( case
                 InputNumber.deriveValueFromDisplayedValue
                     (InputNumber.contextOf (numberOptions model))
                     { offset = 0, doUpdateIfValid = True, fixPrecision = True, isInputing = False }
-            of
+              of
                 InputNumber.NumberValue v ->
                     { model | numberValue = Just v, numberBuffer = Nothing }
 
@@ -206,12 +316,14 @@ update msg model =
 
                 InputNumber.InvalidValue ->
                     model
+            , Cmd.none
+            )
 
         SwitchToggled on ->
-            { model | switchOn = on }
+            ( { model | switchOn = on }, Cmd.none )
 
         CheckItem index on ->
-            { model
+            ( { model
                 | checks =
                     List.indexedMap
                         (\i c ->
@@ -222,97 +334,280 @@ update msg model =
                                 c
                         )
                         model.checks
-            }
+              }
+            , Cmd.none
+            )
 
         CheckMaster on ->
-            { model | checks = List.map (always on) model.checks }
+            ( { model | checks = List.map (always on) model.checks }, Cmd.none )
 
         RadioPicked value ->
-            { model | city = Just value }
+            ( { model | city = Just value }, Cmd.none )
 
         RateSelected value ->
-            { model | rateValue = Just value }
+            ( { model | rateValue = Just value }, Cmd.none )
 
         RateNudge delta ->
             let
                 base =
                     Maybe.withDefault (Maybe.withDefault 0 model.rateValue) model.rateHover
             in
-            { model | rateHover = Just (clamp 0 5 (base + delta)) }
+            ( { model | rateHover = Just (clamp 0 5 (base + delta)) }, Cmd.none )
 
         RatePreviewClear ->
-            { model | rateHover = Nothing }
+            ( { model | rateHover = Nothing }, Cmd.none )
 
-        SliderStep ratio ->
-            { model | slider = Slider.stepValue singleConfig model.slider ratio }
+        SliderMsg id event ->
+            ( { model | sliders = Dict.update id (Maybe.map (updateRow (specOf id) event)) model.sliders }
+            , case event of
+                RailPress x y ->
+                    -- upstream handleRailMouseDown: the press arrives, the
+                    -- rect read is async in Elm (Browser.Dom) — measure,
+                    -- then commit in Measured. The drag flag is NOT set yet
+                    -- (dragging starts once the press resolves).
+                    Task.attempt (Result.withDefault DragIgnored)
+                        (Task.map (SliderMsg id << Measured x y) (Browser.Dom.getElement id))
 
-        SliderMousedown ->
-            { model | sliderDragging = True, sliderActive = 0 }
-
-        SliderFocus ->
-            { model | sliderActive = 0 }
-
-        SliderBlur ->
-            { model | sliderActive = -1, sliderDragging = False }
-
-        SliderEnter ->
-            { model | sliderHover = 0 }
-
-        SliderLeave ->
-            { model | sliderHover = -1 }
-
-        RangeStep index ratio ->
-            let
-                ( lo, hi ) =
-                    model.range
-
-                next =
-                    Slider.stepValue rangeConfig
-                        (if index == 0 then
-                            lo
-
-                         else
-                            hi
-                        )
-                        ratio
-            in
-            { model
-                | range =
-                    if index == 0 then
-                        ( next, hi )
-
-                    else
-                        ( lo, next )
-            }
-
-        RangeMousedown ->
-            { model | rangeDragging = True, rangeActive = 0 }
-
-        RangeFocus index ->
-            { model | rangeActive = index }
-
-        RangeBlur _ ->
-            { model | rangeActive = -1, rangeDragging = False }
-
-        RangeEnter index ->
-            { model | rangeHover = index }
-
-        RangeLeave _ ->
-            { model | rangeHover = -1 }
+                _ ->
+                    Cmd.none
+            )
 
         OtpChanged value ->
-            { model | otp = value }
+            ( { model | otp = value }, otpAdvance value )
 
         OtpReset ->
-            { model | otp = [] }
+            ( { model | otp = [] }, otpAdvance [] )
 
         OtpMaskToggled ->
-            { model | otpMasked = not model.otpMasked }
+            ( { model | otpMasked = not model.otpMasked }, Cmd.none )
+
+        OtpFocused ->
+            ( model, Cmd.none )
+
+        DragIgnored ->
+            -- getElement failed (the slider unmounted mid-press); upstream's
+            -- railEl-null guard is the equivalent no-op
+            ( model, Cmd.none )
+
+
+{-| One row's event algebra — upstream `handleRailMouseDown` /
+`startDragging` / `handleMouseMove` / `stopDragging` plus the discrete
+handle events, all reading the row's spec for the axis/snap math. A single
+value always picks handle 0; a press picks the closest handle
+(`getClosestMark(pointValue, values)`); the press jumps it
+(`sanitizeValue(pointValue)` — no buffer on the drag path) and caches the
+travel box the move path tracks against. `Up` keeps `active` (upstream
+`stopDragging` clears dragging only; blur clears the rest).
+-}
+updateRow : Spec -> SliderEvent -> RowState -> RowState
+updateRow spec event row =
+    case event of
+        RailPress _ _ ->
+            -- the async measure (update's Press branch) resolves into Measured
+            row
+
+        Measured x y ele ->
+            let
+                rail =
+                    travelOf spec.vertical ele
+
+                pointValue =
+                    pointerValueOf spec rail x y
+
+                picked =
+                    pickHandle row.value pointValue
+
+                current =
+                    Maybe.withDefault spec.min (List.head (List.drop picked row.value))
+            in
+            if picked == -1 then
+                row
+
+            else
+                { row
+                    | value =
+                        List.indexedMap
+                            (\i v ->
+                                if i == picked then
+                                    Slider.sanitizeValue (configOf spec) pointValue current Nothing
+
+                                else
+                                    v
+                            )
+                            row.value
+                    , active = picked
+                    , drag = Just rail
+                }
+
+        Move x y ->
+            case row.drag of
+                Nothing ->
+                    row
+
+                Just rail ->
+                    let
+                        raw =
+                            pointerValueOf spec rail x y
+
+                        current =
+                            Maybe.withDefault spec.min (List.head (List.drop row.active row.value))
+                    in
+                    { row
+                        | value =
+                            List.indexedMap
+                                (\i v ->
+                                    if i == row.active then
+                                        Slider.sanitizeValue (configOf spec) raw current Nothing
+
+                                    else
+                                        v
+                                )
+                                row.value
+                    }
+
+        Up ->
+            { row | drag = Nothing }
+
+        Focus index ->
+            { row | active = index }
+
+        Blur _ ->
+            -- upstream handleHandleBlur: the only clear of activeIndex
+            { row | active = -1, drag = Nothing }
+
+        Enter index ->
+            { row | hover = index }
+
+        Leave _ ->
+            { row | hover = -1 }
+
+        Nudge handle ratio ->
+            let
+                current =
+                    Maybe.withDefault spec.min (List.head (List.drop handle row.value))
+            in
+            { row
+                | value =
+                    List.indexedMap
+                        (\i v ->
+                            if i == handle then
+                                Slider.stepValue (configOf spec) current ratio
+
+                            else
+                                v
+                        )
+                        row.value
+            }
+
+
+{-| Upstream `getClosestMark(pointValue, values).index` — the strictly
+closest value wins (ties keep the first); a single value has no choice
+(handle 0).
+-}
+pickHandle : List Float -> Float -> Int
+pickHandle values pointValue =
+    case values of
+        [ _ ] ->
+            0
+
+        _ ->
+            Slider.closestMark values pointValue
+                |> Maybe.map .index
+                |> Maybe.withDefault -1
+
+
+{-| `Slider.pointerToValue` over the spec's axis/reverse — `pointer` is the
+press/move's coordinate on the travel axis (clientX horizontal,
+clientY vertical).
+-}
+pointerValueOf : Spec -> DragRail -> Float -> Float -> Float
+pointerValueOf spec rail x y =
+    Slider.pointerToValue
+        { vertical = spec.vertical
+        , reverse = spec.reverse
+        , min = spec.min
+        , max = spec.max
+        , railStart = rail.railStart
+        , railSize = rail.railSize
+        , pointer =
+            if spec.vertical then
+                y
+
+            else
+                x
+        }
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.none
+subscriptions model =
+    Sub.batch
+        (List.filterMap
+            (\( id, row ) ->
+                if row.drag /= Nothing then
+                    -- upstream startDragging's document pair (mousemove +
+                    -- mouseup); Browser.Events is the ColorPicker precedent
+                    Just
+                        (Sub.batch
+                            [ Browser.Events.onMouseMove (dragMoveDecoder (\x y -> SliderMsg id (Move x y)))
+                            , Browser.Events.onMouseUp (Json.Decode.succeed (SliderMsg id Up))
+                            ]
+                        )
+
+                else
+                    Nothing
+            )
+            (Dict.toList model.sliders)
+        )
+
+
+{-| clientX/Y out of the document mousemove (the ColorPicker moveDecoder).
+-}
+dragMoveDecoder : (Float -> Float -> Msg) -> Json.Decode.Decoder Msg
+dragMoveDecoder toMsg =
+    Json.Decode.map2 toMsg
+        (Json.Decode.field "clientX" Json.Decode.float)
+        (Json.Decode.field "clientY" Json.Decode.float)
+
+
+{-| The root rect → the `.n-slider-handles` travel box: the cssr insets the
+handles container by `calc(var(--n-handle-size)/2)` on each side of the
+travel axis. `getElement` reports page coords while `mousemove` reports
+client coords, so both edges are rebased by the scroll offset
+(`viewport.x`/`viewport.y`) — vertical reads the client-space `bottom`
+(`pointerToValue`'s vertical convention: railStart = bottom).
+-}
+travelOf : Bool -> Browser.Dom.Element -> DragRail
+travelOf vertical ele =
+    let
+        inset =
+            handleSizePx / 2
+
+        left =
+            ele.element.x - ele.viewport.x
+
+        bottom =
+            ele.element.y + ele.element.height - ele.viewport.y
+    in
+    if vertical then
+        -- the travel box's bottom edge (client space) — the cssr inset
+        -- SUBTRACTS from the bottom on a bottom-anchored axis
+        { railStart = bottom - inset
+        , railSize = ele.element.height - handleSizePx
+        }
+
+    else
+        { railStart = left + inset
+        , railSize = ele.element.width - handleSizePx
+        }
+
+
+{-| `--n-handle-size: 18px` (NUI.Theme.Slider, both modes). The rows never
+override it; if the theme grows a different size, this constant and the
+cssr inset stay in lockstep with it.
+-}
+handleSizePx : Float
+handleSizePx =
+    18
 
 
 
@@ -404,38 +699,47 @@ rateOptions model =
     }
 
 
-sliderOptions : Model -> Slider.Options Msg
-sliderOptions model =
+sliderOptions : Spec -> RowState -> Slider.Options Msg
+sliderOptions spec row =
     { sliderD
-        | value = [ model.slider ]
-        , activeIndex = model.sliderActive
-        , hoverIndex = model.sliderHover
-        , dragging = model.sliderDragging
-        , onMousedown = Just SliderMousedown
-        , onHandleFocus = Just (\_ -> SliderFocus)
-        , onHandleBlur = Just (\_ -> SliderBlur)
-        , onHandleMouseEnter = Just (\_ -> SliderEnter)
-        , onHandleMouseLeave = Just (\_ -> SliderLeave)
-        , attributes = [ Element.htmlAttribute (HA.id "live-slider-single") ]
+        | range = spec.range
+        , value = row.value
+        , min = spec.min
+        , max = spec.max
+        , step = spec.step
+        , marks = spec.marks
+        , vertical = spec.vertical
+        , reverse = spec.reverse
+        , activeIndex = row.active
+        , hoverIndex = row.hover
+        , dragging = row.drag /= Nothing
+        , onHandleFocus = Just (SliderMsg spec.id << Focus)
+        , onHandleBlur = Just (SliderMsg spec.id << Blur)
+        , onHandleMouseEnter = Just (SliderMsg spec.id << Enter)
+        , onHandleMouseLeave = Just (SliderMsg spec.id << Leave)
+        , attributes =
+            [ Element.htmlAttribute (HA.id spec.id)
+            , Element.htmlAttribute (pressAttr (\x y -> SliderMsg spec.id (RailPress x y)))
+            ]
     }
 
 
-rangeOptions : Model -> Slider.Options Msg
-rangeOptions model =
-    { sliderD
-        | range = True
-        , value = [ Tuple.first model.range, Tuple.second model.range ]
-        , marks = rangeMarks
-        , activeIndex = model.rangeActive
-        , hoverIndex = model.rangeHover
-        , dragging = model.rangeDragging
-        , onMousedown = Just RangeMousedown
-        , onHandleFocus = Just RangeFocus
-        , onHandleBlur = Just RangeBlur
-        , onHandleMouseEnter = Just RangeEnter
-        , onHandleMouseLeave = Just RangeLeave
-        , attributes = [ Element.htmlAttribute (HA.id "live-slider-range") ]
-    }
+{-| The press seam: upstream `handleRailMouseDown` reads the event's
+clientX/Y synchronously (getPointValue). The port's `onMousedown` is a bare
+signal, so the demo rides the root `attributes` seam with its own decoder:
+`preventDefault` matches upstream's touch-scroll suppression (upstream
+guards it behind the handle pick, the demo always picks), and the press
+coordinates ride the message into the async rect read (`SliderGo`).
+-}
+pressAttr : (Float -> Float -> Msg) -> Html.Attribute Msg
+pressAttr toMsg =
+    HE.preventDefaultOn "mousedown"
+        (Json.Decode.map (\m -> ( m, True ))
+            (Json.Decode.map2 toMsg
+                (Json.Decode.field "clientX" Json.Decode.float)
+                (Json.Decode.field "clientY" Json.Decode.float)
+            )
+        )
 
 
 otpOptions : Model -> InputOtp.Options Msg
@@ -447,7 +751,36 @@ otpOptions model =
         , mask = model.otpMasked
         , onUpdateValue = Just OtpChanged
         , attributes = [ Element.htmlAttribute (HA.id "live-input-otp") ]
+        , slotInputAttributes = \i -> [ HA.id (otpSlotId i) ]
     }
+
+
+{-| Per-slot ids — the addresses `otpAdvance` focuses (one source for both).
+-}
+otpSlotId : Int -> String
+otpSlotId index =
+    "live-input-otp-slot-" ++ String.fromInt index
+
+
+{-| Upstream's post-input focus as a command: focus the first empty slot
+(all full → the last one). Errors ignored (the id exists while mounted).
+-}
+otpAdvance : List String -> Cmd Msg
+otpAdvance value =
+    let
+        slots =
+            List.take 6 (value ++ List.repeat 6 "")
+
+        target =
+            slots
+                |> List.indexedMap Tuple.pair
+                |> List.filter (Tuple.second >> String.isEmpty)
+                |> List.head
+                |> Maybe.map Tuple.first
+                |> Maybe.withDefault 5
+    in
+    Task.attempt (\_ -> OtpFocused)
+        (Browser.Dom.focus (otpSlotId target))
 
 
 singleConfig : { step : Slider.Step, min : Float, max : Float, markValues : List Float }
@@ -721,14 +1054,18 @@ inputRows theme =
         , Element.el [ Element.width (Element.px 220) ]
             (Input.view theme { inputD | value = "Clearable", clearable = True })
         ]
-    , Element.el [ Element.width (Element.px 440) ]
-        (Input.view theme
-            { inputD
-                | type_ = Input.Textarea
-                , rows = 3
-                , value = "A textarea.\nMultiple lines."
-            }
-        )
+    , demoRow theme
+        "ctl-034"
+        "Textarea"
+        [ Element.el [ Element.width (Element.px 440) ]
+            (Input.view theme
+                { inputD
+                    | type_ = Input.Textarea
+                    , rows = 3
+                    , value = "A textarea.\nMultiple lines."
+                }
+            )
+        ]
     ]
 
 
@@ -849,19 +1186,27 @@ inputOtpLiveSection model theme =
 
 inputNumberRows : Theme -> List (Element msg)
 inputNumberRows theme =
-    [ InputNumber.view theme { inD | value = Just 3 } []
-    , InputNumber.view theme
-        { inD
-            | value = Just 0.5
-            , min = Just 0
-            , max = Just 1
-            , step = 0.01
-            , precision = Just 2
-        }
-        []
-    , InputNumber.view theme { inD | value = Just 42, buttonPlacement = InputNumber.Both } []
-    , InputNumber.view theme { inD | value = Nothing, placeholder = Just "Enter a number" } []
-    , InputNumber.view theme { inD | value = Just 7, disabled = True } []
+    [ demoRow theme
+        "ctl-035"
+        "Basic"
+        [ InputNumber.view theme { inD | value = Just 3 } []
+        , InputNumber.view theme { inD | value = Just 42, buttonPlacement = InputNumber.Both } []
+        , InputNumber.view theme { inD | value = Nothing, placeholder = Just "Enter a number" } []
+        , InputNumber.view theme { inD | value = Just 7, disabled = True } []
+        ]
+    , demoRow theme
+        "ctl-036"
+        "Precision (min/max/step)"
+        [ InputNumber.view theme
+            { inD
+                | value = Just 0.5
+                , min = Just 0
+                , max = Just 1
+                , step = 0.01
+                , precision = Just 2
+            }
+            []
+        ]
     ]
 
 
@@ -1090,32 +1435,15 @@ rateLiveSection model theme =
         (rateRows theme ++ [ rateHoverRow model theme ])
 
 
-sliderRows : Theme -> List (Element msg)
-sliderRows theme =
-    [ demoRow theme
+sliderRows : Model -> Theme -> List (Element Msg)
+sliderRows model theme =
+    [ demoRowUnfenced theme
         "ctl-028"
-        "Single + range (fixed state; marks feed dots/marks/snap)"
-        [ cell
-            (Element.el [ Element.width (Element.px 240) ]
-                (Slider.view theme
-                    { sliderD
-                        | value = [ 40 ]
-                        , marks = sliderMarks
-                    }
-                )
-            )
-        , cell
-            (Element.el [ Element.width (Element.px 240) ]
-                (Slider.view theme
-                    { sliderD
-                        | range = True
-                        , value = [ 24, 49 ]
-                        , marks = sliderMarks
-                    }
-                )
-            )
+        "Single + range (marks feed dots/marks/snap; drags live)"
+        [ cell (sliderCell theme (rowOf model "live-slider-marked"))
+        , cell (sliderCell theme (rowOf model "live-slider-range-marks"))
         ]
-    , demoRow theme
+    , demoRowUnfenced theme
         "ctl-029"
         "Tooltip indicator (pinned via hoverIndex / drag) + disabled"
         [ cell
@@ -1135,77 +1463,71 @@ sliderRows theme =
                 )
             )
         ]
-    , demoRow theme
+    , demoRowUnfenced theme
         "ctl-030"
-        "Vertical + reverse (direction keys flip, dots still 34/75)"
-        [ cell
-            (Element.el [ Element.height (Element.px 220) ]
-                (Slider.view theme
-                    { sliderD
-                        | value = [ 77 ]
-                        , vertical = True
-                        , marks = sliderMarks
-                    }
-                )
-            )
-        , cell
-            (Element.el [ Element.height (Element.px 220) ]
-                (Slider.view theme
-                    { sliderD
-                        | value = [ 77 ]
-                        , vertical = True
-                        , reverse = True
-                        , marks = sliderMarks
-                    }
-                )
-            )
+        "Vertical + reverse (direction keys flip, dots still 34/75; drags live)"
+        [ cell (sliderCell theme (rowOf model "live-slider-vertical"))
+        , cell (sliderCell theme (rowOf model "live-slider-vertical-reverse"))
         ]
-    , demoRow theme
+    , demoRowUnfenced theme
         "ctl-031"
-        "Range snap (`step: 'mark'`) + >2 values (fill suppressed, dots inactive — upstream quirk)"
-        [ cell
-            (Element.el [ Element.width (Element.px 240) ]
-                (Slider.view theme
-                    { sliderD
-                        | range = True
-                        , value = [ 34, 75 ]
-                        , step = Slider.StepMarks
-                        , marks = sliderMarks
-                    }
-                )
-            )
-        , cell
-            (Element.el [ Element.width (Element.px 240) ]
-                (Slider.view theme { sliderD | range = True, value = [ 10, 50, 90 ], marks = sliderMarks })
-            )
+        "Range snap (`step: 'mark'`) + >2 values (fill suppressed, dots inactive — upstream quirk; drags live)"
+        [ cell (sliderCell theme (rowOf model "live-slider-snap"))
+        , cell (sliderCell theme (rowOf model "live-slider-multi"))
         ]
     ]
 
 
-sliderSection : Theme -> Element msg
-sliderSection theme =
+{-| One draggable cell: the spec-driven slider — 240px wide horizontal,
+220px tall vertical. The row-state lookup goes through `specOf`'s table —
+a typo'd id falls back to `singleSpec` (never a crash).
+-}
+sliderCell : Theme -> ( Spec, RowState ) -> Element Msg
+sliderCell theme ( spec, row ) =
+    Element.el
+        (if spec.vertical then
+            [ Element.height (Element.px 220) ]
+
+         else
+            [ Element.width (Element.px 240) ]
+        )
+        (Slider.view theme (sliderOptions spec row))
+
+
+rowOf : Model -> String -> ( Spec, RowState )
+rowOf model id =
+    ( specOf id, Dict.get id model.sliders |> Maybe.withDefault { value = (specOf id).init, active = -1, hover = -1, drag = Nothing } )
+
+
+sliderSection : Model -> Theme -> Element Msg
+sliderSection model theme =
     section theme
         "Slider"
         "The rail/fill/handles numeric input (upstream `NSlider`). Drag is caller-owned runtime (`NUI.Split` precedent): `value`/`activeIndex`/`hoverIndex`/`dragging` in, discrete handle events + the root mousedown signal out; `pointerToValue`/`sanitizeValue`/`stepValue` carry the pointer→snap math. The value indicator renders inline (the teleported follower is the caller's popover seam)."
-        (sliderRows theme)
+        (sliderRows model theme)
 
 
-{-| Live: `#live-slider-single` / `#live-slider-minus` / `#live-slider-plus`.
+{-| Live: `#live-slider-single` / `#live-slider-minus` / `#live-slider-plus`
+(drag via the root press seam + the document mousemove/mouseup pair).
 -}
 sliderSingleRow : Model -> Theme -> Element Msg
 sliderSingleRow model theme =
-    demoRow theme
+    let
+        ( spec, row ) =
+            rowOf model "live-slider-single"
+    in
+    demoRowUnfenced theme
         "ctl-032"
-        "Slider · single (hover/focus indicator + arrow-step algebra)"
+        "Slider · single (drag + hover/focus indicator + arrow-step algebra)"
         [ Element.column [ Element.spacing 6, Element.width (Element.px 260) ]
-            [ Slider.view theme (sliderOptions model)
+            [ Slider.view theme (sliderOptions spec row)
             , Element.row [ Element.spacing 8 ]
-                [ smallButton theme "live-slider-minus" "−1" (SliderStep -1)
-                , smallButton theme "live-slider-plus" "+1" (SliderStep 1)
+                [ smallButton theme "live-slider-minus" "−1" (SliderMsg "live-slider-single" (Nudge 0 -1))
+                , smallButton theme "live-slider-plus" "+1" (SliderMsg "live-slider-single" (Nudge 0 1))
                 , Element.text
-                    (String.fromFloat model.slider
+                    (String.fromFloat (Maybe.withDefault 0 (List.head row.value))
                         ++ " ("
-                        ++ String.fromFloat (Slider.valueToPercentage 0 100 model.slider)
+                        ++ String.fromFloat (Slider.valueToPercentage spec.min spec.max (Maybe.withDefault 0 (List.head row.value)))
                         ++ "%)"
                     )
                 ]
@@ -1213,25 +1535,29 @@ sliderSingleRow model theme =
         ]
 
 
-{-| Live: `#live-slider-range` / `#live-range-*` (per-handle steps; handles
-can cross — see the oracle note above).
+{-| Live: `#live-slider-range` / `#live-range-*` (drag picks the closest
+handle; per-handle steps; handles can cross — see the oracle note above).
 -}
 sliderRangeRow : Model -> Theme -> Element Msg
 sliderRangeRow model theme =
-    demoRow theme
+    let
+        ( spec, row ) =
+            rowOf model "live-slider-range"
+    in
+    demoRowUnfenced theme
         "ctl-033"
-        "Slider · range (per-handle steps, marks snap)"
+        "Slider · range (drag picks the closest handle; per-handle steps, marks snap)"
         [ Element.column [ Element.spacing 6, Element.width (Element.px 260) ]
-            [ Slider.view theme (rangeOptions model)
+            [ Slider.view theme (sliderOptions spec row)
             , Element.row [ Element.spacing 8 ]
-                [ smallButton theme "live-range-lo-minus" "lo −" (RangeStep 0 -1)
-                , smallButton theme "live-range-lo-plus" "lo +" (RangeStep 0 1)
-                , smallButton theme "live-range-hi-minus" "hi −" (RangeStep 1 -1)
-                , smallButton theme "live-range-hi-plus" "hi +" (RangeStep 1 1)
+                [ smallButton theme "live-range-lo-minus" "lo −" (SliderMsg "live-slider-range" (Nudge 0 -1))
+                , smallButton theme "live-range-lo-plus" "lo +" (SliderMsg "live-slider-range" (Nudge 0 1))
+                , smallButton theme "live-range-hi-minus" "hi −" (SliderMsg "live-slider-range" (Nudge 1 -1))
+                , smallButton theme "live-range-hi-plus" "hi +" (SliderMsg "live-slider-range" (Nudge 1 1))
                 , Element.text
-                    (String.fromFloat (Tuple.first model.range)
+                    (String.fromFloat (Maybe.withDefault 0 (List.head row.value))
                         ++ " – "
-                        ++ String.fromFloat (Tuple.second model.range)
+                        ++ String.fromFloat (Maybe.withDefault 0 (List.head (List.drop 1 row.value)))
                     )
                 ]
             ]
@@ -1243,7 +1569,7 @@ sliderLiveSection model theme =
     section theme
         "Slider"
         "The rail/fill/handles numeric input (upstream `NSlider`). Drag is caller-owned runtime (`NUI.Split` precedent): `value`/`activeIndex`/`hoverIndex`/`dragging` in, discrete handle events + the root mousedown signal out; `pointerToValue`/`sanitizeValue`/`stepValue` carry the pointer→snap math. The value indicator renders inline (the teleported follower is the caller's popover seam)."
-        (sliderRows theme ++ [ sliderSingleRow model theme, sliderRangeRow model theme ])
+        (sliderRows model theme ++ [ sliderSingleRow model theme, sliderRangeRow model theme ])
 
 
 {-| The family body in Main.body order — live variants where live demos
