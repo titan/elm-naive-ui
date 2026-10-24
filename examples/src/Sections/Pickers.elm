@@ -3858,7 +3858,7 @@ mentionTagOptions =
 -}
 selectDesc : String
 selectDesc =
-    "Naive UI's select — a bare `.n-select` wrapper around the `NUI.BaseSelection` trigger (every var lives there); the menu is a separate caller-mounted body (upstream opens it in its own follower), `Select.menu` here. `view` derives the display from `value` + options: the single label (unknown values show themselves while `fallbackOption` is on), the multiple tags (same fallback; unknowns drop when off) with the numeric `maxTagCount` slice's `+N` counter, and the clear icon — `clearable && (hover || active) && selected`; `pattern` flows to the filter input, `filterOptions` being the pure default filter. The caller owns the show state, positioning and keyboard."
+    "Choose one value — or many — from a collapsible list of options. Options are plain Elm records, the value and the open state are caller-owned, and the menu is a separate caller-mounted body rendered through the shared popover machinery. Rows cover single, multiple, filterable and tag modes with sizes, statuses and menu slots, then live specimens wired to real model state."
 
 
 selectRows : Model -> Theme -> List (Element Msg)
@@ -4003,7 +4003,7 @@ selectLiveSection model theme =
 -}
 popselectDesc : String
 popselectDesc =
-    "The popover-family body whose select-menu root is itself the popover-shared body (upstream `internalRenderBody` — the `Dropdown` path: no `n-popover` element, `--n-padding` zeroed, `--show-arrow` present unless `overlap` even with no arrow node). Selection is pure — `value` drives the per-option checkmarks, `toggleValue` computes the next value — while the caller owns the show state (`'hover'` trigger), positioning (default placement bottom) and the auto-close on single select. `NUI.SelectMenu` (the support module this composes) stands bare in the last row."
+    "The select's lightweight cousin: a bare list of choices inside a popover attached to any trigger you like — a button, a tag, an icon. Selection is pure (the value drives the checkmarks), while the open state, hover trigger and placement are yours. Rows cover single, multiple and group options, then a live row wired to a real model value."
 
 
 popselectRows : Model -> Theme -> List (Element Msg)
@@ -4067,7 +4067,7 @@ popselectLiveSection model theme =
 -}
 cascaderDesc : String
 cascaderDesc =
-    "Naive UI's cascader — the `NUI.BaseSelection` trigger (the `NUI.Select` lane) plus the multi-column menu, both caller-mounted bodies (upstream opens each in its own follower): `Cascader.menu` for the columns (the hover key's path decides them, `menuModel`; option states come from the value's `All`-strategy normalization) and `Cascader.selectMenu` for the filterable flat body (`filterOptions`' path-label rows). `view` derives the display from `value` + the tree: the single path label (unknown keys show themselves), the multiple cascade-normalized tags with the numeric `maxTagCount` slice. The treemate cascade logic ships pure — `getCheckedKeys` / `check` / `uncheck` / `toggleValue`; the caller owns the show state, positioning, keyboard and remote loading (`loadingKeys`)."
+    "Drill into hierarchical data — province/city/district, category/subcategory — by opening one column per level. The tree is plain data you supply; the value holds the selected path and the open state is caller-owned. Rows cover single and multiple selection, the column menu, the filterable flat mode and slots, then a live drill-down specimen."
 
 
 cascaderRows : Model -> Theme -> List (Element Msg)
@@ -4154,7 +4154,7 @@ cascaderLiveSection model theme =
 -}
 treeSelectDesc : String
 treeSelectDesc =
-    "A selection trigger over a tree menu — show, positioning and the pattern/expand state are caller-owned."
+    "Pick nodes from a tree — departments, categories, any parent/child data — inside a dropdown. Expansion and check state derive from the options plus the value you pass; the open state, positioning and filter pattern are caller-owned. Rows cover basic and multiple selection, checkable parents, filtering with full paths and slot customisation, then a live tree-walking specimen."
 
 
 treeSelectRows : Model -> Theme -> List (Element Msg)
@@ -4309,7 +4309,7 @@ treeSelectLiveSection model theme =
 -}
 autoCompleteDesc : String
 autoCompleteDesc =
-    "Naive UI's autocomplete — a bare `.n-auto-complete` wrapper around a plain `NUI.Input` trigger (NOT the selection: upstream drives `NInput` directly, no `NInternalSelection`); the menu is a separate caller-mounted body (its own follower upstream), `AutoComplete.menu` here — hardcoded Medium, `tabindex -1`, never `--selected` (no checkmark node), and `loading` is the input's suffix spinner, never a menu row. The caller owns the whole show gate (`getShow ? getShow (value || \"\") : value ≠ \"\"`, focused-typed, `showEmpty`), positioning, keyboard and the select commit (`onSelect value` always, then `clearAfterSelect` → null / the label commit, `append` ⇒ `value ++ label`); it does no filtering of its own — options are yours to derive (the email demo's suffix list). `fromString` lifts bare strings; `inputAttributes` is upstream's `inputProps`."
+    "An input that suggests completions as you type — emails, cities, commands. It filters nothing itself: you derive the candidate list from the current text, and the component owns only the rendering. The open gate, keyboard navigation and what a pick commits (replace, append or clear) are caller-owned. Rows cover basics, groups, statuses and the show gate's empty state, then a live filtered specimen."
 
 
 autoCompleteRows : Model -> Theme -> List (Element Msg)
@@ -4618,7 +4618,7 @@ autoCompleteLiveSection model theme =
 -}
 mentionDesc : String
 mentionDesc =
-    "Naive UI's mention — the same family as AutoComplete: a bare `.n-mention` wrapper around a plain `NUI.Input` trigger (NOT the selection — no `NInternalSelection` upstream), plus a separate caller-mounted `NUI.SelectMenu` body (`Mention.menu`). Three divergences from AutoComplete, frozen: `loading` is the MENU's `__loading` row (`MenuOptions.loading`), never the input suffix; upstream filters internally (the default `startsWith` predicate — the port drops the engine, the caller pre-filters and passes the filtered list); and the wrapper's cssr has no `display: inline-flex` (`width: 100%; z-index: auto; position: relative`) with `placeholder` defaulting to `\"\"`. The menu is hardcoded Medium, `tabindex -1`, and `value` stays `Single Nothing` — never `--selected`, no checkmark node. Options are `NUI.SelectMenu.Option` verbatim — no `fromString` (there are no bare-string options upstream); `type_` is `text`/`textarea` only. The caller owns the whole runtime: the show gate (the prefix scan + caret + separator formulas), the select splice, keyboard and positioning (upstream anchors the follower at the caret via mirror-div measurement — un-portable)."
+    "An input that autocompletes @user, #tag and $symbol runs as you type — comment boxes and chat fields. Typing a marker opens a filtered candidate list; picking one splices the value into the text run verbatim. The scan, the splice and the open state are caller-owned, since the component itself is a pure renderer. Rows cover the default @-trigger, custom prefixes, textarea mode, loading and groups, then a live splice specimen."
 
 
 mentionRows : Model -> Theme -> List (Element Msg)
@@ -4812,7 +4812,7 @@ mentionLiveSection model theme =
 -}
 datePickerDesc : String
 datePickerDesc =
-    "An input trigger over a caller-mounted calendar panel — every upstream panel type, with show state, positioning and the value caller-owned."
+    "A date input over a caller-mounted calendar panel — every panel type: date, datetime, ranges, month, year, quarter and week. The value is a plain variant pair you own (single or range), the label a format string, and the open state yours; panel navigation, hover previews and shortcuts ship as pure helpers. Rows cover each panel type with sizes, statuses and range shortcuts, then live single and range specimens."
 
 
 datePickerRows : Model -> Theme -> List (Element Msg)
@@ -4890,7 +4890,7 @@ datePickerLiveSection model theme =
 -}
 timePickerDesc : String
 timePickerDesc =
-    "An input trigger over a caller-mounted clock panel — show state, positioning and the value are caller-owned."
+    "A time input over a caller-mounted column panel — scrollable hour/minute/second lists that snap to valid steps. The value is a plain `Maybe Int` you own, the label a format string like `HH:mm:ss`, and the open state yours; the actions (now, confirm, clear) and disabled-unit filters are options. Rows cover formats from seconds to 12-hour periods, actions and unit filters, then a live specimen."
 
 
 timePickerRows : Model -> Theme -> List (Element Msg)
@@ -4943,7 +4943,7 @@ timePickerLiveSection model theme =
 -}
 colorPickerDesc : String
 colorPickerDesc =
-    "A colour trigger over a caller-mounted palette panel — show state, positioning, drag and the value are caller-owned."
+    "A colour trigger over a caller-mounted palette panel — saturation/hue/alpha surfaces, swatches and hex/rgb/hsl modes. The value is a plain string you own and every drag commits live through the port's colour-conversion helpers, so the trigger and preview track per frame. Rows cover basics, modes, swatches, undo/redo and custom triggers, then a live full-loop specimen."
 
 
 colorPickerRows : Model -> Theme -> List (Element Msg)

@@ -866,7 +866,7 @@ loadingBarSection : Theme -> Element msg
 loadingBarSection theme =
     section theme
         "LoadingBar"
-        "Top loading indicator: a `max-width`-transitioned bar driven by a caller-owned state machine (`start` / `kick` / `finish` / `error`). The container is `position: fixed` by default; the demos pin it relatively."
+        "A slim loading bar pinned to the viewport's top — the classic route-change and long-task indicator. It is pure markup: your model owns the progress machine (start, finish, error) and the bar just transitions its width. Rows show starting, finishing and error states, then a live clock-driven row."
         (loadingBarRows theme)
 
 
@@ -898,7 +898,7 @@ loadingBarLiveSection : Model -> Theme -> Element Msg
 loadingBarLiveSection model theme =
     section theme
         "LoadingBar"
-        "Top loading indicator: a `max-width`-transitioned bar driven by a caller-owned state machine (`start` / `kick` / `finish` / `error`). The container is `position: fixed` by default; the demos pin it relatively."
+        "A slim loading bar pinned to the viewport's top — the classic route-change and long-task indicator. It is pure markup: your model owns the progress machine (start, finish, error) and the bar just transitions its width. Rows show starting, finishing and error states, then a live clock-driven row."
         (loadingBarRows theme ++ [ loadingBarClockRow model theme ])
 
 
@@ -1052,7 +1052,7 @@ popconfirmSection : Theme -> Element msg
 popconfirmSection theme =
     section theme
         "Popconfirm"
-        "The popover body with the confirm panel in its default slot (upstream renders `NPopover` with the `popconfirm` extra class). The panel's icon/body/action structure and the composed action buttons — negative plain `small` first, positive `small` Primary, `positiveProps`/`negativeProps` spreading over the derived base, the action row always rendered — are DOM; the caller owns the show state, the `'click'` trigger and the close gate (upstream's return-false-keeps-it-open is the caller's update)."
+        "A small confirmation bubble ('Delete this?') anchored to the action that needs it. It is the popover body with a confirm panel in its slot: icon, message and the negative/positive buttons are DOM, while your model owns the open state and the close gate. Rows cover defaults and custom texts, then a live confirm flow."
         (popconfirmRows theme)
 
 
@@ -1087,7 +1087,7 @@ popconfirmLiveSection : Model -> Theme -> Element Msg
 popconfirmLiveSection model theme =
     section theme
         "Popconfirm"
-        "The popover body with the confirm panel in its default slot (upstream renders `NPopover` with the `popconfirm` extra class). The panel's icon/body/action structure and the composed action buttons — negative plain `small` first, positive `small` Primary, `positiveProps`/`negativeProps` spreading over the derived base, the action row always rendered — are DOM; the caller owns the show state, the `'click'` trigger and the close gate (upstream's return-false-keeps-it-open is the caller's update)."
+        "A small confirmation bubble ('Delete this?') anchored to the action that needs it. It is the popover body with a confirm panel in its slot: icon, message and the negative/positive buttons are DOM, while your model owns the open state and the close gate. Rows cover defaults and custom texts, then a live confirm flow."
         (popconfirmRows theme ++ [ popconfirmFlowRow model theme ])
 
 
@@ -1095,7 +1095,7 @@ popoverSection : Theme -> Element msg
 popoverSection theme =
     section theme
         "Popover"
-        "The `n-popover` body. The caller owns the show state and the positioned `v-placement` wrapper (here: `popoverHost`); placements, arrows, header/footer and the scrollable scrollbar are static DOM."
+        "A floating panel anchored to its trigger — extra detail, tips or inline controls without leaving the page. The body is caller-mounted: your model owns the open `Bool` and places the panel with a placement attribute. Rows cover placements, arrows, header/footer and a scrollable body, then a switch-controlled live row."
         (popoverRows theme)
 
 
@@ -1151,7 +1151,7 @@ popoverLiveSection : Model -> Theme -> Element Msg
 popoverLiveSection model theme =
     section theme
         "Popover"
-        "The `n-popover` body. The caller owns the show state and the positioned `v-placement` wrapper (here: `popoverHost`); placements, arrows, header/footer and the scrollable scrollbar are static DOM."
+        "A floating panel anchored to its trigger — extra detail, tips or inline controls without leaving the page. The body is caller-mounted: your model owns the open `Bool` and places the panel with a placement attribute. Rows cover placements, arrows, header/footer and a scrollable body, then a switch-controlled live row."
         (popoverRows theme ++ [ popoverControlledRow model theme ])
 
 
@@ -1190,7 +1190,7 @@ tooltipSection : Theme -> Element msg
 tooltipSection theme =
     section theme
         "Tooltip"
-        "Popover wearing waistcoat — the same body (`n-tooltip` marker class), the tooltip theme swapping the colours: a dark bubble in light mode, the popover's own colours in dark."
+        "The popover's tiny sibling: a short hint on hover, ideal for truncated labels and icon-only buttons. Same body with the tooltip theme — a dark bubble in light mode, the popover's own colours in dark. Rows show both themes, then a live row toggled by real hover."
         (tooltipRows theme)
 
 
@@ -1234,7 +1234,7 @@ tooltipLiveSection : Model -> Theme -> Element Msg
 tooltipLiveSection model theme =
     section theme
         "Tooltip"
-        "Popover wearing waistcoat — the same body (`n-tooltip` marker class), the tooltip theme swapping the colours: a dark bubble in light mode, the popover's own colours in dark."
+        "The popover's tiny sibling: a short hint on hover, ideal for truncated labels and icon-only buttons. Same body with the tooltip theme — a dark bubble in light mode, the popover's own colours in dark. Rows show both themes, then a live row toggled by real hover."
         (tooltipRows theme ++ [ tooltipHoverRow model theme ])
 
 
@@ -1418,7 +1418,7 @@ dropdownSection : Model -> Theme -> Element Msg
 dropdownSection model theme =
     section theme
         "Dropdown"
-        "The `n-dropdown-menu` body — the popover runtime's sibling, rendered as its own element (`n-popover-shared` + `n-dropdown` markers, the merged 31-var set). The caller owns show state, the `v-placement` wrapper (here: `popoverHost`), and any submenu mounts."
+        "A menu of actions anchored to a button or right-click zone. The trigger always renders and the menu is a separate caller-mounted body: your model owns the open `Bool`, the placement and which trigger opens it. Rows cover sizes, groups, dividers, icons, submenus and arrows, then live click- and hover-triggered menus."
         (dropdownRows model theme)
 
 
@@ -1498,7 +1498,7 @@ dropdownLiveSection : Model -> Theme -> Element Msg
 dropdownLiveSection model theme =
     section theme
         "Dropdown"
-        "The `n-dropdown-menu` body — the popover runtime's sibling, rendered as its own element (`n-popover-shared` + `n-dropdown` markers, the merged 31-var set). The caller owns show state, the `v-placement` wrapper (here: `popoverHost`), and any submenu mounts."
+        "A menu of actions anchored to a button or right-click zone. The trigger always renders and the menu is a separate caller-mounted body: your model owns the open `Bool`, the placement and which trigger opens it. Rows cover sizes, groups, dividers, icons, submenus and arrows, then live click- and hover-triggered menus."
         (dropdownRows model theme ++ [ dropdownClickRow model theme, dropdownHoverRow model theme ])
 
 
@@ -1675,7 +1675,7 @@ messageSection : Model -> Theme -> Element Msg
 messageSection model theme =
     section theme
         "Message"
-        "Naive UI's message service: one caller-owned `State` holds the provider props (`max` — `Just 0` is unlimited and evictions drop the oldest item instantly, the 3000ms default, merged `keepAliveOnHover`/`closable`, `placement`) plus the queue. `create` appends and stamps the enter phase; `destroy` stamps the leave phase (a no-op while already leaving, like upstream's `hide()` on a hidden message); `remove` splices once the leave has run — the caller owns the hide clock, so these demos are static entered states (`phase = Nothing`) with one mid-enter item. A close click emits `onClose` only — completing the close is the caller's `destroy`; a message's close is never vetoed."
+        "Transient inline feedback that stacks in a corner, like a saved-toast. The queue lives in one caller-owned State: `create` appends, `destroy` stamps the leave phase and `remove` splices it out — your model owns the hide clock and the close click only reports. Rows show kinds, closable items and custom rendering, then a live queue."
         (messageRows model theme)
 
 
@@ -1697,7 +1697,7 @@ messageLiveSection : Model -> Theme -> Element Msg
 messageLiveSection model theme =
     section theme
         "Message"
-        "Naive UI's message service: one caller-owned `State` holds the provider props (`max` — `Just 0` is unlimited and evictions drop the oldest item instantly, the 3000ms default, merged `keepAliveOnHover`/`closable`, `placement`) plus the queue. `create` appends and stamps the enter phase; `destroy` stamps the leave phase (a no-op while already leaving, like upstream's `hide()` on a hidden message); `remove` splices once the leave has run — the caller owns the hide clock, so these demos are static entered states (`phase = Nothing`) with one mid-enter item. A close click emits `onClose` only — completing the close is the caller's `destroy`; a message's close is never vetoed."
+        "Transient inline feedback that stacks in a corner, like a saved-toast. The queue lives in one caller-owned State: `create` appends, `destroy` stamps the leave phase and `remove` splices it out — your model owns the hide clock and the close click only reports. Rows show kinds, closable items and custom rendering, then a live queue."
         (messageRows model theme ++ [ messageQueueRow model theme ])
 
 
@@ -1794,7 +1794,7 @@ notificationSection : Model -> Theme -> Element Msg
 notificationSection model theme =
     section theme
         "Notification"
-        "Naive UI's notification service — the `NUI.Message` twin: one caller-owned `State` (provider props + queue) and pure transforms. Deltas: vars ride BOTH the wrapper and `n-notification`; `--n-icon-color` is emitted only for typed kinds (no `iconColorDefault` upstream); the default `scrollable` provider wraps the queue in an `n-scrollbar` tree (forced off for the `top`/`bottom` centers); the container gains a bare `transitioning` class while any item holds a phase; `content` renders in a `<pre>`; the close click emits `onClose` and the VETO is the caller not calling `destroy` (upstream's `false`/rejected-promise rule). These demos are static entered states — the caller owns the hide clock."
+        "Corner notifications for events the user shouldn't miss — with a title, description and optional action. The Message twin: one caller-owned State plus pure create/destroy/remove transforms, the hide clock and close veto yours. Rows show kinds, closable, rich content and placements, then a live capped queue."
         (notificationRows model theme)
 
 
@@ -1821,7 +1821,7 @@ notificationLiveSection : Model -> Theme -> Element Msg
 notificationLiveSection model theme =
     section theme
         "Notification"
-        "Naive UI's notification service — the `NUI.Message` twin: one caller-owned `State` (provider props + queue) and pure transforms. Deltas: vars ride BOTH the wrapper and `n-notification`; `--n-icon-color` is emitted only for typed kinds (no `iconColorDefault` upstream); the default `scrollable` provider wraps the queue in an `n-scrollbar` tree (forced off for the `top`/`bottom` centers); the container gains a bare `transitioning` class while any item holds a phase; `content` renders in a `<pre>`; the close click emits `onClose` and the VETO is the caller not calling `destroy` (upstream's `false`/rejected-promise rule). These demos are static entered states — the caller owns the hide clock."
+        "Corner notifications for events the user shouldn't miss — with a title, description and optional action. The Message twin: one caller-owned State plus pure create/destroy/remove transforms, the hide clock and close veto yours. Rows show kinds, closable, rich content and placements, then a live capped queue."
         (notificationRows model theme ++ [ notificationQueueRow model theme ])
 
 
@@ -2051,7 +2051,7 @@ modalSection : Model -> Theme -> Element Msg
 modalSection model theme =
     section theme
         "Modal"
-        "The mount-body family — its own fixed tree (container > mask > body-wrapper > scrollbar > content), self-positioned and centred by flex. The caller owns mounting, the show state, the transition clock (one clock drives the mask and body tuples), outside-click closing and Esc; the `dialog`/`confirm` presets compose `NUI.Dialog` (its section follows). The demo cells show the full tree scaled to fit: a `transform: translate(0,0)` host confines the fixed tree, and a scale layer inside it (sized to a virtual viewport, scaled back down) keeps the centred card and the 446px dialog at their real proportions."
+        "A centred dialog with its own mask for decisions that block the flow. Your model owns mounting, the show `Bool`, the transition clock, outside-click closing and Esc; the preset cards compose the Dialog body. Rows cover custom content, card variants, mask options and phases, then a live open/close row (the full fixed tree is scaled to fit each cell)."
         (modalRows model theme)
 
 
@@ -2098,7 +2098,7 @@ modalLiveSection : Model -> Theme -> Element Msg
 modalLiveSection model theme =
     section theme
         "Modal"
-        "The mount-body family — its own fixed tree (container > mask > body-wrapper > scrollbar > content), self-positioned and centred by flex. The caller owns mounting, the show state, the transition clock (one clock drives the mask and body tuples), outside-click closing and Esc; the `dialog`/`confirm` presets compose `NUI.Dialog` (its section follows). The demo cells show the full tree scaled to fit: a `transform: translate(0,0)` host confines the fixed tree, and a scale layer inside it (sized to a virtual viewport, scaled back down) keeps the centred card and the 446px dialog at their real proportions."
+        "A centred dialog with its own mask for decisions that block the flow. Your model owns mounting, the show `Bool`, the transition clock, outside-click closing and Esc; the preset cards compose the Dialog body. Rows cover custom content, card variants, mask options and phases, then a live open/close row (the full fixed tree is scaled to fit each cell)."
         (modalRows model theme ++ [ modalRow model theme ])
 
 
@@ -2252,7 +2252,7 @@ drawerSection : Model -> Theme -> Element Msg
 drawerSection model theme =
     section theme
         "Drawer"
-        "The mount-body sibling of Modal — its own container/mask/host tree, edge-anchored (`position: absolute` per placement, the body transition family derived from it) instead of flex-centred. `NDrawerContent` composition (header/body/footer + close), the 3-state mask, the native-scrollbar seam (default: no scrollbar node, unlike Modal) and the resize trigger are DOM; the caller owns the show state, the transition clock, mask-click closing (`onMaskClick` — the mask is interactive here), Esc and the resize drag."
+        "A panel sliding in from a screen edge — filters, details or a form beside the content. Modal's sibling, edge-anchored instead of centred: your model owns the show `Bool`, the clock, mask-click closing, Esc and the resize drag. Rows cover all four placements, custom content, mask variants and scroll/resize seams, then a live placement picker."
         (drawerRows model theme)
 
 
@@ -2297,7 +2297,7 @@ drawerLiveSection : Model -> Theme -> Element Msg
 drawerLiveSection model theme =
     section theme
         "Drawer"
-        "The mount-body sibling of Modal — its own container/mask/host tree, edge-anchored (`position: absolute` per placement, the body transition family derived from it) instead of flex-centred. `NDrawerContent` composition (header/body/footer + close), the 3-state mask, the native-scrollbar seam (default: no scrollbar node, unlike Modal) and the resize trigger are DOM; the caller owns the show state, the transition clock, mask-click closing (`onMaskClick` — the mask is interactive here), Esc and the resize drag."
+        "A panel sliding in from a screen edge — filters, details or a form beside the content. Modal's sibling, edge-anchored instead of centred: your model owns the show `Bool`, the clock, mask-click closing, Esc and the resize drag. Rows cover all four placements, custom content, mask variants and scroll/resize seams, then a live placement picker."
         (drawerRows model theme ++ [ drawerRow model theme ])
 
 
@@ -2509,7 +2509,7 @@ dialogSection : Model -> Theme -> Element Msg
 dialogSection model theme =
     section theme
         "Dialog"
-        "A pure body component (upstream `NDialog`) — the `.n-dialog` card, never a mask or container. Standalone here, and as Modal's `dialog`/`confirm` preset bodies (the preset adds `n-modal` + `aria-modal`, phase class last). Composed actions (negative ghost/small first, positive small + kind-derived + loading), the kind→ icon/type system, icon-top placement, and the caller-owned runtime: the `useDialog` queue is ported as `NUI.DialogProvider` (fixed queues below — one caller-owned `State`, pure transforms, no clock: dialogs persist until destroyed), while close gating, mask/esc stay yours (see Modal)."
+        "The card that makes Modal useful — title, content and action buttons, with info/success/warning/error kinds. Rendered bare here and inside Modal's presets; the useDialog queue is ported as a provider holding one caller-owned State with pure transforms. Rows cover kinds, presets, icon-top and loading states, then a live positive/negative flow."
         (dialogRows model theme)
 
 
@@ -2551,7 +2551,7 @@ dialogLiveSection : Model -> Theme -> Element Msg
 dialogLiveSection model theme =
     section theme
         "Dialog"
-        "A pure body component (upstream `NDialog`) — the `.n-dialog` card, never a mask or container. Standalone here, and as Modal's `dialog`/`confirm` preset bodies (the preset adds `n-modal` + `aria-modal`, phase class last). Composed actions (negative ghost/small first, positive small + kind-derived + loading), the kind→ icon/type system, icon-top placement, and the caller-owned runtime: the `useDialog` queue is ported as `NUI.DialogProvider` (fixed queues below — one caller-owned `State`, pure transforms, no clock: dialogs persist until destroyed), while close gating, mask/esc stay yours (see Modal)."
+        "The card that makes Modal useful — title, content and action buttons, with info/success/warning/error kinds. Rendered bare here and inside Modal's presets; the useDialog queue is ported as a provider holding one caller-owned State with pure transforms. Rows cover kinds, presets, icon-top and loading states, then a live positive/negative flow."
         (dialogRows model theme ++ [ dialogRow model theme ])
 
 
