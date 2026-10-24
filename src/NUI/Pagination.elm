@@ -1,14 +1,6 @@
 module NUI.Pagination exposing
-    ( Options
-    , PageItem(..)
-    , PageItemsInfo
-    , PageSizeOption(..)
-    , cssVarsFor
-    , defaults
-    , getDefaultPageSize
-    , pageCount
-    , pageItems
-    , view
+    ( Options, PageSizeOption(..), PageItem(..), PageItemsInfo, pageItems, pageCount, getDefaultPageSize, defaults
+    , view, cssVarsFor
     )
 
 {-| Naive UI's `Pagination`, rebuilt on elm-ui.
@@ -78,6 +70,9 @@ them here):
     `Small` for the item metrics (the jumper input still gets upstream's
     `smallerSize` of the clamped size).
 
+@docs Options, PageSizeOption, PageItem, PageItemsInfo, pageItems, pageCount, getDefaultPageSize, defaults
+@docs view, cssVarsFor
+
 -}
 
 import Element exposing (Element)
@@ -105,6 +100,25 @@ type PageSizeOption
     | PageSizeOption { label : String, value : Int }
 
 
+{-| The pagination options. The data model: `currentPage` is the page
+being viewed (1-based; upstream's `page` prop), `itemCount` / `pageCount`
+name the total either way (item count wins when both are set — the merged
+page count derives as `max 1 (ceil(itemCount / mergedPageSize))`), and
+`pageSize` is the page size (`Nothing` falls back to `getDefaultPageSize`
+with these `pageSizes`). The window: `pageSlot` (default 9) is the max
+visible page cells upstream's algorithm centers on the current page, and
+`showQuickJumper` adds the “Goto” input (`jumperValue` is its text,
+`onJumperInput` receives it digit-filtered). `showQuickJumpDropdown`
+only decides whether `pageItems` attaches option lists to the ellipses
+(the hover popselect itself is not ported). Presentation: `disabled`,
+`simple` (the `\{{page}} / N` readout), `size` (no `tiny` — clamps to
+`small`), `rtl`. Events: `onUpdatePage` fires for every navigation
+(page clicks, prev / next, the ellipses' fast jumps) with the target
+page — only when enabled and the target differs (upstream
+`doUpdatePage`); `onUpdatePageSize` exists for the unported size
+picker. The `view` children are the `prefix` slot; `suffix` covers the
+`suffix` slot. `attributes` land on the root.
+-}
 type alias Options msg =
     { currentPage : Int
     , itemCount : Maybe Int
@@ -127,6 +141,10 @@ type alias Options msg =
     }
 
 
+{-| Upstream's defaults: page 1, no counts, `pageSlot` 9, `pageSizes`
+`[ 10 ]`, medium, quick-jump dropdown on, jumper and simple off, no
+handlers, empty jumper text.
+-}
 defaults : Options msg
 defaults =
     { currentPage = 1
@@ -442,6 +460,13 @@ mergedPageCount opts =
 -- VIEW
 
 
+{-| The `n-pagination` root: modifier classes (`--rtl`, `--disabled`,
+`--simple`), the theme vars, the caller's `attributes`, and the derived
+row — prefix slot, prev button, the page window (or the simple-mode
+readout), next button, the optional quick jumper, then the suffix slot.
+Every clickable item routes through upstream's `doUpdatePage` guard (no
+handler when disabled or the target is the current page).
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     let

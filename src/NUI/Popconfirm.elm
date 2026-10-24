@@ -1,10 +1,4 @@
-module NUI.Popconfirm exposing
-    ( ActionText(..)
-    , Options
-    , cssVars
-    , defaults
-    , view
-    )
+module NUI.Popconfirm exposing (ActionText(..), Options, defaults, view, cssVars)
 
 {-| Naive UI's `Popconfirm` — the popover body plus the confirm panel
 (upstream renders `NPopover` on its default body path with
@@ -50,6 +44,8 @@ shape; pinned).
 return-`false`-blocks-close gate (`onPositiveClick` resolving false keeps the
 popover open) is the caller's update deciding whether to unmount; the arrow /
 placement / width ride the `popover` options untouched.
+
+@docs ActionText, Options, defaults, view, cssVars
 
 -}
 

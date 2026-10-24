@@ -1,24 +1,6 @@
 module NUI.Message exposing
-    ( Item
-    , Kind(..)
-    , Options
-    , Placement(..)
-    , State
-    , create
-    , cssVarsFor
-    , defaults
-    , destroy
-    , destroyAll
-    , effectiveDuration
-    , error
-    , info
-    , init
-    , item
-    , loading
-    , remove
-    , success
-    , view
-    , warning
+    ( Placement(..), Kind(..), Options, defaults, Item, item, State, init, create, info, success, warning, error
+    , loading, destroy, destroyAll, remove, effectiveDuration, view, cssVarsFor
     )
 
 {-| Naive UI's `Message` service (provider + environments), rebuilt on elm-ui.
@@ -127,6 +109,9 @@ the item's `options` instead.
   - **`onClose` return value** — ignored (upstream ignores it too).
   - **`themeClass` / `inlineThemeDisabled`** — not ported; the inline
     `--n-*` vars are always emitted (upstream's default mode).
+
+@docs Placement, Kind, Options, defaults, Item, item, State, init, create, info, success, warning, error
+@docs loading, destroy, destroyAll, remove, effectiveDuration, view, cssVarsFor
 
 -}
 

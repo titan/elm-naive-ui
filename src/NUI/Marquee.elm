@@ -1,11 +1,8 @@
-module NUI.Marquee exposing
-    ( Options
-    , cssVarsFor
-    , defaults
-    , view
-    )
+module NUI.Marquee exposing (Options, defaults, view, cssVarsFor)
 
-{-| Naive UI's `Marquee`, rebuilt on elm-ui.
+{-| Naive UI's `Marquee`, rebuilt on elm-ui — the infinitely scrolling strip
+(announcement tickers, one-line news crawls, status runs) built from two
+copies of the same content sliding side by side.
 
     import NUI.Marquee exposing (defaults)
 
@@ -24,6 +21,8 @@ count). This library is pure, so the caller owns those numbers: pass the scroll
 (`repeatCountInOneGroup`). The rendered DOM (two `__group`s, one item repeated)
 is exactly upstream's.
 
+@docs Options, defaults, view, cssVarsFor
+
 -}
 
 import Element exposing (Element)
@@ -31,6 +30,18 @@ import NUI.Internal as I
 import NUI.Theme exposing (Theme)
 
 
+{-| The marquee options. Three fields are the caller-owned replacement for
+upstream's measured runtime (see the module docs): `duration` is the scroll
+span — upstream computes `contentWidth * repeatCount / speed` (its `speed`
+prop defaults to `48`) and this port takes the seconds directly, so the
+upstream default `duration = 0` renders a _stationary_ strip exactly as an
+unmeasured upstream marquee does (its `contentWidth` starts at `-1`);
+`play` maps `--n-play` (`False` pauses the animation); and with `autoFill`
+on, `repeat` is the `repeatCountInOneGroup` upstream derives as
+`ceil(containerWidth / contentWidth)` — the item count per group (group one
+keeps one original plus `repeat - 1` mirrors; group two repeats `repeat`
+mirrors). `attributes` land on the root `n-marquee` element.
+-}
 type alias Options msg =
     { duration : Float
     , play : Bool
@@ -40,6 +51,10 @@ type alias Options msg =
     }
 
 
+{-| Upstream's implicit state before any measurement: running, not
+auto-filling, one copy per group, a `0s` duration (the animation is a no-op
+until the caller supplies one).
+-}
 defaults : Options msg
 defaults =
     { duration = 0
@@ -50,6 +65,13 @@ defaults =
     }
 
 
+{-| The scrolling strip: the root `n-marquee` element (plus `--auto-fill`
+when `options.autoFill`) carrying the animation vars and the caller's
+`attributes`, wrapping the two `n-marquee__group` rows — the first holds the
+original item plus the auto-fill mirrors, the second the mirror run. The
+children are the slot content, rendered once per item (both the original and
+every mirror get the same list).
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view _ opts children =
     let

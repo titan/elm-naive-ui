@@ -1,14 +1,4 @@
-module NUI.Popselect exposing
-    ( Options
-    , Placement
-    , Size(..)
-    , cssVars
-    , defaults
-    , placementAttribute
-    , placementName
-    , toggleValue
-    , view
-    )
+module NUI.Popselect exposing (Size(..), Placement, Options, defaults, view, cssVars, toggleValue, placementName, placementAttribute)
 
 {-| Naive UI's `Popselect` — the popover-family body whose **select-menu root
 is the popover-shared body** (upstream swaps the body via
@@ -52,6 +42,8 @@ selects — or deselects to `Single Nothing` when `cancelable` and the value
 was current). Upstream then auto-closes on single select — the caller's
 update does that here. Sizes: upstream `PopselectSize` has no `tiny` — the
 four constructors map onto `NUI.SelectMenu.Size` internally.
+
+@docs Size, Placement, Options, defaults, view, cssVars, toggleValue, placementName, placementAttribute
 
 -}
 

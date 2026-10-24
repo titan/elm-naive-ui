@@ -1,23 +1,6 @@
 module NUI.Notification exposing
-    ( Item
-    , Kind(..)
-    , Options
-    , Placement(..)
-    , State
-    , create
-    , cssVarsFor
-    , defaults
-    , destroy
-    , destroyAll
-    , effectiveDuration
-    , error
-    , info
-    , init
-    , item
-    , remove
-    , success
-    , view
-    , warning
+    ( Placement(..), Kind(..), Options, defaults, Item, item, State, init, create, info, success, warning, error
+    , destroy, destroyAll, remove, effectiveDuration, view, cssVarsFor
     )
 
 {-| Naive UI's `Notification` service (provider + environments), rebuilt on
@@ -131,6 +114,9 @@ renders exactly the DOM the environments would show:
     `--n-*` vars are always emitted (upstream's default mode).
   - **`onAfterEnter`** — notification-only (message has none); fires from the
     caller's clock when the enter ladder settles.
+
+@docs Placement, Kind, Options, defaults, Item, item, State, init, create, info, success, warning, error
+@docs destroy, destroyAll, remove, effectiveDuration, view, cssVarsFor
 
 -}
 

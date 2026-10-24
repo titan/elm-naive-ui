@@ -1,11 +1,4 @@
-module NUI.Modal exposing
-    ( Options
-    , Preset(..)
-    , cardDefaults
-    , cssVars
-    , defaults
-    , view
-    )
+module NUI.Modal exposing (Preset(..), Options, defaults, cardDefaults, view, cssVars)
 
 {-| Naive UI's `Modal` — the mount-body family: unlike `NUI.Popover`/
 `NUI.Dropdown` (a follower anchored to a trigger), Modal renders its own fixed
@@ -105,6 +98,8 @@ body is sized for free. The env-level runtime (`useDialog` queue, the
 return-`false`-blocks-close gate, mask/esc/drag) is caller-owned — see
 `NUI.Dialog`'s contract.
 
+@docs Preset, Options, defaults, cardDefaults, view, cssVars
+
 -}
 
 import Element exposing (Element)
@@ -129,6 +124,16 @@ type Preset msg
     | Confirm (NUI.Dialog.Options msg)
 
 
+{-| The container options. `show` gates the mask and the body-wrapper tree
+(each ALSO renders while its own transition phase is a leave phase — see
+`maskTransition` / `bodyTransition`; `show = False` with no leave phase
+renders a bare container, i.e. unmount the view when fully closed).
+`showMask` (`True` upstream) drops the mask node and adds
+`n-modal-body-wrapper--mask-hidden` — upstream's mask is inert either way,
+so outside-click closing is always caller wiring. `zIndex` (`Just n` →
+`z-index: n` appended after the vars; `Nothing` omits it — upstream's
+z-index pooling is not modelled). `attributes` land on the container div.
+-}
 type alias Options msg =
     { show : Bool
     , showMask : Bool
@@ -139,6 +144,10 @@ type alias Options msg =
     }
 
 
+{-| Hidden and at rest: not shown, mask on, no z-index, no transition
+phases — the state that renders the bare container (mount `view` only when
+something is visible).
+-}
 defaults : Options msg
 defaults =
     { show = False
@@ -162,6 +171,12 @@ cardDefaults =
     { base | bordered = False }
 
 
+{-| The mount-body modal: the fixed full-viewport container (vars, optional
+`z-index`, the caller's `attributes`) holding the optional mask, then the
+scroll-content body wrapper with the preset's content node — each part
+rendered only while `show` or a leave phase says so (see the module docs
+for the caller-owned clock).
+-}
 view : Theme -> Options msg -> Preset msg -> Element msg
 view theme opts preset =
     let

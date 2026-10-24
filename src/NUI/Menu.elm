@@ -1,19 +1,6 @@
 module NUI.Menu exposing
-    ( DividerOption
-    , GroupOption
-    , LeafOption
-    , Mode(..)
-    , Option(..)
-    , Options
-    , Placement
-    , cssVars
-    , defaults
-    , expandTo
-    , initialExpandedKeys
-    , keyPathTo
-    , submenuDropdownOptions
-    , toggleExpanded
-    , view
+    ( Placement, Mode(..), Option(..), LeafOption, GroupOption, DividerOption, Options, defaults, view, keyPathTo
+    , initialExpandedKeys, toggleExpanded, expandTo, submenuDropdownOptions, cssVars
     )
 
 {-| Naive UI's `Menu` — the vertical/horizontal navigation tree. Upstream is
@@ -131,6 +118,9 @@ new `on-update:value`), and keyboard navigation (upstream has none — only
 `:focus-within` CSS parity, which the extracted rules carry).
 
 (Record updates bind `defaults` to a local first — see `NUI.Button`.)
+
+@docs Placement, Mode, Option, LeafOption, GroupOption, DividerOption, Options, defaults, view, keyPathTo
+@docs initialExpandedKeys, toggleExpanded, expandTo, submenuDropdownOptions, cssVars
 
 -}
 

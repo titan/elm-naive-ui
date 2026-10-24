@@ -1,13 +1,4 @@
-module NUI.Popover exposing
-    ( Options
-    , Placement(..)
-    , cssVars
-    , defaults
-    , placementAttribute
-    , placementName
-    , view
-    , viewWithVars
-    )
+module NUI.Popover exposing (Placement(..), placementName, placementAttribute, Options, defaults, view, viewWithVars, cssVars)
 
 {-| Naive UI's `Popover` body (`n-popover`), rebuilt on elm-ui.
 
@@ -69,6 +60,8 @@ fallbacks, so an unset var degrades the arrow position to `auto` (the
   - `extraClasses` is upstream's `internalExtraClass` slot — extra classes
     after `n-popover-shared` (and `--rtl`), before the conditional modifiers.
     `NUI.Tooltip` uses it to add its `n-tooltip` marker.
+
+@docs Placement, placementName, placementAttribute, Options, defaults, view, viewWithVars, cssVars
 
 -}
 
