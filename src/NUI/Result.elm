@@ -1,11 +1,4 @@
-module NUI.Result exposing
-    ( Options
-    , Size(..)
-    , Status(..)
-    , cssVarsFor
-    , defaults
-    , view
-    )
+module NUI.Result exposing (Options, Size(..), Status(..), cssVarsFor, defaults, view)
 
 {-| Naive UI's `Result`, rebuilt on elm-ui.
 
@@ -26,6 +19,8 @@ The visual result is Naive UI's own: the element carries the `.n-result` BEM cla
 and Naive UI's `--n-*` custom properties, and `NUI.Css` ships Naive UI's exact CSS.
 The children of `view` are the default slot (`.n-result-content`); `footer` renders
 the footer slot.
+
+@docs Options, Size, Status, cssVarsFor, defaults, view
 
 -}
 
@@ -64,6 +59,11 @@ type Size
     | Huge
 
 
+{-| The result options — Naive UI's props: `status`, `size`, the `title` /
+`description` strings, `icon` (the icon slot; `Nothing` renders the status
+preset), and `footer` (the footer slot). No `attributes` — upstream takes
+no fallthrough attrs here.
+-}
 type alias Options msg =
     { status : Status
     , size : Size
@@ -74,6 +74,8 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults — an `info` result at `medium` with nothing set.
+-}
 defaults : Options msg
 defaults =
     { status = Info
@@ -85,6 +87,10 @@ defaults =
     }
 
 
+{-| The `n-result` element — the status icon (`.n-result-icon`), the header
+(title + description, each rendered only when set), the default-slot
+children as `.n-result-content` (only when non-empty), and the footer.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     let

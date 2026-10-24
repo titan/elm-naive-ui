@@ -1,16 +1,4 @@
-module NUI.Select exposing
-    ( MenuOptions
-    , Options
-    , Size(..)
-    , Status
-    , defaults
-    , filterOptions
-    , menu
-    , menuDefaults
-    , menuVars
-    , toggleValue
-    , view
-    )
+module NUI.Select exposing (MenuOptions, Options, Size(..), Status, defaults, filterOptions, menu, menuDefaults, menuVars, toggleValue, view)
 
 {-| Naive UI's `Select` — a thin composition over `NUI.BaseSelection` (the
 trigger) and `NUI.SelectMenu` (the body). NOT a popover-family body-swap:
@@ -71,6 +59,8 @@ merging, `consistentMenuWidth` (width follows the trigger's wrapper),
 (declared, never read) — not ported; `items`/`onChange` deprecated; the
 `default` slot upstream never renders. Values are `String` keys
 (upstream allows numbers; the documented `NUI.SelectMenu` limitation).
+
+@docs MenuOptions, Options, Size, Status, defaults, filterOptions, menu, menuDefaults, menuVars, toggleValue, view
 
 -}
 

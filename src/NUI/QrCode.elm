@@ -1,11 +1,4 @@
-module NUI.QrCode exposing
-    ( ErrorCorrectionLevel(..)
-    , Options
-    , Padding(..)
-    , cssVarsFor
-    , defaults
-    , view
-    )
+module NUI.QrCode exposing (ErrorCorrectionLevel(..), Options, Padding(..), cssVarsFor, defaults, view)
 
 {-| Naive UI's `QrCode`, rebuilt on elm-ui.
 
@@ -37,6 +30,8 @@ the caller owns loading it. A `value` that does not fit yields an empty
 container (upstream throws); the default `value` is `"-"`, mirroring upstream's
 `value ?? '-'` fallback.
 
+@docs ErrorCorrectionLevel, Options, Padding, cssVarsFor, defaults, view
+
 -}
 
 import Element exposing (Element)
@@ -67,6 +62,13 @@ type Padding
     | Custom String
 
 
+{-| The `qr-code` options — Naive UI's props one-to-one: `value` (text),
+`color` / `backgroundColor` (the dark modules / the quiet-zone ground),
+`iconSrc` + `iconSize` (the centered logo `<image>`; `0` means 10% of
+`size`, upstream's `0.1 * size` fallback), `size` (the square's pixel
+edge), `padding` (the quiet zone), `errorCorrectionLevel`, and the
+caller's `attributes` (upstream's fallthrough attrs).
+-}
 type alias Options msg =
     { value : String
     , color : String
@@ -80,6 +82,11 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults, value-for-value: a `"-"` value (upstream's
+`value ?? '-'` fallback), black on white, a 100px symbol, a 12px quiet
+zone, no icon (and a 40px icon size when one is set), `M`edium error
+correction, no attributes.
+-}
 defaults : Options msg
 defaults =
     { value = "-"

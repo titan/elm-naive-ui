@@ -1,12 +1,4 @@
-module NUI.Space exposing
-    ( Align(..)
-    , Direction(..)
-    , Justify(..)
-    , Options
-    , SpaceSize(..)
-    , defaults
-    , view
-    )
+module NUI.Space exposing (Align(..), Direction(..), Justify(..), Options, SpaceSize(..), defaults, view)
 
 {-| Naive UI's `Space`, rebuilt on elm-ui.
 
@@ -19,6 +11,17 @@ Naive UI's Space ships no CSS — it is a plain flex container styled inline
 `gap`). This module reproduces exactly those declarations as inline styles on an
 elm-ui `row`/`column`, so the rendered layout matches Naive UI's
 flex-gap-supported output (every modern browser).
+
+**Wrapper divergence.** Upstream defaults to `wrapItem: true`, wrapping every
+child in a `div[role=none]` (the `itemClass` / `itemStyle` carriers, and the
+pre-flex-gap margin layout). This port renders the children straight into the
+flex container — equivalent to upstream's `wrapItem: false` +
+`internalUseGap` shape (the one modern browsers take anyway through the
+`ensureSupportFlexGap` probe), so `wrapItem` / `itemClass` / `itemStyle` are
+not modelled. An empty child list renders `Element.none`, like upstream's
+`!children.length → null`.
+
+@docs Align, Direction, Justify, Options, SpaceSize, defaults, view
 
 -}
 
@@ -73,6 +76,13 @@ type SpaceSize
     | Number2 Int Int
 
 
+{-| The space options — Naive UI's props one-to-one: `direction` + `reverse`
+(the flex-direction), `size` (the gap), `align` (`Nothing` omits the
+declaration, the flex default — upstream's absent prop), `wrap` (only
+effective horizontally, like upstream's `!wrap || vertical → nowrap`),
+`justify`, `inline`, `rtl`, and `attributes`. See the module docstring for
+the unmodelled `wrapItem` wrapper.
+-}
 type alias Options msg =
     { direction : Direction
     , size : SpaceSize
@@ -86,6 +96,9 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults: a horizontal wrapping row at the `medium` gap, no
+align override, start-justified, block-level, LTR.
+-}
 defaults : Options msg
 defaults =
     { direction = Horizontal
@@ -100,6 +113,11 @@ defaults =
     }
 
 
+{-| The `n-space` element — the flex container with Naive UI's exact inline
+declarations (display, flex-direction, justify-content, flex-wrap, gap,
+align-items when set) and the `--rtl` marker. `Element.none` for an empty
+child list, like upstream's null render.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     if List.isEmpty children then

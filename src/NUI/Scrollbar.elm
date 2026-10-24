@@ -1,11 +1,4 @@
-module NUI.Scrollbar exposing
-    ( HorizontalPlacement(..)
-    , Options
-    , VerticalPlacement(..)
-    , cssVars
-    , defaults
-    , view
-    )
+module NUI.Scrollbar exposing (HorizontalPlacement(..), Options, VerticalPlacement(..), cssVars, defaults, view)
 
 {-| Naive UI's `Scrollbar` (`n-scrollbar`), rebuilt on elm-ui.
 
@@ -82,6 +75,8 @@ the scrollbar root — `NUI.DrawerContent`'s non-native body uses it for the
     attributes (an `id`) on the scrolling `n-scrollbar-container` div so
     `Browser.Dom.setViewportOf` can address it; the container's own classes and
     structure stay upstream's.
+
+@docs HorizontalPlacement, Options, VerticalPlacement, cssVars, defaults, view
 
 -}
 

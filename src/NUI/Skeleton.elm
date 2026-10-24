@@ -1,10 +1,4 @@
-module NUI.Skeleton exposing
-    ( Length(..)
-    , Options
-    , cssVarsFor
-    , defaults
-    , view
-    )
+module NUI.Skeleton exposing (Length(..), Options, cssVarsFor, defaults, view)
 
 {-| Naive UI's `Skeleton`, rebuilt on elm-ui.
 
@@ -37,6 +31,8 @@ Naive UI's `Skeleton` renders an empty placeholder div and has no slot, so
 the `List (Element msg)` parameter exists only to keep the uniform NUI
 component API — children are not rendered.
 
+@docs Length, Options, cssVarsFor, defaults, view
+
 -}
 
 import Element exposing (Element)
@@ -57,6 +53,14 @@ type Length
     | Custom String
 
 
+{-| The skeleton options — Naive UI's props one-to-one: `text` (inline-block
+text-line shape, `vertical-align: -0.125em`), `round` (the `4096px`
+pill), `circle` (a `50%` disc; width falls back to height and vice versa),
+`height`/`width` (explicit `Length`s), `size` (a preset height), `repeat`
+(> 1 wraps the copies in the `display: contents` fragment stand-in),
+`animated` (`animation: none` when off), `sharp` (skips the theme's
+`border-radius`), and `attributes`.
+-}
 type alias Options msg =
     { text : Bool
     , round : Bool
@@ -71,6 +75,9 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults: one sharp animated rectangle, no explicit size —
+the `.n-skeleton` CSS sizes it.
+-}
 defaults : Options msg
 defaults =
     { text = False
@@ -86,6 +93,10 @@ defaults =
     }
 
 
+{-| The `.n-skeleton` placeholder (or, under `repeat > 1`, the
+`display: contents` fragment stand-in holding copy + `'\n'` pairs). The
+children parameter is ignored — see the module docstring.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts _ =
     let

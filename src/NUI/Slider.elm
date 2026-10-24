@@ -1,17 +1,4 @@
-module NUI.Slider exposing
-    ( Mark
-    , Options
-    , Step(..)
-    , closestMark
-    , cssVars
-    , defaults
-    , indicatorCssVars
-    , pointerToValue
-    , sanitizeValue
-    , stepValue
-    , valueToPercentage
-    , view
-    )
+module NUI.Slider exposing (Mark, Options, Step(..), closestMark, cssVars, defaults, indicatorCssVars, pointerToValue, sanitizeValue, stepValue, valueToPercentage, view)
 
 {-| Naive UI's `Slider` — the rail/fill/handles navigation for numeric
 values, single or range. Upstream is one component over an arrified value
@@ -94,6 +81,8 @@ percentage offset inside it.
     pass anything but `±1`).
 
 (Record updates bind `defaults` to a local first — see `NUI.Button`.)
+
+@docs Mark, Options, Step, closestMark, cssVars, defaults, indicatorCssVars, pointerToValue, sanitizeValue, stepValue, valueToPercentage, view
 
 -}
 

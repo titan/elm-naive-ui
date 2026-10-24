@@ -1,14 +1,4 @@
-module NUI.Radio exposing
-    ( Choice
-    , GroupOptions
-    , Options
-    , button
-    , choice
-    , defaults
-    , group
-    , groupDefaults
-    , view
-    )
+module NUI.Radio exposing (Choice, GroupOptions, Options, button, choice, defaults, group, groupDefaults, view)
 
 {-| Naive UI's `Radio` and `RadioGroup`, rebuilt on elm-ui.
 
@@ -52,6 +42,8 @@ Notes on the port:
   - Naive UI's `--focus` ring is driven by native input focus events and is
     not reproduced (stateless view).
 
+@docs Choice, GroupOptions, Options, button, choice, defaults, group, groupDefaults, view
+
 -}
 
 import Element exposing (Element)
@@ -64,6 +56,12 @@ import NUI.Theme.Radio as RadioTheme
 import NUI.Types exposing (Size(..))
 
 
+{-| The standalone-radio options — Naive UI's radio props: `size`,
+`checked`, `disabled`, the `label` string (the slot children `view`
+takes win, like upstream), `onChange` (fires only when an unchecked
+radio is activated — check-only), and `rtl`. A group's `value` +
+`onChange` derive all of these per choice.
+-}
 type alias Options msg =
     { size : Size
     , checked : Bool
@@ -74,6 +72,9 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults (`medium`, unchecked, enabled, no label, no
+handler, LTR).
+-}
 defaults : Options msg
 defaults =
     { size = Medium
@@ -96,16 +97,26 @@ type alias Choice value =
     }
 
 
+{-| A plain `n-radio` choice — enabled, dot markup.
+-}
 choice : value -> String -> Choice value
 choice value label =
     { value = value, label = label, disabled = False, button = False }
 
 
+{-| A `n-radio-button` choice — enabled, button markup (the group then also
+renders its `__splitor` separators and the `--button-group` class).
+-}
 button : value -> String -> Choice value
 button value label =
     { value = value, label = label, disabled = False, button = True }
 
 
+{-| The group options — upstream `radio-group`'s props: the shared `value`
+(`Nothing` = no selection), `onChange` (receiving the picked choice's
+value), `size`, `disabled` (AND-ed with each choice's own), `rtl`, and
+`attributes` (the fallthrough seam).
+-}
 type alias GroupOptions value msg =
     { value : Maybe value
     , onChange : Maybe (value -> msg)
@@ -133,6 +144,11 @@ groupDefaults =
     }
 
 
+{-| The standalone `n-radio` element: the `&nbsp;`-sized dot wrapper and the
+label (slot children, else the `label` string), with the state classes,
+vars, and ARIA/click wiring of `interactive`. Usually reached through
+`group`.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     let
@@ -194,6 +210,11 @@ view theme opts children =
         (dotWrapper :: labelEl)
 
 
+{-| The `n-radio-group` element: each choice rendered per `child` (plain
+radios) or button-wrapped with `__splitor` separators between consecutive
+buttons (`mapSlot`'s splitored walk), the `--button-group` marker when any
+choice is a button, and the group's own vars driving every child.
+-}
 group : Theme -> GroupOptions value msg -> List (Choice value) -> Element msg
 group theme opts choices =
     let
