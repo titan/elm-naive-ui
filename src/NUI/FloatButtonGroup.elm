@@ -1,9 +1,4 @@
-module NUI.FloatButtonGroup exposing
-    ( Options
-    , cssVarsFor
-    , defaults
-    , view
-    )
+module NUI.FloatButtonGroup exposing (Options, cssVarsFor, defaults, view)
 
 {-| Naive UI's `FloatButtonGroup`, rebuilt on elm-ui.
 
@@ -36,6 +31,8 @@ pass the group's value to each button yourself.
 buttons the way a block container would — an `Element.column` root reproduces
 both.
 
+@docs Options, cssVarsFor, defaults, view
+
 -}
 
 import Element exposing (Element)
@@ -46,6 +43,10 @@ import NUI.Theme exposing (Theme)
 import NUI.Theme.FloatButtonGroup as GroupTheme
 
 
+{-| The group options — Naive UI's props: the `shape` (remember to pass it to
+each `NUI.FloatButton` yourself; it is not injected), the CSS `position` +
+`left`/`right`/`top`/`bottom` offsets, and `attributes`.
+-}
 type alias Options msg =
     { shape : FloatButton.Shape
     , position : FloatButton.Position
@@ -57,6 +58,9 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults: a `fixed` circle group with no offsets and no extra
+attributes.
+-}
 defaults : Options msg
 defaults =
     { shape = FloatButton.Circle
@@ -69,6 +73,11 @@ defaults =
     }
 
 
+{-| The `n-float-button-group` element — a `role="group"` column carrying the
+`--{shape}-shape` modifier, the `--n-*` vars, and the inline
+`position`/offsets; the children (usually `NUI.FloatButton.view`s) stack in
+DOM order.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     Element.column
