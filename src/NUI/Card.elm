@@ -1,12 +1,4 @@
-module NUI.Card exposing
-    ( CardSize(..)
-    , Options
-    , Segment(..)
-    , Segmented
-    , defaults
-    , noSegmentation
-    , view
-    )
+module NUI.Card exposing (CardSize(..), Segment(..), Segmented, noSegmentation, Options, defaults, view)
 
 {-| Naive UI's `Card`, rebuilt on elm-ui.
 
@@ -44,6 +36,8 @@ themselves onto the card root — `NUI.Modal`'s card preset uses them for the
 upstream's fallthrough style fragment (merged into the root `style` AFTER
 the `--n-*` vars — the `NUI.Dialog.rootStyleAttr` precedent; a second
 `style` attribute would clobber the vars in the DOM).
+
+@docs CardSize, Segment, Segmented, noSegmentation, Options, defaults, view
 
 -}
 
@@ -85,6 +79,9 @@ type alias Segmented =
     }
 
 
+{-| The no-segmentation `Segmented` — upstream's `segmented` left at its
+`undefined` default (all sections render unseparated).
+-}
 noSegmentation : Segmented
 noSegmentation =
     { content = Off
@@ -93,6 +90,14 @@ noSegmentation =
     }
 
 
+{-| The card's options — every Naive UI `n-card` prop: the `title` / `headerExtra`
+/ `cover` / `footer` / `action` slots (`Maybe (Element msg)`; the header renders
+only when `title` or `closable` is set — `headerExtra` alone does not create
+one), the `closable` + `onClose` close button, the `bordered` / `hoverable` /
+`embedded` / `size` / `segmented` visuals, `contentStyle` (declarations for the
+content element's inline style), and the wrapper seams `style` / `role` /
+`extraClasses` / `attributes` (see the module doc's "Composition seams").
+-}
 type alias Options msg =
     { title : Maybe (Element msg)
     , headerExtra : Maybe (Element msg)
@@ -115,6 +120,9 @@ type alias Options msg =
     }
 
 
+{-| The plainest card: `medium`, bordered, no slots, no segmentation —
+children render straight into `n-card__content`.
+-}
 defaults : Options msg
 defaults =
     { title = Nothing
@@ -138,6 +146,13 @@ defaults =
     }
 
 
+{-| The card element — the `.n-card` column: cover, header (title + header-extra
+
+  - close button when the header exists), content (the child list), footer and
+    action, each section separated per `segmented`. Children stretch to the card's
+    width, like upstream's flex children.
+
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     let

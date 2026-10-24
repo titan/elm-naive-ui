@@ -1,8 +1,4 @@
-module NUI.Checkbox exposing
-    ( Options
-    , defaults
-    , view
-    )
+module NUI.Checkbox exposing (Options, defaults, view)
 
 {-| Naive UI's `Checkbox`, rebuilt on elm-ui.
 
@@ -33,6 +29,8 @@ The visual result is Naive UI's own: the element carries the `.n-checkbox` BEM
 classes and Naive UI's `--n-*` custom properties, and `NUI.Css` ships Naive UI's
 exact CSS.
 
+@docs Options, defaults, view
+
 -}
 
 import Element exposing (Element)
@@ -49,6 +47,12 @@ import Svg
 import Svg.Attributes as SA
 
 
+{-| The checkbox's options — state (`checked`, `indeterminate`, `disabled`),
+the two check callbacks (see the module doc: `onCheckEvent` carries
+`(nextChecked, shiftKey)` and wins over `onCheck`), the `focusable` switch
+for the table's non-interactive header checkbox, and the `privateInsideTable`
+class seam the data table sets on its own checkboxes.
+-}
 type alias Options msg =
     { size : Size
     , checked : Bool
@@ -62,6 +66,9 @@ type alias Options msg =
     }
 
 
+{-| Unchecked, enabled, `medium`, no callbacks — a plain checkbox with no
+label until children are passed to `view`.
+-}
 defaults : Options msg
 defaults =
     { size = Medium
@@ -76,6 +83,11 @@ defaults =
     }
 
 
+{-| The checkbox element — the `.n-checkbox` row: a `role="checkbox"` root
+(with `aria-checked` mapping `indeterminate` to `mixed`), the box wrapper
+holding exactly one mark icon container plus the border (upstream's keyed
+mark-swap DOM), and the label slot when children are non-empty.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts label =
     let
