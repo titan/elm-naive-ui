@@ -5,3 +5,4 @@ examples/index.html
 .nca/
 node_modules/
 tests/index.html
+docs.json
