@@ -1,16 +1,4 @@
-module NUI.Calendar exposing
-    ( Date
-    , Locale
-    , Options
-    , Panel
-    , addMonthsPanel
-    , cssVarsFor
-    , defaults
-    , enUS
-    , panelOf
-    , todayPanel
-    , view
-    )
+module NUI.Calendar exposing (Date, Panel, Locale, enUS, Options, defaults, view, todayPanel, panelOf, addMonthsPanel, cssVarsFor)
 
 {-| Naive UI's `Calendar`, rebuilt on elm-ui.
 
@@ -63,6 +51,8 @@ Two deliberate divergences, both invisible in the browser: upstream's
 `DateItem.month` is 0-based while `Date` here is 1-based; and upstream also
 emits `n-calendar-cell--not-allowed` next to `--disabled`, a marker class no
 CSS rule targets (both are emitted here; `--disabled` carries the styles).
+
+@docs Date, Panel, Locale, enUS, Options, defaults, view, todayPanel, panelOf, addMonthsPanel, cssVarsFor
 
 -}
 
@@ -138,6 +128,23 @@ enUS =
     }
 
 
+{-| The calendar's options — every piece of upstream's ref-backed state plus
+the slots and callbacks. `defaults` seeds `panel` / `now` at 1970-01, so real
+use always sets both (see the module doc's "Caller-owned runtime").
+
+  - `panel` — the displayed month (`monthTs`).
+  - `now` — the "today" reference for the `--current` cell and Today button.
+  - `value` — the selected date (`Nothing` renders no `--selected` cell).
+  - `isDateDisabled` — upstream's `isDateDisabled` prop; disables cells (no
+    click, `--disabled` + `--not-allowed` classes).
+  - `header` — replaces the title row's formatted string.
+  - `cell` — per-date slot appended under the date row (the default cell slot).
+  - `onUpdateValue` — fired on enabled-cell clicks with the clicked `Date`.
+  - `onPanelChange` — fired by the prev / next / Today header buttons with the
+    **target** panel (the buttons do not mutate anything themselves).
+  - `attributes` — extra root attributes (the Vue fallthrough seam).
+
+-}
 type alias Options msg =
     { panel : Panel
     , now : Date
@@ -152,6 +159,10 @@ type alias Options msg =
     }
 
 
+{-| The all-`Nothing` calendar: `panel` / `now` at January 1970, `enUS`
+locale, no selection, no callbacks. Set `panel` and `now` before rendering —
+`defaults` cannot know the current date.
+-}
 defaults : Options msg
 defaults =
     { panel = { year = 1970, month = 1 }
@@ -167,6 +178,10 @@ defaults =
     }
 
 
+{-| The calendar element — the `.n-calendar` root with its header (title +
+prev / Today / next `NUI.ButtonGroup`) and the month grid. See `Options` for
+the state you own and the module doc for the message wiring.
+-}
 view : Theme -> Options msg -> Element msg
 view theme opts =
     Element.column
@@ -430,6 +445,10 @@ weekday date =
     DT.weekday date
 
 
+{-| The month a `Date` falls in (drops the day) — upstream's `monthTs`
+derivation. Use it to build the panel change your `onUpdateValue` handler
+applies when an other-month cell is clicked.
+-}
 panelOf : Date -> Panel
 panelOf date =
     { year = date.year, month = date.month }

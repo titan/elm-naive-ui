@@ -1,13 +1,4 @@
-module NUI.Code exposing
-    ( Hljs
-    , Options
-    , codeHtml
-    , cssVarsFor
-    , defaults
-    , lineNumbers
-    , mergedShowLineNumbers
-    , view
-    )
+module NUI.Code exposing (Hljs, Options, defaults, view, codeHtml, lineNumbers, mergedShowLineNumbers, cssVarsFor)
 
 {-| Naive UI's `Code` (`n-code`), rebuilt as a pure renderer over a
 caller-supplied highlight.js (`Hljs`).
@@ -83,6 +74,8 @@ highlighting entirely (LogLine does its own per-line highlight).
   - `[D]` `codeHtml`'s "language" is `Maybe String`; upstream's
     `!(language && hljs.getLanguage(language))` treats an EMPTY string as "no
     language" (`Code.tsx:49-50`), so `Just ""` returns `Nothing` here too.
+
+@docs Hljs, Options, defaults, view, codeHtml, lineNumbers, mergedShowLineNumbers, cssVarsFor
 
 -}
 

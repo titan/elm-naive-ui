@@ -1,27 +1,4 @@
-module NUI.Cascader exposing
-    ( CheckStrategy(..)
-    , ExpandTrigger(..)
-    , MenuOptions
-    , Option(..)
-    , Options
-    , SelectMenuOptions
-    , Size(..)
-    , Status
-    , check
-    , defaults
-    , filterOptions
-    , getCheckedKeys
-    , menu
-    , menuDefaults
-    , menuVars
-    , selectMenu
-    , selectMenuDefaults
-    , selectMenuVars
-    , toggleValue
-    , uncheck
-    , valueKeys
-    , view
-    )
+module NUI.Cascader exposing (Size(..), Status, CheckStrategy(..), ExpandTrigger(..), Option(..), Options, defaults, MenuOptions, menuDefaults, SelectMenuOptions, selectMenuDefaults, getCheckedKeys, check, uncheck, toggleValue, valueKeys, filterOptions, view, menu, selectMenu, menuVars, selectMenuVars)
 
 {-| Naive UI's `Cascader` — a thin composition over `NUI.BaseSelection` (the
 trigger, the `NUI.Select` lane) plus the multi-column menu body, exactly
@@ -125,6 +102,8 @@ the row click instead. `Cascader.Size` is upstream's three-size scale (no
 `tiny`); the menu carries no size variant (heights flow through the vars),
 and neither body has an `rtl.cssr` upstream (the trigger's `rtl` rides
 `NUI.BaseSelection`).
+
+@docs Size, Status, CheckStrategy, ExpandTrigger, Option, Options, defaults, MenuOptions, menuDefaults, SelectMenuOptions, selectMenuDefaults, getCheckedKeys, check, uncheck, toggleValue, valueKeys, filterOptions, view, menu, selectMenu, menuVars, selectMenuVars
 
 -}
 

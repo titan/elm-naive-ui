@@ -1,61 +1,4 @@
-module NUI.Carousel exposing
-    ( ArrowInfo
-    , Direction(..)
-    , DotKeyAction(..)
-    , DotPlacement(..)
-    , DotType(..)
-    , DotsInfo
-    , DragPoint
-    , Effect(..)
-    , Env
-    , KeyInfo
-    , Options
-    , PerView(..)
-    , Size
-    , SlideInfo
-    , State
-    , Trigger(..)
-    , WheelInfo
-    , applyIndexChange
-    , autoplayEnabled
-    , clampValue
-    , cssVarsFor
-    , decodeDragPoint
-    , defaults
-    , dotKeyAction
-    , dragEnd
-    , dragMove
-    , dragStart
-    , duplicateWrap
-    , envOf
-    , fixTranslate
-    , getDisplayIndex
-    , getDisplayTotalView
-    , getLastViewTranslate
-    , getNextIndex
-    , getPrevIndex
-    , getRealIndex
-    , getTranslate
-    , indexChange
-    , init
-    , markMounted
-    , next
-    , nextIfSlideTransitionEnd
-    , prev
-    , prevIfSlideTransitionEnd
-    , resize
-    , resolveSpeed
-    , setSlideSizes
-    , slideInfo
-    , to
-    , toRealIndex
-    , transitionEnd
-    , translateTo
-    , view
-    , viewArrowGroup
-    , viewDots
-    , wheel
-    )
+module NUI.Carousel exposing (Direction(..), Effect(..), DotType(..), DotPlacement(..), Trigger(..), PerView(..), Size, DragPoint, WheelInfo, KeyInfo, DotKeyAction(..), SlideInfo, ArrowInfo, DotsInfo, State, Env, Options, defaults, init, resize, setSlideSizes, markMounted, autoplayEnabled, envOf, getDisplayTotalView, getDisplayIndex, getRealIndex, getPrevIndex, getNextIndex, to, toRealIndex, prev, next, translateTo, fixTranslate, getTranslate, getLastViewTranslate, resolveSpeed, clampValue, duplicateWrap, applyIndexChange, indexChange, transitionEnd, nextIfSlideTransitionEnd, prevIfSlideTransitionEnd, dragStart, dragMove, dragEnd, decodeDragPoint, wheel, dotKeyAction, slideInfo, view, viewDots, viewArrowGroup, cssVarsFor)
 
 {-| Naive UI's `Carousel`, rebuilt as a pure state machine + geometry engine.
 
@@ -186,6 +129,8 @@ machinery :156-894, render :1000-1063), `CarouselItem.tsx`,
 `CarouselDots.tsx:27-94`, `CarouselArrow.tsx:6-33`,
 `utils/duplicatedLogic.ts`, `utils/index.ts:20-37`,
 `styles/index.cssr.ts`.
+
+@docs Direction, Effect, DotType, DotPlacement, Trigger, PerView, Size, DragPoint, WheelInfo, KeyInfo, DotKeyAction, SlideInfo, ArrowInfo, DotsInfo, State, Env, Options, defaults, init, resize, setSlideSizes, markMounted, autoplayEnabled, envOf, getDisplayTotalView, getDisplayIndex, getRealIndex, getPrevIndex, getNextIndex, to, toRealIndex, prev, next, translateTo, fixTranslate, getTranslate, getLastViewTranslate, resolveSpeed, clampValue, duplicateWrap, applyIndexChange, indexChange, transitionEnd, nextIfSlideTransitionEnd, prevIfSlideTransitionEnd, dragStart, dragMove, dragEnd, decodeDragPoint, wheel, dotKeyAction, slideInfo, view, viewDots, viewArrowGroup, cssVarsFor
 
 -}
 

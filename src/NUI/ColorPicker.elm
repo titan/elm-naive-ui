@@ -1,31 +1,4 @@
-module NUI.ColorPicker exposing
-    ( Action(..)
-    , HSLA
-    , InternalAction(..)
-    , Mode(..)
-    , Options
-    , PointerArea(..)
-    , PointerPress
-    , alphaFromPoint
-    , convertColor
-    , defaultOptions
-    , deriveDefaultValue
-    , getModeFromValue
-    , getWCAGContrast
-    , hueFromPoint
-    , nextDisplayedMode
-    , normalizeAlpha
-    , normalizeAlphaUnit
-    , normalizeHexaUnit
-    , normalizeHue
-    , normalizeHueUnit
-    , normalizeRgbUnit
-    , normalizeSlvUnit
-    , panel
-    , panelNode
-    , svFromPoint
-    , view
-    )
+module NUI.ColorPicker exposing (Mode(..), HSLA, Action(..), InternalAction(..), PointerPress, PointerArea(..), Options, defaultOptions, convertColor, deriveDefaultValue, getModeFromValue, getWCAGContrast, normalizeHue, normalizeAlpha, normalizeRgbUnit, normalizeHueUnit, normalizeSlvUnit, normalizeHexaUnit, normalizeAlphaUnit, svFromPoint, hueFromPoint, alphaFromPoint, nextDisplayedMode, view, panel, panelNode)
 
 {-| Naive UI's `ColorPicker` — a colour trigger (`view`) plus a caller-mounted
 placeholder panel (`panel`): the 2-D S/V square, a hue rail and an optional
@@ -175,6 +148,8 @@ when set, else the committed value on `onUpdateValue`) and the caller closes.
 18. **`deriveDefaultValue`'s `__DEV__` warn is dropped** (`utils.ts:38-39`) —
     a dev-only `console.warn`, no-op in production.
 
+@docs Mode, HSLA, Action, InternalAction, PointerPress, PointerArea, Options, defaultOptions, convertColor, deriveDefaultValue, getModeFromValue, getWCAGContrast, normalizeHue, normalizeAlpha, normalizeRgbUnit, normalizeHueUnit, normalizeSlvUnit, normalizeHexaUnit, normalizeAlphaUnit, svFromPoint, hueFromPoint, alphaFromPoint, nextDisplayedMode, view, panel, panelNode
+
 -}
 
 import Char
@@ -286,6 +261,10 @@ type alias PointerPress =
     }
 
 
+{-| The three drag surfaces: the S/V palette square, the hue rail and the
+alpha rail. Rides on `PointerPress` (the `onMousedown` signal) and keys the
+pure geometry helper that fits the press.
+-}
 type PointerArea
     = PaletteArea
     | HueArea
@@ -366,61 +345,102 @@ defaultOptions =
 -- PURE HELPERS (eq-pin surface — re-exposed from NUI.Internal.Color) ------------
 
 
+{-| `convertColor(value, mode, originalMode?)` — `Nothing` when the value
+is mode-less (or unparseable), the value verbatim when the modes match
+(`NUI.Internal.Color`, re-exposed).
+-}
 convertColor : String -> Mode -> Maybe Mode -> Maybe String
 convertColor value mode originalMode =
     Color.convertColor value (toEngine mode) (Maybe.map toEngine originalMode)
 
 
+{-| `deriveDefaultValue(modes, showAlpha)` — the first mode seeds the string
+(`NUI.Internal.Color`, re-exposed). Feeds `value` when the caller has none
+yet.
+-}
 deriveDefaultValue : List Mode -> Bool -> String
 deriveDefaultValue modes =
     Color.deriveDefaultValue (List.map toEngine modes)
 
 
+{-| `getModeFromValue(color)` — the `/^ *#/` hex test, then substring probes
+(`rgba → rgb`, `hsla → hsl`, `hsva → hsv`) (`NUI.Internal.Color`,
+re-exposed).
+-}
 getModeFromValue : Maybe String -> Maybe Mode
 getModeFromValue =
     Maybe.map fromEngine << Color.getModeFromValue
 
 
+{-| `getWCAGContrast(hsla)` with the upstream defaults (`contrastColor =
+[255, 255, 255]`, `level = 'AA'`) — the trigger label's white/black pick
+(`NUI.Internal.Color`, re-exposed).
+-}
 getWCAGContrast : HSLA -> Bool
 getWCAGContrast =
     Color.getWCAGContrast
 
 
+{-| `normalizeHue(hue)` — rounds, then clamps `360 → 359` (NOT seemly's
+`roundDeg`; `[oracle D]` divergence 4) (`NUI.Internal.Color`, re-exposed).
+-}
 normalizeHue : Float -> Int
 normalizeHue =
     Color.normalizeHue
 
 
+{-| `normalizeAlpha(alpha)` — 2-decimal round, clamped to `0`–`1`
+(`NUI.Internal.Color`, re-exposed).
+-}
 normalizeAlpha : Float -> Float
 normalizeAlpha =
     Color.normalizeAlpha
 
 
+{-| The R/G/B unit normalizer — `0`–`255`; `parseInt` truncates the decimals
+(`NUI.Internal.Color`, re-exposed).
+-}
 normalizeRgbUnit : String -> Maybe Int
 normalizeRgbUnit =
     Color.normalizeRgbUnit
 
 
+{-| The H unit normalizer — `0`–`360` inclusive (`NUI.Internal.Color`,
+re-exposed).
+-}
 normalizeHueUnit : String -> Maybe Int
 normalizeHueUnit =
     Color.normalizeHueUnit
 
 
+{-| The S/L/V unit normalizer — `0`–`100` (`NUI.Internal.Color`, re-exposed).
+-}
 normalizeSlvUnit : String -> Maybe Int
 normalizeSlvUnit =
     Color.normalizeSlvUnit
 
 
+{-| The HEX(A) unit normalizer — a hex string whose length is one of
+`4|5|7|9` (`NUI.Internal.Color`, re-exposed).
+-}
 normalizeHexaUnit : String -> Bool
 normalizeHexaUnit =
     Color.normalizeHexaUnit
 
 
+{-| The A unit normalizer — `0`–`100%`; parses `parseInt(value)/100`, so
+`"200%"` yields `2` (the serializer then clamps — kept upstream-faithful)
+(`NUI.Internal.Color`, re-exposed).
+-}
 normalizeAlphaUnit : String -> Maybe Float
 normalizeAlphaUnit =
     Color.normalizeAlphaUnit
 
 
+{-| `Pallete.handleMouseMove` — S/V percentages from the rect + pointer
+(`NUI.Internal.Color`, re-exposed). Feed it the pressed surface's
+`width`/`height` (from `PointerPress`) and the pointer position.
+-}
 svFromPoint :
     { width : Float, height : Float, left : Float, bottom : Float }
     -> { x : Float, y : Float }
@@ -429,16 +449,26 @@ svFromPoint =
     Color.svFromPoint
 
 
+{-| `HueSlider.handleMouseMove` (`HANDLE_SIZE 12`, `RADIUS 6`) —
+`0`–`359` from the rail geometry (`NUI.Internal.Color`, re-exposed).
+-}
 hueFromPoint : { width : Float, left : Float } -> Float -> Int
 hueFromPoint =
     Color.hueFromPoint
 
 
+{-| `AlphaSlider.handleMouseMove` — `0`–`1` from the rail geometry
+(`NUI.Internal.Color`, re-exposed).
+-}
 alphaFromPoint : { width : Float, left : Float } -> Float -> Float
 alphaFromPoint =
     Color.alphaFromPoint
 
 
+{-| The mode-label click target — the mode after the currently displayed one,
+cycling through `modes` (`ColorInput`'s label click; `NUI.Internal.Color`,
+re-exposed).
+-}
 nextDisplayedMode : List Mode -> Mode -> Mode
 nextDisplayedMode modes current =
     fromEngine (Color.nextDisplayedMode (List.map toEngine modes) (toEngine current))

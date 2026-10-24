@@ -1,74 +1,4 @@
-module NUI.DataTable exposing
-    ( Align(..)
-    , CheckAction(..)
-    , CheckEmit
-    , Column
-    , ColumnChild(..)
-    , ColumnEllipsis(..)
-    , ColumnKind(..)
-    , Filter(..)
-    , FilterMenuOptions
-    , FilterMode(..)
-    , FilterOption
-    , FilterValue(..)
-    , FixedSide(..)
-    , Options
-    , PaginationBehavior(..)
-    , SelectionOption(..)
-    , Size(..)
-    , SortOrder(..)
-    , SortState
-    , SortValue(..)
-    , Sorter(..)
-    , SorterCompare(..)
-    , SummaryCell
-    , SummaryPlacement(..)
-    , TableLayout(..)
-    , allRowsChecked
-    , boundedPage
-    , checkedKeysAfterCheck
-    , checkedKeysAfterCheckAll
-    , checkedKeysAfterRowClick
-    , checkedKeysAfterUncheck
-    , checkedKeysAfterUncheckAll
-    , columnDefaults
-    , createNextSorter
-    , cssVars
-    , defaultExpandAllKeys
-    , defaultFilterStates
-    , defaultSortStates
-    , defaults
-    , deriveNextSorter
-    , filterMenu
-    , filterMenuDefaults
-    , filteredData
-    , filtersAfterChange
-    , fixedColumnLeftMap
-    , fixedColumnRightMap
-    , getMultiplePriority
-    , getSortFunction
-    , headerCheckboxDisabled
-    , headerRows
-    , isColumnFilterable
-    , isColumnSorting
-    , isSortable
-    , leafColumns
-    , mergedCheckedRowKeys
-    , mergedFilterStates
-    , mergedItemCount
-    , mergedPageSize
-    , mergedPaginationOpts
-    , mergedSortStates
-    , nextSortOrder
-    , paginatedData
-    , shouldUseArrayInSingleMode
-    , showPagination
-    , someRowsChecked
-    , sortValueCompare
-    , sortedData
-    , toggleExpandedRowKey
-    , view
-    )
+module NUI.DataTable exposing (Align(..), CheckAction(..), CheckEmit, Column, ColumnChild(..), ColumnEllipsis(..), ColumnKind(..), Filter(..), FilterMenuOptions, FilterMode(..), FilterOption, FilterValue(..), FixedSide(..), Options, PaginationBehavior(..), SelectionOption(..), Size(..), SortOrder(..), SortState, SortValue(..), Sorter(..), SorterCompare(..), SummaryCell, SummaryPlacement(..), TableLayout(..), allRowsChecked, boundedPage, checkedKeysAfterCheck, checkedKeysAfterCheckAll, checkedKeysAfterRowClick, checkedKeysAfterUncheck, checkedKeysAfterUncheckAll, columnDefaults, createNextSorter, cssVars, defaultExpandAllKeys, defaultFilterStates, defaultSortStates, defaults, deriveNextSorter, filterMenu, filterMenuDefaults, filteredData, filtersAfterChange, fixedColumnLeftMap, fixedColumnRightMap, getMultiplePriority, getSortFunction, headerCheckboxDisabled, headerRows, isColumnFilterable, isColumnSorting, isSortable, leafColumns, mergedCheckedRowKeys, mergedFilterStates, mergedItemCount, mergedPageSize, mergedPaginationOpts, mergedSortStates, nextSortOrder, paginatedData, shouldUseArrayInSingleMode, showPagination, someRowsChecked, sortValueCompare, sortedData, toggleExpandedRowKey, view)
 
 {-| Naive UI's `DataTable` (`n-data-table`), the advanced data table —
 rebuilt on elm-ui.
@@ -459,6 +389,8 @@ Divergences (documented):
     matches, pinned). Same family: upstream guards the content
     `width:100%` with `if (scrollX)` (a truthiness check), so `scrollX =
     0` drops it where the port keeps it.
+
+@docs Align, CheckAction, CheckEmit, Column, ColumnChild, ColumnEllipsis, ColumnKind, Filter, FilterMenuOptions, FilterMode, FilterOption, FilterValue, FixedSide, Options, PaginationBehavior, SelectionOption, Size, SortOrder, SortState, SortValue, Sorter, SorterCompare, SummaryCell, SummaryPlacement, TableLayout, allRowsChecked, boundedPage, checkedKeysAfterCheck, checkedKeysAfterCheckAll, checkedKeysAfterRowClick, checkedKeysAfterUncheck, checkedKeysAfterUncheckAll, columnDefaults, createNextSorter, cssVars, defaultExpandAllKeys, defaultFilterStates, defaultSortStates, defaults, deriveNextSorter, filterMenu, filterMenuDefaults, filteredData, filtersAfterChange, fixedColumnLeftMap, fixedColumnRightMap, getMultiplePriority, getSortFunction, headerCheckboxDisabled, headerRows, isColumnFilterable, isColumnSorting, isSortable, leafColumns, mergedCheckedRowKeys, mergedFilterStates, mergedItemCount, mergedPageSize, mergedPaginationOpts, mergedSortStates, nextSortOrder, paginatedData, shouldUseArrayInSingleMode, showPagination, someRowsChecked, sortValueCompare, sortedData, toggleExpandedRowKey, view
 
 -}
 
@@ -951,6 +883,12 @@ type alias Options row msg =
     }
 
 
+{-| The table's base state, upstream `DataTableProps` / `dataTableProps`
+defaults: no columns, no data, `rowKey = .id` (always override with your
+row's identity fn), `singleLine = True`, `bottomBottom = False` … the full
+`Nothing` / `False` / `[]` set — see `Options` for the knobs. Everything the
+caller wires as messages (`onUpdate:*`) is inert at `defaults`.
+-}
 defaults : Options row msg
 defaults =
     { columns = []

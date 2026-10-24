@@ -1,9 +1,4 @@
-module NUI.Countdown exposing
-    ( Options
-    , TimeInfo
-    , defaults
-    , view
-    )
+module NUI.Countdown exposing (Options, TimeInfo, defaults, view)
 
 {-| Naive UI's `Countdown`, rebuilt on elm-ui.
 
@@ -29,6 +24,8 @@ round-up (`+999` / `+99` / `+9`) and the default display string.
 
 Countdown carries no classes and no `--n-*` variables of its own.
 
+@docs Options, TimeInfo, defaults, view
+
 -}
 
 import Element exposing (Element)
@@ -45,6 +42,12 @@ type alias TimeInfo =
     }
 
 
+{-| The countdown's options: the remaining `distance` in milliseconds (the
+caller owns the clock), the `precision` (0 = seconds, 1 = tenths, 2 =
+hundredths, 3 = full milliseconds) driving both rounding and display, an
+optional `render` replacing the default `HH:MM:SS[.mmm]` string, and root
+`attributes` (the Vue fallthrough seam).
+-}
 type alias Options msg =
     { distance : Int
     , precision : Int
@@ -53,6 +56,8 @@ type alias Options msg =
     }
 
 
+{-| Zero distance, precision 0, no custom render — displays `00:00:00`.
+-}
 defaults : Options msg
 defaults =
     { distance = 0
@@ -62,6 +67,12 @@ defaults =
     }
 
 
+{-| The countdown element — a bare `Element.el` carrying the fallthrough
+attributes and either the custom `render` output or the default display
+string (upstream's `render()` math: per-precision `+999`/`+99`/`+9`
+round-up, then truncated milliseconds). The child list is ignored — upstream
+renders no default slot.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view _ opts _ =
     Element.el opts.attributes <|

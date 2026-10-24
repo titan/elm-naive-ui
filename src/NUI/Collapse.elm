@@ -1,14 +1,4 @@
-module NUI.Collapse exposing
-    ( ArrowPlacement(..)
-    , DisplayDirective(..)
-    , Item
-    , Options
-    , TriggerArea(..)
-    , cssVarsFor
-    , defaults
-    , item
-    , view
-    )
+module NUI.Collapse exposing (ArrowPlacement(..), TriggerArea(..), DisplayDirective(..), Options, defaults, Item, item, view, cssVarsFor)
 
 {-| Naive UI's `Collapse` and `CollapseItem`, rebuilt on elm-ui.
 
@@ -30,6 +20,8 @@ caller owns `expandedNames` (wrap it in an `accordion` single-element list to ge
 Naive UI's accordion behaviour) and the transition phase, and the view reports
 toggles through `onToggle`. Naive UI's `header` / `header-extra` / `arrow` slots
 are modelled as plain elements, so they cannot react to the `collapsed` prop.
+
+@docs ArrowPlacement, TriggerArea, DisplayDirective, Options, defaults, Item, item, view, cssVarsFor
 
 -}
 
@@ -66,6 +58,14 @@ type DisplayDirective
     | ShowContent
 
 
+{-| The collapse's options — `arrowPlacement` and `triggerAreas` (the clickable
+regions: main header, extra area, arrow — all three by default), the caller-owned
+`expandedNames` (a single-element list gives accordion behaviour), the
+`displayDirective` for collapsed content, the `transition` phase for
+`fade-in-height-expand-transition` (the caller drives the phase between
+toggles), `onToggle` (fired with the item's `name` when an enabled trigger area
+of a non-disabled item is clicked), `rtl`, and root `attributes`.
+-}
 type alias Options msg =
     { arrowPlacement : ArrowPlacement
     , triggerAreas : List TriggerArea
@@ -78,6 +78,9 @@ type alias Options msg =
     }
 
 
+{-| The plainest collapse: left arrow, all three trigger areas clickable,
+nothing expanded, `if` display directive, no callbacks.
+-}
 defaults : Options msg
 defaults =
     { arrowPlacement = ArrowLeft
@@ -105,6 +108,9 @@ type alias Item msg =
     }
 
 
+{-| The blank item — no name, no title, no content, enabled. Bind it and set at
+least `name` (its identity in `expandedNames`) and a title or `header`.
+-}
 item : Item msg
 item =
     { name = ""
@@ -117,6 +123,12 @@ item =
     }
 
 
+{-| The collapse element — the `.n-collapse` column with one `.n-collapse-item`
+per `Item`: header (arrow per `arrowPlacement`, title / `header` slot,
+`header-extra`), then the content wrapper when expanded (or hidden per
+`displayDirective`). Clicks on enabled trigger areas fire `onToggle` with the
+item's `name`.
+-}
 view : Theme -> Options msg -> List (Item msg) -> Element msg
 view theme opts items =
     Element.column
