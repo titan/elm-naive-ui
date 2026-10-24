@@ -1159,7 +1159,7 @@ dynamicInputSection : Model -> Theme -> Element Msg
 dynamicInputSection model theme =
     section theme
         "DynamicInput"
-        "A list of values, each row an input (or key / value pair) with add / remove / sort actions. Pure list core: `insertAt` / `removeAt` / `moveUp` / `moveDown`, guarded by `min` / `max`."
+        "A dynamic list of input rows — plain values or key/value pairs with add, remove and sort buttons. The list lives in your model; pure helpers (`insertAt`, `removeAt`, `moveUp`, `moveDown`) do the list math, guarded by `min` and `max`. The rows show the input and pair presets, the empty state's Create button, then a live pair-list editor."
         (dynamicInputRows model theme)
 
 
@@ -1189,7 +1189,7 @@ dynamicInputLiveSection : Model -> Theme -> Element Msg
 dynamicInputLiveSection model theme =
     section theme
         "DynamicInput"
-        "A list of values, each row an input (or key / value pair) with add / remove / sort actions. Pure list core: `insertAt` / `removeAt` / `moveUp` / `moveDown`, guarded by `min` / `max`."
+        "A dynamic list of input rows — plain values or key/value pairs with add, remove and sort buttons. The list lives in your model; pure helpers (`insertAt`, `removeAt`, `moveUp`, `moveDown`) do the list math, guarded by `min` and `max`. The rows show the input and pair presets, the empty state's Create button, then a live pair-list editor."
         (dynamicInputRows model theme ++ [ pairLiveRow model theme ])
 
 
@@ -1356,7 +1356,7 @@ tableSection : Theme -> Element msg
 tableSection theme =
     section theme
         "Table"
-        "Naive UI's static table — the real `<table class=\"n-table\">` root (six modifier classes, the 21 `--n-*` vars with the three size-keyed ones resolved) over a typed `thead` / `tbody` tree of `th` / `td` cells (`colspan` / `rowspan` first-class, `Element` content embedded through `display: contents`). Fully static — nothing runtime."
+        "A static n-table with typed head/body cells, colspan/rowspan and Element content — release notes, spec tables, pricing grids. It is fully static by design: no runtime state, and a row click rides the documented Row.attributes seam. The rows show borders, sizes, striped and single-column forms, merged cells, and RTL."
         (tableRows theme)
 
 
@@ -1411,7 +1411,7 @@ tableLiveSection : Model -> Theme -> Element Msg
 tableLiveSection model theme =
     section theme
         "Table"
-        "Naive UI's static table — the real `<table class=\"n-table\">` root (six modifier classes, the 21 `--n-*` vars with the three size-keyed ones resolved) over a typed `thead` / `tbody` tree of `th` / `td` cells (`colspan` / `rowspan` first-class, `Element` content embedded through `display: contents`). Fully static — nothing runtime."
+        "A static n-table with typed head/body cells, colspan/rowspan and Element content — release notes, spec tables, pricing grids. It is fully static by design: no runtime state, and a row click rides the documented Row.attributes seam. The rows show borders, sizes, striped and single-column forms, merged cells, and RTL."
         (tableRows theme ++ [ tableLiveRow model theme ])
 
 
@@ -1827,7 +1827,7 @@ imageSection : Theme -> Element msg
 imageSection theme =
     section theme
         "Image"
-        "The img surface (upstream `NImage`): `n-image` root + img with the full upstream attribute pack (`data-error`, `data-preview-src`, `data-group-id`, native `loading`, `object-fit`). Load/error/lazy state is caller-owned — `showError` flips the img to `fallbackSrc` + the `--preview-disabled` class, or swaps in the error slot replacing the img entirely; a `placeholder` renders while `loaded` is False and hides the img 0×0 (upstream bytes). The preview modal is the caller's seam (`onClick` + the preview-container `cssVars`)."
+        "A themed `<img>` wrapper with lazy loading, error fallback and a click-to-preview seam — avatars, galleries, article figures. Load and error state are caller-owned: `showError` swaps to `fallbackSrc`, and a placeholder renders until `loaded` flips. The rows show object-fit, the error path, placeholder and lazy variants, then a live click-to-preview specimen."
         (imageRows theme)
 
 
@@ -1873,7 +1873,7 @@ imageLiveSection : Model -> Theme -> Element Msg
 imageLiveSection model theme =
     section theme
         "Image"
-        "The img surface (upstream `NImage`): `n-image` root + img with the full upstream attribute pack (`data-error`, `data-preview-src`, `data-group-id`, native `loading`, `object-fit`). Load/error/lazy state is caller-owned — `showError` flips the img to `fallbackSrc` + the `--preview-disabled` class, or swaps in the error slot replacing the img entirely; a `placeholder` renders while `loaded` is False and hides the img 0×0 (upstream bytes). The preview modal is the caller's seam (`onClick` + the preview-container `cssVars`)."
+        "A themed `<img>` wrapper with lazy loading, error fallback and a click-to-preview seam — avatars, galleries, article figures. Load and error state are caller-owned: `showError` swaps to `fallbackSrc`, and a placeholder renders until `loaded` flips. The rows show object-fit, the error path, placeholder and lazy variants, then a live click-to-preview specimen."
         (imageRows theme ++ [ previewLiveRow model theme ])
 
 
@@ -3054,7 +3054,7 @@ uploadSection : Theme -> Element msg
 uploadSection theme =
     section theme
         "Upload"
-        "A file trigger over a caller-owned file list — pick/drag, upload state and thumbnails are the caller's to own."
+        "A file-picker trigger over a caller-owned file list — attachments, photo galleries, bulk import. Each `FileInfo` carries status and progress as plain data, so uploading state, retries and thumbnails are yours to own; the port ships no XHR, and this demo simulates the state machine. The rows tour text lists, image cards, a dragger and max/disabled states, then a live simulated upload and an abstract-trigger composition."
         (uploadRows theme)
 
 
@@ -3149,7 +3149,7 @@ uploadLiveSection : Model -> Theme -> Element Msg
 uploadLiveSection model theme =
     section theme
         "Upload"
-        "A file trigger over a caller-owned file list — pick/drag, upload state and thumbnails are the caller's to own."
+        "A file-picker trigger over a caller-owned file list — attachments, photo galleries, bulk import. Each `FileInfo` carries status and progress as plain data, so uploading state, retries and thumbnails are yours to own; the port ships no XHR, and this demo simulates the state machine. The rows tour text lists, image cards, a dragger and max/disabled states, then a live simulated upload and an abstract-trigger composition."
         (uploadRows theme ++ [ uploadAbstractRow model theme, uploadLiveRow model theme ])
 
 
