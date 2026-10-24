@@ -1,22 +1,4 @@
-module NUI.Typography exposing
-    ( FontAlign(..)
-    , Options
-    , a
-    , blockquote
-    , defaults
-    , h1
-    , h2
-    , h3
-    , h4
-    , h5
-    , h6
-    , hr
-    , li
-    , ol
-    , p
-    , text
-    , ul
-    )
+module NUI.Typography exposing (FontAlign(..), Options, a, blockquote, defaults, h1, h2, h3, h4, h5, h6, hr, li, ol, p, text, ul)
 
 {-| Naive UI's `Typography` component set, rebuilt on elm-ui.
 
@@ -48,6 +30,8 @@ Block-level elements (`h1`-`h6`, `p`, `blockquote`, `ul`, `ol`, `li`, `hr`) are
 elm-ui paragraphs — block flow with wrapping inline children. `text` and `a` flow
 inline when placed inside a paragraph.
 
+@docs FontAlign, Options, a, blockquote, defaults, h1, h2, h3, h4, h5, h6, hr, li, ol, p, text, ul
+
 -}
 
 import Element exposing (Element)
@@ -72,6 +56,13 @@ type FontAlign
     | AlignJustify
 
 
+{-| The one options record the whole typography set shares (Naive UI threads
+the same theme props through every component). `kind` / `depth` pick the theme
+colour, `strong` / `italic` / `underline` / `delete` / `code` the text
+modifiers, `prefixBar` / `alignText` the header / blockquote modifiers, and
+`size` / `align` / `fontWeight` / `href` / `onPress` the elm-side conveniences
+(see each element's doc).
+-}
 type alias Options msg =
     { kind : Kind
     , depth : Maybe Int
@@ -90,6 +81,8 @@ type alias Options msg =
     }
 
 
+{-| No modifiers at all — default kind, no depth, no conveniences.
+-}
 defaults : Options msg
 defaults =
     { kind = T.Default
@@ -209,31 +202,45 @@ type HeaderLevel
 {-| Naive UI's `H1`-`H6` — `.n-h .n-h{level}`. `kind` selects the prefix-bar
 colour, `prefixBar` adds `.n-h--prefix-bar`, `alignText` adds `.n-h--align-text`.
 -}
+
+
+{-| The level-1 heading — `.n-h .n-h1` (see `h1`'s group doc above).
+-}
 h1 : Theme -> Options msg -> List (Element msg) -> Element msg
 h1 =
     header H1
 
 
+{-| The level-2 heading — `.n-h .n-h2`.
+-}
 h2 : Theme -> Options msg -> List (Element msg) -> Element msg
 h2 =
     header H2
 
 
+{-| The level-3 heading — `.n-h .n-h3`.
+-}
 h3 : Theme -> Options msg -> List (Element msg) -> Element msg
 h3 =
     header H3
 
 
+{-| The level-4 heading — `.n-h .n-h4`.
+-}
 h4 : Theme -> Options msg -> List (Element msg) -> Element msg
 h4 =
     header H4
 
 
+{-| The level-5 heading — `.n-h .n-h5`.
+-}
 h5 : Theme -> Options msg -> List (Element msg) -> Element msg
 h5 =
     header H5
 
 
+{-| The level-6 heading — `.n-h .n-h6`.
+-}
 h6 : Theme -> Options msg -> List (Element msg) -> Element msg
 h6 =
     header H6
