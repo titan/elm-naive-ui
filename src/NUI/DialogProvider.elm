@@ -1,18 +1,4 @@
-module NUI.DialogProvider exposing
-    ( Item
-    , State
-    , create
-    , destroy
-    , destroyAll
-    , error
-    , info
-    , init
-    , item
-    , remove
-    , success
-    , view
-    , warning
-    )
+module NUI.DialogProvider exposing (Item, State, create, destroy, destroyAll, error, info, init, item, remove, success, view, warning)
 
 {-| Naive UI's dialog service (upstream `NDialogProvider` + `NDialogEnvironment`
 
@@ -79,6 +65,8 @@ Fragment of environments with no container element, so the port has nothing
 container-shaped to return. Wrap at the call site (`modalHost` in the demos).
 An empty queue renders no trees at all (upstream: `dialogList.length` is 0 →
 no environments mount).
+
+@docs Item, State, create, destroy, destroyAll, error, info, init, item, remove, success, view, warning
 
 -}
 
