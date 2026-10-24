@@ -39,6 +39,8 @@ A switch shows different content depending on its state, so the `checked` /
 `unchecked` / icon slots are `Options` fields; the `view` children argument is
 there for API symmetry with the other components and is ignored.
 
+@docs Options, defaults, view
+
 -}
 
 import Element exposing (Element)
@@ -51,6 +53,12 @@ import NUI.Theme.Switch as SwitchTheme
 import NUI.Types exposing (Size(..))
 
 
+{-| The switch's configuration: `value` + `onChange`, `size` (`Tiny` clamps to
+`Small` — see `view`), `loading` with the four `spin*` overrides for the knob's
+spinner, custom rail colours, and the state slots (`checked`, `unchecked`, and
+the three icon variants — the plain `icon` is the fallback for whichever state
+has no dedicated icon).
+-}
 type alias Options msg =
     { value : Bool
     , onChange : Maybe (Bool -> msg)
@@ -74,6 +82,8 @@ type alias Options msg =
     }
 
 
+{-| Off, medium, round, rubber-band on, no slots, no overrides.
+-}
 defaults : Options msg
 defaults =
     { value = False
@@ -98,6 +108,9 @@ defaults =
     }
 
 
+{-| Render the switch. Clicking (or focusing + activating) toggles via
+`onChange` unless `disabled` or `loading`. Children are ignored.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts _ =
     let
