@@ -1,15 +1,4 @@
-module NUI.Mention exposing
-    ( MenuOptions
-    , Options
-    , Size(..)
-    , Status
-    , Type(..)
-    , defaults
-    , menu
-    , menuDefaults
-    , menuVars
-    , view
-    )
+module NUI.Mention exposing (Size(..), Type(..), Status, Options, defaults, MenuOptions, menuDefaults, view, menu, menuVars)
 
 {-| Naive UI's `Mention` — an `NUI.Input` trigger plus a caller-mounted
 `NUI.SelectMenu` body. Upstream (`Mention.tsx`) mounts `NInput` in a
@@ -138,6 +127,8 @@ children — render `Custom` rows instead); `renderLabel` (label strings
 path is the port's render) — the field stays for the caller, the
 `NUI.Select` precedent. Values are `String` (upstream `string | null`;
 null ≡ "").
+
+@docs Size, Type, Status, Options, defaults, MenuOptions, menuDefaults, view, menu, menuVars
 
 -}
 

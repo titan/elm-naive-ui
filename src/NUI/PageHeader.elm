@@ -1,9 +1,4 @@
-module NUI.PageHeader exposing
-    ( Options
-    , cssVarsFor
-    , defaults
-    , view
-    )
+module NUI.PageHeader exposing (Options, defaults, view, cssVarsFor)
 
 {-| Naive UI's `PageHeader`, rebuilt on elm-ui.
 
@@ -24,6 +19,8 @@ custom properties, and `NUI.Css` ships Naive UI's exact CSS.
 `showBack` is driven by `onBack` (`Nothing` hides the back control, exactly as
 upstream keys it off the `on-back` prop); `back` replaces the default arrow icon.
 
+@docs Options, defaults, view, cssVarsFor
+
 -}
 
 import Element exposing (Element)
@@ -36,6 +33,18 @@ import NUI.Theme.PageHeader as PageHeaderTheme
 import Svg
 
 
+{-| The page header options. Text fields are upstream's string props — each
+`Just` renders its slot (`title`, `subtitle`, `extra`), `Nothing` skips it
+entirely: upstream renders the `__main` row only while some main-part field
+is set, and the `__extra` span only for a non-empty `extra` string (JS
+truthiness — an empty string hides it too). `onBack` gates the back control
+(a `Just` renders `__back` and clicks emit the message; `Nothing` hides it)
+and `back` swaps the default arrow icon. `avatar` / `header` / `footer` are
+upstream's same-named slots — each an optional element rendered in its
+`__avatar` / header / footer row. `rtl` adds the `--rtl` modifier. The
+`view` children are upstream's default slot (`__content`, rendered only
+when non-empty).
+-}
 type alias Options msg =
     { title : Maybe String
     , subtitle : Maybe String
@@ -50,6 +59,9 @@ type alias Options msg =
     }
 
 
+{-| An empty header: every slot absent, no back button, LTR, no extra
+attributes — renders nothing but the (empty) wrapper unless a slot is set.
+-}
 defaults : Options msg
 defaults =
     { title = Nothing
@@ -65,6 +77,12 @@ defaults =
     }
 
 
+{-| The `n-page-header-wrapper` — an optional full-width header row (rendered
+only while a main-part slot exists), the content column for non-empty
+children, and the optional header / footer rows around them. The wrapper
+carries the theme vars and the caller's `attributes`; the header row inside
+spans the wrapper so `__extra` can sit at its right edge.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     let

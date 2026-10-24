@@ -1,13 +1,4 @@
-module NUI.Progress exposing
-    ( FillColor(..)
-    , IndicatorPlacement(..)
-    , Options
-    , ProgressType(..)
-    , Status(..)
-    , cssVarsFor
-    , defaults
-    , view
-    )
+module NUI.Progress exposing (ProgressType(..), Status(..), FillColor(..), IndicatorPlacement(..), Options, defaults, view, cssVarsFor)
 
 {-| Naive UI's `Progress`, rebuilt on elm-ui.
 
@@ -76,6 +67,8 @@ cross-axis stretch. The inline widths restore the upstream block chain
 (graph → graph-line → rail, graph → graph-circle → svg) so the rail spans
 full width and the ring renders at the root's size.
 
+@docs ProgressType, Status, FillColor, IndicatorPlacement, Options, defaults, view, cssVarsFor
+
 -}
 
 import Bitwise
@@ -131,6 +124,27 @@ type IndicatorPlacement
     | Outside
 
 
+{-| The progress options. Graph kind: `type_` picks line / circle /
+dashboard / multiple-circle. Values: `percentage` is the single graph's
+value (line / circle / dashboard), `percentages` the per-ring values
+(`multipleCircle` — one ring per entry, paired by index with `colors` /
+`railColors` / `railStyles`). Look: `status` drives the themed fill / icon
+colours and swaps the indicator for the status icon; `showIndicator` hides
+the whole indicator (`indicatorPlacement` = inside / outside, line only);
+`processing` adds the line fill's animated processing state; `unit` is the
+indicator's suffix (`%`). Colours: `color` (a `FillColor` — solid or
+gradient) overrides the theme fill for the single graph, `colors` the
+per-ring fills, `railColor` / `railColors` the rails (solid CSS strings),
+and `railStyle` / `railStyles` inline style overrides merged after the
+built-ins (Vue array-order; circle / dashboard declare but ignore
+`railStyle`, upstream's own dead prop). Line geometry: `height` (px) fixes
+the rail height, `borderRadius` / `fillBorderRadius` the corner radii
+(defaulting to half the height). Circle geometry: `strokeWidth`,
+`viewBoxWidth` (both defaults from upstream), `gapDegree` (defaults to 75
+for dashboard, else 0), `gapOffsetDegree`, `offsetDegree` (rotate the arc),
+and `circleGap` (the multiple-circle ring spacing, default 1).
+`attributes` land on the root.
+-}
 type alias Options msg =
     { type_ : ProgressType
     , percentage : Float
@@ -159,6 +173,10 @@ type alias Options msg =
     }
 
 
+{-| Upstream's prop defaults: a `0%` default-status line with its indicator
+outside, `strokeWidth` 7, `viewBoxWidth` 100, `unit` `"%"`, `circleGap` 1,
+`percentages = [ 0 ]` — and no colour overrides (the theme drives them).
+-}
 defaults : Options msg
 defaults =
     { type_ = Line

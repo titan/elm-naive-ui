@@ -1,15 +1,4 @@
-module NUI.NumberAnimation exposing
-    ( Formatted
-    , Options
-    , defaults
-    , easeOut
-    , format
-    , formatToFixed
-    , groupDigits
-    , roundTo
-    , tweenValue
-    , view
-    )
+module NUI.NumberAnimation exposing (Formatted, Options, defaults, view, easeOut, tweenValue, roundTo, formatToFixed, format, groupDigits)
 
 {-| Naive UI's `NumberAnimation`, rebuilt on elm-ui.
 
@@ -58,6 +47,8 @@ no equivalent.
 NumberAnimation carries no classes and no `--n-*` variables of its own
 (like `NUI.Countdown`).
 
+@docs Formatted, Options, defaults, view, easeOut, tweenValue, roundTo, formatToFixed, format, groupDigits
+
 -}
 
 import Element exposing (Element)
@@ -95,6 +86,11 @@ type alias Options msg =
     }
 
 
+{-| Upstream's prop defaults (`duration: 2000`, `precision: 0`, no
+separator, `%`-style unit semantics — `to` / `from` both `0`), plus the
+port's runtime inputs at rest: `elapsed = 0` (nothing has ticked) and the
+en-US separators `"."` / `","`.
+-}
 defaults : Options msg
 defaults =
     { to = 0
