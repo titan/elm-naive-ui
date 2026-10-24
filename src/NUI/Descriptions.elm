@@ -1,18 +1,4 @@
-module NUI.Descriptions exposing
-    ( Align(..)
-    , Cell
-    , CellShape(..)
-    , Item
-    , Options
-    , Placement(..)
-    , Size(..)
-    , cssVars
-    , defaults
-    , itemDefaults
-    , layout
-    , resolvedColumns
-    , view
-    )
+module NUI.Descriptions exposing (Align(..), Cell, CellShape(..), Item, Options, Placement(..), Size(..), cssVars, defaults, itemDefaults, layout, resolvedColumns, view)
 
 {-| Naive UI's `Descriptions` (`n-descriptions` + `n-descriptions-item`), rebuilt on elm-ui.
 
@@ -55,6 +41,8 @@ The caller owns the items; nothing is measured or looked up.
     `.n-descriptions-table` is `width: 100%`, and a content-sized root would shrink the
     table back down (labels concatenating with no column tracks), which is not what
     upstream's block `div` root does.
+
+@docs Align, Cell, CellShape, Item, Options, Placement, Size, cssVars, defaults, itemDefaults, layout, resolvedColumns, view
 
 -}
 
@@ -101,7 +89,10 @@ type alias Item msg =
     }
 
 
-{-| Naive UI's `n-descriptions` props.
+{-| Naive UI's `n-descriptions` props. `column` is upstream's singular prop
+and `columns` its newer alias — `resolvedColumns` picks the winner (`columns`
+if set, else `column`). The `*Class` / `*Style` fields are raw CSS fragments
+applied to the table's cells (see `Item` for the per-item overrides).
 -}
 type alias Options msg =
     { title : Maybe (Element msg)
@@ -119,6 +110,9 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults: three columns, labels on top and left-aligned, the
+":" separator, `medium` size, no border, no title, no class/style overrides.
+-}
 defaults : Options msg
 defaults =
     { title = Nothing
@@ -136,6 +130,9 @@ defaults =
     }
 
 
+{-| The blank item: no label, `span 1`, no style overrides, no content —
+record-update it into a real row.
+-}
 itemDefaults : Item msg
 itemDefaults =
     { label = Nothing
@@ -156,6 +153,9 @@ type CellShape
     | CombinedCell
 
 
+{-| One packed cell of a layout row: its kind (see `CellShape`), the resolved
+colspan, and the index of the item it renders.
+-}
 type alias Cell =
     { shape : CellShape
     , colspan : Int
@@ -320,6 +320,11 @@ cssVars theme opts =
     ]
 
 
+{-| The whole table: the `n-descriptions` root (with the placement / align /
+size / bordered modifier classes and the `--n-*` vars), the optional header,
+and the `n-descriptions-table-wrapper` around the `<table>` itself — the
+spacer row and per-item cells per `layout`.
+-}
 view : Theme -> Options msg -> List (Item msg) -> Element msg
 view theme opts items =
     let
