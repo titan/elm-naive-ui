@@ -1,58 +1,4 @@
-module NUI.Internal.Color exposing
-    ( HSL
-    , HSLA
-    , HSV
-    , HSVA
-    , Mode(..)
-    , RGB
-    , RGBA
-    , alphaFromPoint
-    , convert
-    , convertColor
-    , deriveDefaultValue
-    , getHexFromName
-    , getModeFromValue
-    , getWCAGContrast
-    , hsl2hsv
-    , hsl2rgb
-    , hslWithAlpha
-    , hsla
-    , hslaOf
-    , hsv2hsl
-    , hsv2rgb
-    , hsvWithAlpha
-    , hsva
-    , hsvaOf
-    , hueFromPoint
-    , isHexPrefix
-    , modeString
-    , nextDisplayedMode
-    , normalizeAlpha
-    , normalizeAlphaUnit
-    , normalizeHexaUnit
-    , normalizeHue
-    , normalizeHueUnit
-    , normalizeRgbUnit
-    , normalizeSlvUnit
-    , rgb2hsl
-    , rgb2hsv
-    , rgbWithAlpha
-    , rgba
-    , rgbaOf
-    , roundAlpha
-    , roundChannel
-    , roundDeg
-    , roundPercent
-    , svFromPoint
-    , toHexString
-    , toHexaString
-    , toHslString
-    , toHslaString
-    , toHsvString
-    , toHsvaString
-    , toRgbString
-    , toRgbaString
-    )
+module NUI.Internal.Color exposing (HSL, HSLA, HSV, HSVA, Mode(..), RGB, RGBA, alphaFromPoint, convert, convertColor, deriveDefaultValue, getHexFromName, getModeFromValue, getWCAGContrast, hsl2hsv, hsl2rgb, hslWithAlpha, hsla, hslaOf, hsv2hsl, hsv2rgb, hsvWithAlpha, hsva, hsvaOf, hueFromPoint, isHexPrefix, modeString, nextDisplayedMode, normalizeAlpha, normalizeAlphaUnit, normalizeHexaUnit, normalizeHue, normalizeHueUnit, normalizeRgbUnit, normalizeSlvUnit, rgb2hsl, rgb2hsv, rgbWithAlpha, rgba, rgbaOf, roundAlpha, roundChannel, roundDeg, roundPercent, svFromPoint, toHexString, toHexaString, toHslString, toHslaString, toHsvString, toHsvaString, toRgbString, toRgbaString)
 
 {-| The pure colour engine behind `NUI.ColorPicker` — a port of the subset of
 `seemly@0.3.10` (`lib/color/{convert,index,colors}.js`) that Naive UI's
@@ -72,6 +18,8 @@ behaviour. Floats are `elm/core` `Basics` only; the named-colour table is the
 This module is **unexposed internal API** (like `NUI.Internal.DateTime`): the
 component reaches it through `NUI.ColorPicker`, which re-exposes the pure
 eq-pin surface.
+
+@docs HSL, HSLA, HSV, HSVA, Mode, RGB, RGBA, alphaFromPoint, convert, convertColor, deriveDefaultValue, getHexFromName, getModeFromValue, getWCAGContrast, hsl2hsv, hsl2rgb, hslWithAlpha, hsla, hslaOf, hsv2hsl, hsv2rgb, hsvWithAlpha, hsva, hsvaOf, hueFromPoint, isHexPrefix, modeString, nextDisplayedMode, normalizeAlpha, normalizeAlphaUnit, normalizeHexaUnit, normalizeHue, normalizeHueUnit, normalizeRgbUnit, normalizeSlvUnit, rgb2hsl, rgb2hsv, rgbWithAlpha, rgba, rgbaOf, roundAlpha, roundChannel, roundDeg, roundPercent, svFromPoint, toHexString, toHexaString, toHslString, toHslaString, toHsvString, toHsvaString, toRgbString, toRgbaString
 
 **Intentional divergences from upstream (documented, not bugs):**
 
@@ -114,22 +62,33 @@ type alias RGB =
     { r : Float, g : Float, b : Float }
 
 
+{-| Red/green/blue plus alpha — the four-channel form the converters and
+serializers pass around.
+-}
 type alias RGBA =
     { r : Float, g : Float, b : Float, a : Float }
 
 
+{-| Hue/saturation/value, `h` 0–360, `s`/`v` 0–100.
+-}
 type alias HSV =
     { h : Float, s : Float, v : Float }
 
 
+{-| Hue/saturation/value plus alpha.
+-}
 type alias HSVA =
     { h : Float, s : Float, v : Float, a : Float }
 
 
+{-| Hue/saturation/lightness, `h` 0–360, `s`/`l` 0–100.
+-}
 type alias HSL =
     { h : Float, s : Float, l : Float }
 
 
+{-| Hue/saturation/lightness plus alpha.
+-}
 type alias HSLA =
     { h : Float, s : Float, l : Float, a : Float }
 
@@ -141,16 +100,24 @@ rgbWithAlpha a c =
     { r = c.r, g = c.g, b = c.b, a = a }
 
 
+{-| Attach an alpha channel to an HSV triple.
+-}
 hsvWithAlpha : Float -> HSV -> HSVA
 hsvWithAlpha a c =
     { h = c.h, s = c.s, v = c.v, a = a }
 
 
+{-| Attach an alpha channel to an HSL triple.
+-}
 hslWithAlpha : Float -> HSL -> HSLA
 hslWithAlpha a c =
     { h = c.h, s = c.s, l = c.l, a = a }
 
 
+{-| The mode's identifier string — `Hex → "hex"`, `Rgb → "rgb"`, `Hsl →
+"hsl"`, `Hsv → "hsv"` (upstream's mode labels on the mode-switch button's
+labelled inputs).
+-}
 modeString : Mode -> String
 modeString mode =
     case mode of
@@ -386,6 +353,8 @@ floatModBy m x =
 -- ROUNDERS (seemly index.js, exact) ---------------------------------------------
 
 
+{-| Round a channel to an `Int`, clamped to `0`–`255` (seemly `roundToByte`).
+-}
 roundChannel : Float -> Int
 roundChannel value =
     let
@@ -402,6 +371,8 @@ roundChannel value =
         v
 
 
+{-| Round a percentage to an `Int`, clamped to `0`–`100`.
+-}
 roundPercent : Float -> Int
 roundPercent value =
     let
@@ -458,6 +429,8 @@ roundAlpha value =
 -- SERIALIZERS (seemly index.js, exact) ------------------------------------------
 
 
+{-| `"rgb(r, g, b)"` — channels through `roundChannel`, `", "` separator.
+-}
 toRgbString : RGBA -> String
 toRgbString c =
     "rgb("
@@ -469,6 +442,9 @@ toRgbString c =
         ++ ")"
 
 
+{-| `"rgba(r, g, b, a)"` — channels through `roundChannel`, alpha through
+`roundAlpha` (2-decimal `String.fromFloat`).
+-}
 toRgbaString : RGBA -> String
 toRgbaString c =
     "rgba("
@@ -482,6 +458,8 @@ toRgbaString c =
         ++ ")"
 
 
+{-| `"hsv(h, s%, v%)"` — `roundDeg`/`roundPercent` inside.
+-}
 toHsvString : HSVA -> String
 toHsvString c =
     "hsv("
@@ -493,6 +471,8 @@ toHsvString c =
         ++ "%)"
 
 
+{-| `"hsva(h, s%, v%, a)"`.
+-}
 toHsvaString : HSVA -> String
 toHsvaString c =
     "hsva("
@@ -506,6 +486,8 @@ toHsvaString c =
         ++ ")"
 
 
+{-| `"hsl(h, s%, l%)"`.
+-}
 toHslString : HSLA -> String
 toHslString c =
     "hsl("
@@ -517,6 +499,8 @@ toHslString c =
         ++ "%)"
 
 
+{-| `"hsla(h, s%, l%, a)"`.
+-}
 toHslaString : HSLA -> String
 toHslaString c =
     "hsla("
@@ -530,11 +514,16 @@ toHslaString c =
         ++ ")"
 
 
+{-| `"#RRGGBB"` — uppercase hex, each channel through `roundChannel`.
+-}
 toHexString : RGBA -> String
 toHexString c =
     "#" ++ hexByte c.r ++ hexByte c.g ++ hexByte c.b
 
 
+{-| `"#RRGGBBAA"` — `toHexString` plus the alpha channel as a hex byte
+(`roundChannel (a * 255)`).
+-}
 toHexaString : RGBA -> String
 toHexaString c =
     toHexString c ++ hexByte (c.a * 255)
@@ -1101,6 +1090,9 @@ getModeFromValue maybeColor =
                 Nothing
 
 
+{-| The `/^ *#/` test behind `getModeFromValue`'s hex branch — exposed so the
+component can ask "is this a hex-form value?" without re-deriving the mode.
+-}
 isHexPrefix : String -> Bool
 isHexPrefix color =
     Regex.contains spaceHashRegex color
@@ -1270,7 +1262,7 @@ convertColor value mode originalMode =
                 Result.toMaybe (convert m mode value)
 
 
-{-| The value arrays upstream derives per `valueMode` (each `Nothing` when the
+{-| The value array upstream derives per `valueMode` (each `Nothing` when the
 value is empty or mode-less).
 -}
 rgbaOf : Maybe String -> Maybe RGBA
@@ -1292,6 +1284,9 @@ rgbaOf maybeValue =
         )
 
 
+{-| The HSVA form of the value — `Nothing` for empty/mode-less input, else the
+value converted to HSV (with alpha) via the mode's converter.
+-}
 hsvaOf : Maybe String -> Maybe HSVA
 hsvaOf maybeValue =
     withMode maybeValue
@@ -1310,6 +1305,9 @@ hsvaOf maybeValue =
         )
 
 
+{-| The HSLA form of the value — `Nothing` for empty/mode-less input, else the
+value converted to HSL (with alpha) via the mode's converter.
+-}
 hslaOf : Maybe String -> Maybe HSLA
 hslaOf maybeValue =
     withMode maybeValue

@@ -39,6 +39,8 @@ unknown element it never draws. The one attribute elm/svg's set lacks,
 `xmlns`, is emitted via `Html.Attributes.attribute` (the same underlying
 `VirtualDom.Attribute` type under elm/html's alias).
 
+@docs spinner
+
 -}
 
 import Html.Attributes as HA
