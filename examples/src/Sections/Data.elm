@@ -970,7 +970,7 @@ dynamicTagsSection : Model -> Theme -> Element Msg
 dynamicTagsSection model theme =
     section theme
         "Dynamic Tags"
-        "Editable tag lists (the tags, input and draft are caller-owned)."
+        "Editable tag lists — keyword sets, chips, recipient pickers. Naive UI's DynamicTags pairs an inline adding input with closable tags: the tags, the draft text and whether the input is open are all caller-owned model fields driven through update messages. Rows show the stacked default, the always-open input variant, and a live row that actually adds, confirms and dismisses."
         (dynamicTagsRows model theme)
 
 
@@ -999,7 +999,7 @@ dynamicTagsLiveSection : Model -> Theme -> Element Msg
 dynamicTagsLiveSection model theme =
     section theme
         "Dynamic Tags"
-        "Editable tag lists (the tags, input and draft are caller-owned)."
+        "Editable tag lists — keyword sets, chips, recipient pickers. Naive UI's DynamicTags pairs an inline adding input with closable tags: the tags, the draft text and whether the input is open are all caller-owned model fields driven through update messages. Rows show the stacked default, the always-open input variant, and a live row that actually adds, confirms and dismisses."
         (dynamicTagsRows model theme ++ [ tagsLiveRow model theme ])
 
 
@@ -1059,7 +1059,7 @@ calendarSection : Model -> Theme -> Element Msg
 calendarSection model theme =
     section theme
         "Calendar"
-        "A month view (the panel, value and locale are caller-owned)."
+        "A month calendar for picking and displaying dates, ported from Naive UI's Calendar. The current panel, the selected value and the locale all live in your model — the component is a pure view over them, with headers and cell callbacks as messages. Rows show single and ranged selection, the double-panel form, and custom cell content."
         (calendarRows model theme)
 
 
@@ -1084,7 +1084,7 @@ calendarLiveSection : Model -> Theme -> Element Msg
 calendarLiveSection model theme =
     section theme
         "Calendar"
-        "A month view (the panel, value and locale are caller-owned)."
+        "A month calendar for picking and displaying dates, ported from Naive UI's Calendar. The current panel, the selected value and the locale all live in your model — the component is a pure view over them, with headers and cell callbacks as messages. Rows show single and ranged selection, the double-panel form, and custom cell content."
         (calendarRows model theme ++ [ calendarLiveRow model theme ])
 
 
@@ -2754,7 +2754,7 @@ transferSection : Model -> Theme -> Element Msg
 transferSection model theme =
     section theme
         "Transfer"
-        "Two lists with select-all / clear — value and patterns are caller-owned."
+        "Naive UI's Transfer: two searchable lists with a shuttle between them — move options in bulk or one by one, with select-all and clear affordances per side. The chosen value, the search patterns and the disabled options are caller-owned state. Rows show the plain form, filtered and disabled variants."
         (transferRows model theme)
 
 
@@ -2780,7 +2780,7 @@ transferLiveSection : Model -> Theme -> Element Msg
 transferLiveSection model theme =
     section theme
         "Transfer"
-        "Two lists with select-all / clear — value and patterns are caller-owned."
+        "Naive UI's Transfer: two searchable lists with a shuttle between them — move options in bulk or one by one, with select-all and clear affordances per side. The chosen value, the search patterns and the disabled options are caller-owned state. Rows show the plain form, filtered and disabled variants."
         (transferRows model theme ++ [ transferLiveRow model theme ])
 
 

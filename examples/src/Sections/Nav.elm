@@ -626,7 +626,7 @@ paginationRows theme =
 
 paginationSection : Theme -> Element msg
 paginationSection theme =
-    section theme "Pagination" "Page windows (the page, the page size and the jumper text are caller-owned)." (paginationRows theme)
+    section theme "Pagination" "Naive UI's Pagination: page windows with prev/next, optional quick jumpers and page-size selectors, in sizes small through large. The page, the page size and the jumper's live text are caller-owned — every interaction is a message, so server-side paging slots straight into your update. Rows walk the sizes and feature flags, then a live paged list." (paginationRows theme)
 
 
 {-| Live: `#live-pagination` (+ the Go / size buttons drive the jumper and
@@ -685,7 +685,7 @@ paginationLiveSection : Model -> Theme -> Element Msg
 paginationLiveSection model theme =
     section theme
         "Pagination"
-        "Page windows (the page, the page size and the jumper text are caller-owned)."
+        "Naive UI's Pagination: page windows with prev/next, optional quick jumpers and page-size selectors, in sizes small through large. The page, the page size and the jumper's live text are caller-owned — every interaction is a message, so server-side paging slots straight into your update. Rows walk the sizes and feature flags, then a live paged list."
         (paginationRows theme ++ [ paginationLiveRow model theme ])
 
 
@@ -707,7 +707,7 @@ splitRows theme =
 
 splitSection : Theme -> Element msg
 splitSection theme =
-    section theme "Split" "Resizable panes (the size is caller-owned)." (splitRows theme)
+    section theme "Split" "Naive UI's Split: a draggable divider between two panes, horizontal or vertical, with min/max bounds and a persist-on-drag-resize option. The pane size is caller-owned — drag events arrive as messages, so layouts persist in your model or storage. Rows show both orientations and a live draggable pane wired to real state." (splitRows theme)
 
 
 {-| Live: `#live-split` (pane size stepper — real drag is the Motion
@@ -742,7 +742,7 @@ splitLiveRow model theme =
 
 splitLiveSection : Model -> Theme -> Element Msg
 splitLiveSection model theme =
-    section theme "Split" "Resizable panes (the size is caller-owned)." (splitRows theme ++ [ splitLiveRow model theme ])
+    section theme "Split" "Naive UI's Split: a draggable divider between two panes, horizontal or vertical, with min/max bounds and a persist-on-drag-resize option. The pane size is caller-owned — drag events arrive as messages, so layouts persist in your model or storage. Rows show both orientations and a live draggable pane wired to real state." (splitRows theme ++ [ splitLiveRow model theme ])
 
 
 stepsRows : Theme -> List (Element msg)
@@ -967,7 +967,7 @@ collapseRows theme =
 
 collapseSection : Theme -> Element msg
 collapseSection theme =
-    section theme "Collapse" "Expandable panels (the expanded set is caller-owned)." (collapseRows theme)
+    section theme "Collapse" "Naive UI's Collapse: stacked expandable panels with arrow placement and trigger-area options, in display-directive show and if-hidden forms. The expanded set is caller-owned — names arrive through onToggle — and each item composes title plus arbitrary Element content. Rows walk placements and triggers, then a live accordion specimen." (collapseRows theme)
 
 
 {-| Live: `#live-collapse-accordion` (single-name expandedNames — the port's
@@ -1026,7 +1026,7 @@ collapseLiveSection : Model -> Theme -> Element Msg
 collapseLiveSection model theme =
     section theme
         "Collapse"
-        "Expandable panels (the expanded set is caller-owned)."
+        "Naive UI's Collapse: stacked expandable panels with arrow placement and trigger-area options, in display-directive show and if-hidden forms. The expanded set is caller-owned — names arrive through onToggle — and each item composes title plus arbitrary Element content. Rows walk placements and triggers, then a live accordion specimen."
         (collapseRows theme ++ [ accordionLiveRow model theme, multiLiveRow model theme ])
 
 

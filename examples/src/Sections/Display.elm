@@ -1499,7 +1499,7 @@ codeSection : Theme -> Element msg
 codeSection theme =
     section theme
         "Code"
-        "A code block over a caller-supplied highlight.js — highlighting is the caller's to own."
+        "A themed code block over a caller-supplied highlight.js. The component renders the pane, line numbers and the monospace rows; syntax colours come from the token HTML you pass in, so highlighting stays the caller's to own (bring your own hljs build). Rows show plain and numbered forms."
         [ demoRow theme
             "dsp-037"
             "Basic (highlighted)"
@@ -1590,7 +1590,7 @@ equationSection : Theme -> Element msg
 equationSection theme =
     section theme
         "Equation"
-        "KaTeX-rendered math via a caller-supplied renderToString closure (the component ships no KaTeX)."
+        "KaTeX-rendered math via a caller-supplied renderToString closure — the component ships no KaTeX, it themes the pane and sizes the output you hand it. Works for inline and display equations alike; errors surface as the raw TeX. Rows show a display equation and an inline expression."
         [ demoRow theme
             "dsp-044"
             "Inline (fake katex)"

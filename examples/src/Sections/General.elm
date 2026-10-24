@@ -973,7 +973,7 @@ iconSection : Theme -> Element msg
 iconSection theme =
     section theme
         "Icon"
-        "Naive UI's icon primitive (`.n-icon`) and its rounded wrapper (`.n-icon-wrapper`). Pass the glyph as the child."
+        "Naive UI's Icon primitive (`.n-icon`) and its rounded wrapper (`.n-icon-wrapper`): a themed slot for any glyph you pass as the child — the port ships no icon font. Size and colour come from the theme (or explicit Options), and the wrapper adds the pill background for count-style indicators. Rows show both forms across sizes and colours."
     <|
         [ demoRow theme
             "gen-035"
@@ -997,7 +997,7 @@ highlightSection : Theme -> Element msg
 highlightSection theme =
     section theme
         "Highlight"
-        "Plain text with every pattern occurrence wrapped in a `mark` (no stylesheet of its own)."
+        "Plain text with every occurrence of the patterns wrapped in a themed `mark` — Naive UI's Highlight. Case sensitivity is a flag, styles are the theme's, and the component emits no stylesheet of its own beyond the marks. Natural for search-result excerpts and keyword hits; pair with your own filter logic."
     <|
         [ Highlight.view theme
             { highlightD | text = "Naive UI is awesome", patterns = [ "Naive", "UI" ] }
@@ -1055,7 +1055,7 @@ themeSection : Theme -> Element msg
 themeSection theme =
     section theme
         "Theme"
-        "One variable set drives every component — override the primary colour and it propagates."
+        "One variable set drives every component — the Theme record threads through every view, so overriding the primary colour (or any common token) propagates everywhere at once. Toggle light/dark here and watch the whole page re-theme; custom themes are just record updates. Rows show the primary override and the mode pair."
     <|
         [ demoRow theme
             "gen-039"
