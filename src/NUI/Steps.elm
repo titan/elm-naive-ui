@@ -1,14 +1,4 @@
-module NUI.Steps exposing
-    ( Item
-    , ItemStatus(..)
-    , Options
-    , Placement(..)
-    , Size(..)
-    , cssVarsFor
-    , defaults
-    , item
-    , view
-    )
+module NUI.Steps exposing (Item, ItemStatus(..), Options, Placement(..), Size(..), cssVarsFor, defaults, item, view)
 
 {-| Naive UI's `Steps` and `Step`, rebuilt on elm-ui.
 
@@ -29,6 +19,8 @@ Naive UI injects the steps' `current` / `status` / `size` / `vertical` /
 here the steps are plain records rendered by `view`, so the derived status and
 `--n-*` values come from the steps' options — one source of truth, no injection.
 `onSelect` maps upstream's `on-update:current` click behaviour.
+
+@docs Item, ItemStatus, Options, Placement, Size, cssVarsFor, defaults, item, view
 
 -}
 
@@ -65,6 +57,10 @@ type ItemStatus
     | Wait
 
 
+{-| The steps' configuration: which step is `current` (1-based, as in
+upstream's `current` prop) and the fallback status for it, `size`, `vertical`,
+`contentPlacement`, and `onSelect` (fires the clicked step's 1-based index).
+-}
 type alias Options msg =
     { current : Maybe Int
     , status : ItemStatus
@@ -77,6 +73,8 @@ type alias Options msg =
     }
 
 
+{-| Horizontal medium steps, no current step, no selection.
+-}
 defaults : Options msg
 defaults =
     { current = Nothing
@@ -102,6 +100,8 @@ type alias Item msg =
     }
 
 
+{-| An empty step — no title, no description, no override status.
+-}
 item : Item msg
 item =
     { status = Nothing
@@ -112,6 +112,9 @@ item =
     }
 
 
+{-| Render the steps. Each item's status is derived from `current` unless the
+item sets its own `status` (see `Item`).
+-}
 view : Theme -> Options msg -> List (Item msg) -> Element msg
 view theme opts items =
     Element.row
@@ -321,6 +324,9 @@ statusClass status =
             "wait"
 
 
+{-| The `--n-*` custom properties for a step in a given derived status: theme
+colours per status plus the per-`size` indicator and header metrics.
+-}
 cssVarsFor : Theme -> Options msg -> ItemStatus -> List ( String, String )
 cssVarsFor theme opts status =
     let
