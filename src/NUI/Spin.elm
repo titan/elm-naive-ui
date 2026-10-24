@@ -1,10 +1,4 @@
-module NUI.Spin exposing
-    ( Options
-    , SpinSize(..)
-    , cssVarsFor
-    , defaults
-    , view
-    )
+module NUI.Spin exposing (Options, SpinSize(..), cssVarsFor, defaults, view)
 
 {-| Naive UI's `Spin`, rebuilt on elm-ui.
 
@@ -55,6 +49,8 @@ explicit `<NBaseLoading strokeWidth={20}/>` call site — where an absent key
 falls through to that baseline, hence their `Maybe` fields. The asymmetry is
 upstream-faithful, not an oversight.
 
+@docs Options, SpinSize, cssVarsFor, defaults, view
+
 -}
 
 import Element exposing (Element)
@@ -78,6 +74,13 @@ type SpinSize
     | Number Int
 
 
+{-| The spin options — Naive UI's props: `size`, `show` (upstream `show`,
+with `delay`/`spinning` as its applied-late aliases), `rotate` (custom
+icons only), `description`, `stroke` / `strokeWidth` / `scale` /
+`radius` (the `NBaseLoading` re-exports; see the module docstring for
+which are `Maybe`), `icon` (the icon slot), `transition` (the wrapped
+shape's fade phase), and `attributes`.
+-}
 type alias Options msg =
     { size : SpinSize
     , show : Bool
@@ -93,6 +96,10 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults: a `medium`, shown, rotating spin with no custom
+icon or description, the `NBaseLoading` geometry (`scale` 1, `radius`
+100), stroke width derived from the size (18 for medium).
+-}
 defaults : Options msg
 defaults =
     { size = Medium
@@ -109,6 +116,12 @@ defaults =
     }
 
 
+{-| The spin element — the standalone `.n-spin-body` (spinner + optional
+description) without children, or the wrapped `.n-spin-container`
+(content dimmed by `--spinning` while `show`, spinner overlaying it)
+with children. See the module docstring for the two shapes' var and
+transition differences.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     let

@@ -1,10 +1,4 @@
-module NUI.Rate exposing
-    ( Options
-    , Size(..)
-    , cssVarsFor
-    , defaults
-    , view
-    )
+module NUI.Rate exposing (Options, Size(..), cssVarsFor, defaults, view)
 
 {-| Naive UI's `Rate`, rebuilt on elm-ui.
 
@@ -26,6 +20,8 @@ star icon is always rendered. `readonly` drops the item click handler, and
 `onSelect` receives the derived value Naive UI reports (`index + 1`; the `+ 0.5`
 half step depends on pointer geometry the caller owns). Naive UI's `clearable`
 click-to-clear is the caller's decision inside `onSelect`.
+
+@docs Options, Size, cssVarsFor, defaults, view
 
 -}
 
@@ -49,6 +45,12 @@ type Size
     | Px Int
 
 
+{-| The rate options — Naive UI's props plus the caller-owned hover state:
+`count` stars, the selected `value`, the `hoverValue` (upstream's internal
+`hoverIndex`; drives `--active` while hovering), `allowHalf`, `readonly`
+(no click handlers), `size`, the `color` override for the active star,
+`onSelect` (receiving `index + 1`), and `attributes`.
+-}
 type alias Options msg =
     { count : Int
     , value : Maybe Float
@@ -62,6 +64,9 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults: 5 stars, nothing selected or hovered, whole-star
+steps, interactive `medium` stars, the theme's active color, no handler.
+-}
 defaults : Options msg
 defaults =
     { count = 5
@@ -76,6 +81,11 @@ defaults =
     }
 
 
+{-| The `n-rate` element — `count` star items (`.n-rate__item`, with an
+overlaid `__half` star per item under `allowHalf`), each `--active` per
+`itemActive` / `halfActive`, clickable (unless `readonly`) with
+`onSelect (index + 1)`.
+-}
 view : Theme -> Options msg -> Element msg
 view theme opts =
     Element.row

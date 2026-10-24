@@ -1,11 +1,4 @@
-module NUI.Split exposing
-    ( Direction(..)
-    , Options
-    , Size(..)
-    , cssVarsFor
-    , defaults
-    , view
-    )
+module NUI.Split exposing (Direction(..), Options, Size(..), cssVarsFor, defaults, view)
 
 {-| Naive UI's `Split`, rebuilt on elm-ui.
 
@@ -37,6 +30,15 @@ default `resizeTriggerSize` is `6` (upstream: `3`) — upstream's docs demos sit
 on white surfaces where a 3px light-grey bar reads as missing; 6px keeps the
 drag seam visible while staying a hairline.
 
+**Upstream props not modelled** (all runtime or uncontrolled):
+`defaultSize` (the uncontrolled mirror of `size` — state lives with the
+caller), the pane clamp `min` / `max` (defaults 0 / 1; fold them into the
+`size` you pass), and the drag events `onDragStart` / `onDragMove` /
+`onDragEnd` (the caller owns the gesture; wire the wrapper through
+`resizeTrigger` or `attributes` if you need the seam).
+
+@docs Direction, Options, Size, cssVarsFor, defaults, view
+
 -}
 
 import Element exposing (Element)
@@ -59,6 +61,14 @@ type Size
     | Length String
 
 
+{-| The split options — Naive UI's props plus the caller-owned drag state:
+`direction`, `size` (pane 1's share), `resizeTriggerSize`, `disabled`
+(omits the trigger wrapper entirely), `dragging` (upstream's
+`isDragging` — drives `--hover` on the default trigger), the two panes'
+children and styles, `resizeTrigger` (the slot; `Nothing` renders the
+default bar), and `attributes`. See the module docstring for `min`/
+`max`/drag events.
+-}
 type alias Options msg =
     { direction : Direction
     , size : Size
@@ -74,6 +84,10 @@ type alias Options msg =
     }
 
 
+{-| The port's defaults (see the module docstring for the two deliberate
+divergences): a 50/50 horizontal split with the 6px trigger, enabled, not
+dragging, empty panes.
+-}
 defaults : Options msg
 defaults =
     { direction = Horizontal
@@ -98,6 +112,12 @@ paneChrome =
     [ ( "border", "1px solid #efeff5" ) ]
 
 
+{-| The `n-split` element — pane 1 (its `flex` computed from `size`), the
+resize trigger wrapper + trigger (skipped when `disabled`), pane 2, all
+styled per upstream's inline declarations (the trigger geometry from
+`resizeTriggerSize`, the panes' defaults mergeable through `pane1Style` /
+`pane2Style`).
+-}
 view : Theme -> Options msg -> Element msg
 view theme opts =
     let

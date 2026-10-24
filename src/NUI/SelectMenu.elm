@@ -1,16 +1,4 @@
-module NUI.SelectMenu exposing
-    ( BuiltRow
-    , GroupOption
-    , LeafOption
-    , Option(..)
-    , Options
-    , RenderOption
-    , Size(..)
-    , Value(..)
-    , cssVars
-    , defaults
-    , view
-    )
+module NUI.SelectMenu exposing (BuiltRow, GroupOption, LeafOption, Option(..), Options, RenderOption, Size(..), Value(..), cssVars, defaults, view)
 
 {-| Naive UI's internal select-menu body (upstream `NInternalSelectMenu`,
 `_internal/select-menu/`), rebuilt on elm-ui — the support module
@@ -59,6 +47,8 @@ upstream's `isSelected` on a valueless rawNode). When `renderOption` is set,
 every row — custom rows included — is swapped for the callback's return
 (upstream `SelectOption.tsx`'s render tail: `renderOption({ node, … })`). Empty = zero flattened rows, group headers included — a
 childless group renders its header, never the empty fallback.
+
+@docs BuiltRow, GroupOption, LeafOption, Option, Options, RenderOption, Size, Value, cssVars, defaults, view
 
 -}
 

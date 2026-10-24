@@ -1,11 +1,4 @@
-module NUI.Qrcodegen exposing
-    ( Ecc(..)
-    , QrCode
-    , encodeText
-    , getModule
-    , getModules
-    , size
-    )
+module NUI.Qrcodegen exposing (Ecc(..), QrCode, encodeText, getModule, getModules, size)
 
 {-| A faithful Elm 0.19 port of Nayuki's QR Code generator library
 (`qrcodegen`, MIT License — <https://www.nayuki.io/page/qr-code-generator-library>).
@@ -32,6 +25,18 @@ appends Reed-Solomon error correction codewords with interleaving, draws the
 function patterns and codewords, and selects the mask with the lowest standard
 penalty score. Data that does not fit yields an `Err` (mirroring upstream's
 thrown exceptions).
+
+Provenance — this is a port, not a reimplementation. The TypeScript original
+is © Project Nayuki, MIT License
+(<https://www.nayuki.io/page/qr-code-generator-library>, file
+`src/qrcodegen.ts`); the structure, constants, and tables below are translated
+line-for-line from it (function-by-function correspondence, from
+`drawFunctionPatterns` down to `reedSolomonMultiply`). Only the shell is Elm:
+classes became custom/opaque types, `Uint8`/`bit buffers` became `Array Int`,
+and exceptions became `Result String`. `NUI.QrCode` (the component) renders
+what this module encodes.
+
+@docs Ecc, QrCode, encodeText, getModule, getModules, size
 
 -}
 
@@ -158,7 +163,10 @@ type alias Segment =
 -- PUBLIC API ------------------------------------------------------------------
 
 
-{-| A QR Code symbol: an immutable square grid of dark/light modules.
+{-| A QR Code symbol: an immutable square grid of dark/light modules — the
+`QrCode` class's `modules` grid plus the `version`, `errorCorrectionLevel`,
+`size`, and `mask` it was built with (opaque like the class instance;
+`size` / `getModule` / `getModules` are the readers upstream keeps public).
 -}
 type QrCode
     = QrCode
