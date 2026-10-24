@@ -1,14 +1,8 @@
-module NUI.Layout exposing
-    ( Options
-    , Position(..)
-    , content
-    , cssVarsFor
-    , defaults
-    , positionClass
-    , view
-    )
+module NUI.Layout exposing (Options, Position(..), content, cssVarsFor, defaults, positionClass, view)
 
 {-| Naive UI's `Layout` (and `LayoutContent`), rebuilt on elm-ui.
+
+@docs Options, Position, content, cssVarsFor, defaults, positionClass, view
 
     import NUI.Layout exposing (defaults)
 
@@ -71,6 +65,10 @@ type Position
     | Absolute
 
 
+{-| The `position` suffix upstream's layout family appends to its modifier
+classes (`static` / `absolute`) — shared by `NUI.LayoutHeader` /
+`NUI.LayoutFooter` / `NUI.LayoutSider` through their `Position` option.
+-}
 positionClass : Position -> String
 positionClass position =
     case position of
@@ -81,6 +79,10 @@ positionClass position =
             "absolute"
 
 
+{-| The `n-layout` props: positioning, the sider-row flag, the embedded
+colour variant, and the scroll container's inline style pairs (`contentStyle`
+merges after the template's own pairs — a caller's later pair wins).
+-}
 type alias Options msg =
     { position : Position
     , hasSider : Bool
@@ -91,6 +93,9 @@ type alias Options msg =
     }
 
 
+{-| A static, scrollable, non-embedded layout with no inline styles — the
+plain shell Naive UI's docs demos build on.
+-}
 defaults : Options msg
 defaults =
     { position = Static
@@ -102,6 +107,9 @@ defaults =
     }
 
 
+{-| The `n-layout` root (no content class) — `width fill` on the elm-ui root
+(see the module docs), the scroll container as its only child.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     layoutView False theme opts children

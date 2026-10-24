@@ -1,11 +1,8 @@
-module NUI.LayoutHeader exposing
-    ( Options
-    , cssVarsFor
-    , defaults
-    , view
-    )
+module NUI.LayoutHeader exposing (Options, cssVarsFor, defaults, view)
 
 {-| Naive UI's `LayoutHeader`, rebuilt on elm-ui.
+
+@docs Options, cssVarsFor, defaults, view
 
     import NUI.LayoutHeader exposing (defaults)
 
@@ -33,6 +30,10 @@ import NUI.Theme exposing (Theme)
 import NUI.Theme.Layout as LayoutTheme
 
 
+{-| The `n-layout-header` props: positioning, the bottom border, and the
+inverted colour variant (which also opts out of the visibility chrome —
+see the module docs).
+-}
 type alias Options msg =
     { position : Position
     , bordered : Bool
@@ -41,6 +42,8 @@ type alias Options msg =
     }
 
 
+{-| A static, borderless, non-inverted header with no extra attributes.
+-}
 defaults : Options msg
 defaults =
     { position = Static
@@ -50,6 +53,11 @@ defaults =
     }
 
 
+{-| The `n-layout-header` element: the header's `--n-*` vars with the
+non-inverted region chrome merged after them, children in a column. Unlike
+the footer the header needs no explicit width — upstream's CSS declares
+`width: 100%` for it.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     Element.column

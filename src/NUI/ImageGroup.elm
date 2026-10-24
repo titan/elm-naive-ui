@@ -1,19 +1,12 @@
 module NUI.ImageGroup exposing
-    ( Options
-    , currentId
-    , currentUrl
-    , defaults
-    , go
-    , imageIds
-    , nextIndex
-    , prevIndex
-    , previewOptions
-    , showImage
-    , urlMap
-    , view
+    ( Options, currentId, currentUrl, defaults, go, imageIds
+    , nextIndex, prevIndex, previewOptions, showImage, urlMap, view
     )
 
 {-| Naive UI's `ImageGroup`, rebuilt on elm-ui.
+
+@docs Options, currentId, currentUrl, defaults, go, imageIds
+@docs nextIndex, prevIndex, previewOptions, showImage, urlMap, view
 
     import NUI.ImageGroup as ImageGroup
 
@@ -98,6 +91,13 @@ import NUI.Theme exposing (Theme)
 -- OPTIONS
 
 
+{-| The `n-image-group` props — the group's url registries, the walk state,
+and the preview-surface flags threaded straight into `NUI.ImagePreview`
+(`zoom` IS the preview's `Zoom`, the three `*Transition` phases hold its
+nodes mounted through leave fades, `wrapperStyle` feeds `syncTransformOrigin`).
+The `onPrev` / `onNext` msgs are the toolbar switch msgs (reset + `go`);
+the keyboard path fires `go` only (see the module docs).
+-}
 type alias Options msg =
     { srcList : List String
     , registered : List ( String, String )
@@ -119,6 +119,9 @@ type alias Options msg =
     }
 
 
+{-| A closed, hidden group: empty registries, `current = 0`, toolbar on, the
+preview's initial zoom and all leave phases clear.
+-}
 defaults : Options msg
 defaults =
     { srcList = []

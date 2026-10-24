@@ -1,13 +1,8 @@
-module NUI.List exposing
-    ( Item
-    , Options
-    , cssVarsFor
-    , defaults
-    , item
-    , view
-    )
+module NUI.List exposing (Item, Options, cssVarsFor, defaults, item, view)
 
 {-| Naive UI's `List` and `ListItem`, rebuilt on elm-ui.
+
+@docs Item, Options, cssVarsFor, defaults, item, view
 
     import NUI.List exposing (item)
 
@@ -37,6 +32,10 @@ import NUI.Theme exposing (Theme)
 import NUI.Theme.List as ListTheme
 
 
+{-| The `n-list` props — the shell's border / hover / click modifiers, the
+divider injection, and the optional header / footer slots. The list's
+`size` prop has no markup or var effect upstream and is not modelled.
+-}
 type alias Options msg =
     { bordered : Bool
     , clickable : Bool
@@ -49,6 +48,9 @@ type alias Options msg =
     }
 
 
+{-| A plain list: dividers on, no border, no hover / click affordances, no
+header / footer, LTR.
+-}
 defaults : Options msg
 defaults =
     { bordered = False
@@ -71,6 +73,8 @@ type alias Item msg =
     }
 
 
+{-| An empty item — no prefix, no content, no suffix.
+-}
 item : Item msg
 item =
     { prefix = Nothing
@@ -79,6 +83,11 @@ item =
     }
 
 
+{-| The `n-list` element: optional header, the items as `n-list-item` rows
+(prefix? main, suffix?, divider when `showDivider`), optional footer —
+the list's `--n-*` vars on the root. `showDivider` is read per item here
+(upstream injects it into every child instead).
+-}
 view : Theme -> Options msg -> List (Item msg) -> Element msg
 view theme opts items =
     let

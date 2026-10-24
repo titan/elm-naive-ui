@@ -1,15 +1,12 @@
 module NUI.Input exposing
-    ( InputType(..)
-    , Options
-    , PairSource(..)
-    , Status(..)
-    , defaults
-    , group
-    , groupLabel
-    , view
+    ( InputType(..), Options, PairSource(..), Status(..)
+    , defaults, group, groupLabel, view
     )
 
 {-| Naive UI's `Input` (plus `InputGroup` and `InputGroupLabel`), rebuilt on elm-ui.
+
+@docs InputType, Options, PairSource, Status
+@docs defaults, group, groupLabel, view
 
 The component owns its value: pass the current string in `value` and receive
 updates through `onInput`.
@@ -204,6 +201,13 @@ type PairSource
     | PairClear
 
 
+{-| The `n-input` props. The typing state is **caller-owned**: `value` IS
+the text buffer — feed every `onInput` payload back into it (controlled
+input; there is no internal uncontrolled fallback in a pure port) — and
+`onInput` is `Nothing` when you want a read-only-looking render with no
+wiring. Focus / hover visuals come from CSS (`:focus-within`, `:hover`), so
+no focus flag exists; the picker-trigger seams below drive the rest.
+-}
 type alias Options msg =
     { value : String
     , onInput : Maybe (String -> msg)
@@ -247,6 +251,10 @@ type alias Options msg =
     }
 
 
+{-| A single-line medium text input: bordered, stateful, resizable textarea
+off, 3 rows, no limits, no slots, no events. Every picker seam defaults to
+off, so the standalone bytes are exactly upstream's plain `n-input`.
+-}
 defaults : Options msg
 defaults =
     { value = ""
@@ -291,6 +299,13 @@ defaults =
     }
 
 
+{-| The `n-input` element: root (classes + `--n-*` vars + `varOverrides` +
+`extraRootAttributes`) > one `n-input-wrapper` (prefix? input area, suffix
+block?) — or the pair body when `pairValue` is set — plus the border pair
+when `bordered`. The input / textarea render as raw `Html` inside
+`n-input__input` / `n-input__textarea` (see the inline comment there for
+why elm-ui elements cannot host them).
+-}
 view : Theme -> Options msg -> Element msg
 view theme opts =
     let

@@ -1,14 +1,8 @@
-module NUI.LayoutSider exposing
-    ( CollapseMode(..)
-    , Options
-    , Placement(..)
-    , Trigger(..)
-    , cssVarsFor
-    , defaults
-    , view
-    )
+module NUI.LayoutSider exposing (CollapseMode(..), Options, Placement(..), Trigger(..), cssVarsFor, defaults, view)
 
 {-| Naive UI's `LayoutSider`, rebuilt on elm-ui.
+
+@docs CollapseMode, Options, Placement, Trigger, cssVarsFor, defaults, view
 
     import NUI.LayoutSider exposing (defaults)
 
@@ -110,6 +104,11 @@ type Trigger
     | Bar
 
 
+{-| The `n-layout-sider` props. `collapsed` is caller-owned (see the module
+docs); the length props (`width` / `collapsedWidth`) are CSS length strings
+that carry their own unit; `contentStyle` merges into the scroll container's
+inline style after the template's own pairs.
+-}
 type alias Options msg =
     { position : Position
     , placement : Placement
@@ -129,6 +128,10 @@ type alias Options msg =
     }
 
 
+{-| A left-placed, expanded, borderless, non-inverted sider: `272px` wide,
+collapsing to `48px` by transform with its content shown, no trigger, native
+scrollbar, no inline styles.
+-}
 defaults : Options msg
 defaults =
     { position = Static
@@ -149,6 +152,10 @@ defaults =
     }
 
 
+{-| The `n-layout-sider` root: the classes, the `--n-*` vars plus the
+`max-width` / `width` inline pair (and the non-inverted region chrome),
+the scroll container, then the optional trigger and border elements.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     Element.row
