@@ -1,14 +1,4 @@
-module NUI.TimePicker exposing
-    ( Options
-    , TimeAction(..)
-    , UnitFilter(..)
-    , defaultOptions
-    , formatValue
-    , panel
-    , parseInput
-    , snapNow
-    , view
-    )
+module NUI.TimePicker exposing (Options, TimeAction(..), UnitFilter(..), defaultOptions, formatValue, panel, parseInput, snapNow, view)
 
 {-| Naive UI's `TimePicker` — an `NUI.Input` trigger plus a caller-mounted
 columns panel (upstream mounts the panel in its own `VFollower`; the port
@@ -96,6 +86,8 @@ plus `'...'` literals (`''` → `'`); everything else passes through verbatim.
 re-`format` and require string equality, else `Nothing`. Parsed fields fill from
 1970-01-01 (upstream's backup is `new Date()`; the time-of-day is what the
 trigger compares) and are placed in `zone` via its offset at that instant.
+
+@docs Options, TimeAction, UnitFilter, defaultOptions, formatValue, panel, parseInput, snapNow, view
 
 -}
 

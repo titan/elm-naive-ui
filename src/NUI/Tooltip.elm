@@ -1,12 +1,4 @@
-module NUI.Tooltip exposing
-    ( Options
-    , Placement
-    , cssVars
-    , defaults
-    , placementAttribute
-    , placementName
-    , view
-    )
+module NUI.Tooltip exposing (Options, Placement, cssVars, defaults, placementAttribute, placementName, view)
 
 {-| Naive UI's `Tooltip` — upstream calls it "popover wearing waistcoat": the
 `n-popover` body driven by the tooltip theme.
@@ -35,6 +27,8 @@ module only swaps the theme; see `NUI.Popover` for the full contract.
     (`rgba(38, 38, 38, 1)`, upstream `composite(baseColor, 'rgba(0, 0, .85)')`
     computed at the default theme) — overriding `common.baseColor` does not
     re-derive it (the toolchain convention for derived values; cf. Tag).
+
+@docs Options, Placement, cssVars, defaults, placementAttribute, placementName, view
 
 -}
 

@@ -1,25 +1,4 @@
-module NUI.Tree exposing
-    ( CheckResult
-    , CheckStrategy(..)
-    , CheckboxPlacement(..)
-    , DropMark
-    , DropPosition(..)
-    , FilteredTree
-    , FlatNode
-    , Options
-    , TreeOption(..)
-    , check
-    , cssVars
-    , defaults
-    , filterTree
-    , flatten
-    , getCheckedKeys
-    , getNonLeafKeys
-    , toggleExpand
-    , toggleSelect
-    , uncheck
-    , view
-    )
+module NUI.Tree exposing (CheckResult, CheckStrategy(..), CheckboxPlacement(..), DropMark, DropPosition(..), FilteredTree, FlatNode, Options, TreeOption(..), check, cssVars, defaults, filterTree, flatten, getCheckedKeys, getNonLeafKeys, toggleExpand, toggleSelect, uncheck, view)
 
 {-| Naive UI's `Tree`, rebuilt on elm-ui.
 
@@ -46,6 +25,8 @@ transition, drag-drop event wiring (the drop mark itself is data:
 `dropMark`), keyboard navigation (`pendingKey` is data), and the async
 `onLoad` dance (`loadingKeys` is data). `--n-drop-mark-color` /
 `--n-loading-color` stay live through those data fields.
+
+@docs CheckResult, CheckStrategy, CheckboxPlacement, DropMark, DropPosition, FilteredTree, FlatNode, Options, TreeOption, check, cssVars, defaults, filterTree, flatten, getCheckedKeys, getNonLeafKeys, toggleExpand, toggleSelect, uncheck, view
 
 -}
 

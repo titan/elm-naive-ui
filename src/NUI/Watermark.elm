@@ -1,12 +1,4 @@
-module NUI.Watermark exposing
-    ( Options
-    , TextAlign(..)
-    , containerStyle
-    , defaults
-    , tileDataUrl
-    , view
-    , watermarkStyle
-    )
+module NUI.Watermark exposing (Options, TextAlign(..), containerStyle, defaults, tileDataUrl, view, watermarkStyle)
 
 {-| Naive UI's `Watermark` (`n-watermark`) — the tiled text / image overlay,
 rebuilt on elm-ui.
@@ -69,6 +61,8 @@ each child embedded through a `display: contents` wrapper (the
 Not ported: nothing else — `onFontsReady` re-rendering and the
 `isBrowser` / `warnOnce` guards are runtime plumbing around the canvas.
 
+@docs Options, TextAlign, containerStyle, defaults, tileDataUrl, view, watermarkStyle
+
 -}
 
 import Element exposing (Element)
@@ -130,6 +124,10 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults (`width` / `height` 32, `zIndex` 10, `fontSize` 16,
+`fontWeight` 400, `rotate` 0, `lineHeight` 16 degrees of a default 32px tile,
+selectable, not fullscreen, no cross, no debug, no content).
+-}
 defaults : Options msg
 defaults =
     { debug = False
@@ -232,13 +230,8 @@ containerClasses opts =
 -- INLINE STYLE -------------------------------------------------------------------
 
 
-{-| The overlay's inline declarations in upstream's style-object order:
-`transform`, `zIndex`, `backgroundSize`, `backgroundPosition`,
-`backgroundImage` — `transform` only under global rotation, `zIndex` only
-when the container does not carry it instead (upstream's
-`isFullScreenGlobalRotate`), `backgroundPosition` only when non-empty, and
-`backgroundImage` composed with the `cross` doubling. (Empty values drop
-out — Vue's assignment of an empty string clears the property.)
+{-| The overlay's inline declarations in upstream's style-object order
+(see the full note above).
 -}
 watermarkStyle : Theme.Theme -> Options msg -> List ( String, String )
 watermarkStyle theme opts =
@@ -265,8 +258,9 @@ watermarkStyle theme opts =
            ]
 
 
-{-| The container's inline declarations — just the `zIndex` that upstream
-moves off the overlay when global rotation and fullscreen combine.
+{-| The container's inline declarations — just the `z-index` the fullscreen /
+global-rotate branch needs (upstream moves it off the overlay there), empty
+otherwise.
 -}
 containerStyle : Options msg -> List ( String, String )
 containerStyle opts =
@@ -366,10 +360,11 @@ embedChild child =
 -- THE TILE ------------------------------------------------------------------------
 
 
-{-| The tile as a `data:` URL — what upstream's `canvas.toDataURL()` stood
-for: an SVG of the canvas dimensions, base64-encoded in-library. `content`
-lines render as `<text>`; absent / empty content is the blank tile
-(upstream's `clearRect` branch).
+{-| The tile as a `data:image/svg+xml;base64,…` URL — what upstream's
+`canvas.toDataURL()` stood for: an SVG of the canvas dimensions with the
+`content` lines as `<text>` (absent / empty content is the blank tile,
+upstream's `clearRect` branch), base64-encoded in-library. `view`'s overlay
+backgrounds itself with it.
 -}
 tileDataUrl : Theme.Theme -> Options msg -> String
 tileDataUrl theme opts =

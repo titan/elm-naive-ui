@@ -1,15 +1,4 @@
-module NUI.Timeline exposing
-    ( Item
-    , ItemType(..)
-    , LineType(..)
-    , Options
-    , Placement(..)
-    , Size(..)
-    , cssVarsFor
-    , defaults
-    , item
-    , view
-    )
+module NUI.Timeline exposing (Item, ItemType(..), LineType(..), Options, Placement(..), Size(..), cssVarsFor, defaults, item, view)
 
 {-| Naive UI's `Timeline` and `TimelineItem`, rebuilt on elm-ui.
 
@@ -31,6 +20,8 @@ properties, and `NUI.Css` ships Naive UI's exact CSS.
 Naive UI injects the timeline's `size` / `iconSize` into each item; here items are
 plain records rendered by the timeline itself, so the item's `--n-*` values are
 computed from the timeline's options — one source of truth, no injection.
+
+@docs Item, ItemType, LineType, Options, Placement, Size, cssVarsFor, defaults, item, view
 
 -}
 
@@ -73,6 +64,10 @@ type LineType
     | Dashed
 
 
+{-| The timeline's configuration: `horizontal` (flips to a row),
+`itemPlacement`, `size`, and an optional explicit `iconSize` overriding the
+size's default. `attributes` land on the root.
+-}
 type alias Options msg =
     { horizontal : Bool
     , itemPlacement : Placement
@@ -82,6 +77,8 @@ type alias Options msg =
     }
 
 
+{-| A vertical medium timeline, content left, no icon-size override.
+-}
 defaults : Options msg
 defaults =
     { horizontal = False
@@ -106,6 +103,9 @@ type alias Item msg =
     }
 
 
+{-| An empty item — default type, solid line, no title, time, content, colour,
+or icon.
+-}
 item : Item msg
 item =
     { type_ = Default
@@ -118,6 +118,9 @@ item =
     }
 
 
+{-| Render the timeline. Each item's `--n-*` set is derived from the timeline's
+options and the item's own `type_` / `color` / `icon`.
+-}
 view : Theme -> Options msg -> List (Item msg) -> Element msg
 view theme opts items =
     Element.column
@@ -272,6 +275,10 @@ lineTypeClass lineType =
             "dashed"
 
 
+{-| The `--n-*` custom properties for one item: theme colours keyed by the item's
+`type_`, title metrics keyed by the timeline's `size`, and the resolved
+`--n-icon-size`.
+-}
 cssVarsFor : Theme -> Options msg -> Item msg -> List ( String, String )
 cssVarsFor theme opts it =
     let

@@ -1,16 +1,4 @@
-module NUI.Tabs exposing
-    ( DisplayDirective(..)
-    , JustifyContent(..)
-    , Options
-    , Placement(..)
-    , Size(..)
-    , Tab
-    , Trigger(..)
-    , Type(..)
-    , cssVars
-    , defaults
-    , view
-    )
+module NUI.Tabs exposing (DisplayDirective(..), JustifyContent(..), Options, Placement(..), Size(..), Tab, Trigger(..), Type(..), cssVars, defaults, view)
 
 {-| Naive UI's `Tabs` (`n-tabs` + `n-tab-pane`), rebuilt on elm-ui.
 
@@ -77,6 +65,8 @@ owns the active `value` (like `NUI.Form` / `NUI.Descriptions`).
   - `[oracle D]` **D9 — uncontrolled seeding.** Upstream seeds the first pane's
     name when uncontrolled (`Tabs.tsx:215-223`); the port is fully caller-owned
     (`value` required).
+
+@docs DisplayDirective, JustifyContent, Options, Placement, Size, Tab, Trigger, Type, cssVars, defaults, view
 
 -}
 

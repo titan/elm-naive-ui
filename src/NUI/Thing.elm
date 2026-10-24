@@ -1,9 +1,4 @@
-module NUI.Thing exposing
-    ( Options
-    , cssVarsFor
-    , defaults
-    , view
-    )
+module NUI.Thing exposing (Options, cssVarsFor, defaults, view)
 
 {-| Naive UI's `Thing`, rebuilt on elm-ui.
 
@@ -26,6 +21,8 @@ sits above the whole block; otherwise the avatar leads an
 `n-thing-avatar-header-wrapper` row (when the thing has an avatar or header).
 Content goes in the default slot, `description` is the label line.
 
+@docs Options, cssVarsFor, defaults, view
+
 -}
 
 import Element exposing (Element)
@@ -34,6 +31,10 @@ import NUI.Theme exposing (Theme)
 import NUI.Theme.Thing as ThingTheme
 
 
+{-| The thing's configuration: `title` / `titleExtra` header pair, `description`
+line, `avatar` / `footer` / `action` slots, and `contentIndented` for the
+avatar-above layout. `attributes` land on the root element.
+-}
 type alias Options msg =
     { title : Maybe String
     , titleExtra : Maybe String
@@ -47,6 +48,8 @@ type alias Options msg =
     }
 
 
+{-| A bare thing — no header, no avatar, no indented content.
+-}
 defaults : Options msg
 defaults =
     { title = Nothing
@@ -61,6 +64,9 @@ defaults =
     }
 
 
+{-| Render the thing. Children are upstream's default slot (the main content,
+omitted when empty).
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     let

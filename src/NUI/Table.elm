@@ -1,15 +1,4 @@
-module NUI.Table exposing
-    ( Cell
-    , Options
-    , Row
-    , Size(..)
-    , Table
-    , cellDefaults
-    , cssVars
-    , defaults
-    , rowDefaults
-    , view
-    )
+module NUI.Table exposing (Cell, Options, Row, Size(..), Table, cellDefaults, cssVars, defaults, rowDefaults, view)
 
 {-| Naive UI's `Table` (`n-table`), the static table — real `<table>` DOM,
 rebuilt on elm-ui.
@@ -55,6 +44,8 @@ the ROOT RULE in the stylesheet (not an inline var), and the modal /
 popover color variants ride the `insideModal` / `insidePopover` container
 selectors automatically.
 
+@docs Cell, Options, Row, Size, Table, cellDefaults, cssVars, defaults, rowDefaults, view
+
 -}
 
 import Element exposing (Element)
@@ -90,6 +81,9 @@ type alias Options msg =
     }
 
 
+{-| Medium bordered single-line table — upstream's three default-`True`
+booleans on, no stripes, no rtl.
+-}
 defaults : Options msg
 defaults =
     { size = Medium
@@ -116,6 +110,8 @@ type alias Cell msg =
     }
 
 
+{-| An empty cell — no content, no span attributes.
+-}
 cellDefaults : Cell msg
 cellDefaults =
     { content = []
@@ -134,6 +130,8 @@ type alias Row msg =
     }
 
 
+{-| An empty row — no cells, no attributes.
+-}
 rowDefaults : Row msg
 rowDefaults =
     { cells = []
