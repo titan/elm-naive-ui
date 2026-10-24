@@ -1,29 +1,4 @@
-module NUI.Form exposing
-    ( Align(..)
-    , Feedback
-    , ItemOptions
-    , LabelWidth(..)
-    , Level(..)
-    , Options
-    , Placement(..)
-    , RequireMarkPlacement(..)
-    , Rule
-    , RuleType(..)
-    , Rules
-    , Size(..)
-    , Trigger(..)
-    , Value(..)
-    , Values
-    , cssVarsForItem
-    , defaultRule
-    , defaults
-    , isRequired
-    , item
-    , itemDefaults
-    , validateForm
-    , validateValue
-    , view
-    )
+module NUI.Form exposing (Align(..), Feedback, ItemOptions, LabelWidth(..), Level(..), Options, Placement(..), RequireMarkPlacement(..), Rule, RuleType(..), Rules, Size(..), Trigger(..), Value(..), Values, cssVarsForItem, defaultRule, defaults, isRequired, item, itemDefaults, validateForm, validateValue, view)
 
 {-| Naive UI's `Form` + `FormItem`, rebuilt on elm-ui: a pure validation engine
 plus the two views.
@@ -133,6 +108,8 @@ lookups, cross-field rules) without a registry or provide/inject.
     lines under the enter classes (exactly the caller-driven pattern of
     `NUI.LoadingBar`).
 
+@docs Align, Feedback, ItemOptions, LabelWidth, Level, Options, Placement, RequireMarkPlacement, Rule, RuleType, Rules, Size, Trigger, Value, Values, cssVarsForItem, defaultRule, defaults, isRequired, item, itemDefaults, validateForm, validateValue, view
+
 -}
 
 import Element exposing (Element)
@@ -213,6 +190,10 @@ type alias Rule =
     }
 
 
+{-| The blank rule every customization starts from: a non-required
+optional `string` at error level with no range/pattern/validator and no
+trigger (so it runs only under a manual `Nothing` validate).
+-}
 defaultRule : Rule
 defaultRule =
     { required = False
@@ -851,6 +832,8 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults: a block (non-inline) form with no submit handler.
+-}
 defaults : Options msg
 defaults =
     { inline = False
@@ -858,7 +841,13 @@ defaults =
     }
 
 
-{-| Form item options.
+{-| The `n-form-item` options — Naive UI's FormItem props: the label block
+(`label`, `showLabel`, `labelFor`, `labelWidth`, `labelAlign`,
+`labelPlacement`, `labelStyle`), the require-mark block (`required`,
+`showRequireMark`, `requireMarkPlacement`), the feedback block (`feedback`,
+`validation`, `validationStatus`, `showFeedback`, `feedbackClass`,
+`feedbackStyle`), the content pass-throughs (`contentClass`, `contentStyle`),
+and the `size` driving the theme vars.
 -}
 type alias ItemOptions =
     { label : Maybe String
@@ -883,6 +872,10 @@ type alias ItemOptions =
     }
 
 
+{-| Naive UI's item defaults: no label (shown, `top`-placed, no width/align/
+style/`for`), not required with the `right` mark shown only when required,
+feedback shown, `medium` size, nothing validated, no class/style extras.
+-}
 itemDefaults : ItemOptions
 itemDefaults =
     { label = Nothing

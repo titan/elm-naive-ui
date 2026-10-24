@@ -1,10 +1,4 @@
-module NUI.Empty exposing
-    ( Options
-    , Size(..)
-    , cssVarsFor
-    , defaults
-    , view
-    )
+module NUI.Empty exposing (Options, Size(..), cssVarsFor, defaults, view)
 
 {-| Naive UI's `Empty`, rebuilt on elm-ui.
 
@@ -36,6 +30,8 @@ column (`align-items: center`), so the icon/description centre inside whatever
 width the mount provides — a content-sized elm-ui root would hug the left edge
 instead (the `.n-empty__icon` would left-align the whole placeholder).
 
+@docs Options, Size, cssVarsFor, defaults, view
+
 -}
 
 import Element exposing (Element)
@@ -58,6 +54,12 @@ type Size
     | Huge
 
 
+{-| The empty-state options — Naive UI's props: the `description` string
+(falling back to the locale's "No Data"), `showDescription` / `showIcon`
+(upstream's `show-description` / `show-icon`), `size`, an `icon` replacing the
+default `Empty` SVG, `extra` (the `__extra` slot under the description), and
+`attributes`.
+-}
 type alias Options msg =
     { description : Maybe String
     , showDescription : Bool
@@ -69,6 +71,9 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults: no description override, icon and description shown,
+`medium` size, no custom icon, no extra, no extra attributes.
+-}
 defaults : Options msg
 defaults =
     { description = Nothing
@@ -81,6 +86,12 @@ defaults =
     }
 
 
+{-| The `n-empty` element — a root-filling flex column: the `__icon` slot
+(the default `Empty` SVG in an `n-base-icon` wrapper, or the custom `icon`),
+the `__description` paragraph (the children, or the localized `description`),
+and the `__extra` slot, all center-aligned like upstream's
+`align-items: center`.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     let

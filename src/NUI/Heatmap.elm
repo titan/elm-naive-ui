@@ -1,21 +1,4 @@
-module NUI.Heatmap exposing
-    ( ColorTheme(..)
-    , DayRect
-    , HeatmapDataItem
-    , MonthLabel
-    , Options
-    , Size(..)
-    , calcColorByValue
-    , completeDataGaps
-    , createDayRect
-    , createLoadingMatrix
-    , createSparseMatrix
-    , cssVarsFor
-    , dataMonthLabels
-    , defaults
-    , loadingMonthLabels
-    , view
-    )
+module NUI.Heatmap exposing (ColorTheme(..), DayRect, HeatmapDataItem, MonthLabel, Options, Size(..), calcColorByValue, completeDataGaps, createDayRect, createLoadingMatrix, createSparseMatrix, cssVarsFor, dataMonthLabels, defaults, loadingMonthLabels, view)
 
 {-| Naive UI's `Heatmap`, rebuilt on elm-ui: a GitHub-style contribution
 calendar. Real `<table>` markup (via `Element.html`, the `NUI.Highlight`
@@ -118,6 +101,8 @@ matching upstream's `resolveSlot` fallback.
     (a JS `[]` is truthy), which yields the loading matrix but **data**-derived
     month labels, while `Nothing` yields the 12 fixed loading labels.
 
+@docs ColorTheme, DayRect, HeatmapDataItem, MonthLabel, Options, Size, calcColorByValue, completeDataGaps, createDayRect, createLoadingMatrix, createSparseMatrix, cssVarsFor, dataMonthLabels, defaults, loadingMonthLabels, view
+
 -}
 
 import Dict exposing (Dict)
@@ -182,6 +167,17 @@ type ColorTheme
     | Red
 
 
+{-| The heatmap options — Naive UI's props plus the caller-owned runtime
+inputs: the `data` / `loadingData` item lists, the collapse of upstream's
+`cursor`-style props into `fillCalendarLeading`, `firstDayOfWeek` (Naive UI
+numbering), `loading`, the colour overrides (`minimumColor` /
+`activeColors` / `colorTheme`), the label/indicator toggles
+(`showColorIndicator` / `showWeekLabels` / `showMonthLabels`), `size`, the
+`xGap` / `yGap` overrides, `rtl`, the time inputs (`zone` / `now`), the
+locale strings (`indicatorLessText` / `indicatorMoreText` /
+`weekdayLabels` / `monthLabels`), the `footer` / `indicator` slots, and
+`attributes`.
+-}
 type alias Options msg =
     { data : List HeatmapDataItem
     , loadingData : Maybe (List HeatmapDataItem)
@@ -210,6 +206,12 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults: no data (hence no loading matrix), no leading fill,
+weeks starting Monday, not loading, the theme colours, indicator and both
+label rows shown, `medium` size, no gaps, LTR, UTC at epoch, the enUS
+"less"/"more" + `"Sun"…"Sat"`/`"Jan"…"Dec"` labels, no slots, no extra
+attributes.
+-}
 defaults : Options msg
 defaults =
     { data = []
@@ -252,6 +254,12 @@ defaults =
     }
 
 
+{-| The `n-heatmap` element — the `__content` calendar table (month labels
+row, 7 day rows, one `.n-heatmap-rect` per valued day, `__empty-cell`
+otherwise) plus the `__footer` (optional `footer` slot, colour indicator when
+`showColorIndicator`). The `children` list is unused (upstream has no default
+slot).
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts _ =
     let

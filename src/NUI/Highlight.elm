@@ -1,11 +1,4 @@
-module NUI.Highlight exposing
-    ( Chunk
-    , Options
-    , defaults
-    , escapeRegExp
-    , splitAndMarkByRegex
-    , view
-    )
+module NUI.Highlight exposing (Chunk, Options, defaults, escapeRegExp, splitAndMarkByRegex, view)
 
 {-| Naive UI's `Highlight`, rebuilt on elm-ui: plain `text` with every
 occurrence of `patterns` wrapped in `highlightTag` (a `<mark>` by default).
@@ -53,6 +46,8 @@ caller patterns can match the empty string only when a pattern itself can
 (`"a*"` with `autoEscape = False`), so that is unreachable for realistic
 `patterns`.
 
+@docs Chunk, Options, defaults, escapeRegExp, splitAndMarkByRegex, view
+
 -}
 
 import Element exposing (Element)
@@ -71,6 +66,12 @@ type alias Chunk =
     }
 
 
+{-| The highlight options — Naive UI's props: the `text` to mark, the
+`patterns` to find, `caseSensitive`, `autoEscape` (regex-escape each pattern;
+leave `False` to pass regex sources), the `highlightTag` (default `mark`),
+`highlightClass` / `highlightStyle` on each mark, and `attributes` (unused —
+see the module docs).
+-}
 type alias Options msg =
     { text : String
     , patterns : List String
@@ -83,6 +84,10 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults: empty text, no patterns, case-insensitive matching,
+auto-escaped patterns, `<mark>` highlights with no class or style, no extra
+attributes.
+-}
 defaults : Options msg
 defaults =
     { text = ""
@@ -96,6 +101,11 @@ defaults =
     }
 
 
+{-| The `n-highlight` element — a raw `span.n-highlight` whose children are
+the split of `text` into bare text nodes and `highlightTag` marks
+(`.n-highlight__mark` + `highlightClass`/`highlightStyle`). The `theme` and
+`children` arguments are ignored.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view _ opts _ =
     Element.html

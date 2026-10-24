@@ -1,10 +1,4 @@
-module NUI.Equation exposing
-    ( Extracted
-    , Options
-    , defaults
-    , extract
-    , view
-    )
+module NUI.Equation exposing (Extracted, Options, defaults, extract, view)
 
 {-| Naive UI's `Equation` (`n-equation`), rebuilt as a pure renderer over a
 caller-supplied KaTeX.
@@ -56,6 +50,8 @@ record for the same reason.
     `\n`; a KaTeX output ending in `\n` would strip differently. KaTeX does not
     emit a trailing newline, so the divergence is unreachable in practice.
   - `[D]` the inner HTML is parsed into nodes (see the injection note above).
+
+@docs Extracted, Options, defaults, extract, view
 
 -}
 

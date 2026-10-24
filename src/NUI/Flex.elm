@@ -1,12 +1,4 @@
-module NUI.Flex exposing
-    ( Align(..)
-    , Direction(..)
-    , FlexSize(..)
-    , Justify(..)
-    , Options
-    , defaults
-    , view
-    )
+module NUI.Flex exposing (Align(..), Direction(..), FlexSize(..), Justify(..), Options, defaults, view)
 
 {-| Naive UI's `Flex`, rebuilt on elm-ui — the flexbox primitive that supersedes
 `NUI.Space`.
@@ -26,6 +18,8 @@ styled inline (`display`, `flex-direction`, `justify-content`, `align-items`,
 `flex-wrap`, `gap`). This module reproduces exactly those declarations as inline
 styles on an elm-ui `row`/`column`, so the rendered layout is pure inline
 flexbox; only the RTL rule is extracted, as `.n-flex--rtl`.
+
+@docs Align, Direction, FlexSize, Justify, Options, defaults, view
 
 -}
 
@@ -79,6 +73,11 @@ type FlexSize
     | Number2 Int Int
 
 
+{-| The flex options — Naive UI's props: `direction` (upstream `vertical`),
+`size` (the gap), `align` (flex `align-items`; `Nothing` omits it), `wrap`,
+`justify`, `reverse`, `inline` (`inline-flex`), `rtl` (the `--rtl` modifier),
+and `attributes`.
+-}
 type alias Options msg =
     { direction : Direction
     , size : FlexSize
@@ -92,6 +91,10 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults: a horizontal, wrapping (`flex-wrap: wrap` — upstream's
+default) `medium`-gapped row, no `align-items` declaration, `flex-start`
+justification, block-level, LTR, no extra attributes.
+-}
 defaults : Options msg
 defaults =
     { direction = Horizontal
@@ -106,6 +109,13 @@ defaults =
     }
 
 
+{-| The `n-flex` element — `Element.none` for an empty child list (upstream
+renders nothing for no default slot), else a `row`/`column` per `direction`
+carrying exactly Naive UI's inline `display`/`flex-direction`/`justify-content`/
+`flex-wrap`/`gap` (+ `align-items` when `align` is set), with the children
+wrapped in an `align-self`-restoring shim when `align` is set (see
+`childShim`).
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     if List.isEmpty children then

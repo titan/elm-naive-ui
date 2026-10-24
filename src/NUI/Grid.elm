@@ -1,20 +1,4 @@
-module NUI.Grid exposing
-    ( GridValue(..)
-    , Item
-    , Options
-    , Query(..)
-    , Responsive(..)
-    , breakpointKeys
-    , defaultBreakpoints
-    , defaultCols
-    , defaultSpan
-    , defaults
-    , item
-    , itemDefaults
-    , parseResponsivePropValue
-    , view
-    , viewWithOverflow
-    )
+module NUI.Grid exposing (GridValue(..), Item, Options, Query(..), Responsive(..), breakpointKeys, defaultBreakpoints, defaultCols, defaultSpan, defaults, item, itemDefaults, parseResponsivePropValue, view, viewWithOverflow)
 
 {-| Naive UI's `Grid` and `GridItem`, rebuilt on elm-ui.
 
@@ -72,6 +56,8 @@ the item slot: `True` when `collapsed` hid some items (the usual condition for
 an expand/collapse toggle). Items themselves are records, so per-item slot
 data collapses into that one flag.
 
+@docs GridValue, Item, Options, Query, Responsive, breakpointKeys, defaultBreakpoints, defaultCols, defaultSpan, defaults, item, itemDefaults, parseResponsivePropValue, view, viewWithOverflow
+
 -}
 
 import Element exposing (Element)
@@ -111,6 +97,12 @@ type Query
     | ByKeys (List String)
 
 
+{-| The grid options — Naive UI's NGrid props: `cols`, `xGap`, `yGap`
+(each a responsive `GridValue`), `itemResponsive`, `layoutShiftDisabled`
+(upstream's `layout-shift-disabled`), `collapsed` + `collapsedRows`, the
+per-item `itemStyle`, and the caller-owned responsive inputs `responsive` /
+`query` / `breakpoints`, plus `attributes`.
+-}
 type alias Options msg =
     { cols : GridValue
     , responsive : Responsive
@@ -127,6 +119,11 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults: 24 columns, `Self` responsiveness with no query yet,
+no item-level responsiveness, no layout-shift suppression, not collapsed
+(1 row when it is), no item style, no gaps, the standard breakpoints, no
+extra attributes.
+-}
 defaults : Options msg
 defaults =
     { cols = Number defaultCols
@@ -159,6 +156,9 @@ type alias Item msg =
     }
 
 
+{-| The blank item every customization starts from: a 1-column span, no
+offset, not the suffix, shown, no extra attributes, empty content.
+-}
 item : Item msg
 item =
     { span = Number defaultSpan
@@ -347,6 +347,9 @@ assocLookup key pairs =
                 assocLookup key rest
 
 
+{-| The `n-grid` element — `viewWithOverflow` with the `overflow` flag
+dropped.
+-}
 view : Options msg -> List (Item msg) -> Element msg
 view opts items =
     Tuple.first (viewWithOverflow opts items)
