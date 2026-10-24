@@ -1202,7 +1202,7 @@ progressRows theme =
 
 progressSection : Theme -> Element msg
 progressSection theme =
-    section theme "Progress" "Line, circle, dashboard and multiple-circle meters." (progressRows theme)
+    section theme "Progress" "A completion meter — upload percent, quiz score, storage used. It is a pure display: you pass the percentage and it draws; the caller-owned clock drives it. Rows cover line, circle, dashboard and multi-circle meters with statuses and gradients, then live line and circle rows wired to real model state." (progressRows theme)
 
 
 {-| Live: `#live-progress-line` / `#live-progress-circle` (model-owned
@@ -1212,7 +1212,7 @@ progressLiveSection : Model -> Theme -> Element Msg
 progressLiveSection model theme =
     section theme
         "Progress"
-        "Line, circle, dashboard and multiple-circle meters."
+        "A completion meter — upload percent, quiz score, storage used. It is a pure display: you pass the percentage and it draws; the caller-owned clock drives it. Rows cover line, circle, dashboard and multi-circle meters with statuses and gradients, then live line and circle rows wired to real model state."
         (progressRows theme
             ++ [ demoRow theme
                     "mot-006"
@@ -1291,7 +1291,7 @@ skeletonRows theme =
 
 skeletonSection : Theme -> Element msg
 skeletonSection theme =
-    section theme "Skeleton" "Placeholder shimmer for loading content." (skeletonRows theme)
+    section theme "Skeleton" "Grey placeholder blocks that shimmer while real content loads, keeping layout height stable. Shapes are declarative — lines, circles, text at any width, repeated in a row. Rows show the default paragraph, text and circle shapes, then a live row where a toggle swaps skeleton for loaded content." (skeletonRows theme)
 
 
 {-| Live: `#live-skeleton-avatar` / `#live-skeleton-line-<n>` (toggle swaps
@@ -1301,7 +1301,7 @@ skeletonLiveSection : Model -> Theme -> Element Msg
 skeletonLiveSection model theme =
     section theme
         "Skeleton"
-        "Placeholder shimmer for loading content."
+        "Grey placeholder blocks that shimmer while real content loads, keeping layout height stable. Shapes are declarative — lines, circles, text at any width, repeated in a row. Rows show the default paragraph, text and circle shapes, then a live row where a toggle swaps skeleton for loaded content."
         (skeletonRows theme
             ++ [ demoRow theme
                     "mot-010"
@@ -1397,7 +1397,7 @@ spinRows theme =
 
 spinSection : Theme -> Element msg
 spinSection theme =
-    section theme "Spin" "Loading spinners, standalone or wrapping content." (spinRows theme)
+    section theme "Spin" "A spinner that says 'working' — alone next to a label or as an overlay dimming a whole region. The show flag is caller-owned model state; the component only renders the state you pass. Rows cover standalone sizes and an overlay wrapping real content, then a live toggle overlaying live data." (spinRows theme)
 
 
 {-| Live: `#live-spin` (checkbox toggles the spin overlay over live content).
@@ -1406,7 +1406,7 @@ spinLiveSection : Model -> Theme -> Element Msg
 spinLiveSection model theme =
     section theme
         "Spin"
-        "Loading spinners, standalone or wrapping content."
+        "A spinner that says 'working' — alone next to a label or as an overlay dimming a whole region. The show flag is caller-owned model state; the component only renders the state you pass. Rows cover standalone sizes and an overlay wrapping real content, then a live toggle overlaying live data."
         (spinRows theme
             ++ [ demoRow theme
                     "mot-014"
@@ -1447,7 +1447,7 @@ marqueeRows theme =
 
 marqueeSection : Theme -> Element msg
 marqueeSection theme =
-    section theme "Marquee" "Scrolling content (duration is caller-owned)." (marqueeRows theme)
+    section theme "Marquee" "An auto-scrolling text track — announcements, price tickers or anything that must keep moving. The loop is pure CSS over the content you pass; duration is a plain number you own, and a `play` flag pauses it without JS. Rows show the default scroll, then a live row with a real play/pause switch." (marqueeRows theme)
 
 
 {-| Live: `#live-marquee` (switch pauses/plays via the `play` option).
@@ -1456,7 +1456,7 @@ marqueeLiveSection : Model -> Theme -> Element Msg
 marqueeLiveSection model theme =
     section theme
         "Marquee"
-        "Scrolling content (duration is caller-owned)."
+        "An auto-scrolling text track — announcements, price tickers or anything that must keep moving. The loop is pure CSS over the content you pass; duration is a plain number you own, and a `play` flag pauses it without JS. Rows show the default scroll, then a live row with a real play/pause switch."
         (marqueeRows theme
             ++ [ demoRow theme
                     "mot-015"
@@ -1517,7 +1517,7 @@ countdownRows theme =
 
 countdownSection : Theme -> Element msg
 countdownSection theme =
-    section theme "Countdown" "Remaining time (the caller owns the clock)." (countdownRows theme)
+    section theme "Countdown" "A ticking remaining-time readout for sales windows, verifications or session limits. The component is a pure formatter: it renders whatever distance it is given, so the countdown clock lives in your model as a `Time.every` subscription. Rows show precisions and a custom render slot, then a live clock with restart." (countdownRows theme)
 
 
 {-| Live: `#live-countdown` / `#live-countdown-custom` (a real `Time.every`
@@ -1527,7 +1527,7 @@ countdownLiveSection : Model -> Theme -> Element Msg
 countdownLiveSection model theme =
     section theme
         "Countdown"
-        "Remaining time (the caller owns the clock)."
+        "A ticking remaining-time readout for sales windows, verifications or session limits. The component is a pure formatter: it renders whatever distance it is given, so the countdown clock lives in your model as a `Time.every` subscription. Rows show precisions and a custom render slot, then a live clock with restart."
         (countdownRows theme
             ++ [ demoRow theme
                     "mot-018"
@@ -1598,7 +1598,7 @@ numberAnimationSection : Theme -> Element msg
 numberAnimationSection theme =
     section theme
         "Number Animation"
-        "A tweened number (the clock is caller-owned — pass `elapsed`). No classes or variables of its own."
+        "A number that tweens between values — dashboard counters, sums and stock figures landing with motion. The component is a pure function of elapsed time you pass in, so the animation clock stays caller-owned. Rows show separators and precision, then a live row retargeting via a real tick clock."
         (numberAnimationRows theme)
 
 
@@ -1609,7 +1609,7 @@ numberAnimationLiveSection : Model -> Theme -> Element Msg
 numberAnimationLiveSection model theme =
     section theme
         "Number Animation"
-        "A tweened number (the clock is caller-owned — pass `elapsed`). No classes or variables of its own."
+        "A number that tweens between values — dashboard counters, sums and stock figures landing with motion. The component is a pure function of elapsed time you pass in, so the animation clock stays caller-owned. Rows show separators and precision, then a live row retargeting via a real tick clock."
         (numberAnimationRows theme
             ++ [ demoRow theme
                     "mot-021"
@@ -1709,7 +1709,7 @@ carouselLiveSection : Model -> Theme -> Element Msg
 carouselLiveSection model theme =
     section theme
         "Carousel"
-        "A slide track over a caller-owned clock and measurement — autoplay, drag and resize are the caller's to own."
+        "A slide track for showcasing images or feature cards — with looping, autoplay, arrows, dots, drag and multi-slide views. The component ships the movement algebra as pure helpers; your model owns the state, the `Time.every` autoplay clock and the pointer drags. Rows cover loop, vertical, arrows, fade, card and custom dots, then live autoplay and drag rows."
         (carouselRows model theme
             ++ [ demoRow theme
                     "mot-031"
@@ -1810,7 +1810,7 @@ logSection : Theme -> Element msg
 logSection theme =
     section theme
         "Log"
-        "A scrolling log pane (Code + Scrollbar + loader) — scrolling, wheel and load events are the caller's to own."
+        "A terminal-style log pane with monospace rows, highlight support and a top-right loader pill — for build output, service tails or stream status. The component renders what you give it; scrolling, wheel and 'load more' events are ports your model answers. Rows show plain and highlighted panes with the loader, then a live scroll-and-append row."
         (logSectionRows theme)
 
 
@@ -1822,7 +1822,7 @@ logLiveSection : Model -> Theme -> Element Msg
 logLiveSection model theme =
     section theme
         "Log"
-        "A scrolling log pane (Code + Scrollbar + loader) — scrolling, wheel and load events are the caller's to own."
+        "A terminal-style log pane with monospace rows, highlight support and a top-right loader pill — for build output, service tails or stream status. The component renders what you give it; scrolling, wheel and 'load more' events are ports your model answers. Rows show plain and highlighted panes with the loader, then a live scroll-and-append row."
         (logSectionRows theme
             ++ [ demoRow theme
                     "mot-035"
