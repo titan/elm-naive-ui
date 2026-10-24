@@ -1,12 +1,33 @@
 module NUI.Theme.Scrollbar exposing (Vars, vars)
 
-{-| Naive UI scrollbar theme variables.
+{-| Theme variables for the **Scrollbar** component — the Elm counterpart of Naive UI's
+`src/_internal/scrollbar/styles/light.ts` & `dark.ts` cssr theme (selfVars). Scrollbar renders with Naive UI's
+original CSS, so each record field here is emitted as one `--n-*` custom property on the
+component root, using the upstream kebab-case mapping (`railInsetHorizontalBottom` → `--n-rail-inset-horizontal-bottom`, `railInsetHorizontalTop` → `--n-rail-inset-horizontal-top`, …).
+
+`vars` plays the role of upstream `self(common)`: it switches on `theme.mode` (Light/Dark) and
+derives every value from `theme.common` (see `NUI.Theme.Common`), reproducing Naive UI's light
+and dark palettes value-for-value. Pass the result to Scrollbar's `view`, or override individual
+fields to customise the look.
+
+@docs Vars, vars
+
 -}
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)
 
 
+{-| All `--n-*` custom properties the Scrollbar CSS consumes, as one record. Fields map
+1:1 onto the component's `--n-<kebab-case-field>` custom properties (`railInsetHorizontalBottom` → `--n-rail-inset-horizontal-bottom`).
+
+Collected by concern:
+
+  - rail insets per placement: `railInsetHorizontalBottom`, `railInsetHorizontalTop`, `railInsetVerticalRight`, `railInsetVerticalLeft`
+  - rail color: `railColor`
+  - thumb geometry, radius & colors: `height`, `width`, `borderRadius`, `color`, `colorHover`
+
+-}
 type alias Vars =
     { railInsetHorizontalBottom : String
     , railInsetHorizontalTop : String
@@ -21,6 +42,9 @@ type alias Vars =
     }
 
 
+{-| Resolve the Scrollbar variables for a theme — upstream `self(common)`: Light and Dark
+modes each get their own palette, values drawn from `theme.common`.
+-}
 vars : Theme -> Vars
 vars theme =
     case theme.mode of

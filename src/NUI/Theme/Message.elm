@@ -1,12 +1,36 @@
 module NUI.Theme.Message exposing (Vars, vars)
 
-{-| Naive UI message theme variables.
+{-| Theme variables for the **Message** component — the Elm counterpart of Naive UI's
+`src/Message/styles/light.ts` & `dark.ts` cssr theme (selfVars). Message renders with Naive UI's
+original CSS, so each record field here is emitted as one `--n-*` custom property on the
+component root, using the upstream kebab-case mapping (`margin` → `--n-margin`, `padding` → `--n-padding`, …).
+
+`vars` plays the role of upstream `self(common)`: it switches on `theme.mode` (Light/Dark) and
+derives every value from `theme.common` (see `NUI.Theme.Common`), reproducing Naive UI's light
+and dark palettes value-for-value. Pass the result to Message's `view`, or override individual
+fields to customise the look.
+
+@docs Vars, vars
+
 -}
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)
 
 
+{-| All `--n-*` custom properties the Message CSS consumes, as one record. Fields map
+1:1 onto the component's `--n-<kebab-case-field>` custom properties (`margin` → `--n-margin`).
+
+Collected by concern:
+
+  - layout & metrics (margin/padding/icon & close sizes/typography): `margin`, `padding`, `maxWidth`, `minWidth`, `iconMargin`, `closeMargin`, `closeSize`, `closeIconSize`, `iconSize`, `fontSize`, `lineHeight`, `borderRadius`, `border`
+  - neutral surface, text & shadow: `textColor`, `color`, `boxShadow`
+  - typed surfaces, text & shadows (Info/Success/Warning/Loading/Error): `textColorInfo`, `textColorSuccess`, `textColorError`, `textColorWarning`, `textColorLoading`, `colorInfo`, `colorSuccess`, `colorError`, `colorWarning`, `colorLoading`, `boxShadowInfo`, `boxShadowSuccess`, `boxShadowError`, `boxShadowWarning`, `boxShadowLoading`
+  - icon colors: `iconColor`, `iconColorInfo`, `iconColorSuccess`, `iconColorWarning`, `iconColorError`, `iconColorLoading`
+  - close button states: `closeBorderRadius`, `closeColorHover`, `closeColorPressed`, `closeIconColor`, `closeIconColorHover`, `closeIconColorPressed`, `closeColorHoverInfo`, `closeColorPressedInfo`, `closeIconColorInfo`, `closeIconColorHoverInfo`, `closeIconColorPressedInfo`, `closeColorHoverSuccess`, `closeColorPressedSuccess`, `closeIconColorSuccess`, `closeIconColorHoverSuccess`, `closeIconColorPressedSuccess`, `closeColorHoverError`, `closeColorPressedError`, `closeIconColorError`, `closeIconColorHoverError`, `closeIconColorPressedError`, `closeColorHoverWarning`, `closeColorPressedWarning`, `closeIconColorWarning`, `closeIconColorHoverWarning`, `closeIconColorPressedWarning`, `closeColorHoverLoading`, `closeColorPressedLoading`, `closeIconColorLoading`, `closeIconColorHoverLoading`, `closeIconColorPressedLoading`
+  - spinner: `loadingColor`
+
+-}
 type alias Vars =
     { margin : String
     , padding : String
@@ -80,6 +104,9 @@ type alias Vars =
     }
 
 
+{-| Resolve the Message variables for a theme — upstream `self(common)`: Light and Dark
+modes each get their own palette, values drawn from `theme.common`.
+-}
 vars : Theme -> Vars
 vars theme =
     case theme.mode of

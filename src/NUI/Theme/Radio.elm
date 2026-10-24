@@ -1,12 +1,36 @@
 module NUI.Theme.Radio exposing (Vars, vars)
 
-{-| Naive UI radio theme variables.
+{-| Theme variables for the **Radio** component — the Elm counterpart of Naive UI's
+`src/Radio/styles/light.ts` & `dark.ts` cssr theme (selfVars). Radio renders with Naive UI's
+original CSS, so each record field here is emitted as one `--n-*` custom property on the
+component root, using the upstream kebab-case mapping (`radioSizeSmall` → `--n-radio-size-small`, `radioSizeMedium` → `--n-radio-size-medium`, …).
+
+`vars` plays the role of upstream `self(common)`: it switches on `theme.mode` (Light/Dark) and
+derives every value from `theme.common` (see `NUI.Theme.Common`), reproducing Naive UI's light
+and dark palettes value-for-value. Pass the result to Radio's `view`, or override individual
+fields to customise the look.
+
+@docs Vars, vars
+
 -}
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)
 
 
+{-| All `--n-*` custom properties the Radio CSS consumes, as one record. Fields map
+1:1 onto the component's `--n-<kebab-case-field>` custom properties (`radioSizeSmall` → `--n-radio-size-small`).
+
+Collected by concern:
+
+  - per-size radio sizes & font sizes: `radioSizeSmall`, `radioSizeMedium`, `radioSizeLarge`, `fontSizeSmall`, `fontSizeMedium`, `fontSizeLarge`
+  - label: `labelPadding`, `labelFontWeight`, `labelLineHeight`
+  - box shadows (default & button focus/hover): `boxShadow`, `boxShadowActive`, `boxShadowFocus`, `boxShadowHover`, `boxShadowDisabled`
+  - dot colors: `dotColorActive`, `dotColorDisabled`
+  - button-mode surfaces, borders & text: `buttonHeightSmall`, `buttonHeightMedium`, `buttonHeightLarge`, `buttonBorderColor`, `buttonBorderColorActive`, `buttonBorderColorHover`, `buttonColor`, `buttonColorActive`, `buttonTextColor`, `buttonTextColorActive`, `buttonTextColorHover`, `buttonBoxShadowFocus`, `buttonBoxShadowHover`, `buttonBoxShadow`, `buttonBorderRadius`
+  - plain radio surfaces & text: `color`, `colorDisabled`, `colorActive`, `textColor`, `textColorDisabled`, `opacityDisabled`
+
+-}
 type alias Vars =
     { radioSizeSmall : String
     , radioSizeMedium : String
@@ -48,6 +72,9 @@ type alias Vars =
     }
 
 
+{-| Resolve the Radio variables for a theme — upstream `self(common)`: Light and Dark
+modes each get their own palette, values drawn from `theme.common`.
+-}
 vars : Theme -> Vars
 vars theme =
     case theme.mode of

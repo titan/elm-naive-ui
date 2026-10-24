@@ -1,12 +1,35 @@
 module NUI.Theme.Menu exposing (Vars, vars)
 
-{-| Naive UI menu theme variables.
+{-| Theme variables for the **Menu** component — the Elm counterpart of Naive UI's
+`src/Menu/styles/light.ts` & `dark.ts` cssr theme (selfVars). Menu renders with Naive UI's
+original CSS, so each record field here is emitted as one `--n-*` custom property on the
+component root, using the upstream kebab-case mapping (`borderRadius` → `--n-border-radius`, `color` → `--n-color`, …).
+
+`vars` plays the role of upstream `self(common)`: it switches on `theme.mode` (Light/Dark) and
+derives every value from `theme.common` (see `NUI.Theme.Common`), reproducing Naive UI's light
+and dark palettes value-for-value. Pass the result to Menu's `view`, or override individual
+fields to customise the look.
+
+@docs Vars, vars
+
 -}
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)
 
 
+{-| All `--n-*` custom properties the Menu CSS consumes, as one record. Fields map
+1:1 onto the component's `--n-<kebab-case-field>` custom properties (`borderRadius` → `--n-border-radius`).
+
+Collected by concern:
+
+  - chrome (root color, divider, border, font, radius, group text): `borderRadius`, `color`, `groupTextColor`, `itemHeight`, `colorInverted`, `borderColorHorizontal`, `fontSize`, `dividerColor`, `groupTextColorInverted`
+  - item surface colors (default, hover/active states, horizontal & inverted): `itemColorHover`, `itemColorActive`, `itemColorActiveHover`, `itemColorActiveCollapsed`, `itemColorHoverInverted`, `itemColorActiveInverted`, `itemColorActiveHoverInverted`, `itemColorActiveCollapsedInverted`
+  - item text colors (default, hover/active/child-active, horizontal & inverted): `itemTextColor`, `itemTextColorHover`, `itemTextColorActive`, `itemTextColorActiveHover`, `itemTextColorChildActive`, `itemTextColorChildActiveHover`, `itemTextColorHorizontal`, `itemTextColorHoverHorizontal`, `itemTextColorActiveHorizontal`, `itemTextColorActiveHoverHorizontal`, `itemTextColorChildActiveHorizontal`, `itemTextColorChildActiveHoverHorizontal`, `itemTextColorInverted`, `itemTextColorHoverInverted`, `itemTextColorChildActiveInverted`, `itemTextColorChildActiveHoverInverted`, `itemTextColorActiveInverted`, `itemTextColorActiveHoverInverted`, `itemTextColorHorizontalInverted`, `itemTextColorHoverHorizontalInverted`, `itemTextColorChildActiveHorizontalInverted`, `itemTextColorChildActiveHoverHorizontalInverted`, `itemTextColorActiveHorizontalInverted`, `itemTextColorActiveHoverHorizontalInverted`
+  - item icon colors (default, hover/active/child-active, collapsed, horizontal & inverted): `itemIconColor`, `itemIconColorHover`, `itemIconColorActive`, `itemIconColorActiveHover`, `itemIconColorChildActive`, `itemIconColorChildActiveHover`, `itemIconColorCollapsed`, `itemIconColorHorizontal`, `itemIconColorHoverHorizontal`, `itemIconColorActiveHorizontal`, `itemIconColorActiveHoverHorizontal`, `itemIconColorChildActiveHorizontal`, `itemIconColorChildActiveHoverHorizontal`, `itemIconColorInverted`, `itemIconColorHoverInverted`, `itemIconColorActiveInverted`, `itemIconColorActiveHoverInverted`, `itemIconColorChildActiveInverted`, `itemIconColorChildActiveHoverInverted`, `itemIconColorCollapsedInverted`, `itemIconColorHorizontalInverted`, `itemIconColorHoverHorizontalInverted`, `itemIconColorActiveHorizontalInverted`, `itemIconColorActiveHoverHorizontalInverted`, `itemIconColorChildActiveHorizontalInverted`, `itemIconColorChildActiveHoverHorizontalInverted`
+  - arrow colors: `arrowColor`, `arrowColorHover`, `arrowColorActive`, `arrowColorActiveHover`, `arrowColorChildActive`, `arrowColorChildActiveHover`, `arrowColorInverted`, `arrowColorHoverInverted`, `arrowColorActiveInverted`, `arrowColorActiveHoverInverted`, `arrowColorChildActiveInverted`, `arrowColorChildActiveHoverInverted`
+
+-}
 type alias Vars =
     { borderRadius : String
     , color : String
@@ -90,6 +113,9 @@ type alias Vars =
     }
 
 
+{-| Resolve the Menu variables for a theme — upstream `self(common)`: Light and Dark
+modes each get their own palette, values drawn from `theme.common`.
+-}
 vars : Theme -> Vars
 vars theme =
     case theme.mode of

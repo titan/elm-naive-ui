@@ -1,12 +1,35 @@
 module NUI.Theme.Timeline exposing (Vars, vars)
 
-{-| Naive UI timeline theme variables.
+{-| Theme variables for the **Timeline** component — the Elm counterpart of Naive UI's
+`src/Timeline/styles/light.ts` & `dark.ts` cssr theme (selfVars). Timeline renders with Naive UI's
+original CSS, so each record field here is emitted as one `--n-*` custom property on the
+component root, using the upstream kebab-case mapping (`titleMarginMedium` → `--n-title-margin-medium`, `titleMarginLarge` → `--n-title-margin-large`, …).
+
+`vars` plays the role of upstream `self(common)`: it switches on `theme.mode` (Light/Dark) and
+derives every value from `theme.common` (see `NUI.Theme.Common`), reproducing Naive UI's light
+and dark palettes value-for-value. Pass the result to Timeline's `view`, or override individual
+fields to customise the look.
+
+@docs Vars, vars
+
 -}
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)
 
 
+{-| All `--n-*` custom properties the Timeline CSS consumes, as one record. Fields map
+1:1 onto the component's `--n-<kebab-case-field>` custom properties (`titleMarginMedium` → `--n-title-margin-medium`).
+
+Collected by concern:
+
+  - per-size title metrics & icon sizes, content font size: `titleMarginMedium`, `titleMarginLarge`, `titleFontSizeMedium`, `titleFontSizeLarge`, `iconSizeMedium`, `iconSizeLarge`, `contentFontSize`
+  - title & body text, weight & meta: `titleFontWeight`, `titleTextColor`, `contentTextColor`, `metaTextColor`
+  - circle borders (default & typed): `circleBorder`, `circleBorderInfo`, `circleBorderError`, `circleBorderSuccess`, `circleBorderWarning`
+  - icon colors (default & typed): `iconColor`, `iconColorInfo`, `iconColorError`, `iconColorSuccess`, `iconColorWarning`
+  - line color: `lineColor`
+
+-}
 type alias Vars =
     { titleMarginMedium : String
     , titleMarginLarge : String
@@ -33,6 +56,9 @@ type alias Vars =
     }
 
 
+{-| Resolve the Timeline variables for a theme — upstream `self(common)`: Light and Dark
+modes each get their own palette, values drawn from `theme.common`.
+-}
 vars : Theme -> Vars
 vars theme =
     case theme.mode of
