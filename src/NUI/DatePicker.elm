@@ -1,34 +1,4 @@
-module NUI.DatePicker exposing
-    ( CalendarSide(..)
-    , ClickTarget
-    , DateAction(..)
-    , DateDisabledArg(..)
-    , DefaultTime(..)
-    , DetailType(..)
-    , FormattedValue(..)
-    , Options
-    , PanelType(..)
-    , RangePos(..)
-    , ShortcutPhase(..)
-    , ShortcutValue(..)
-    , TimeSlot(..)
-    , Value(..)
-    , colItemClick
-    , defaultActions
-    , defaultOptions
-    , dualDateClick
-    , dualHover
-    , isRangeType
-    , panel
-    , placeholders
-    , quickMonthClick
-    , rangeShortcutEffect
-    , sanitizeValue
-    , singleDateClick
-    , singleNow
-    , singleShortcutEffect
-    , view
-    )
+module NUI.DatePicker exposing (CalendarSide(..), ClickTarget, DateAction(..), DateDisabledArg(..), DefaultTime(..), DetailType(..), FormattedValue(..), Options, PanelType(..), RangePos(..), ShortcutPhase(..), ShortcutValue(..), TimeSlot(..), Value(..), colItemClick, defaultActions, defaultOptions, dualDateClick, dualHover, isRangeType, panel, placeholders, quickMonthClick, rangeShortcutEffect, sanitizeValue, singleDateClick, singleNow, singleShortcutEffect, view)
 
 {-| Naive UI's `DatePicker` — one `NUI.Input` trigger (single or pair) plus a
 caller-mounted panel covering every upstream panel type (`date`, `week`,
@@ -157,6 +127,8 @@ caller when closing is due (`singleDateClick`, `dualDateClick`).
     binds `textDecoration = Nothing` when the value is valid, whereas upstream
     always binds it (`''` / `line-through`), so a valid single input may omit an
     empty inline `style`. Zero visual impact.
+
+@docs CalendarSide, ClickTarget, DateAction, DateDisabledArg, DefaultTime, DetailType, FormattedValue, Options, PanelType, RangePos, ShortcutPhase, ShortcutValue, TimeSlot, Value, colItemClick, defaultActions, defaultOptions, dualDateClick, dualHover, isRangeType, panel, placeholders, quickMonthClick, rangeShortcutEffect, sanitizeValue, singleDateClick, singleNow, singleShortcutEffect, view
 
 -}
 
@@ -293,8 +265,10 @@ type alias ClickTarget =
     }
 
 
-{-| Every knob. Runtime behaviour (show, positioning, activation, keyboard,
-clickoutside) is caller-owned — see the module docstring.
+{-| Every knob — upstream's props, slots and panel state on one record (the
+`NUI.TimePicker` convention). Runtime behaviour (show, positioning,
+activation, keyboard, clickoutside) is caller-owned — see the module
+docstring.
 -}
 type alias Options msg =
     { value : Value
