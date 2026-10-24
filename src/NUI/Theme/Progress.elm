@@ -1,12 +1,35 @@
 module NUI.Theme.Progress exposing (Vars, vars)
 
-{-| Naive UI progress theme variables.
+{-| Theme variables for the **Progress** component — the Elm counterpart of Naive UI's
+`src/Progress/styles/light.ts` & `dark.ts` cssr theme (selfVars). Progress renders with Naive UI's
+original CSS, so each record field here is emitted as one `--n-*` custom property on the
+component root, using the upstream kebab-case mapping (`fontSize` → `--n-font-size`, `fontSizeCircle` → `--n-font-size-circle`, …).
+
+`vars` plays the role of upstream `self(common)`: it switches on `theme.mode` (Light/Dark) and
+derives every value from `theme.common` (see `NUI.Theme.Common`), reproducing Naive UI's light
+and dark palettes value-for-value. Pass the result to Progress's `view`, or override individual
+fields to customise the look.
+
+@docs Vars, vars
+
 -}
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)
 
 
+{-| All `--n-*` custom properties the Progress CSS consumes, as one record. Fields map
+1:1 onto the component's `--n-<kebab-case-field>` custom properties (`fontSize` → `--n-font-size`).
+
+Collected by concern:
+
+  - typography & circle font weight: `fontSize`, `fontSizeCircle`, `fontWeightCircle`
+  - rail & fill geometry/colors (incl. typed variants): `railColor`, `railHeight`, `fillColor`, `fillColorInfo`, `fillColorSuccess`, `fillColorWarning`, `fillColorError`, `lineBgProcessing`
+  - icon sizes (line & circle): `iconSizeCircle`, `iconSizeLine`
+  - icon colors (default & typed): `iconColor`, `iconColorInfo`, `iconColorSuccess`, `iconColorWarning`, `iconColorError`
+  - label text colors (circle & line): `textColorCircle`, `textColorLineInner`, `textColorLineOuter`
+
+-}
 type alias Vars =
     { fontSize : String
     , fontSizeCircle : String
@@ -32,6 +55,9 @@ type alias Vars =
     }
 
 
+{-| Resolve the Progress variables for a theme — upstream `self(common)`: Light and Dark
+modes each get their own palette, values drawn from `theme.common`.
+-}
 vars : Theme -> Vars
 vars theme =
     case theme.mode of

@@ -1,12 +1,36 @@
 module NUI.Theme.Slider exposing (Vars, vars)
 
-{-| Naive UI slider theme variables.
+{-| Theme variables for the **Slider** component — the Elm counterpart of Naive UI's
+`src/Slider/styles/light.ts` & `dark.ts` cssr theme (selfVars). Slider renders with Naive UI's
+original CSS, so each record field here is emitted as one `--n-*` custom property on the
+component root, using the upstream kebab-case mapping (`railHeight` → `--n-rail-height`, `railWidthVertical` → `--n-rail-width-vertical`, …).
+
+`vars` plays the role of upstream `self(common)`: it switches on `theme.mode` (Light/Dark) and
+derives every value from `theme.common` (see `NUI.Theme.Common`), reproducing Naive UI's light
+and dark palettes value-for-value. Pass the result to Slider's `view`, or override individual
+fields to customise the look.
+
+@docs Vars, vars
+
 -}
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)
 
 
+{-| All `--n-*` custom properties the Slider CSS consumes, as one record. Fields map
+1:1 onto the component's `--n-<kebab-case-field>` custom properties (`railHeight` → `--n-rail-height`).
+
+Collected by concern:
+
+  - rail geometry & colors, fill colors: `railHeight`, `railWidthVertical`, `railColor`, `railColorHover`, `fillColor`, `fillColorHover`
+  - handle sizes, colors & shadows: `handleSize`, `handleColor`, `handleBoxShadow`, `handleBoxShadowHover`, `handleBoxShadowActive`, `handleBoxShadowFocus`
+  - dots (geometry, borders, colors, shadows): `dotHeight`, `dotWidth`, `dotBorderRadius`, `dotColor`, `dotColorModal`, `dotColorPopover`, `dotBorder`, `dotBorderActive`, `dotBoxShadow`
+  - value indicator (surface, shadow, text, radius): `indicatorColor`, `indicatorBoxShadow`, `indicatorTextColor`, `indicatorBorderRadius`
+  - typography (label & mark): `fontSize`, `markFontSize`
+  - disabled opacity: `opacityDisabled`
+
+-}
 type alias Vars =
     { railHeight : String
     , railWidthVertical : String
@@ -39,6 +63,9 @@ type alias Vars =
     }
 
 
+{-| Resolve the Slider variables for a theme — upstream `self(common)`: Light and Dark
+modes each get their own palette, values drawn from `theme.common`.
+-}
 vars : Theme -> Vars
 vars theme =
     case theme.mode of

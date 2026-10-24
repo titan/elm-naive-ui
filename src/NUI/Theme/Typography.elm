@@ -1,12 +1,36 @@
 module NUI.Theme.Typography exposing (Vars, vars)
 
-{-| Naive UI typography theme variables.
+{-| Theme variables for the **Typography** component — the Elm counterpart of Naive UI's
+`src/Typography/styles/light.ts` & `dark.ts` cssr theme (selfVars). Typography renders with Naive UI's
+original CSS, so each record field here is emitted as one `--n-*` custom property on the
+component root, using the upstream kebab-case mapping (`pMargin` → `--n-p-margin`, `liMargin` → `--n-li-margin`, …).
+(Headers are the one exception: they consume the per-level `headerFontSize1`…`6` &
+friends to emit `--n-font-size` etc. for each level.)
+
+`vars` plays the role of upstream `self(common)`: it switches on `theme.mode` (Light/Dark) and
+derives every value from `theme.common` (see `NUI.Theme.Common`), reproducing Naive UI's light
+and dark palettes value-for-value. Pass the result to Typography's `view`, or override individual
+fields to customise the look.
+
+@docs Vars, vars
+
 -}
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)
 
 
+{-| All `--n-*` custom properties the Typography CSS consumes, as one record. Fields map
+1:1 onto the component's `--n-<kebab-case-field>` custom properties (`pMargin` → `--n-p-margin`).
+
+Collected by concern:
+
+  - headers (scales 1–6 font sizes, margins, prefix & bar widths; weight, text & bar colors): `headerFontSize1`, `headerFontSize2`, `headerFontSize3`, `headerFontSize4`, `headerFontSize5`, `headerFontSize6`, `headerMargin1`, `headerMargin2`, `headerMargin3`, `headerMargin4`, `headerMargin5`, `headerMargin6`, `headerPrefixWidth1`, `headerPrefixWidth2`, `headerPrefixWidth3`, `headerPrefixWidth4`, `headerPrefixWidth5`, `headerPrefixWidth6`, `headerBarWidth1`, `headerBarWidth2`, `headerBarWidth3`, `headerBarWidth4`, `headerBarWidth5`, `headerBarWidth6`, `headerFontWeight`, `headerTextColor`, `headerBarColor`, `headerBarColorPrimary`, `headerBarColorInfo`, `headerBarColorError`, `headerBarColorWarning`, `headerBarColorSuccess`
+  - paragraph/list/blockquote/anchor metrics & colors: `pMargin`, `liMargin`, `olPadding`, `ulPadding`, `aTextColor`, `blockquoteTextColor`, `blockquotePrefixColor`, `blockquoteLineHeight`, `blockquoteFontSize`, `codeBorderRadius`, `liTextColor`, `liLineHeight`, `liFontSize`, `hrColor`, `pTextColor`, `pTextColor1Depth`, `pTextColor2Depth`, `pTextColor3Depth`, `pLineHeight`, `pFontSize`
+  - text color depths (1/2/3) & typed colors: `textColor`, `textColor1Depth`, `textColor2Depth`, `textColor3Depth`, `textColorPrimary`, `textColorInfo`, `textColorSuccess`, `textColorWarning`, `textColorError`
+  - inline code look: `codeTextColor`, `codeColor`, `codeBorder`
+
+-}
 type alias Vars =
     { headerFontSize1 : String
     , headerFontSize2 : String
@@ -75,6 +99,9 @@ type alias Vars =
     }
 
 
+{-| Resolve the Typography variables for a theme — upstream `self(common)`: Light and Dark
+modes each get their own palette, values drawn from `theme.common`.
+-}
 vars : Theme -> Vars
 vars theme =
     case theme.mode of

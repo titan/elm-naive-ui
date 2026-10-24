@@ -1,12 +1,36 @@
 module NUI.Theme.Tag exposing (Vars, vars)
 
-{-| Naive UI tag theme variables.
+{-| Theme variables for the **Tag** component — the Elm counterpart of Naive UI's
+`src/Tag/styles/light.ts` & `dark.ts` cssr theme (selfVars). Tag renders with Naive UI's
+original CSS, so each record field here is emitted as one `--n-*` custom property on the
+component root, using the upstream kebab-case mapping (`closeIconSizeTiny` → `--n-close-icon-size-tiny`, `closeIconSizeSmall` → `--n-close-icon-size-small`, …).
+
+`vars` plays the role of upstream `self(common)`: it switches on `theme.mode` (Light/Dark) and
+derives every value from `theme.common` (see `NUI.Theme.Common`), reproducing Naive UI's light
+and dark palettes value-for-value. Pass the result to Tag's `view`, or override individual
+fields to customise the look.
+
+@docs Vars, vars
+
 -}
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)
 
 
+{-| All `--n-*` custom properties the Tag CSS consumes, as one record. Fields map
+1:1 onto the component's `--n-<kebab-case-field>` custom properties (`closeIconSizeTiny` → `--n-close-icon-size-tiny`).
+
+Collected by concern:
+
+  - per-size close sizes & icon sizes: `closeIconSizeTiny`, `closeIconSizeSmall`, `closeIconSizeMedium`, `closeIconSizeLarge`, `closeSizeTiny`, `closeSizeSmall`, `closeSizeMedium`, `closeSizeLarge`
+  - per-size heights & font sizes: `heightTiny`, `heightSmall`, `heightMedium`, `heightLarge`, `fontSizeTiny`, `fontSizeSmall`, `fontSizeMedium`, `fontSizeLarge`
+  - base tag look (padding, border, radius, colors, opacity, weight): `padding`, `closeMargin`, `closeBorderRadius`, `borderRadius`, `opacityDisabled`, `fontWeightStrong`, `border`, `textColor`, `color`, `colorBordered`
+  - typed variants (Primary/Info/Success/Warning/Error): `borderPrimary`, `textColorPrimary`, `colorPrimary`, `colorBorderedPrimary`, `closeIconColorPrimary`, `closeIconColorHoverPrimary`, `closeIconColorPressedPrimary`, `closeColorHoverPrimary`, `closeColorPressedPrimary`, `borderInfo`, `textColorInfo`, `colorInfo`, `colorBorderedInfo`, `closeIconColorInfo`, `closeIconColorHoverInfo`, `closeIconColorPressedInfo`, `closeColorHoverInfo`, `closeColorPressedInfo`, `borderSuccess`, `textColorSuccess`, `colorSuccess`, `colorBorderedSuccess`, `closeIconColorSuccess`, `closeIconColorHoverSuccess`, `closeIconColorPressedSuccess`, `closeColorHoverSuccess`, `closeColorPressedSuccess`, `borderWarning`, `textColorWarning`, `colorWarning`, `colorBorderedWarning`, `closeIconColorWarning`, `closeIconColorHoverWarning`, `closeIconColorPressedWarning`, `closeColorHoverWarning`, `closeColorPressedWarning`, `borderError`, `textColorError`, `colorError`, `colorBorderedError`, `closeIconColorError`, `closeIconColorHoverError`, `closeIconColorPressedError`, `closeColorHoverError`, `closeColorPressedError`
+  - checkable states: `textColorCheckable`, `textColorHoverCheckable`, `textColorPressedCheckable`, `textColorChecked`, `colorCheckable`, `colorHoverCheckable`, `colorPressedCheckable`, `colorChecked`, `colorCheckedHover`, `colorCheckedPressed`
+  - close button colors & states: `closeIconColor`, `closeIconColorHover`, `closeIconColorPressed`, `closeColorHover`, `closeColorPressed`
+
+-}
 type alias Vars =
     { closeIconSizeTiny : String
     , closeIconSizeSmall : String
@@ -97,6 +121,9 @@ type alias Vars =
     }
 
 
+{-| Resolve the Tag variables for a theme — upstream `self(common)`: Light and Dark
+modes each get their own palette, values drawn from `theme.common`.
+-}
 vars : Theme -> Vars
 vars theme =
     case theme.mode of

@@ -1,12 +1,32 @@
 module NUI.Theme.TreeSelect exposing (Vars, vars)
 
-{-| Naive UI tree-select theme variables.
+{-| Theme variables for the **TreeSelect** component — the Elm counterpart of Naive UI's
+`src/TreeSelect/styles/light.ts` & `dark.ts` cssr theme (selfVars). TreeSelect renders with Naive UI's
+original CSS, so each record field here is emitted as one `--n-*` custom property on the
+component root, using the upstream kebab-case mapping (`menuPadding` → `--n-menu-padding`, `menuColor` → `--n-menu-color`, …).
+
+`vars` plays the role of upstream `self(common)`: it switches on `theme.mode` (Light/Dark) and
+derives every value from `theme.common` (see `NUI.Theme.Common`), reproducing Naive UI's light
+and dark palettes value-for-value. Pass the result to TreeSelect's `view`, or override individual
+fields to customise the look.
+
+@docs Vars, vars
+
 -}
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)
 
 
+{-| All `--n-*` custom properties the TreeSelect CSS consumes, as one record. Fields map
+1:1 onto the component's `--n-<kebab-case-field>` custom properties (`menuPadding` → `--n-menu-padding`).
+
+Collected by concern:
+
+  - dropdown menu (padding, color, shadow, radius, height): `menuPadding`, `menuColor`, `menuBoxShadow`, `menuBorderRadius`, `menuHeight`
+  - header & action areas (divider, text, padding): `actionDividerColor`, `actionTextColor`, `actionPadding`, `headerDividerColor`, `headerTextColor`, `headerPadding`
+
+-}
 type alias Vars =
     { menuPadding : String
     , menuColor : String
@@ -22,6 +42,9 @@ type alias Vars =
     }
 
 
+{-| Resolve the TreeSelect variables for a theme — upstream `self(common)`: Light and Dark
+modes each get their own palette, values drawn from `theme.common`.
+-}
 vars : Theme -> Vars
 vars theme =
     case theme.mode of

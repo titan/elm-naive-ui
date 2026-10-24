@@ -1,12 +1,33 @@
 module NUI.Theme.Steps exposing (Vars, vars)
 
-{-| Naive UI steps theme variables.
+{-| Theme variables for the **Steps** component — the Elm counterpart of Naive UI's
+`src/Steps/styles/light.ts` & `dark.ts` cssr theme (selfVars). Steps renders with Naive UI's
+original CSS, so each record field here is emitted as one `--n-*` custom property on the
+component root, using the upstream kebab-case mapping (`stepHeaderFontSizeSmall` → `--n-step-header-font-size-small`, `stepHeaderFontSizeMedium` → `--n-step-header-font-size-medium`, …).
+
+`vars` plays the role of upstream `self(common)`: it switches on `theme.mode` (Light/Dark) and
+derives every value from `theme.common` (see `NUI.Theme.Common`), reproducing Naive UI's light
+and dark palettes value-for-value. Pass the result to Steps's `view`, or override individual
+fields to customise the look.
+
+@docs Vars, vars
+
 -}
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)
 
 
+{-| All `--n-*` custom properties the Steps CSS consumes, as one record. Fields map
+1:1 onto the component's `--n-<kebab-case-field>` custom properties (`stepHeaderFontSizeSmall` → `--n-step-header-font-size-small`).
+
+Collected by concern:
+
+  - per-size header & index font sizes: `stepHeaderFontSizeSmall`, `stepHeaderFontSizeMedium`, `indicatorIndexFontSizeSmall`, `indicatorIndexFontSizeMedium`, `stepHeaderFontWeight`
+  - per-size indicator & icon sizes: `indicatorSizeSmall`, `indicatorSizeMedium`, `indicatorIconSizeSmall`, `indicatorIconSizeMedium`
+  - state palettes (process/wait/finish/error): `indicatorTextColorProcess`, `indicatorTextColorWait`, `indicatorTextColorFinish`, `indicatorTextColorError`, `indicatorBorderColorProcess`, `indicatorBorderColorWait`, `indicatorBorderColorFinish`, `indicatorBorderColorError`, `indicatorColorProcess`, `indicatorColorWait`, `indicatorColorFinish`, `indicatorColorError`, `splitorColorProcess`, `splitorColorWait`, `splitorColorFinish`, `splitorColorError`, `headerTextColorProcess`, `headerTextColorWait`, `headerTextColorFinish`, `headerTextColorError`, `descriptionTextColorProcess`, `descriptionTextColorWait`, `descriptionTextColorFinish`, `descriptionTextColorError`
+
+-}
 type alias Vars =
     { stepHeaderFontSizeSmall : String
     , stepHeaderFontSizeMedium : String
@@ -44,6 +65,9 @@ type alias Vars =
     }
 
 
+{-| Resolve the Steps variables for a theme — upstream `self(common)`: Light and Dark
+modes each get their own palette, values drawn from `theme.common`.
+-}
 vars : Theme -> Vars
 vars theme =
     case theme.mode of

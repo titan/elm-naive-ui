@@ -1,12 +1,38 @@
 module NUI.Theme.Tabs exposing (Vars, vars)
 
-{-| Naive UI tabs theme variables.
+{-| Theme variables for the **Tabs** component — the Elm counterpart of Naive UI's
+`src/Tabs/styles/light.ts` & `dark.ts` cssr theme (selfVars). Tabs renders with Naive UI's
+original CSS, so each record field here is emitted as one `--n-*` custom property on the
+component root, using the upstream kebab-case mapping (`tabFontSizeSmall` → `--n-tab-font-size-small`, `tabFontSizeMedium` → `--n-tab-font-size-medium`, …).
+
+`vars` plays the role of upstream `self(common)`: it switches on `theme.mode` (Light/Dark) and
+derives every value from `theme.common` (see `NUI.Theme.Common`), reproducing Naive UI's light
+and dark palettes value-for-value. Pass the result to Tabs's `view`, or override individual
+fields to customise the look.
+
+@docs Vars, vars
+
 -}
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)
 
 
+{-| All `--n-*` custom properties the Tabs CSS consumes, as one record. Fields map
+1:1 onto the component's `--n-<kebab-case-field>` custom properties (`tabFontSizeSmall` → `--n-tab-font-size-small`).
+
+Collected by concern:
+
+  - per-size tab font sizes & weights: `tabFontSizeSmall`, `tabFontSizeMedium`, `tabFontSizeLarge`, `tabFontSizeCard`, `tabFontWeightActive`, `tabFontWeight`
+  - per-size gaps & paddings per type (line/bar/card/segment, incl. vertical): `tabGapSmallLine`, `tabGapMediumLine`, `tabGapLargeLine`, `tabGapSmallLineVertical`, `tabGapMediumLineVertical`, `tabGapLargeLineVertical`, `tabPaddingSmallLine`, `tabPaddingMediumLine`, `tabPaddingLargeLine`, `tabPaddingVerticalSmallLine`, `tabPaddingVerticalMediumLine`, `tabPaddingVerticalLargeLine`, `tabGapSmallBar`, `tabGapMediumBar`, `tabGapLargeBar`, `tabGapSmallBarVertical`, `tabGapMediumBarVertical`, `tabGapLargeBarVertical`, `tabPaddingSmallBar`, `tabPaddingMediumBar`, `tabPaddingLargeBar`, `tabPaddingVerticalSmallBar`, `tabPaddingVerticalMediumBar`, `tabPaddingVerticalLargeBar`, `tabGapSmallCard`, `tabGapMediumCard`, `tabGapLargeCard`, `tabGapSmallCardVertical`, `tabGapMediumCardVertical`, `tabGapLargeCardVertical`, `tabPaddingSmallCard`, `tabPaddingMediumCard`, `tabPaddingLargeCard`, `tabPaddingSmallSegment`, `tabPaddingMediumSegment`, `tabPaddingLargeSegment`, `tabPaddingVerticalLargeSegment`, `tabPaddingVerticalSmallCard`, `tabPaddingVerticalMediumCard`, `tabPaddingVerticalLargeCard`, `tabPaddingVerticalSmallSegment`, `tabPaddingVerticalMediumSegment`, `tabGapSmallSegment`, `tabGapMediumSegment`, `tabGapLargeSegment`, `tabGapSmallSegmentVertical`, `tabGapMediumSegmentVertical`, `tabGapLargeSegmentVertical`
+  - pane padding & text: `panePaddingSmall`, `panePaddingMedium`, `panePaddingLarge`, `paneTextColor`
+  - close button (sizes, radius, colors & states): `closeSize`, `closeIconSize`, `closeIconColor`, `closeIconColorHover`, `closeIconColorPressed`, `closeColorHover`, `closeColorPressed`, `closeBorderRadius`
+  - tab text colors per type (line/bar/card/segment): `tabTextColorLine`, `tabTextColorActiveLine`, `tabTextColorHoverLine`, `tabTextColorDisabledLine`, `tabTextColorSegment`, `tabTextColorActiveSegment`, `tabTextColorHoverSegment`, `tabTextColorDisabledSegment`, `tabTextColorBar`, `tabTextColorActiveBar`, `tabTextColorHoverBar`, `tabTextColorDisabledBar`, `tabTextColorCard`, `tabTextColorHoverCard`, `tabTextColorActiveCard`, `tabTextColorDisabledCard`
+  - tab surfaces & borders per type: `tabColor`, `tabColorSegment`, `tabBorderColor`
+  - active bar & misc: `barColor`, `fontWeightStrong`
+  - misc surfaces & radius: `colorSegment`, `tabBorderRadius`
+
+-}
 type alias Vars =
     { tabFontSizeSmall : String
     , tabFontSizeMedium : String
@@ -100,6 +126,9 @@ type alias Vars =
     }
 
 
+{-| Resolve the Tabs variables for a theme — upstream `self(common)`: Light and Dark
+modes each get their own palette, values drawn from `theme.common`.
+-}
 vars : Theme -> Vars
 vars theme =
     case theme.mode of
