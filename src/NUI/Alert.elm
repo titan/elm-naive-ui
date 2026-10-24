@@ -23,6 +23,8 @@ and Naive UI's `--n-*` custom properties, and `NUI.Css` ships Naive UI's exact C
 Naive UI's alert has no `primary` type, so `T.Primary` falls back to the un-suffixed
 (default) theme variables.
 
+@docs Options, defaults, view
+
 -}
 
 import Element exposing (Element)
@@ -36,6 +38,13 @@ import NUI.Types as T exposing (Kind(..))
 import Svg
 
 
+{-| The alert options. `kind` picks the colour set (Naive UI's `type`; no
+`primary` alert exists, so `T.Primary` shares the default vars), `title` and
+the children fill `n-alert-body__title` / `__content`, `closable` adds the
+close button (firing `onClose`), `showIcon` toggles the kind icon (or `icon`
+when set), `bordered` adds the `__border` decoration, `rtl` mirrors the
+layout.
+-}
 type alias Options msg =
     { kind : Kind
     , title : Maybe String
@@ -48,6 +57,9 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults — `type: 'default'`, bordered, icon shown, not
+closable, no title, LTR.
+-}
 defaults : Options msg
 defaults =
     { kind = Default
@@ -61,6 +73,11 @@ defaults =
     }
 
 
+{-| Render the alert: `role="alert"` root with the `n-alert` BEM classes,
+Naive UI's `--n-*` variables (theme-coloured per `kind`), the close button
+first, then the border and icon decorations, then the body (optional title,
+content). `children` are the content paragraph's inline elements.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     let

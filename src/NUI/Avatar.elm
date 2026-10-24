@@ -1,9 +1,4 @@
-module NUI.Avatar exposing
-    ( AvatarSize(..)
-    , Options
-    , defaults
-    , view
-    )
+module NUI.Avatar exposing (AvatarSize(..), Options, defaults, view)
 
 {-| Naive UI's `Avatar`, rebuilt on elm-ui.
 
@@ -29,6 +24,8 @@ a failed load then falls back to the avatar's own colour tile (upstream's
 broken-image glyph. Loaded images look identical (stretched to fill, matching
 upstream's `.n-avatar img { width/height: 100% }`).
 
+@docs AvatarSize, Options, defaults, view
+
 -}
 
 import Element exposing (Element)
@@ -51,6 +48,12 @@ type AvatarSize
     | Number Int
 
 
+{-| The avatar options. `size` keys the tile dimensions (and the round /
+circle radius), `round` / `circle` both render `border-radius: 50%` (upstream
+quirk), `bordered` adds `--n-border`, `color` overrides the theme tile colour,
+`src` renders the image tile instead of text children, `attributes` land on
+the `n-avatar` root.
+-}
 type alias Options msg =
     { size : AvatarSize
     , round : Bool
@@ -62,6 +65,9 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults — medium square tile, no border, no image, themed
+colour.
+-}
 defaults : Options msg
 defaults =
     { size = Medium
@@ -74,6 +80,10 @@ defaults =
     }
 
 
+{-| Render one avatar: the `n-avatar` root with the `--n-*` vars. Text children
+land in `n-avatar__text`; a `src` renders the background-image tile; neither
+is present when both are unset. See the module doc for the text-fit trade-off.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     let

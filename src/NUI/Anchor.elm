@@ -1,11 +1,4 @@
-module NUI.Anchor exposing
-    ( Link(..)
-    , Options
-    , Type(..)
-    , cssVarsFor
-    , defaults
-    , view
-    )
+module NUI.Anchor exposing (Link(..), Options, Type(..), cssVarsFor, defaults, view)
 
 {-| Naive UI's `Anchor` / `AnchorLink`, rebuilt on elm-ui.
 
@@ -69,6 +62,8 @@ options to compose `NUI.Affix.view` around the anchor root — the pinned state
     literals in `NUI.Theme.Anchor` (toolchain convention, cf. Tag) — a `common`
     override re-derives `railColorActive` but not `linkColor`.
 
+@docs Link, Options, Type, cssVarsFor, defaults, view
+
 -}
 
 import Element exposing (Element)
@@ -89,6 +84,12 @@ type Type
     | Block
 
 
+{-| The anchor options. `type_` picks the rail / block rendering, `showRail`
+and `showBackground` toggle the rail and link background, `activeHref` is the
+caller-owned active link (upstream's scroll-reduced `activeHrefRef`),
+`internalScrollable` wraps in `NUI.Scrollbar`, `affix` composes
+`NUI.Affix.view` around the root, `attributes` land on the anchor root.
+-}
 type alias Options msg =
     { type_ : Type
     , showRail : Bool
@@ -100,6 +101,9 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults — rail type, rail and background shown, no active
+link, not scrollable, not affixed.
+-}
 defaults : Options msg
 defaults =
     { type_ = Rail
@@ -128,6 +132,11 @@ type Link msg
         }
 
 
+{-| Render the anchor: the `n-anchor` root (the `--block` / `--show-rail`
+modifiers, the twelve `--n-*` vars) with the link background and rail when
+shown, then the links. Optionally wrapped in the internal scrollbar and /
+or the caller's `NUI.Affix` options.
+-}
 view : Theme -> Options msg -> List (Link msg) -> Element msg
 view theme opts links =
     let
@@ -271,7 +280,8 @@ titleEl (Link link) =
 
 
 {-| The anchor's `--n-*` custom properties (they do not depend on the options) —
-upstream's `cssVarsRef` order.
+upstream's `cssVarsRef` order. Exposed so the output can be asserted directly;
+`view` uses exactly this.
 -}
 cssVarsFor : Theme -> List ( String, String )
 cssVarsFor theme =

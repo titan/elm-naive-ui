@@ -1,12 +1,4 @@
-module NUI.BaseSelection exposing
-    ( Options
-    , Size(..)
-    , Status(..)
-    , Tag(..)
-    , cssVars
-    , defaults
-    , view
-    )
+module NUI.BaseSelection exposing (Options, Size(..), Status(..), Tag(..), cssVars, defaults, view)
 
 {-| Naive UI's internal selection trigger (upstream `NInternalSelection`,
 `_internal/selection/`) — the support module `NUI.Select` renders (and,
@@ -100,6 +92,8 @@ The 52 `--n-*` vars, upstream cssVarsRef order: `--n-bezier`, `--n-border`,
 `--n-font-size` switch on `size` (tiny 22px/12px … large 40px/15px); the
 paddings split `paddingSingle`/`paddingMultiple` per side (seemly
 `getPadding`, the `NUI.SelectMenu.paddingSides` 1–4-part forms).
+
+@docs Options, Size, Status, Tag, cssVars, defaults, view
 
 -}
 
@@ -214,7 +208,9 @@ defaults =
 -- VIEW -------------------------------------------------------------------------
 
 
-{-| The `.n-base-selection` trigger per the module docstring tree.
+{-| Render the `.n-base-selection` trigger per the module docstring tree:
+the root (class matrix, the 52 `--n-*` vars from `cssVars theme size`), one
+of the four body variants, then the border decorations when `bordered`.
 -}
 view : Theme -> Options msg -> Element msg
 view theme opts =

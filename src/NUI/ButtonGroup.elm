@@ -1,8 +1,4 @@
-module NUI.ButtonGroup exposing
-    ( Options
-    , defaults
-    , view
-    )
+module NUI.ButtonGroup exposing (Options, defaults, view)
 
 {-| Naive UI's `ButtonGroup`, rebuilt on elm-ui.
 
@@ -21,6 +17,8 @@ not modelled here: this library renders each `NUI.Button` independently, so ever
 button already carries its own `NUI.Button.Options.size`. Set the size on the
 buttons directly.
 
+@docs Options, defaults, view
+
 -}
 
 import Element exposing (Element)
@@ -29,6 +27,11 @@ import NUI.Internal as I
 import NUI.Theme exposing (Theme)
 
 
+{-| The group options. `vertical` stacks the buttons (`--vertical`), `rtl`
+mirrors the group (`--rtl`), `attributes` land on the `n-button-group` root.
+Upstream's `size` injection is not modelled — set sizes on the buttons
+themselves.
+-}
 type alias Options msg =
     { vertical : Bool
     , rtl : Bool
@@ -36,6 +39,8 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults — horizontal, LTR, no extra attributes.
+-}
 defaults : Options msg
 defaults =
     { vertical = False
