@@ -1,12 +1,4 @@
-module NUI.GradientText exposing
-    ( Gradient(..)
-    , Options
-    , Type(..)
-    , cssVarsFor
-    , defaults
-    , fromTo
-    , view
-    )
+module NUI.GradientText exposing (Gradient(..), Options, Type(..), cssVarsFor, defaults, fromTo, view)
 
 {-| Naive UI's `GradientText`, rebuilt on elm-ui.
 
@@ -19,6 +11,8 @@ module NUI.GradientText exposing
 Upstream's `color` and `gradient` props are aliases for the same value; here they
 are one field, `gradient`. The element carries the `.n-gradient-text` BEM classes
 and Naive UI's `--n-*` custom properties, and `NUI.Css` ships Naive UI's exact CSS.
+
+@docs Gradient, Options, Type, cssVarsFor, defaults, fromTo, view
 
 -}
 
@@ -54,6 +48,10 @@ fromTo from to =
     FromTo { deg = "0", from = from, to = to }
 
 
+{-| The gradient-text options — Naive UI's props: the `type_` driving the theme
+colours, the `size` (a raw `font-size` value, upstream's `size`), the
+`gradient` (upstream's `color`/`gradient` alias pair), and `attributes`.
+-}
 type alias Options msg =
     { type_ : Type
     , size : Maybe String
@@ -62,6 +60,9 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults: `primary` type, no size override, no gradient (the
+theme's start/end colours shine through), no extra attributes.
+-}
 defaults : Options msg
 defaults =
     { type_ = Primary
@@ -71,6 +72,10 @@ defaults =
     }
 
 
+{-| The `n-gradient-text` element — a paragraph carrying the `--{type}-type`
+modifier and (in one inline `style`) the `--n-*` vars plus the optional
+`font-size` / `background-image`.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     Element.paragraph
