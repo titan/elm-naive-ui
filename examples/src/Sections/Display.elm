@@ -296,7 +296,7 @@ gridItem =
 
 breadcrumbSection : Theme -> Element msg
 breadcrumbSection theme =
-    section theme "Breadcrumb" "Navigation trails." <|
+    section theme "Breadcrumb" "The location trail at the top of a nested page: an ordered list of links with the current page last. Each item carries its own href and an optional per-item separator; the last item renders as plain text. No state to own — it renders exactly what you pass. Rows: the default trail → a custom-separator (per item) trail." <|
         [ demoRow theme
             "dsp-001"
             "Default"
@@ -321,7 +321,7 @@ breadcrumbSection theme =
 
 timelineSection : Theme -> Element msg
 timelineSection theme =
-    section theme "Timeline" "Vertical event trails." <|
+    section theme "Timeline" "A vertical event log: each item is a typed dot (success/warning/…) on a shared line with time, title and content, in solid or dashed line style; itemPlacement flips the time column side. Pure display — no channels, no state. Rows: a mixed-type default trail → a right-placement trail." <|
         [ demoRow theme
             "dsp-047"
             "Default"
@@ -353,7 +353,7 @@ timelineSection theme =
 
 listSection : Theme -> Element msg
 listSection theme =
-    section theme "List" "Bordered, hoverable item lists." <|
+    section theme "List" "A bordered, hoverable vertical list for grouped content: each item carries optional prefix and suffix slots around its content, and hoverable lights the row under the pointer. Pure display — items are Elements, there is no click channel. Rows: one bordered + hoverable list with prefix/suffix items." <|
         [ demoRow theme
             "dsp-049"
             "Bordered + hoverable"
@@ -391,7 +391,7 @@ pageHeaderSection : Theme -> Element msg
 pageHeaderSection theme =
     section theme
         "Page Header"
-        "Title, subtitle and extra (pass `onBack` to add the back control)."
+        "The page's title block: title, subtitle, extra slot and an optional back control above the page body. Pass onBack to show the back arrow — the click is caller-owned and Nothing hides the control. Rows: a titled header with subtitle and extra, then a live one whose back button counts real clicks."
         (pageHeaderRows theme)
 
 
@@ -423,7 +423,7 @@ pageHeaderLiveSection : Model -> Theme -> Element Msg
 pageHeaderLiveSection model theme =
     section theme
         "Page Header"
-        "Title, subtitle and extra (pass `onBack` to add the back control)."
+        "The page's title block: title, subtitle, extra slot and an optional back control above the page body. Pass onBack to show the back arrow — the click is caller-owned and Nothing hides the control. Rows: a titled header with subtitle and extra, then a live one whose back button counts real clicks."
         (pageHeaderRows theme ++ [ pageHeaderLiveRow model theme ])
 
 
@@ -455,7 +455,7 @@ affixRows theme =
 
 affixSection : Theme -> Element msg
 affixSection theme =
-    section theme "Affix" "Pins content while scrolling (the affixed state is caller-owned). The preview box is the containing block — the fixed button stays inside it." <|
+    section theme "Affix" "Pins content to a container edge when scrolling past it. The affixed state is caller-owned — own the Bool in your model and drive it from scroll position; the fixed node positions against the containing block. Rows: a pre-pinned specimen → a live demo whose scroll buttons stand in for the listener, pinning past 40px." <|
         affixRows theme
 
 
@@ -518,7 +518,7 @@ affixLiveSection : Model -> Theme -> Element Msg
 affixLiveSection model theme =
     section theme
         "Affix"
-        "Pins content while scrolling (the affixed state is caller-owned). The preview box is the containing block — the fixed button stays inside it."
+        "Pins content to a container edge when scrolling past it. The affixed state is caller-owned — own the Bool in your model and drive it from scroll position; the fixed node positions against the containing block. Rows: a pre-pinned specimen → a live demo whose scroll buttons stand in for the listener, pinning past 40px."
         (affixRows theme ++ [ affixLiveRow model theme ])
 
 
@@ -526,7 +526,7 @@ flexSection : Theme -> Element msg
 flexSection theme =
     section theme
         "Flex"
-        "Naive UI's flexbox primitive — an inline flex container (no stylesheet rule; the layout is inline `display`/`gap`)."
+        "Naive UI's flexbox primitive: an inline flex container with direction, wrap, justify, align and gap options (a single number or a row/column pair), plus inline and reversed modes. No stylesheet rule — the layout is inline display/gap. Rows: gap → space-between → vertical centered → inline reversed."
     <|
         [ demoRow theme
             "dsp-005"
@@ -563,7 +563,7 @@ gridSection : Theme -> Element msg
 gridSection theme =
     section theme
         "Grid"
-        "A 24-column CSS grid (inline `display:grid`, no stylesheet rule); span/offset and the responsive collapse algorithm are caller-driven."
+        "A 24-column CSS grid (inline display:grid, no stylesheet rule). Items declare span and offset; cols/xGap/yGap set the tracks. The responsive collapse — overflow rows hidden behind a suffix '…' item — is a caller-driven option, not a media query. Rows: mixed spans on 12 tracks → a collapsed one-row grid."
     <|
         [ demoRow theme
             "dsp-009"
@@ -598,7 +598,7 @@ gridSection theme =
 
 qrCodeSection : Theme -> Element msg
 qrCodeSection theme =
-    section theme "QrCode" "QR codes, encoded by the ported Nayuki library and drawn as inline SVG." <|
+    section theme "QrCode" "Renders a QR code as inline SVG — encoding is the ported Nayuki library, so it is pure Elm with zero ports or assets. Value, size, colors, error-correction level and an optional center icon are all options. Rows: values & colors → size and error correction (incl. CJK text) → an icon-slot code." <|
         [ demoRow theme
             "dsp-011"
             "Values"
@@ -703,7 +703,7 @@ floatButtonSection : Theme -> Element msg
 floatButtonSection theme =
     section theme
         "Float Button"
-        "A floating action button (position and offsets are caller-owned)."
+        "A floating action button: circle or square, default or primary, with an optional description label and a click-triggered menu. Position and offsets are caller-owned, and showMenu is caller state — onUpdateShowMenu carries the toggle. Rows: shapes & types → description → menu resting and open → a live click-triggered menu."
         (floatButtonRows theme)
 
 
@@ -757,13 +757,13 @@ floatButtonLiveSection : Model -> Theme -> Element Msg
 floatButtonLiveSection model theme =
     section theme
         "Float Button"
-        "A floating action button (position and offsets are caller-owned)."
+        "A floating action button: circle or square, default or primary, with an optional description label and a click-triggered menu. Position and offsets are caller-owned, and showMenu is caller state — onUpdateShowMenu carries the toggle. Rows: shapes & types → description → menu resting and open → a live click-triggered menu."
         (floatButtonRows theme ++ [ floatButtonLiveRow model theme ])
 
 
 layoutSection : Model -> Theme -> Element Msg
 layoutSection model theme =
-    section theme "Layout" "App shell — header, sider, content and footer (the sider's collapsed state is caller-owned)." <|
+    section theme "Layout" "The app shell: header, sider, content and footer nest freely — a Layout can hold another Layout (hasSider) for the dashboard frame. The sider's collapsed state is caller-owned; its trigger fires onToggleCollapsed and you own the Bool. Rows: the basic shell with a live collapse trigger → a right-placed collapsed sider → an embedded shell." <|
         [ demoRow theme
             "dsp-018"
             "Basic (header · sider · content · footer)"
@@ -831,7 +831,7 @@ floatButtonGroupSection : Theme -> Element msg
 floatButtonGroupSection theme =
     section theme
         "Float Button Group"
-        "A group of float buttons (shape, position and offsets are caller-owned)."
+        "A vertical stack of float buttons sharing one shape and position: circle or square, default or primary, with optional description labels per button. Like FloatButton, position and offsets are caller-owned; the group has no channels of its own. Rows: a circle group → a square group."
     <|
         [ demoRow theme
             "dsp-021"
@@ -858,7 +858,7 @@ heatmapSection : Theme -> Element msg
 heatmapSection theme =
     section theme
         "Heatmap"
-        "GitHub-style contribution calendar: a real `table` of day rects coloured by `value / maxValue`, with week/month labels and a less/more indicator. Time is caller-owned (`zone`/`now`)."
+        "GitHub-style contribution calendar: a real table of day rects coloured by value/maxValue, with week/month labels and a less/more indicator. Loading, small sizes, custom palettes and leading-gap fill are options. Time is caller-owned — pass zone and now; there is no clock inside. Rows: default data → loading → small with a custom palette."
     <|
         [ demoRow theme
             "dsp-023"
@@ -915,7 +915,7 @@ descriptionsSection : Theme -> Element msg
 descriptionsSection theme =
     section theme
         "Descriptions"
-        "Labelled field/value tables. `span` and `column` pack the rows; the packer is the pure `Descriptions.layout`."
+        "Labelled field/value tables for detail pages. Items carry label, content and an optional span; column count and label placement (top/left) shape the pack, and bordered swaps to the outlined look. The packer is the pure Descriptions.layout. Rows: a titled table with a span-2 cell → bordered → left labels → four columns."
     <|
         [ demoRow theme
             "dsp-026"
@@ -965,7 +965,7 @@ scrollbarSection : Model -> Theme -> Element Msg
 scrollbarSection model theme =
     section theme
         "Scrollbar"
-        "A styled scroll container with custom rails. The port is CSS-only; the demo owns upstream's runtime — bars track the live container scroll and dragging a bar (or wheel-scrolling) moves it."
+        "A styled scroll container with custom rails. The port is CSS-only — bar geometry and drag are the caller's runtime: viewport snapshots size and place the thumbs, and dragging a bar or wheel-scrolling moves the container. Rows: a vertical-bar container → both rails x-scrollable → static placement fixtures."
     <|
         scrollbarRows model.scrollbar theme
 
@@ -1409,7 +1409,7 @@ watermarkSection : Theme -> Element msg
 watermarkSection theme =
     section theme
         "Watermark"
-        "Naive UI's watermark — the `div.n-watermark-container` (the `--selectable` / `--global-rotate` / `--fullscreen` modifiers; bare overlay when fullscreen without global rotation) wrapping the content plus the tiled `div.n-watermark` overlay (`background-size` tiling, the `cross` offset pair, the `max(142vh, 142vw)` rotated positioning, `z-index` handoff between the two nodes). The tile itself is upstream's canvas `toDataURL` seam, rebuilt purely: an SVG of the canvas dimensions — one `<text>` per line with the full font stack — base64-encoded in-library; `image` is referenced directly instead of re-rasterised. No `--n-*` vars — the theme's single `fontFamily` feeds the tile's font fallback."
+        "A tiled, rotated text watermark over the wrapped content: content sits in a container, a pointer-events-none tile layer covers it. Tile size, gaps, offsets, rotation, font stack and cross tiling are options; the tile is generated as an inline SVG data URL — no canvas. Rows: basic tile → two-line centered → font & debug → global 45° rotation."
     <|
         [ demoRow theme
             "dsp-033"
