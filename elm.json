@@ -1,6 +1,6 @@
 {
   "type": "package",
-  "name": "nca/elm-naive-ui",
+  "name": "titan/elm-naive-ui",
   "summary": "Naive UI components for Elm, built on elm-ui",
   "license": "MIT",
   "version": "1.0.0",
