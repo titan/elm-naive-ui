@@ -1,11 +1,4 @@
-module NUI.Icon exposing
-    ( Depth(..)
-    , Length(..)
-    , Options
-    , cssVarsFor
-    , defaults
-    , view
-    )
+module NUI.Icon exposing (Depth(..), Length(..), Options, cssVarsFor, defaults, view)
 
 {-| Naive UI's `Icon`, rebuilt on elm-ui.
 
@@ -32,6 +25,8 @@ only visible difference is `<i>`'s browser-default italic for text children.
 Upstream's `depth` also accepts the strings `'1'`–`'5'`; those select the same
 opacities, which `Depth` covers. Upstream's dev-only "don't wrap `n-icon`
 inside `n-icon`" warning is not reproduced.
+
+@docs Depth, Length, Options, cssVarsFor, defaults, view
 
 -}
 
@@ -61,6 +56,10 @@ type Length
     | Custom String
 
 
+{-| The icon options — Naive UI's props: the `depth` (theme colour at an
+opacity step), the `size` (a `font-size`, upstream's `size` prop), the `color`
+override, and `attributes`.
+-}
 type alias Options msg =
     { depth : Maybe Depth
     , size : Maybe Length
@@ -69,6 +68,9 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults: no depth, no size, no colour, no extra attributes
+(theme sizing only).
+-}
 defaults : Options msg
 defaults =
     { depth = Nothing
@@ -78,6 +80,10 @@ defaults =
     }
 
 
+{-| The `n-icon` element — a `role="img"` row carrying the `--depth` /
+`--color-transition` classes under a depth, the `--n-*` vars plus the
+optional inline `font-size` / `color`, and the glyph children verbatim.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     let
