@@ -1,44 +1,4 @@
-module NUI.Internal.DateTime exposing
-    ( Civil
-    , DateItem
-    , Granularity(..)
-    , MonthItem
-    , QuarterItem
-    , ValueTs(..)
-    , YearItem
-    , addDays
-    , addMonthsClamped
-    , addYearsClamped
-    , civilFromDays
-    , dateArray
-    , daysFromCivil
-    , daysInMonth
-    , extractRangeDefaultTime
-    , firstDayOfWeekToDateFns
-    , format
-    , getDefaultTime
-    , matchDate
-    , monthArray
-    , pluckValueFromRange
-    , quarterArray
-    , quarterOf
-    , setFields
-    , startOfDay
-    , startOfMonth
-    , startOfQuarter
-    , startOfSecond
-    , startOfWeek
-    , startOfWeekOn
-    , startOfYear
-    , strictParse
-    , toCivil
-    , toPosix
-    , toTimeFields
-    , weekNumber
-    , weekYear
-    , weekday
-    , yearArray
-    )
+module NUI.Internal.DateTime exposing (Civil, DateItem, Granularity(..), MonthItem, QuarterItem, ValueTs(..), YearItem, addDays, addMonthsClamped, addYearsClamped, civilFromDays, dateArray, daysFromCivil, daysInMonth, extractRangeDefaultTime, firstDayOfWeekToDateFns, format, getDefaultTime, matchDate, monthArray, pluckValueFromRange, quarterArray, quarterOf, setFields, startOfDay, startOfMonth, startOfQuarter, startOfSecond, startOfWeek, startOfWeekOn, startOfYear, strictParse, toCivil, toPosix, toTimeFields, weekNumber, weekYear, weekday, yearArray)
 
 {-| The pure date/time engine behind `NUI.DatePicker` and `NUI.TimePicker` —
 a port of Naive UI's `date-picker/src/utils.ts` plus the subset of date-fns v2
@@ -97,6 +57,8 @@ is always explicit: the zone-taking functions (`toCivil`, `toPosix`, `startOf*`,
     en-US date-fns locale default (`{ weekStartsOn: 0, firstWeekContainsDate: 1
     }`), with `weekStartsOn = 0` for the two format tokens `[oracle S2]`.
     `dateArray`'s week-span matching uses its own `startDay` as `weekStartsOn`.
+
+@docs Civil, DateItem, Granularity, MonthItem, QuarterItem, ValueTs, YearItem, addDays, addMonthsClamped, addYearsClamped, civilFromDays, dateArray, daysFromCivil, daysInMonth, extractRangeDefaultTime, firstDayOfWeekToDateFns, format, getDefaultTime, matchDate, monthArray, pluckValueFromRange, quarterArray, quarterOf, setFields, startOfDay, startOfMonth, startOfQuarter, startOfSecond, startOfWeek, startOfWeekOn, startOfYear, strictParse, toCivil, toPosix, toTimeFields, weekNumber, weekYear, weekday, yearArray
 
 -}
 

@@ -74,6 +74,8 @@ mismatch/EOF cases agree with jsdom.
 `nodes` is pure and deterministic; it folds characters rather than using
 regexes.
 
+@docs nodes
+
 -}
 
 import Char

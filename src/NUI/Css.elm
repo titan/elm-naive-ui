@@ -1,18 +1,13 @@
-module NUI.Css exposing
-    ( css
-    , element
-    , elementNode
-    , layout
-    , rootAttribute
-    )
+module NUI.Css exposing (css, element, elementNode, layout, rootAttribute)
 
-{-| Ships Naive UI's stylesheet and the scope marker it relies on.
+{-| Ships Naive UI's stylesheet and the scope marker it relies on — the bridge
+between this elm-ui port and Naive UI's own CSS.
 
-The CSS is generated from Naive UI's own cssr sources (see `tools/`) and embedded so
-the package is self-contained — no separate `.css` import needed. Every rule is
-scoped under `.nui-root`, so an ancestor element must carry the marker class.
-`layout` (drop-in for `Element.layout`) sets it for you, and `element` renders the
-stylesheet node.
+The CSS is generated from Naive UI's own cssr sources (see `tools/`) and
+embedded so the package is self-contained — no separate `.css` import
+needed. Every rule is scoped under `.nui-root`, so an ancestor element must
+carry the marker class. `layout` (drop-in for `Element.layout`) sets it for
+you, and `element` renders the stylesheet node:
 
     view model =
         NUI.Css.layout []
@@ -21,6 +16,12 @@ stylesheet node.
                 , NUI.Button.view theme NUI.Button.defaults [ Element.text "Hello" ]
                 ]
             )
+
+Call `element` (or inject `css` into a `<style>` of your own) exactly once
+per page: the stylesheet is large and constant, so `elementNode` is exposed
+for callers that memoize it (e.g. through `Html.Lazy.lazy`) — see its doc.
+
+@docs css, element, elementNode, layout, rootAttribute
 
 -}
 

@@ -1,13 +1,4 @@
-module NUI.Internal exposing
-    ( TransitionPhase(..)
-    , applyVarOverrides
-    , classIf
-    , classes
-    , cssVars
-    , isLeavePhase
-    , renderVars
-    , transitionClass
-    )
+module NUI.Internal exposing (TransitionPhase(..), transitionClass, isLeavePhase, classIf, classes, cssVars, renderVars, applyVarOverrides)
 
 {-| Small shared helpers used by every component.
 
@@ -19,6 +10,8 @@ Naive UI styles every component from two inputs:
     these as an inline `style` attribute; so do we.
 
 Both are attached to elm-ui elements via `Element.htmlAttribute`.
+
+@docs TransitionPhase, transitionClass, isLeavePhase, classIf, classes, cssVars, renderVars, applyVarOverrides
 
 -}
 
@@ -103,6 +96,9 @@ classIf cond c =
         []
 
 
+{-| Join class names into one `class` attribute —
+`classes ["n-card", "n-card--selectable"]`.
+-}
 classes : List String -> Attribute msg
 classes =
     Element.htmlAttribute << HA.class << String.join " "
@@ -120,6 +116,12 @@ cssVars vars =
     Element.htmlAttribute (HA.attribute "style" (renderVars vars))
 
 
+{-| Render a var list to the `style` attribute's value (the `k:v;k:v` string
+behind `cssVars`) — drops `initial` and empty values the same way, then joins
+with `;`. Exposed because several components pre-render the string to share
+one literal `style` attribute between element kinds (Card, Code,
+ColorPicker, DataTable, DatePicker …).
+-}
 renderVars : List ( String, String ) -> String
 renderVars vars =
     vars
