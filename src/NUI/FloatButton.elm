@@ -1,14 +1,4 @@
-module NUI.FloatButton exposing
-    ( Length(..)
-    , Options
-    , Position(..)
-    , Shape(..)
-    , Trigger(..)
-    , Type(..)
-    , cssVarsFor
-    , defaults
-    , view
-    )
+module NUI.FloatButton exposing (Length(..), Options, Position(..), Shape(..), Trigger(..), Type(..), cssVarsFor, defaults, view)
 
 {-| Naive UI's `FloatButton`, rebuilt on elm-ui.
 
@@ -30,6 +20,8 @@ Naive UI); `showMenu` is caller-owned too — the view emits the same classes an
 inline style upstream computes, and reports opening/closing through
 `onUpdateShowMenu` when `menuTrigger` is set. Upstream's group (`float-button-group`)
 injection and the menu's click-propagation guard are not reproduced.
+
+@docs Length, Options, Position, Shape, Trigger, Type, cssVarsFor, defaults, view
 
 -}
 
@@ -79,6 +71,12 @@ type Length
     | Custom String
 
 
+{-| The float-button options — Naive UI's props: `shape`, `type_`, the CSS
+`position` + `width`/`height` + `left`/`right`/`top`/`bottom` offsets,
+`menuTrigger` (mounting the `__close`/`__menu` slots and the open/close
+wiring), the caller-owned `showMenu` flag, the `description` slot, the `menu`
+children, `onUpdateShowMenu`, and `attributes`.
+-}
 type alias Options msg =
     { shape : Shape
     , type_ : Type
@@ -98,6 +96,10 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults: a 40×40 `fixed` circle of the default (non-primary)
+colour, no offsets, no menu (hence no trigger, `showMenu = False`, no
+description, no handler, no extra attributes).
+-}
 defaults : Options msg
 defaults =
     { shape = Circle
@@ -118,6 +120,13 @@ defaults =
     }
 
 
+{-| The `n-float-button` element — a `role="button"` row carrying the
+`--{shape}-shape` / `--{type}-type` modifiers (`--show-menu` when open), the
+`--n-*` vars plus inline `position`/size/offsets, the `__fill`/`__body` (your
+children + the `__description` slot), and — under a `menuTrigger` — the
+`__close` icon and the `__menu` slot, with `onUpdateShowMenu` wired to
+`Hover`'s enter/leave or `Click`'s toggle.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     let
