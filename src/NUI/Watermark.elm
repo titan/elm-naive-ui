@@ -258,13 +258,9 @@ watermarkStyle theme opts =
            ]
 
 
-{-| The container's inline declarations — just the `zIndex` that upstream
-moves off the overlay when global rotation and fullscreen combine.
--}
-
-
 {-| The container's inline declarations — just the `z-index` the fullscreen /
-global-rotate branch needs, empty otherwise (see the module DOM sketch).
+global-rotate branch needs (upstream moves it off the overlay there), empty
+otherwise.
 -}
 containerStyle : Options msg -> List ( String, String )
 containerStyle opts =
