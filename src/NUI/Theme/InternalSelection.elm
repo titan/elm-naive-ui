@@ -1,12 +1,35 @@
 module NUI.Theme.InternalSelection exposing (Vars, vars)
 
-{-| Naive UI internalSelection theme variables.
+{-| Theme variables for the **InternalSelection** component — the Elm counterpart of Naive UI's
+`src/InternalSelection/styles/light.ts` & `dark.ts` cssr theme (selfVars). InternalSelection renders with Naive UI's
+original CSS, so each record field here is emitted as one `--n-*` custom property on the
+component root, using the upstream kebab-case mapping (`paddingSingle` → `--n-padding-single`, `paddingMultiple` → `--n-padding-multiple`, …).
+
+`vars` plays the role of upstream `self(common)`: it switches on `theme.mode` (Light/Dark) and
+derives every value from `theme.common` (see `NUI.Theme.Common`), reproducing Naive UI's light
+and dark palettes value-for-value. Pass the result to InternalSelection's `view`, or override individual
+fields to customise the look.
+
+@docs Vars, vars
+
 -}
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)
 
 
+{-| All `--n-*` custom properties the InternalSelection CSS consumes, as one record. Fields map
+1:1 onto the component's `--n-<kebab-case-field>` custom properties (`paddingSingle` → `--n-padding-single`).
+
+Collected by concern:
+
+  - Warning/Error state colors: `borderWarning`, `borderHoverWarning`, `borderActiveWarning`, `borderFocusWarning`, `boxShadowHoverWarning`, `boxShadowActiveWarning`, `boxShadowFocusWarning`, `colorActiveWarning`, `caretColorWarning`, `borderError`, `borderHoverError`, `borderActiveError`, `borderFocusError`, `boxShadowHoverError`, `boxShadowActiveError`, `boxShadowFocusError`, `colorActiveError`, `caretColorError`
+  - metrics (paddings, sizes, fonts, radius): `paddingSingle`, `paddingMultiple`, `clearSize`, `arrowSize`, `fontSizeTiny`, `fontSizeSmall`, `fontSizeMedium`, `fontSizeLarge`, `heightTiny`, `heightSmall`, `heightMedium`, `heightLarge`, `borderRadius`, `fontWeight`
+  - text & placeholder colors: `textColor`, `textColorDisabled`, `placeholderColor`, `placeholderColorDisabled`
+  - state colors, borders, focus rings, arrow & loading: `color`, `colorDisabled`, `colorActive`, `border`, `borderHover`, `borderActive`, `borderFocus`, `boxShadowHover`, `boxShadowActive`, `boxShadowFocus`, `caretColor`, `arrowColor`, `arrowColorDisabled`, `loadingColor`
+  - clear button states: `clearColor`, `clearColorHover`, `clearColorPressed`
+
+-}
 type alias Vars =
     { paddingSingle : String
     , paddingMultiple : String
@@ -64,6 +87,9 @@ type alias Vars =
     }
 
 
+{-| Resolve the InternalSelection variables for a theme — upstream `self(common)`: Light and Dark
+modes each get their own palette, values drawn from `theme.common`.
+-}
 vars : Theme -> Vars
 vars theme =
     case theme.mode of

@@ -1,9 +1,32 @@
-module NUI.Theme.Common exposing (Common, dark, light)
+module NUI.Theme.Common exposing (Common, light, dark)
 
-{-| Naive UI common theme variables (exact values extracted from naive-ui).
+{-| The **common (shared) theme variables** every `NUI.Theme.*` component theme
+derives from — the Elm counterpart of Naive UI's `src/_styles/common/light.ts` &
+`dark.ts`. This is the single palette of fonts, font sizes, border radii, easing
+curves, base colours (primary/info/success/warning/error plus their hover,
+pressed and \*-suppl variants), text/action/close colours and the three elevation
+shadows.
+
+Every component resolver (`NUI.Theme.<Component>.vars`) reads its values from a
+`Common`, exactly like upstream's `self(common)` — so overriding one field here
+restyles every component at once. `NUI.Theme.light` / `NUI.Theme.dark` ship these
+same records bundled with a mode flag; prefer those unless you are building a
+theme from scratch.
+
+Values are extracted from Naive UI value-for-value; several fields (e.g.
+`primaryColor`) additionally feed `NUI.Theme.setPrimary`, which re-derives the
+whole palette from a custom brand colour the same way upstream's
+`compositeThemeVariables` does.
+
+@docs Common, light, dark
+
 -}
 
 
+{-| The shared variable record. Field names follow upstream's `commonVars` keys
+in kebab-case → camelCase (e.g. `cubicBezierEaseInOut`, `borderRadiusSmall`,
+`primaryColorHover`), each a ready-to-use CSS value string.
+-}
 type alias Common =
     { name : String
     , fontFamily : String
@@ -111,6 +134,9 @@ type alias Common =
     }
 
 
+{-| The Light-mode common palette — upstream `commonLight`, i.e. the values
+behind Naive UI's default (light) look.
+-}
 light : Common
 light =
     { name = "common"
@@ -219,6 +245,9 @@ light =
     }
 
 
+{-| The Dark-mode common palette — upstream `commonDark`: darker surfaces, the
+`*-suppl` accent variants, and adjusted text/close colours.
+-}
 dark : Common
 dark =
     { name = "common"

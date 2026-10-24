@@ -1,12 +1,35 @@
 module NUI.Theme.DataTable exposing (Vars, vars)
 
-{-| Naive UI data-table theme variables.
+{-| Theme variables for the **DataTable** component — the Elm counterpart of Naive UI's
+`src/DataTable/styles/light.ts` & `dark.ts` cssr theme (selfVars). DataTable renders with Naive UI's
+original CSS, so each record field here is emitted as one `--n-*` custom property on the
+component root, using the upstream kebab-case mapping (`thPaddingSmall` → `--n-th-padding-small`, `thPaddingMedium` → `--n-th-padding-medium`, …).
+
+`vars` plays the role of upstream `self(common)`: it switches on `theme.mode` (Light/Dark) and
+derives every value from `theme.common` (see `NUI.Theme.Common`), reproducing Naive UI's light
+and dark palettes value-for-value. Pass the result to DataTable's `view`, or override individual
+fields to customise the look.
+
+@docs Vars, vars
+
 -}
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)
 
 
+{-| All `--n-*` custom properties the DataTable CSS consumes, as one record. Fields map
+1:1 onto the component's `--n-<kebab-case-field>` custom properties (`thPaddingSmall` → `--n-th-padding-small`).
+
+Collected by concern:
+
+  - per-size cell paddings: `thPaddingSmall`, `thPaddingMedium`, `thPaddingLarge`, `tdPaddingSmall`, `tdPaddingMedium`, `tdPaddingLarge`
+  - control widget sizes & action chrome: `sorterSize`, `resizableContainerSize`, `resizableSize`, `filterSize`, `paginationMargin`, `emptyPadding`, `actionPadding`, `actionButtonMargin`, `actionDividerColor`
+  - loading: `loadingColor`, `loadingSize`, `opacityLoading`
+  - per-size fonts, line height & radius: `lineHeight`, `borderRadius`, `fontSizeSmall`, `fontSizeMedium`, `fontSizeLarge`, `thFontWeight`
+  - cell surfaces & borders incl. modal & popover: `borderColor`, `tdColorHover`, `tdColorSorting`, `tdColorStriped`, `thColor`, `thColorHover`, `thColorSorting`, `tdColor`, `tdTextColor`, `thTextColor`, `thButtonColorHover`, `thIconColor`, `thIconColorActive`, `borderColorModal`, `tdColorHoverModal`, `tdColorSortingModal`, `tdColorStripedModal`, `thColorModal`, `thColorHoverModal`, `thColorSortingModal`, `tdColorModal`, `borderColorPopover`, `tdColorHoverPopover`, `tdColorSortingPopover`, `tdColorStripedPopover`, `thColorPopover`, `thColorHoverPopover`, `thColorSortingPopover`, `tdColorPopover`, `boxShadowBefore`, `boxShadowAfter`
+
+-}
 type alias Vars =
     { thPaddingSmall : String
     , thPaddingMedium : String
@@ -66,6 +89,9 @@ type alias Vars =
     }
 
 
+{-| Resolve the DataTable variables for a theme — upstream `self(common)`: Light and Dark
+modes each get their own palette, values drawn from `theme.common`.
+-}
 vars : Theme -> Vars
 vars theme =
     case theme.mode of

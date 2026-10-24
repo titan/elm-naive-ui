@@ -1,12 +1,33 @@
 module NUI.Theme.Anchor exposing (Vars, vars)
 
-{-| Naive UI anchor theme variables.
+{-| Theme variables for the **Anchor** component — the Elm counterpart of Naive UI's
+`src/Anchor/styles/light.ts` & `dark.ts` cssr theme (selfVars). Anchor renders with Naive UI's
+original CSS, so each record field here is emitted as one `--n-*` custom property on the
+component root, using the upstream kebab-case mapping (`linkFontSize` → `--n-link-font-size`, `linkPadding` → `--n-link-padding`, …).
+
+`vars` plays the role of upstream `self(common)`: it switches on `theme.mode` (Light/Dark) and
+derives every value from `theme.common` (see `NUI.Theme.Common`), reproducing Naive UI's light
+and dark palettes value-for-value. Pass the result to Anchor's `view`, or override individual
+fields to customise the look.
+
+@docs Vars, vars
+
 -}
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)
 
 
+{-| All `--n-*` custom properties the Anchor CSS consumes, as one record. Fields map
+1:1 onto the component's `--n-<kebab-case-field>` custom properties (`linkFontSize` → `--n-link-font-size`).
+
+Collected by concern:
+
+  - link typography & padding: `linkFontSize`, `linkPadding`
+  - rail shape & color: `railWidth`, `borderRadius`, `railColor`, `railColorActive`, `linkColor`
+  - link text states: `linkTextColor`, `linkTextColorHover`, `linkTextColorPressed`, `linkTextColorActive`
+
+-}
 type alias Vars =
     { linkFontSize : String
     , linkPadding : String
@@ -22,6 +43,9 @@ type alias Vars =
     }
 
 
+{-| Resolve the Anchor variables for a theme — upstream `self(common)`: Light and Dark
+modes each get their own palette, values drawn from `theme.common`.
+-}
 vars : Theme -> Vars
 vars theme =
     case theme.mode of

@@ -1,12 +1,36 @@
 module NUI.Theme.Input exposing (Vars, vars)
 
-{-| Naive UI input theme variables.
+{-| Theme variables for the **Input** component — the Elm counterpart of Naive UI's
+`src/Input/styles/light.ts` & `dark.ts` cssr theme (selfVars). Input renders with Naive UI's
+original CSS, so each record field here is emitted as one `--n-*` custom property on the
+component root, using the upstream kebab-case mapping (`paddingTiny` → `--n-padding-tiny`, `paddingSmall` → `--n-padding-small`, …).
+
+`vars` plays the role of upstream `self(common)`: it switches on `theme.mode` (Light/Dark) and
+derives every value from `theme.common` (see `NUI.Theme.Common`), reproducing Naive UI's light
+and dark palettes value-for-value. Pass the result to Input's `view`, or override individual
+fields to customise the look.
+
+@docs Vars, vars
+
 -}
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)
 
 
+{-| All `--n-*` custom properties the Input CSS consumes, as one record. Fields map
+1:1 onto the component's `--n-<kebab-case-field>` custom properties (`paddingTiny` → `--n-padding-tiny`).
+
+Collected by concern:
+
+  - Warning/Error state colors: `loadingColorWarning`, `borderWarning`, `borderHoverWarning`, `colorFocusWarning`, `borderFocusWarning`, `boxShadowFocusWarning`, `caretColorWarning`, `loadingColorError`, `borderError`, `borderHoverError`, `colorFocusError`, `borderFocusError`, `boxShadowFocusError`, `caretColorError`
+  - clear button states: `clearColor`, `clearColorHover`, `clearColorPressed`
+  - icon & suffix colors: `iconColor`, `iconColorDisabled`, `iconColorHover`, `iconColorPressed`, `suffixTextColor`
+  - loading spinners: `loadingColor`
+  - per-size paddings & metrics: `paddingTiny`, `paddingSmall`, `paddingMedium`, `paddingLarge`, `clearSize`, `heightTiny`, `heightSmall`, `heightMedium`, `heightLarge`, `fontSizeTiny`, `fontSizeSmall`, `fontSizeMedium`, `fontSizeLarge`, `lineHeightTextarea`
+  - base text, placeholder, surfaces, borders & focus ring: `fontWeight`, `countTextColorDisabled`, `countTextColor`, `lineHeight`, `borderRadius`, `iconSize`, `groupLabelColor`, `groupLabelTextColor`, `textColor`, `textColorDisabled`, `textDecorationColor`, `caretColor`, `placeholderColor`, `placeholderColorDisabled`, `color`, `colorHover`, `colorDisabled`, `colorFocus`, `groupLabelBorder`, `border`, `borderHover`, `borderDisabled`, `borderFocus`, `boxShadowFocus`
+
+-}
 type alias Vars =
     { paddingTiny : String
     , paddingSmall : String
@@ -72,6 +96,9 @@ type alias Vars =
     }
 
 
+{-| Resolve the Input variables for a theme — upstream `self(common)`: Light and Dark
+modes each get their own palette, values drawn from `theme.common`.
+-}
 vars : Theme -> Vars
 vars theme =
     case theme.mode of

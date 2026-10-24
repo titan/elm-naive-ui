@@ -1,12 +1,35 @@
 module NUI.Theme.Heatmap exposing (Vars, vars)
 
-{-| Naive UI heatmap theme variables.
+{-| Theme variables for the **Heatmap** component — the Elm counterpart of Naive UI's
+`src/Heatmap/styles/light.ts` & `dark.ts` cssr theme (selfVars). Heatmap renders with Naive UI's
+original CSS, so each record field here is emitted as one `--n-*` custom property on the
+component root, using the upstream kebab-case mapping (`activeColors` → `--n-active-colors`, `borderRadius` → `--n-border-radius`, …).
+
+`vars` plays the role of upstream `self(common)`: it switches on `theme.mode` (Light/Dark) and
+derives every value from `theme.common` (see `NUI.Theme.Common`), reproducing Naive UI's light
+and dark palettes value-for-value. Pass the result to Heatmap's `view`, or override individual
+fields to customise the look.
+
+@docs Vars, vars
+
 -}
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)
 
 
+{-| All `--n-*` custom properties the Heatmap CSS consumes, as one record. Fields map
+1:1 onto the component's `--n-<kebab-case-field>` custom properties (`activeColors` → `--n-active-colors`).
+
+Collected by concern:
+
+  - palette (min + per-level active colors): `activeColors`, `mininumColor`
+  - cell shape: `borderRadius`, `rectSizeSmall`, `rectSizeMedium`, `rectSizeLarge`, `borderRadiusSmall`, `borderRadiusMedium`, `borderRadiusLarge`
+  - grid gaps per size: `xGapSmall`, `xGapMedium`, `xGapLarge`, `yGapSmall`, `yGapMedium`, `yGapLarge`
+  - typography, borders & per-size fonts: `borderColor`, `textColor`, `fontWeight`, `fontSizeSmall`, `fontSizeMedium`, `fontSizeLarge`
+  - loading gradient: `loadingColorStart`, `loadingColorEnd`
+
+-}
 type alias Vars =
     { activeColors : List String
     , borderRadius : String
@@ -34,6 +57,9 @@ type alias Vars =
     }
 
 
+{-| Resolve the Heatmap variables for a theme — upstream `self(common)`: Light and Dark
+modes each get their own palette, values drawn from `theme.common`.
+-}
 vars : Theme -> Vars
 vars theme =
     case theme.mode of

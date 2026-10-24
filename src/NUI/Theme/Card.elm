@@ -1,12 +1,34 @@
 module NUI.Theme.Card exposing (Vars, vars)
 
-{-| Naive UI card theme variables.
+{-| Theme variables for the **Card** component — the Elm counterpart of Naive UI's
+`src/Card/styles/light.ts` & `dark.ts` cssr theme (selfVars). Card renders with Naive UI's
+original CSS, so each record field here is emitted as one `--n-*` custom property on the
+component root, using the upstream kebab-case mapping (`paddingSmall` → `--n-padding-small`, `paddingMedium` → `--n-padding-medium`, …).
+
+`vars` plays the role of upstream `self(common)`: it switches on `theme.mode` (Light/Dark) and
+derives every value from `theme.common` (see `NUI.Theme.Common`), reproducing Naive UI's light
+and dark palettes value-for-value. Pass the result to Card's `view`, or override individual
+fields to customise the look.
+
+@docs Vars, vars
+
 -}
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)
 
 
+{-| All `--n-*` custom properties the Card CSS consumes, as one record. Fields map
+1:1 onto the component's `--n-<kebab-case-field>` custom properties (`paddingSmall` → `--n-padding-small`).
+
+Collected by concern:
+
+  - close-button metrics & states: `closeIconSize`, `closeSize`, `closeColorHover`, `closeColorPressed`, `closeBorderRadius`, `closeIconColor`, `closeIconColorHover`, `closeIconColorPressed`
+  - per-size paddings & title/body font sizes: `paddingSmall`, `paddingMedium`, `paddingLarge`, `paddingHuge`, `titleFontSizeSmall`, `titleFontSizeMedium`, `titleFontSizeLarge`, `titleFontSizeHuge`, `fontSizeSmall`, `fontSizeMedium`, `fontSizeLarge`, `fontSizeHuge`
+  - surfaces (base/modal/popover/embedded) & elevation: `lineHeight`, `color`, `colorModal`, `colorPopover`, `colorTarget`, `colorEmbedded`, `colorEmbeddedModal`, `colorEmbeddedPopover`, `borderColor`, `actionColor`, `boxShadow`, `borderRadius`
+  - text colors: `textColor`, `titleTextColor`, `titleFontWeight`
+
+-}
 type alias Vars =
     { paddingSmall : String
     , paddingMedium : String
@@ -46,6 +68,9 @@ type alias Vars =
     }
 
 
+{-| Resolve the Card variables for a theme — upstream `self(common)`: Light and Dark
+modes each get their own palette, values drawn from `theme.common`.
+-}
 vars : Theme -> Vars
 vars theme =
     case theme.mode of

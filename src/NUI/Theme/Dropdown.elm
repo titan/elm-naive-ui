@@ -1,12 +1,34 @@
 module NUI.Theme.Dropdown exposing (Vars, vars)
 
-{-| Naive UI dropdown theme variables.
+{-| Theme variables for the **Dropdown** component — the Elm counterpart of Naive UI's
+`src/Dropdown/styles/light.ts` & `dark.ts` cssr theme (selfVars). Dropdown renders with Naive UI's
+original CSS, so each record field here is emitted as one `--n-*` custom property on the
+component root, using the upstream kebab-case mapping (`padding` → `--n-padding`, `optionIconSizeSmall` → `--n-option-icon-size-small`, …).
+
+`vars` plays the role of upstream `self(common)`: it switches on `theme.mode` (Light/Dark) and
+derives every value from `theme.common` (see `NUI.Theme.Common`), reproducing Naive UI's light
+and dark palettes value-for-value. Pass the result to Dropdown's `view`, or override individual
+fields to customise the look.
+
+@docs Vars, vars
+
 -}
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)
 
 
+{-| All `--n-*` custom properties the Dropdown CSS consumes, as one record. Fields map
+1:1 onto the component's `--n-<kebab-case-field>` custom properties (`padding` → `--n-padding`).
+
+Collected by concern:
+
+  - inverted variants: `optionTextColorInverted`, `optionTextColorHoverInverted`, `optionTextColorActiveInverted`, `optionTextColorChildActiveInverted`, `colorInverted`, `dividerColorInverted`, `suffixColorInverted`, `prefixColorInverted`, `optionColorHoverInverted`, `optionColorActiveInverted`, `groupHeaderTextColorInverted`
+  - menu padding & per-size option metrics: `padding`, `optionIconSizeSmall`, `optionIconSizeMedium`, `optionIconSizeLarge`, `optionIconSizeHuge`, `optionSuffixWidthSmall`, `optionSuffixWidthMedium`, `optionSuffixWidthLarge`, `optionSuffixWidthHuge`, `optionIconSuffixWidthSmall`, `optionIconSuffixWidthMedium`, `optionIconSuffixWidthLarge`, `optionIconSuffixWidthHuge`, `optionPrefixWidthSmall`, `optionPrefixWidthMedium`, `optionPrefixWidthLarge`, `optionPrefixWidthHuge`, `optionIconPrefixWidthSmall`, `optionIconPrefixWidthMedium`, `optionIconPrefixWidthLarge`, `optionIconPrefixWidthHuge`, `optionHeightSmall`, `optionHeightMedium`, `optionHeightLarge`, `optionHeightHuge`, `borderRadius`, `fontSizeSmall`, `fontSizeMedium`, `fontSizeLarge`, `fontSizeHuge`
+  - option text states: `optionTextColor`, `optionTextColorHover`, `optionTextColorActive`, `optionTextColorChildActive`
+  - surfaces, dividers & disabled opacity: `color`, `dividerColor`, `suffixColor`, `prefixColor`, `optionColorHover`, `optionColorActive`, `groupHeaderTextColor`, `optionOpacityDisabled`
+
+-}
 type alias Vars =
     { padding : String
     , optionIconSizeSmall : String
@@ -64,6 +86,9 @@ type alias Vars =
     }
 
 
+{-| Resolve the Dropdown variables for a theme — upstream `self(common)`: Light and Dark
+modes each get their own palette, values drawn from `theme.common`.
+-}
 vars : Theme -> Vars
 vars theme =
     case theme.mode of

@@ -1,12 +1,36 @@
 module NUI.Theme.DatePicker exposing (Vars, vars)
 
-{-| Naive UI date-picker theme variables.
+{-| Theme variables for the **DatePicker** component — the Elm counterpart of Naive UI's
+`src/DatePicker/styles/light.ts` & `dark.ts` cssr theme (selfVars). DatePicker renders with Naive UI's
+original CSS, so each record field here is emitted as one `--n-*` custom property on the
+component root, using the upstream kebab-case mapping (`itemSize` → `--n-item-size`, `itemCellWidth` → `--n-item-cell-width`, …).
+
+`vars` plays the role of upstream `self(common)`: it switches on `theme.mode` (Light/Dark) and
+derives every value from `theme.common` (see `NUI.Theme.Common`), reproducing Naive UI's light
+and dark palettes value-for-value. Pass the result to DatePicker's `view`, or override individual
+fields to customise the look.
+
+@docs Vars, vars
+
 -}
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)
 
 
+{-| All `--n-*` custom properties the DatePicker CSS consumes, as one record. Fields map
+1:1 onto the component's `--n-<kebab-case-field>` custom properties (`itemSize` → `--n-item-size`).
+
+Collected by concern:
+
+  - calendar geometry: `itemSize`, `itemCellWidth`, `itemCellHeight`, `scrollItemWidth`, `scrollItemHeight`, `itemFontSize`, `itemBorderRadius`, `scrollItemBorderRadius`
+  - panel paddings (extra footer/action/header) & chrome: `panelExtraFooterPadding`, `panelActionPadding`, `calendarTitlePadding`, `calendarTitleHeight`, `arrowSize`, `panelHeaderPadding`, `calendarDaysHeight`, `panelBorderRadius`, `calendarTitleFontWeight`
+  - date-panel left/right padding grid templates: `calendarLeftPaddingDate`, `calendarLeftPaddingDatetime`, `calendarLeftPaddingDaterange`, `calendarLeftPaddingDatetimerange`, `calendarLeftPaddingMonth`, `calendarLeftPaddingYear`, `calendarLeftPaddingQuarter`, `calendarLeftPaddingMonthrange`, `calendarLeftPaddingQuarterrange`, `calendarLeftPaddingYearrange`, `calendarLeftPaddingWeek`, `calendarRightPaddingDate`, `calendarRightPaddingDatetime`, `calendarRightPaddingDaterange`, `calendarRightPaddingDatetimerange`, `calendarRightPaddingMonth`, `calendarRightPaddingYear`, `calendarRightPaddingQuarter`, `calendarRightPaddingMonthrange`, `calendarRightPaddingQuarterrange`, `calendarRightPaddingYearrange`, `calendarRightPaddingWeek`
+  - title grid template: `calendarTitleGridTempateColumns`
+  - calendar text: `calendarDaysFontSize`, `calendarTitleFontSize`, `itemTextColor`, `itemTextColorDisabled`, `itemTextColorActive`, `itemTextColorCurrent`, `panelTextColor`, `arrowColor`, `calendarTitleTextColor`, `calendarDaysTextColor`, `iconColor`, `iconColorDisabled`
+  - day/item surfaces & dividers: `itemColorIncluded`, `itemColorHover`, `itemColorDisabled`, `itemColorActive`, `panelColor`, `calendarTitleColorHover`, `panelHeaderDividerColor`, `calendarDaysDividerColor`, `calendarDividerColor`, `panelActionDividerColor`, `panelBoxShadow`
+
+-}
 type alias Vars =
     { itemSize : String
     , itemCellWidth : String
@@ -74,6 +98,9 @@ type alias Vars =
     }
 
 
+{-| Resolve the DatePicker variables for a theme — upstream `self(common)`: Light and Dark
+modes each get their own palette, values drawn from `theme.common`.
+-}
 vars : Theme -> Vars
 vars theme =
     case theme.mode of

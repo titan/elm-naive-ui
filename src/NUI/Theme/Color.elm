@@ -1,18 +1,22 @@
-module NUI.Theme.Color exposing
-    ( Rgba
-    , changeColor
-    , composite
-    , createHoverColor
-    , createPressedColor
-    , parse
-    , toCss
-    )
+module NUI.Theme.Color exposing (Rgba, parse, toCss, composite, changeColor, createHoverColor, createPressedColor)
 
-{-| Minimal colour maths ported from `seemly` (the library Naive UI uses), so that
-runtime colour derivations match Naive UI exactly.
+{-| Minimal colour maths ported from [`seemly`](https://github.com/07akiron/seemly) — the
+library Naive UI itself uses for colour derivation — so that this port's runtime hover/
+pressed/composite colours match Naive UI's byte-for-byte.
+
+Every `NUI.Theme.*` resolver leans on this module: `createHoverColor` and
+`createPressedColor` reproduce upstream's `createHoverColor`/`createPressedColor`
+helpers that most component themes call on the shared palette, and `changeColor`
+mirrors `seemly.changeColor` for alpha swaps.
+
+@docs Rgba, parse, toCss, composite, changeColor, createHoverColor, createPressedColor
+
 -}
 
 
+{-| An RGBA colour. Channels `r`/`g`/`b` are 0–255, alpha `a` is 0–1 — same ranges
+`seemly` uses, so ports of its arithmetic stay exact.
+-}
 type alias Rgba =
     { r : Float
     , g : Float
@@ -21,7 +25,9 @@ type alias Rgba =
     }
 
 
-{-| Parse `#rgb`, `#rrggbb`, `rgb(r, g, b)` and `rgba(r, g, b, a)`.
+{-| Parse `#rgb`, `#rrggbb`, `rgb(r, g, b)` and `rgba(r, g, b, a)` into an `Rgba`.
+Whitespace and letter case are tolerated; anything else yields `Nothing` (callers
+fall back to the input string, so an unparseable value never breaks rendering).
 -}
 parse : String -> Maybe Rgba
 parse raw =
@@ -159,6 +165,9 @@ formatFloat x =
         String.fromFloat x
 
 
+{-| Render an `Rgba` back to a CSS `rgba(r, g, b, a)` string (alpha rounded to 3
+decimals) — the exact string form Naive UI emits, e.g. `rgba(56, 137, 197, 0.25)`.
+-}
 toCss : Rgba -> String
 toCss { r, g, b, a } =
     "rgba("
@@ -172,7 +181,9 @@ toCss { r, g, b, a } =
         ++ ")"
 
 
-{-| Composite `top` over `bottom` (seemly's `composite`).
+{-| Alpha-composite `top` over `bottom` (seemly's `composite`, source-over blend).
+Used to derive hover/pressed tints and to flatten translucent colours the way
+Naive UI does when mixing surfaces.
 -}
 composite : Rgba -> Rgba -> Rgba
 composite bottom top =
@@ -194,7 +205,9 @@ composite bottom top =
     }
 
 
-{-| `seemly.changeColor(color, { alpha })`.
+{-| `seemly.changeColor(color, { alpha })` — keep a colour's RGB channels and swap
+its alpha, as a `String -> Float -> String` convenience. Unparseable input is
+returned unchanged.
 -}
 changeColor : String -> Float -> String
 changeColor color alpha =
@@ -206,6 +219,10 @@ changeColor color alpha =
             color
 
 
+{-| Composite 16% white over the input — upstream's `createHoverColor`, used by
+most component themes to derive a hover tint from a palette colour. Unparseable
+input is returned unchanged.
+-}
 createHoverColor : String -> String
 createHoverColor raw =
     case parse raw of
@@ -216,6 +233,10 @@ createHoverColor raw =
             raw
 
 
+{-| Composite 12% black over the input — upstream's `createPressedColor`, the
+pressed-state counterpart of `createHoverColor`. Unparseable input is returned
+unchanged.
+-}
 createPressedColor : String -> String
 createPressedColor raw =
     case parse raw of

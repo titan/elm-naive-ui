@@ -1,12 +1,34 @@
 module NUI.Theme.Alert exposing (Vars, vars)
 
-{-| Naive UI alert theme variables.
+{-| Theme variables for the **Alert** component — the Elm counterpart of Naive UI's
+`src/Alert/styles/light.ts` & `dark.ts` cssr theme (selfVars). Alert renders with Naive UI's
+original CSS, so each record field here is emitted as one `--n-*` custom property on the
+component root, using the upstream kebab-case mapping (`iconMargin` → `--n-icon-margin`, `iconMarginRtl` → `--n-icon-margin-rtl`, …).
+
+`vars` plays the role of upstream `self(common)`: it switches on `theme.mode` (Light/Dark) and
+derives every value from `theme.common` (see `NUI.Theme.Common`), reproducing Naive UI's light
+and dark palettes value-for-value. Pass the result to Alert's `view`, or override individual
+fields to customise the look.
+
+@docs Vars, vars
+
 -}
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)
 
 
+{-| All `--n-*` custom properties the Alert CSS consumes, as one record. Fields map
+1:1 onto the component's `--n-<kebab-case-field>` custom properties (`iconMargin` → `--n-icon-margin`).
+
+Collected by concern:
+
+  - icon/close layout: `iconMargin`, `iconMarginRtl`, `iconSize`, `closeIconSize`, `closeSize`, `closeMargin`, `closeMarginRtl`, `padding`
+  - typography & shape: `fontSize`, `lineHeight`, `titleFontWeight`, `borderRadius`
+  - neutral look: `border`, `color`, `titleTextColor`, `iconColor`, `contentTextColor`, `closeBorderRadius`, `closeColorHover`, `closeColorPressed`, `closeIconColor`, `closeIconColorHover`, `closeIconColorPressed`
+  - typed variants (Info/Success/Warning/Error): `borderInfo`, `colorInfo`, `titleTextColorInfo`, `iconColorInfo`, `contentTextColorInfo`, `closeColorHoverInfo`, `closeColorPressedInfo`, `closeIconColorInfo`, `closeIconColorHoverInfo`, `closeIconColorPressedInfo`, `borderSuccess`, `colorSuccess`, `titleTextColorSuccess`, `iconColorSuccess`, `contentTextColorSuccess`, `closeColorHoverSuccess`, `closeColorPressedSuccess`, `closeIconColorSuccess`, `closeIconColorHoverSuccess`, `closeIconColorPressedSuccess`, `borderWarning`, `colorWarning`, `titleTextColorWarning`, `iconColorWarning`, `contentTextColorWarning`, `closeColorHoverWarning`, `closeColorPressedWarning`, `closeIconColorWarning`, `closeIconColorHoverWarning`, `closeIconColorPressedWarning`, `borderError`, `colorError`, `titleTextColorError`, `iconColorError`, `contentTextColorError`, `closeColorHoverError`, `closeColorPressedError`, `closeIconColorError`, `closeIconColorHoverError`, `closeIconColorPressedError`
+
+-}
 type alias Vars =
     { iconMargin : String
     , iconMarginRtl : String
@@ -74,6 +96,9 @@ type alias Vars =
     }
 
 
+{-| Resolve the Alert variables for a theme — upstream `self(common)`: Light and Dark
+modes each get their own palette, values drawn from `theme.common`.
+-}
 vars : Theme -> Vars
 vars theme =
     case theme.mode of

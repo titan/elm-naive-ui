@@ -1,12 +1,33 @@
 module NUI.Theme.Cascader exposing (Vars, vars)
 
-{-| Naive UI cascader theme variables.
+{-| Theme variables for the **Cascader** component — the Elm counterpart of Naive UI's
+`src/Cascader/styles/light.ts` & `dark.ts` cssr theme (selfVars). Cascader renders with Naive UI's
+original CSS, so each record field here is emitted as one `--n-*` custom property on the
+component root, using the upstream kebab-case mapping (`menuBorderRadius` → `--n-menu-border-radius`, `menuColor` → `--n-menu-color`, …).
+
+`vars` plays the role of upstream `self(common)`: it switches on `theme.mode` (Light/Dark) and
+derives every value from `theme.common` (see `NUI.Theme.Common`), reproducing Naive UI's light
+and dark palettes value-for-value. Pass the result to Cascader's `view`, or override individual
+fields to customise the look.
+
+@docs Vars, vars
+
 -}
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)
 
 
+{-| All `--n-*` custom properties the Cascader CSS consumes, as one record. Fields map
+1:1 onto the component's `--n-<kebab-case-field>` custom properties (`menuBorderRadius` → `--n-menu-border-radius`).
+
+Collected by concern:
+
+  - menu chrome: `menuBorderRadius`, `menuColor`, `menuBoxShadow`, `menuDividerColor`, `menuHeight`
+  - option text states: `optionTextColor`, `optionTextColorActive`, `optionTextColorDisabled`
+  - option metrics, check-mark & loading: `optionArrowColor`, `optionHeight`, `optionFontSize`, `optionColorHover`, `optionCheckMarkColor`, `loadingColor`, `columnWidth`
+
+-}
 type alias Vars =
     { menuBorderRadius : String
     , menuColor : String
@@ -26,6 +47,9 @@ type alias Vars =
     }
 
 
+{-| Resolve the Cascader variables for a theme — upstream `self(common)`: Light and Dark
+modes each get their own palette, values drawn from `theme.common`.
+-}
 vars : Theme -> Vars
 vars theme =
     case theme.mode of

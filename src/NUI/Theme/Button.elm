@@ -1,12 +1,36 @@
 module NUI.Theme.Button exposing (Vars, vars)
 
-{-| Naive UI button theme variables.
+{-| Theme variables for the **Button** component — the Elm counterpart of Naive UI's
+`src/Button/styles/light.ts` & `dark.ts` cssr theme (selfVars). Button renders with Naive UI's
+original CSS, so each record field here is emitted as one `--n-*` custom property on the
+component root, using the upstream kebab-case mapping (`paddingTiny` → `--n-padding-tiny`, `paddingSmall` → `--n-padding-small`, …).
+
+`vars` plays the role of upstream `self(common)`: it switches on `theme.mode` (Light/Dark) and
+derives every value from `theme.common` (see `NUI.Theme.Common`), reproducing Naive UI's light
+and dark palettes value-for-value. Pass the result to Button's `view`, or override individual
+fields to customise the look.
+
+@docs Vars, vars
+
 -}
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)
 
 
+{-| All `--n-*` custom properties the Button CSS consumes, as one record. Fields map
+1:1 onto the component's `--n-<kebab-case-field>` custom properties (`paddingTiny` → `--n-padding-tiny`).
+
+Collected by concern:
+
+  - typed variants (Primary/Info/Success/Warning/Error): `colorPrimary`, `colorHoverPrimary`, `colorPressedPrimary`, `colorFocusPrimary`, `colorDisabledPrimary`, `textColorPrimary`, `textColorHoverPrimary`, `textColorPressedPrimary`, `textColorFocusPrimary`, `textColorDisabledPrimary`, `textColorTextPrimary`, `textColorTextHoverPrimary`, `textColorTextPressedPrimary`, `textColorTextFocusPrimary`, `textColorTextDisabledPrimary`, `textColorGhostPrimary`, `textColorGhostHoverPrimary`, `textColorGhostPressedPrimary`, `textColorGhostFocusPrimary`, `textColorGhostDisabledPrimary`, `borderPrimary`, `borderHoverPrimary`, `borderPressedPrimary`, `borderFocusPrimary`, `borderDisabledPrimary`, `rippleColorPrimary`, `colorInfo`, `colorHoverInfo`, `colorPressedInfo`, `colorFocusInfo`, `colorDisabledInfo`, `textColorInfo`, `textColorHoverInfo`, `textColorPressedInfo`, `textColorFocusInfo`, `textColorDisabledInfo`, `textColorTextInfo`, `textColorTextHoverInfo`, `textColorTextPressedInfo`, `textColorTextFocusInfo`, `textColorTextDisabledInfo`, `textColorGhostInfo`, `textColorGhostHoverInfo`, `textColorGhostPressedInfo`, `textColorGhostFocusInfo`, `textColorGhostDisabledInfo`, `borderInfo`, `borderHoverInfo`, `borderPressedInfo`, `borderFocusInfo`, `borderDisabledInfo`, `rippleColorInfo`, `colorSuccess`, `colorHoverSuccess`, `colorPressedSuccess`, `colorFocusSuccess`, `colorDisabledSuccess`, `textColorSuccess`, `textColorHoverSuccess`, `textColorPressedSuccess`, `textColorFocusSuccess`, `textColorDisabledSuccess`, `textColorTextSuccess`, `textColorTextHoverSuccess`, `textColorTextPressedSuccess`, `textColorTextFocusSuccess`, `textColorTextDisabledSuccess`, `textColorGhostSuccess`, `textColorGhostHoverSuccess`, `textColorGhostPressedSuccess`, `textColorGhostFocusSuccess`, `textColorGhostDisabledSuccess`, `borderSuccess`, `borderHoverSuccess`, `borderPressedSuccess`, `borderFocusSuccess`, `borderDisabledSuccess`, `rippleColorSuccess`, `colorWarning`, `colorHoverWarning`, `colorPressedWarning`, `colorFocusWarning`, `colorDisabledWarning`, `textColorWarning`, `textColorHoverWarning`, `textColorPressedWarning`, `textColorFocusWarning`, `textColorDisabledWarning`, `textColorTextWarning`, `textColorTextHoverWarning`, `textColorTextPressedWarning`, `textColorTextFocusWarning`, `textColorTextDisabledWarning`, `textColorGhostWarning`, `textColorGhostHoverWarning`, `textColorGhostPressedWarning`, `textColorGhostFocusWarning`, `textColorGhostDisabledWarning`, `borderWarning`, `borderHoverWarning`, `borderPressedWarning`, `borderFocusWarning`, `borderDisabledWarning`, `rippleColorWarning`, `colorError`, `colorHoverError`, `colorPressedError`, `colorFocusError`, `colorDisabledError`, `textColorError`, `textColorHoverError`, `textColorPressedError`, `textColorFocusError`, `textColorDisabledError`, `textColorTextError`, `textColorTextHoverError`, `textColorTextPressedError`, `textColorTextFocusError`, `textColorTextDisabledError`, `textColorGhostError`, `textColorGhostHoverError`, `textColorGhostPressedError`, `textColorGhostFocusError`, `textColorGhostDisabledError`, `borderError`, `borderHoverError`, `borderPressedError`, `borderFocusError`, `borderDisabledError`, `rippleColorError`
+  - per-size paddings (flat & round): `paddingTiny`, `paddingSmall`, `paddingMedium`, `paddingLarge`, `paddingRoundTiny`, `paddingRoundSmall`, `paddingRoundMedium`, `paddingRoundLarge`
+  - per-size icon metrics: `iconMarginTiny`, `iconMarginSmall`, `iconMarginMedium`, `iconMarginLarge`, `iconSizeTiny`, `iconSizeSmall`, `iconSizeMedium`, `iconSizeLarge`
+  - per-size height/radius/font: `heightTiny`, `heightSmall`, `heightMedium`, `heightLarge`, `borderRadiusTiny`, `borderRadiusSmall`, `borderRadiusMedium`, `borderRadiusLarge`, `fontSizeTiny`, `fontSizeSmall`, `fontSizeMedium`, `fontSizeLarge`
+  - secondary/tertiary/quaternary opacities & derived fills: `rippleDuration`, `opacityDisabled`, `colorOpacitySecondary`, `colorOpacitySecondaryHover`, `colorOpacitySecondaryPressed`, `colorSecondary`, `colorSecondaryHover`, `colorSecondaryPressed`, `colorTertiary`, `colorTertiaryHover`, `colorTertiaryPressed`, `colorQuaternary`, `colorQuaternaryHover`, `colorQuaternaryPressed`, `waveOpacity`, `fontWeight`, `fontWeightStrong`
+  - default-type colors, text, borders & ripple: `color`, `colorHover`, `colorPressed`, `colorFocus`, `colorDisabled`, `textColor`, `textColorTertiary`, `textColorHover`, `textColorPressed`, `textColorFocus`, `textColorDisabled`, `textColorText`, `textColorTextHover`, `textColorTextPressed`, `textColorTextFocus`, `textColorTextDisabled`, `textColorGhost`, `textColorGhostHover`, `textColorGhostPressed`, `textColorGhostFocus`, `textColorGhostDisabled`, `border`, `borderHover`, `borderPressed`, `borderFocus`, `borderDisabled`, `rippleColor`
+
+-}
 type alias Vars =
     { paddingTiny : String
     , paddingSmall : String
@@ -213,6 +237,9 @@ type alias Vars =
     }
 
 
+{-| Resolve the Button variables for a theme — upstream `self(common)`: Light and Dark
+modes each get their own palette, values drawn from `theme.common`.
+-}
 vars : Theme -> Vars
 vars theme =
     case theme.mode of

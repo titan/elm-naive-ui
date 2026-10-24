@@ -1,12 +1,33 @@
 module NUI.Theme.Code exposing (Vars, vars)
 
-{-| Naive UI code theme variables.
+{-| Theme variables for the **Code** component — the Elm counterpart of Naive UI's
+`src/Code/styles/light.ts` & `dark.ts` cssr theme (selfVars). Code renders with Naive UI's
+original CSS, so each record field here is emitted as one `--n-*` custom property on the
+component root, using the upstream kebab-case mapping (`textColor` → `--n-text-color`, `fontSize` → `--n-font-size`, …).
+
+`vars` plays the role of upstream `self(common)`: it switches on `theme.mode` (Light/Dark) and
+derives every value from `theme.common` (see `NUI.Theme.Common`), reproducing Naive UI's light
+and dark palettes value-for-value. Pass the result to Code's `view`, or override individual
+fields to customise the look.
+
+@docs Vars, vars
+
 -}
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)
 
 
+{-| All `--n-*` custom properties the Code CSS consumes, as one record. Fields map
+1:1 onto the component's `--n-<kebab-case-field>` custom properties (`textColor` → `--n-text-color`).
+
+Collected by concern:
+
+  - base typography: `textColor`, `fontSize`, `fontWeightStrong`
+  - syntax palette: `mono3`, `hue1`, `hue2`, `hue3`, `hue4`, `hue5`, `hue52`, `hue6`, `hue62`
+  - gutter: `lineNumberTextColor`
+
+-}
 type alias Vars =
     { textColor : String
     , fontSize : String
@@ -24,6 +45,9 @@ type alias Vars =
     }
 
 
+{-| Resolve the Code variables for a theme — upstream `self(common)`: Light and Dark
+modes each get their own palette, values drawn from `theme.common`.
+-}
 vars : Theme -> Vars
 vars theme =
     case theme.mode of

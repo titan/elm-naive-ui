@@ -1,12 +1,34 @@
 module NUI.Theme.Form exposing (Vars, vars)
 
-{-| Naive UI form theme variables.
+{-| Theme variables for the **Form** component — the Elm counterpart of Naive UI's
+`src/Form/styles/light.ts` & `dark.ts` cssr theme (selfVars). Form renders with Naive UI's
+original CSS, so each record field here is emitted as one `--n-*` custom property on the
+component root, using the upstream kebab-case mapping (`feedbackPadding` → `--n-feedback-padding`, `feedbackHeightSmall` → `--n-feedback-height-small`, …).
+
+`vars` plays the role of upstream `self(common)`: it switches on `theme.mode` (Light/Dark) and
+derives every value from `theme.common` (see `NUI.Theme.Common`), reproducing Naive UI's light
+and dark palettes value-for-value. Pass the result to Form's `view`, or override individual
+fields to customise the look.
+
+@docs Vars, vars
+
 -}
 
 import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)
 
 
+{-| All `--n-*` custom properties the Form CSS consumes, as one record. Fields map
+1:1 onto the component's `--n-<kebab-case-field>` custom properties (`feedbackPadding` → `--n-feedback-padding`).
+
+Collected by concern:
+
+  - validation feedback metrics per size: `feedbackPadding`, `feedbackHeightSmall`, `feedbackHeightMedium`, `feedbackHeightLarge`, `feedbackFontSizeSmall`, `feedbackFontSizeMedium`, `feedbackFontSizeLarge`
+  - label metrics per size/alignment: `labelFontSizeLeftSmall`, `labelFontSizeLeftMedium`, `labelFontSizeLeftLarge`, `labelFontSizeTopSmall`, `labelFontSizeTopMedium`, `labelFontSizeTopLarge`, `labelHeightSmall`, `labelHeightMedium`, `labelHeightLarge`, `labelPaddingVertical`, `labelPaddingHorizontal`, `labelTextAlignVertical`, `labelTextAlignHorizontal`, `labelFontWeight`, `labelTextColor`
+  - blank spacing per size: `blankHeightSmall`, `blankHeightMedium`, `blankHeightLarge`
+  - line height & text colors: `lineHeight`, `asteriskColor`, `feedbackTextColorError`, `feedbackTextColorWarning`, `feedbackTextColor`
+
+-}
 type alias Vars =
     { feedbackPadding : String
     , feedbackHeightSmall : String
@@ -41,6 +63,9 @@ type alias Vars =
     }
 
 
+{-| Resolve the Form variables for a theme — upstream `self(common)`: Light and Dark
+modes each get their own palette, values drawn from `theme.common`.
+-}
 vars : Theme -> Vars
 vars theme =
     case theme.mode of
