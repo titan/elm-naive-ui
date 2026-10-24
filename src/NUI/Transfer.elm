@@ -1,13 +1,4 @@
-module NUI.Transfer exposing
-    ( Filter
-    , Option
-    , Options
-    , RenderListProps
-    , Side(..)
-    , cssVarsFor
-    , defaults
-    , view
-    )
+module NUI.Transfer exposing (Filter, Option, Options, RenderListProps, Side(..), cssVarsFor, defaults, view)
 
 {-| Naive UI's `Transfer`, rebuilt on elm-ui.
 
@@ -80,6 +71,8 @@ input, and the item list (`__background` / `__checkbox` / `__label` /
     (a focus-steal guard for `focusable=false` — no serialized-DOM
     difference; `addEventListener` only).
 
+@docs Filter, Option, Options, RenderListProps, Side, cssVarsFor, defaults, view
+
 -}
 
 import Dict exposing (Dict)
@@ -141,6 +134,11 @@ type alias RenderListProps msg =
     }
 
 
+{-| The transfer's configuration: `value` (the selected keys) plus
+`options`, the two lists' titles and filter wiring, the render-override
+slots, and the single `onCheck` mutation channel (see the module docstring
+— every toggle flows through it).
+-}
 type alias Options msg =
     { value : List String
     , options : List Option
@@ -168,6 +166,9 @@ type alias Options msg =
     }
 
 
+{-| An empty transfer — no options, no value, medium, neither side filterable,
+no render overrides, no handlers.
+-}
 defaults : Options msg
 defaults =
     { value = []
@@ -318,6 +319,10 @@ applyFilter custom pattern option side =
 -- VIEW --------------------------------------------------------------------------
 
 
+{-| Render the transfer — the two lists side by side, all state read from
+`opts` and every mutation reported through `onCheck` / the two filter-input
+channels.
+-}
 view : Theme -> Options msg -> Element msg
 view theme opts =
     let
