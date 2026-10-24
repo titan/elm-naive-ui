@@ -199,12 +199,9 @@ type HeaderLevel
     | H6
 
 
-{-| Naive UI's `H1`-`H6` — `.n-h .n-h{level}`. `kind` selects the prefix-bar
-colour, `prefixBar` adds `.n-h--prefix-bar`, `alignText` adds `.n-h--align-text`.
--}
-
-
-{-| The level-1 heading — `.n-h .n-h1` (see `h1`'s group doc above).
+{-| Naive UI's `H1` — `.n-h .n-h1`, the first of the six headings (`h1`-`h6`
+share one implementation: `kind` selects the prefix-bar colour, `prefixBar`
+adds `.n-h--prefix-bar`, `alignText` adds `.n-h--align-text`).
 -}
 h1 : Theme -> Options msg -> List (Element msg) -> Element msg
 h1 =
