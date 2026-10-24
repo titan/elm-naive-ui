@@ -1,11 +1,4 @@
-module NUI.Badge exposing
-    ( BadgeType(..)
-    , BadgeValue(..)
-    , Options
-    , cssVarsFor
-    , defaults
-    , view
-    )
+module NUI.Badge exposing (BadgeType(..), BadgeValue(..), Options, cssVarsFor, defaults, view)
 
 {-| Naive UI's `Badge`, rebuilt on elm-ui.
 
@@ -68,6 +61,8 @@ renders it; and the TransitionGroup / expand mount animations for digits added
 when the digit count grows (e.g. `99` → `100`), where upstream animates the new
 leading cell and the `+` cell (the resting DOM we render matches).
 
+@docs BadgeType, BadgeValue, Options, cssVarsFor, defaults, view
+
 -}
 
 import Element exposing (Element)
@@ -99,6 +94,13 @@ type BadgeValue
     | Text String
 
 
+{-| The badge options — upstream's props verbatim. `value` + `max` drive the
+slot machine (numeric) or text sup, `dot` renders the bare dot, `type_` /
+`color` pick the sup colour, `show` / `showZero` gate visibility, `processing`
+adds the wave, `offset` shifts the sup, `previousValue` drives the digit
+scroll, `waveActive` replays the ripple, `transition` the mount / leave
+phase classes, `rtl` mirrors, `attributes` land on the root.
+-}
 type alias Options msg =
     { value : Maybe BadgeValue
     , max : Maybe Int
@@ -117,6 +119,9 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults — no value, not a dot, `default` type, shown, zero
+hidden, no processing / offset / scroll / wave / transition, LTR.
+-}
 defaults : Options msg
 defaults =
     { value = Nothing
@@ -136,6 +141,11 @@ defaults =
     }
 
 
+{-| Render the badge: the `n-badge` root (children first, then the sup — see
+the module doc's DOM tree) with the `--n-*` vars from `cssVarsFor`. Children
+are the content the badge annotates; with none, the badge renders "as is"
+(`n-badge--as-is`).
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     let

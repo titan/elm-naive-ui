@@ -1,11 +1,4 @@
-module NUI.Breadcrumb exposing
-    ( Item
-    , Options
-    , cssVarsFor
-    , defaults
-    , item
-    , view
-    )
+module NUI.Breadcrumb exposing (Item, Options, cssVarsFor, defaults, item, view)
 
 {-| Naive UI's `Breadcrumb` and `BreadcrumbItem`, rebuilt on elm-ui.
 
@@ -26,6 +19,8 @@ properties, and `NUI.Css` ships Naive UI's exact CSS.
 carries its own `separator` (falling back to `"/"` when unset). Set it on the
 items when you change the breadcrumb's separator.
 
+@docs Item, Options, cssVarsFor, defaults, item, view
+
 -}
 
 import Element exposing (Element)
@@ -35,12 +30,19 @@ import NUI.Theme exposing (Theme)
 import NUI.Theme.Breadcrumb as BreadcrumbTheme
 
 
+{-| The breadcrumb options. `separator` is the fallback separator an `Item`
+without its own renders (Naive UI injects one value into every item; Elm
+has no injection, so items carry their own — set both when changing it).
+`attributes` land on the `n-breadcrumb` root.
+-}
 type alias Options msg =
     { separator : String
     , attributes : List (Element.Attribute msg)
     }
 
 
+{-| Naive UI's defaults — the `/` separator, no extra attributes.
+-}
 defaults : Options msg
 defaults =
     { separator = "/"
@@ -62,6 +64,9 @@ type alias Item msg =
     }
 
 
+{-| An empty `Item` — `clickable`, separator shown, no `href`, no `separator`
+of its own, no `attributes`. Build items by updating this record.
+-}
 item : Item msg
 item =
     { href = Nothing
@@ -73,6 +78,10 @@ item =
     }
 
 
+{-| Render the breadcrumb — `n-breadcrumb` (`aria-label="Breadcrumb"`) with
+Naive UI's `--n-*` vars and one `n-breadcrumb-item` per `Item` (link, then
+its separator unless hidden).
+-}
 view : Theme -> Options msg -> List (Item msg) -> Element msg
 view theme opts items =
     Element.el

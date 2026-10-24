@@ -1,9 +1,4 @@
-module NUI.Affix exposing
-    ( Options
-    , Position(..)
-    , defaults
-    , view
-    )
+module NUI.Affix exposing (Options, Position(..), defaults, view)
 
 {-| Naive UI's `Affix`, rebuilt on elm-ui.
 
@@ -22,6 +17,8 @@ state and passes it in: `affixed` toggles `.n-affix--affixed` (`.n-affix--absolu
 with `position = Absolute`), and `top` / `bottom` are emitted as inline offsets
 only while affixed — exactly upstream's `mergedstyle`.
 
+@docs Options, Position, defaults, view
+
 -}
 
 import Element exposing (Element)
@@ -36,6 +33,11 @@ type Position
     | Absolute
 
 
+{-| The affix options. `affixed` is the caller-owned pinned state (upstream
+derives it from `scroll` events on the listen target); `top` / `bottom` are
+the sticky offsets, emitted as an inline style only while affixed; `position`
+switches the pinning mode (`Absolute` adds `n-affix--absolute-positioned`).
+-}
 type alias Options msg =
     { affixed : Bool
     , position : Position
@@ -45,6 +47,8 @@ type alias Options msg =
     }
 
 
+{-| Un-pinned defaults: `Fixed` positioning, no offsets, no extra attributes.
+-}
 defaults : Options msg
 defaults =
     { affixed = False
@@ -55,6 +59,12 @@ defaults =
     }
 
 
+{-| Render the affix wrapper around `children`. While `affixed` the element
+carries `n-affix--affixed` (plus `n-affix--absolute-positioned` when
+`position = Absolute`) and the `top` / `bottom` offsets as an inline style —
+exactly upstream's `mergedstyle`; at rest it is a bare `n-affix` column
+carrying `attributes`.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view _ opts children =
     let

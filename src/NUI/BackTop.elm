@@ -1,9 +1,4 @@
-module NUI.BackTop exposing
-    ( Options
-    , cssVarsFor
-    , defaults
-    , view
-    )
+module NUI.BackTop exposing (Options, cssVarsFor, defaults, view)
 
 {-| Naive UI's `BackTop`, rebuilt on elm-ui.
 
@@ -24,6 +19,8 @@ the `fade-in-scale-up-transition` phase is caller-owned too (pass `transition`).
 The `to` / `listen-to` teleport target and the scrollbar-width calc are not
 reproduced.
 
+@docs Options, cssVarsFor, defaults, view
+
 -}
 
 import Element exposing (Element)
@@ -36,6 +33,12 @@ import NUI.Theme.BackTop as BackTopTheme
 import Svg
 
 
+{-| The back-top options. `show` is the caller-owned visibility state
+(upstream derives it from a scroll listener); `right` / `bottom` are the fixed
+offsets; `transition` drives the `fade-in-scale-up-transition` phase classes,
+`transitionDisabled` skips them; `onClick` fires on click; `attributes` land
+on the button.
+-}
 type alias Options msg =
     { show : Bool
     , right : String
@@ -47,6 +50,9 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults — hidden, `40px` bottom-right offsets, transition
+enabled, no click handler.
+-}
 defaults : Options msg
 defaults =
     { show = False
@@ -59,6 +65,11 @@ defaults =
     }
 
 
+{-| Render the back-top button — `Element.none` unless `show`. The root is the
+`n-back-top` button with the fixed `right` / `bottom` offsets, the
+`--n-*` theme vars and the optional transition classes; `children` replace
+the default arrow icon.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     if not opts.show then
@@ -103,6 +114,7 @@ view theme opts children =
 
 
 {-| The back-top's `--n-*` custom properties (they do not depend on the options).
+Exposed so the output can be asserted directly; `view` uses exactly this.
 -}
 cssVarsFor : Theme -> List ( String, String )
 cssVarsFor theme =

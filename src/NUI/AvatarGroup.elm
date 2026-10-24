@@ -1,9 +1,4 @@
-module NUI.AvatarGroup exposing
-    ( AvatarGroupOption
-    , Options
-    , defaults
-    , view
-    )
+module NUI.AvatarGroup exposing (AvatarGroupOption, Options, defaults, view)
 
 {-| Naive UI's `AvatarGroup`, rebuilt on elm-ui.
 
@@ -34,6 +29,8 @@ and replace the built-in rendering entirely. `maxStyle` is Naive UI's `max-style
 prop in its `CSSProperties` form (a `( "prop", "value" )` list); upstream's
 raw-string alternative is not modelled.
 
+@docs AvatarGroupOption, Options, defaults, view
+
 -}
 
 import Element exposing (Element)
@@ -51,6 +48,12 @@ type alias AvatarGroupOption =
     { src : String }
 
 
+{-| The group options. `max` collapses the overflow into one `+N` avatar,
+`maxStyle` styles it, `vertical` / `expandOnHover` / `rtl` set the group
+modifiers, `size` is injected into every built-in avatar (upstream's group
+injection; unset keeps each avatar's default `Medium`), `avatar` / `rest`
+replace the built-in rendering, `attributes` land on the group root.
+-}
 type alias Options msg =
     { max : Maybe Int
     , maxStyle : List ( String, String )
@@ -64,6 +67,9 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults — unlimited avatars, horizontal, no hover expansion,
+no slots, no size injection.
+-}
 defaults : Options msg
 defaults =
     { max = Nothing
@@ -78,8 +84,9 @@ defaults =
     }
 
 
-{-| The group container. `options` are the avatars in order; with `max` set, the
-overflow collapses into a single `+N` avatar at the end.
+{-| The group container — `div.n-avatar-group` (`role="group"`) with the
+`--n-gap` custom property. `options` are the avatars in order; with `max` set,
+the overflow collapses into a single `+N` avatar at the end.
 -}
 view : Theme -> Options msg -> List AvatarGroupOption -> Element msg
 view theme opts options =

@@ -1,11 +1,4 @@
-module NUI.Button exposing
-    ( IconPlacement(..)
-    , Options
-    , Variant(..)
-    , cssVarsFor
-    , defaults
-    , view
-    )
+module NUI.Button exposing (IconPlacement(..), Options, Variant(..), cssVarsFor, defaults, view)
 
 {-| Naive UI's `Button`, rebuilt on elm-ui.
 
@@ -37,6 +30,8 @@ key/value patch over the resolved vars): a key that already exists is swapped
 in place, an unknown key is appended at the end — `NUI.Upload`'s action
 buttons use it for `{ paddingMedium, heightMedium, iconSizeMedium }`.
 
+@docs IconPlacement, Options, Variant, cssVarsFor, defaults, view
+
 -}
 
 import Element exposing (Element)
@@ -50,6 +45,10 @@ import NUI.Theme.Color as Color
 import NUI.Types as T exposing (Kind(..), Size(..))
 
 
+{-| Naive UI's variant scale — `Filled` (the default), `Secondary`,
+`Tertiary`, `Quaternary` and `Text`. Keys the colour vars (text / secondary /
+tertiary / quaternary / filled sets) and the border decorations.
+-}
 type Variant
     = Filled
     | Secondary
@@ -58,11 +57,22 @@ type Variant
     | Text
 
 
+{-| Which side of the label the `icon` renders on — upstream's `icon-placement`
+prop (`left` / `right`).
+-}
 type IconPlacement
     = IconLeft
     | IconRight
 
 
+{-| The button options, upstream's props verbatim. `kind` + `variant` pick the
+colour set, `size` the metrics, `ghost` / `dashed` / `round` / `circle` /
+`block` / `strong` / `bordered` the modifiers, `disabled` / `loading` the
+interactive state (loading renders the `NBaseLoading` spinner over `icon`),
+the `spin*` fields customise it, `color` / `textColor` the custom colours,
+`icon` + `iconPlacement` the icon slot, `onPress` the click seam, `rtl` the
+mirror, `varOverrides` patches the theme vars, `attributes` the root.
+-}
 type alias Options msg =
     { kind : Kind
     , size : Size
@@ -91,6 +101,9 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults — `default` type, medium, filled variant, bordered,
+icon on the left; every other modifier off, no handlers, no var overrides.
+-}
 defaults : Options msg
 defaults =
     { kind = Default
@@ -120,6 +133,14 @@ defaults =
     }
 
 
+{-| Render the button: the `n-button` root (type / size / state BEM classes,
+Naive UI's `--n-*` vars from `cssVars theme opts v`), the icon slot (the
+spinner while loading, else `icon` in its `n-icon-slot`) beside the
+`n-button__content` column per `iconPlacement`, then the border decorations
+when the variant shows them. The element is `role="button"` with `tabindex`
+0 and `onPress` on click unless disabled or loading (then
+`aria-disabled="true"`).
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     let

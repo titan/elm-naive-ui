@@ -1,15 +1,4 @@
-module NUI.AutoComplete exposing
-    ( MenuOptions
-    , Options
-    , Size(..)
-    , Status
-    , defaults
-    , fromString
-    , menu
-    , menuDefaults
-    , menuVars
-    , view
-    )
+module NUI.AutoComplete exposing (MenuOptions, Options, Size(..), Status, defaults, fromString, menu, menuDefaults, menuVars, view)
 
 {-| Naive UI's `AutoComplete` — an `NUI.Input` trigger plus a caller-mounted
 `NUI.SelectMenu` body. Upstream (`AutoComplete.tsx`) mounts `NInput` in a
@@ -112,6 +101,8 @@ vnode only); `onInput`-alias, `to` / `zIndex`. `scrollbarProps` has no
 `NUI.SelectMenu` seam (the plain option-wrapper path is the port's render)
 — the field stays for the caller, the `NUI.Select` precedent. Values are
 `String` (upstream `string | null`; null ≡ "").
+
+@docs MenuOptions, Options, Size, Status, defaults, fromString, menu, menuDefaults, menuVars, view
 
 -}
 
