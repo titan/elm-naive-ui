@@ -995,7 +995,7 @@ buttonRows theme =
 
 buttonSection : Theme -> Element msg
 buttonSection theme =
-    section theme "Button" "Sizes, types, variants and shapes." (buttonRows theme)
+    section theme "Button" "The primary action trigger, in every Naive UI kind, variant, shape and size. Supports icon slots on either side, loading state with a built-in spinner, and disabled/custom-color modes; press state is CSS-driven, and onPress is the single message channel. The rows walk sizes → kinds → variants → shapes, then a live press-counter." (buttonRows theme)
 
 
 {-| Live: `#live-button-counter` / `#live-button-reset`.
@@ -1023,7 +1023,7 @@ buttonPressRow model theme =
 
 buttonLiveSection : Model -> Theme -> Element Msg
 buttonLiveSection model theme =
-    section theme "Button" "Sizes, types, variants and shapes." (buttonRows theme ++ [ buttonPressRow model theme ])
+    section theme "Button" "The primary action trigger, in every Naive UI kind, variant, shape and size. Supports icon slots on either side, loading state with a built-in spinner, and disabled/custom-color modes; press state is CSS-driven, and onPress is the single message channel. The rows walk sizes → kinds → variants → shapes, then a live press-counter." (buttonRows theme ++ [ buttonPressRow model theme ])
 
 
 inputRows : Theme -> List (Element msg)
@@ -1071,7 +1071,7 @@ inputRows theme =
 
 inputSection : Theme -> Element msg
 inputSection theme =
-    section theme "Input" "Text fields, statuses and a textarea." (inputRows theme)
+    section theme "Input" "The single-line and multi-line text field, in every Naive UI status and state. Pair inputs (date-range style), clearable, disabled and textarea modes are all options on one view. The value is caller-owned — own the field in your model; onInput/onFocus/onBlur are the channels. Rows: basics → statuses → states → textarea, then a live controlled field and a live pair input." (inputRows theme)
 
 
 {-| Live: `#live-input-controlled`.
@@ -1132,7 +1132,7 @@ inputLiveSection : Model -> Theme -> Element Msg
 inputLiveSection model theme =
     section theme
         "Input"
-        "Text fields, statuses and a textarea."
+        "The single-line and multi-line text field, in every Naive UI status and state. Pair inputs (date-range style), clearable, disabled and textarea modes are all options on one view. The value is caller-owned — own the field in your model; onInput/onFocus/onBlur are the channels. Rows: basics → statuses → states → textarea, then a live controlled field and a live pair input."
         (inputRows theme ++ [ inputControlledRow model theme, inputPairRow model theme ])
 
 
@@ -1155,7 +1155,7 @@ inputOtpRows theme =
 
 inputOtpSection : Theme -> Element msg
 inputOtpSection theme =
-    section theme "Input OTP" "One-time-code inputs (the value and focus are caller-owned)." (inputOtpRows theme)
+    section theme "Input OTP" "One-time passcode entry: a row of single-character slots with mask, RTL and size/gap options. The value is caller-owned — it is a List String of filled slots, and the view renders exactly what you pass; the focus slot (and the auto-advance on typing) is yours to drive via Browser.Dom. Rows: lengths & sizes → RTL, then a live completion demo with reset and mask toggles." (inputOtpRows theme)
 
 
 {-| Live: `#live-input-otp` / `#live-input-otp-reset` / `#live-input-otp-mask`.
@@ -1180,7 +1180,7 @@ inputOtpLiveSection : Model -> Theme -> Element Msg
 inputOtpLiveSection model theme =
     section theme
         "Input OTP"
-        "One-time-code inputs (the value and focus are caller-owned)."
+        "One-time passcode entry: a row of single-character slots with mask, RTL and size/gap options. The value is caller-owned — it is a List String of filled slots, and the view renders exactly what you pass; the focus slot (and the auto-advance on typing) is yours to drive via Browser.Dom. Rows: lengths & sizes → RTL, then a live completion demo with reset and mask toggles."
         (inputOtpRows theme ++ [ inputOtpCompletionRow model theme ])
 
 
@@ -1212,7 +1212,7 @@ inputNumberRows theme =
 
 inputNumberSection : Theme -> Element msg
 inputNumberSection theme =
-    section theme "Input Number" "Numeric entry (the text buffer is caller-owned)." (inputNumberRows theme)
+    section theme "Input Number" "A numeric stepper: a text field plus add/minus buttons, with min/max clamping, fixed step, precision and placeholder modes. The text buffer is caller-owned — the caller owns the field in your model and the port ships the pure parse/commit algebra (inputUpdate, deriveValueFromDisplayedValue). Rows: basic placements → precision clamping, then a live stepper with a real commit button." (inputNumberRows theme)
 
 
 {-| Live: `#live-input-number-stepper` / `#live-input-number-commit`.
@@ -1238,7 +1238,7 @@ inputNumberLiveSection : Model -> Theme -> Element Msg
 inputNumberLiveSection model theme =
     section theme
         "Input Number"
-        "Numeric entry (the text buffer is caller-owned)."
+        "A numeric stepper: a text field plus add/minus buttons, with min/max clamping, fixed step, precision and placeholder modes. The text buffer is caller-owned — the caller owns the field in your model and the port ships the pure parse/commit algebra (inputUpdate, deriveValueFromDisplayedValue). Rows: basic placements → precision clamping, then a live stepper with a real commit button."
         (inputNumberRows theme ++ [ inputNumberStepperRow model theme ])
 
 
@@ -1286,7 +1286,7 @@ selectionRows theme =
 
 selectionSection : Theme -> Element msg
 selectionSection theme =
-    section theme "Checkbox · Switch · Radio" "Selection controls." (selectionRows theme)
+    section theme "Checkbox · Switch · Radio" "The three boolean-and-choice primitives. Checkbox covers checked, indeterminate and disabled; Switch is the loading/disabled on-off; Radio ships standalone, group and button-group forms. All state is caller-owned — own the Bool (or the picked key) in your model and feed it back on every channel. Rows: each control's states, then a live switch toggle, a live checkbox group with an indeterminate master, and a live radio group." (selectionRows theme)
 
 
 {-| Live: `#live-switch-toggle` (caption read via the row's textContent —
@@ -1372,7 +1372,7 @@ selectionLiveSection : Model -> Theme -> Element Msg
 selectionLiveSection model theme =
     section theme
         "Checkbox · Switch · Radio"
-        "Selection controls."
+        "The three boolean-and-choice primitives. Checkbox covers checked, indeterminate and disabled; Switch is the loading/disabled on-off; Radio ships standalone, group and button-group forms. All state is caller-owned — own the Bool (or the picked key) in your model and feed it back on every channel. Rows: each control's states, then a live switch toggle, a live checkbox group with an indeterminate master, and a live radio group."
         (selectionRows theme ++ [ switchToggleRow model theme, checkboxGroupRow model theme, radioPickRow model theme ])
 
 
@@ -1397,7 +1397,7 @@ rateRows theme =
 
 rateSection : Theme -> Element msg
 rateSection theme =
-    section theme "Rate" "Star ratings (the value and hover are caller-owned)." (rateRows theme)
+    section theme "Rate" "A star rating with half-star precision, three sizes, custom color and readonly modes. The value and the hover preview are caller-owned — the view renders value and hoverValue as given, onSelect commits a star and the hover preview is pointer-position algebra you own. Rows: fixed values → half & sizes, then a live demo committing real values alongside a simulated hover preview." (rateRows theme)
 
 
 {-| Live: `#live-rate` / `#live-rate-hover-*` (hover preview is
@@ -1431,7 +1431,7 @@ rateLiveSection : Model -> Theme -> Element Msg
 rateLiveSection model theme =
     section theme
         "Rate"
-        "Star ratings (the value and hover are caller-owned)."
+        "A star rating with half-star precision, three sizes, custom color and readonly modes. The value and the hover preview are caller-owned — the view renders value and hoverValue as given, onSelect commits a star and the hover preview is pointer-position algebra you own. Rows: fixed values → half & sizes, then a live demo committing real values alongside a simulated hover preview."
         (rateRows theme ++ [ rateHoverRow model theme ])
 
 
@@ -1503,7 +1503,7 @@ sliderSection : Model -> Theme -> Element Msg
 sliderSection model theme =
     section theme
         "Slider"
-        "The rail/fill/handles numeric input (upstream `NSlider`). Drag is caller-owned runtime (`NUI.Split` precedent): `value`/`activeIndex`/`hoverIndex`/`dragging` in, discrete handle events + the root mousedown signal out; `pointerToValue`/`sanitizeValue`/`stepValue` carry the pointer→snap math. The value indicator renders inline (the teleported follower is the caller's popover seam)."
+        "The rail/fill/handles numeric input (upstream `NSlider`). Drag is caller-owned runtime: value, activeIndex, hoverIndex and dragging go in, discrete handle events plus the root mousedown signal come out, and pointerToValue/sanitizeValue/stepValue carry the pointer-to-snap math. Every row below is a live drag (mousedown → document mousemove/mouseup), plus a pinned-indicator fixture and a disabled rail. Rows: single & range with marks → indicator states → vertical/reverse → snap and >2-handle ranges, then a step-algebra single and a closest-handle range."
         (sliderRows model theme)
 
 
@@ -1568,7 +1568,7 @@ sliderLiveSection : Model -> Theme -> Element Msg
 sliderLiveSection model theme =
     section theme
         "Slider"
-        "The rail/fill/handles numeric input (upstream `NSlider`). Drag is caller-owned runtime (`NUI.Split` precedent): `value`/`activeIndex`/`hoverIndex`/`dragging` in, discrete handle events + the root mousedown signal out; `pointerToValue`/`sanitizeValue`/`stepValue` carry the pointer→snap math. The value indicator renders inline (the teleported follower is the caller's popover seam)."
+        "The rail/fill/handles numeric input (upstream `NSlider`). Drag is caller-owned runtime: value, activeIndex, hoverIndex and dragging go in, discrete handle events plus the root mousedown signal come out, and pointerToValue/sanitizeValue/stepValue carry the pointer-to-snap math. Every row below is a live drag (mousedown → document mousemove/mouseup), plus a pinned-indicator fixture and a disabled rail. Rows: single & range with marks → indicator states → vertical/reverse → snap and >2-handle ranges, then a step-algebra single and a closest-handle range."
         (sliderRows model theme ++ [ sliderSingleRow model theme, sliderRangeRow model theme ])
 
 
