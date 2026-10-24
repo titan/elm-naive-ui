@@ -230,18 +230,8 @@ containerClasses opts =
 -- INLINE STYLE -------------------------------------------------------------------
 
 
-{-| The overlay's inline declarations in upstream's style-object order:
-`transform`, `zIndex`, `backgroundSize`, `backgroundPosition`,
-`backgroundImage` — `transform` only under global rotation, `zIndex` only
-when the container does not carry it instead (upstream's
-`isFullScreenGlobalRotate`), `backgroundPosition` only when non-empty, and
-`backgroundImage` composed with the `cross` doubling. (Empty values drop
-out — Vue's assignment of an empty string clears the property.)
--}
-
-
 {-| The overlay's inline declarations in upstream's style-object order
-(see `watermarkStyle`).
+(see the full note above).
 -}
 watermarkStyle : Theme.Theme -> Options msg -> List ( String, String )
 watermarkStyle theme opts =
