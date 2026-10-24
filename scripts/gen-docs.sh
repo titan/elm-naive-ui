@@ -43,6 +43,20 @@ if (bare.length > 0) {
   process.exit(1);
 }
 let entries = 0;
-for (const m of docs) entries += (m.entries || []).length;
+for (const m of docs)
+  entries +=
+    (m.unions || []).length +
+    (m.aliases || []).length +
+    (m.values || []).length +
+    (m.binops || []).length;
+const undocumented = [];
+for (const m of docs)
+  for (const group of [m.unions, m.aliases, m.values, m.binops])
+    for (const e of group || [])
+      if (!e.comment || !e.comment.trim()) undocumented.push(m.name + "." + e.name);
+if (undocumented.length > 0) {
+  console.error("declarations without doc comments: " + undocumented.join(", "));
+  process.exit(1);
+}
 console.log(`docs.json: ${docs.length} modules, ${entries} documented entries`);
 EOF

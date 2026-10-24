@@ -97,7 +97,7 @@ classIf cond c =
 
 
 {-| Join class names into one `class` attribute —
-`classes ["n-card", "n-card--selectable"]`.
+`classes ["n-tag", "n-tag--round"]`.
 -}
 classes : List String -> Attribute msg
 classes =

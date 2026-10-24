@@ -289,7 +289,7 @@ typographySection : Theme -> Element msg
 typographySection theme =
     section theme
         "Typography"
-        "Headers, text and rich content."
+        "Naive UI's text scale on elm-ui: headings h1–h6, paragraphs, links, and block elements, each themed by the shared typography vars. Depth, alignment, code and delete/strong/mark emphasis are Options fields, so one `p` call covers both a plain paragraph and a bordered code block. The rows walk every level and variant; pair them with `Ellipsis` for running copy."
         [ Typo.h1 theme typ [ Element.text "H1 Heading" ]
         , Typo.h3 theme typ [ Element.text "H3 Heading" ]
         , Typo.p theme
@@ -361,7 +361,7 @@ tagRows model theme =
 
 tagSection : Model -> Theme -> Element Msg
 tagSection model theme =
-    section theme "Tag" "Compact labels, with optional close and check states." (tagRows model theme)
+    section theme "Tag" "Compact status labels for categorising or selecting content, ported from Naive UI's Tag. Solid and borderless kinds, four sizes, round shapes, and checkable/closable variants; the checked and dismissed states are caller-owned — each tag's lifecycle is a field in your model, driven by onCheck/onClose messages. The rows walk kinds, sizes and shapes, then a live closable/checkable pair wired to real state." (tagRows model theme)
 
 
 {-| Live: `#secf-tag-add` — the close × and the checkable toggle drive real
@@ -415,7 +415,7 @@ tagLiveSection : Model -> Theme -> Element Msg
 tagLiveSection model theme =
     section theme
         "Tag"
-        "Compact labels, with optional close and check states."
+        "Compact status labels for categorising or selecting content, ported from Naive UI's Tag. Solid and borderless kinds, four sizes, round shapes, and checkable/closable variants; the checked and dismissed states are caller-owned — each tag's lifecycle is a field in your model, driven by onCheck/onClose messages. The rows walk kinds, sizes and shapes, then a live closable/checkable pair wired to real state."
         (tagRows model theme ++ [ tagLiveRow model theme ])
 
 
@@ -464,7 +464,7 @@ alertRows model theme =
 
 alertSection : Model -> Theme -> Element Msg
 alertSection model theme =
-    section theme "Alert" "Inline messages." (alertRows model theme)
+    section theme "Alert" "Inline contextual messages for feedback that stays with the content — Naive UI's Alert in info, success, warning and error kinds, with optional titles and closable behaviour. The unmount decision is caller-owned: onClose hands the dismissal to your update, so a closed alert leaves the DOM for good until your model says otherwise. Rows cover the four kinds with and without titles, plus a live closable success specimen." (alertRows model theme)
 
 
 {-| Live: `#secf-alert-reset` — each closable alert really leaves the DOM when
@@ -523,12 +523,12 @@ alertLiveRow model theme =
 
 alertLiveSection : Model -> Theme -> Element Msg
 alertLiveSection model theme =
-    section theme "Alert" "Inline messages." (alertRows model theme ++ [ alertLiveRow model theme ])
+    section theme "Alert" "Inline contextual messages for feedback that stays with the content — Naive UI's Alert in info, success, warning and error kinds, with optional titles and closable behaviour. The unmount decision is caller-owned: onClose hands the dismissal to your update, so a closed alert leaves the DOM for good until your model says otherwise. Rows cover the four kinds with and without titles, plus a live closable success specimen." (alertRows model theme ++ [ alertLiveRow model theme ])
 
 
 dividerSection : Theme -> Element msg
 dividerSection theme =
-    section theme "Divider" "Separates content." <|
+    section theme "Divider" "Naive UI's Divider: a hairline rule that separates neighbouring content, horizontally or vertically, with an optional title placed left, center or right. Vertical dividers size themselves to their container, so they slot neatly into rows; dashed styling is one flag. The rows show the orientations and title placements next to text and components." <|
         [ demoRow theme
             "gen-008"
             "Title placements"
@@ -553,7 +553,7 @@ dividerSection theme =
 
 avatarSection : Theme -> Element msg
 avatarSection theme =
-    section theme "Avatar" "Sizes, shapes and colours." <|
+    section theme "Avatar" "A user or entity portrait — image, icon or initials — in Naive UI's four sizes and round/square shapes, with a themed fallback colour derived from the name when no image is given. Avatars stack with overlap through AvatarGroup; the badge slot is covered in Badge. The rows show the size ladder, the shape pair and the fallback-colour derivation." <|
         [ demoRow theme
             "gen-010"
             "Sizes"
@@ -602,7 +602,7 @@ avatarSection theme =
 
 cardSection : Theme -> Element msg
 cardSection theme =
-    section theme "Card" "Bordered containers, optionally hoverable." <|
+    section theme "Card" "Naive UI's Card: a bordered content container with an optional titled header, embedded actions and a footer. `hoverable` lifts the card on hover via CSS alone, and the segmentation flag turns the header/footer into separate bordered strips. Slots are plain `Element`s, so a card composes any content — the rows show title, actions, cover media and hoverable specimens." <|
         [ Element.row [ Element.spacing 16, Element.width Element.fill ]
             [ Element.el [ Element.width Element.fill ]
                 (Card.view theme
@@ -630,7 +630,7 @@ cardSection theme =
 
 spaceSection : Theme -> Element msg
 spaceSection theme =
-    section theme "Space" "Spacing between arbitrary children." <|
+    section theme "Space" "Naive UI's Space: uniform spacing between arbitrary children in a row or column, with align/justify controls and three presets (small/medium/large) or an exact pixel gap. Because it is a plain flex container styled inline, it nests freely with elm-ui layout. The rows demonstrate the presets in both directions plus a wrap example." <|
         [ demoRow theme
             "gen-013"
             "Small gap"
@@ -651,7 +651,7 @@ spaceSection theme =
 
 badgeSection : Theme -> Element msg
 badgeSection theme =
-    section theme "Badge" "Counts and status dots on arbitrary content." <|
+    section theme "Badge" "A count or status dot superimposed on arbitrary content — Naive UI's Badge wraps its child and pins a value, a dot, or both at a corner. Counts cap at a configurable max (with a `99+` style suffix), the dot form marks processing states, and standalone badges render without a child. The value is pure display: what to show is caller-owned state." <|
         [ demoRow theme
             "gen-016"
             "Annotating a button"
@@ -719,7 +719,7 @@ emptySection theme =
                 ]
                 content
     in
-    section theme "Empty" "Placeholder for empty states." <|
+    section theme "Empty" "Naive UI's Empty: a placeholder for empty states — a themed illustration slot, a description line, and optional extra content such as a call-to-action button. The default artwork is built from the port's Icon primitives; supply your own `Element` for custom art. Rows show the default and icon-only specimens beside a realistic empty-list scenario." <|
         -- The component hits `width fill` on its own root (upstream's `.n-empty`
         -- is a block flex column), so the demos mount it directly in the demo
         -- card — a fixed-px wrapper would pin the centred content to the card's
@@ -763,7 +763,7 @@ emptySection theme =
 
 resultSection : Theme -> Element msg
 resultSection theme =
-    section theme "Result" "Important feedback pages." <|
+    section theme "Result" "Full-page feedback for an operation's outcome — Naive UI's Result in info/success/warning/error/404/403/500 statuses, each with its own themed artwork, a title, and description plus footer slots for follow-up actions. Use it for terminal states (payment failed, not found) where the whole page is the message. Rows walk every status with actions in the footer." <|
         [ demoRow theme
             "gen-023"
             "Statuses"
@@ -797,7 +797,7 @@ resultSection theme =
 
 gradientTextSection : Theme -> Element msg
 gradientTextSection theme =
-    section theme "Gradient Text" "Themed gradient text." <|
+    section theme "Gradient Text" "Text painted with a linear gradient clipped to the glyphs — Naive UI's GradientText. Pick one of the built-in gradients or pass custom stops; gradient direction and text spacing are Options fields. Works on any inline content and inherits the typography scale, so it drops into headings without extra sizing. The rows show each preset gradient at both regular and large sizes." <|
         [ demoRow theme
             "gen-025"
             "Types"
@@ -829,7 +829,7 @@ gradientTextSection theme =
 
 statisticSection : Theme -> Element msg
 statisticSection theme =
-    section theme "Statistic" "Labelled numeric displays." <|
+    section theme "Statistic" "Naive UI's Statistic: a labelled numeric readout — value, label, and an optional value prefix/suffix, sized small/medium/large. Pairs with NumberAnimation and Countdown for animated or ticking values; the number itself is caller-owned state, and tabular numerals keep digits steady while animating. The rows show the sizes, prefix/suffix forms, and a live animated counter." <|
         [ demoRow theme
             "gen-027"
             "Basic"
@@ -860,7 +860,7 @@ statisticSection theme =
 
 thingSection : Theme -> Element msg
 thingSection theme =
-    section theme "Thing" "A flexible content block (avatar + header + body)." <|
+    section theme "Thing" "Naive UI's Thing (`.n-thing`): a compact content block that pairs an avatar with a header (title + description) and a body, all as plain Element slots. It is the layout primitive behind list rows, comments and card headers — reach for it whenever that avatar-plus-metadata shape recurs. The rows show the header-only and header-plus-content forms with avatar indicators." <|
         [ demoRow theme
             "gen-029"
             "With avatar"
@@ -930,7 +930,7 @@ ellipsisRows model theme =
 
 ellipsisSection : Model -> Theme -> Element Msg
 ellipsisSection model theme =
-    section theme "Ellipsis" "Truncated text (the expand state is caller-owned)." (ellipsisRows model theme)
+    section theme "Ellipsis" "Naive UI's Ellipsis: single- or multi-line text truncation with an optional expand control and a tooltip on hover when the text actually overflows. The expanded state is caller-owned — onToggle hands the flip to your update — and `lineClamp` bounds multi-line configs. The rows show single-line, multi-line, and a live expand-on-click specimen driven by real state." (ellipsisRows model theme)
 
 
 {-| Live: the expand/collapse click toggles real model state (the expanded
@@ -965,7 +965,7 @@ ellipsisLiveSection : Model -> Theme -> Element Msg
 ellipsisLiveSection model theme =
     section theme
         "Ellipsis"
-        "Truncated text (the expand state is caller-owned)."
+        "Naive UI's Ellipsis: single- or multi-line text truncation with an optional expand control and a tooltip on hover when the text actually overflows. The expanded state is caller-owned — onToggle hands the flip to your update — and `lineClamp` bounds multi-line configs. The rows show single-line, multi-line, and a live expand-on-click specimen driven by real state."
         (ellipsisRows model theme ++ [ ellipsisLiveRow model theme ])
 
 
