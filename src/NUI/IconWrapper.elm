@@ -1,10 +1,4 @@
-module NUI.IconWrapper exposing
-    ( Length(..)
-    , Options
-    , cssVarsFor
-    , defaults
-    , view
-    )
+module NUI.IconWrapper exposing (Length(..), Options, cssVarsFor, defaults, view)
 
 {-| Naive UI's `IconWrapper`, rebuilt on elm-ui.
 
@@ -24,6 +18,8 @@ The element carries the `.n-icon-wrapper` class and Naive UI's `--n-*` custom
 properties, and `NUI.Css` ships Naive UI's exact CSS. Pass the icon (usually an
 `NUI.Icon.view`) as the child.
 
+@docs Length, Options, cssVarsFor, defaults, view
+
 -}
 
 import Element exposing (Element)
@@ -39,6 +35,10 @@ type Length
     | Custom String
 
 
+{-| The wrapper options — Naive UI's props: the `size` (both `width` and
+`height`), the `borderRadius`, the `color` (`background-color`) and
+`iconColor` (`color`) overrides, and `attributes`.
+-}
 type alias Options msg =
     { size : Length
     , borderRadius : Length
@@ -48,6 +48,9 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults: a 24px wrapper with a 6px radius, no background or
+icon colour, no extra attributes.
+-}
 defaults : Options msg
 defaults =
     { size = Px 24
@@ -58,6 +61,10 @@ defaults =
     }
 
 
+{-| The `n-icon-wrapper` element — a row carrying the `--n-*` vars plus the
+inline `height`/`width`/`border-radius` (and `background-color`/`color` when
+set), with the icon children verbatim.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     Element.row
