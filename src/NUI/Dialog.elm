@@ -1,10 +1,4 @@
-module NUI.Dialog exposing
-    ( IconPlacement(..)
-    , Options
-    , cssVars
-    , defaults
-    , view
-    )
+module NUI.Dialog exposing (IconPlacement(..), Options, cssVars, defaults, view)
 
 {-| Naive UI's `Dialog` — a pure **body** component (upstream `NDialog`,
 `Dialog.tsx`): it renders just the `.n-dialog` card, never a mask or a
@@ -77,6 +71,8 @@ close is the ported `n-base-close` **classes-only** (its structure CSS is in
 the generated sheet; dialog's cssr positions it — no `--absolute`, sized by
 `--n-close-size`), `closeFocusable` driving its tabindex (0 vs −1).
 
+@docs IconPlacement, Options, cssVars, defaults, view
+
 -}
 
 import Element exposing (Element)
@@ -100,6 +96,12 @@ type IconPlacement
     | IconTop
 
 
+{-| Upstream `NDialog`'s props (the body-level options the environment
+passes): title / content / icon nodes, the kind, the close and button texts,
+the `positiveProps` / `negativeProps` update functions, the `action` override,
+and the `titleAttributes` / `contentAttributes` / `actionAttributes`
+passthroughs. `style` is the env's root style fragment merged after the vars.
+-}
 type alias Options msg =
     { title : Maybe (Element msg)
     , content : Maybe (Element msg)
@@ -130,6 +132,10 @@ type alias Options msg =
     }
 
 
+{-| Upstream defaults: `default` kind (info glyph), icon shown on the left,
+closable with a non-focusable close, no content, no buttons, not bordered,
+not rtl, no callbacks.
+-}
 defaults : Options msg
 defaults =
     { title = Nothing

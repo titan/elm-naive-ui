@@ -1,9 +1,4 @@
-module NUI.Divider exposing
-    ( Options
-    , TitlePlacement(..)
-    , defaults
-    , view
-    )
+module NUI.Divider exposing (Options, TitlePlacement(..), defaults, view)
 
 {-| Naive UI's `Divider`, rebuilt on elm-ui.
 
@@ -19,6 +14,8 @@ module NUI.Divider exposing
 
 The element carries the `.n-divider` BEM classes and Naive UI's `--n-*` custom
 properties; `NUI.Css` ships Naive UI's exact CSS.
+
+@docs Options, TitlePlacement, defaults, view
 
 -}
 
@@ -37,6 +34,11 @@ type TitlePlacement
     | Right
 
 
+{-| Upstream `n-divider`'s props: `vertical` swaps the row for a 1px
+column, `titlePlacement` positions the title, `dashed` dashes the line, and
+`attributes` passthrough onto the root (the module docstring's class/var
+seams stay automatic).
+-}
 type alias Options msg =
     { vertical : Bool
     , titlePlacement : TitlePlacement
@@ -45,6 +47,10 @@ type alias Options msg =
     }
 
 
+{-| Upstream defaults: a horizontal, centered, solid divider with no
+passthrough attributes. A title-less `view` renders the bare full-width line
+(children only position the title).
+-}
 defaults : Options msg
 defaults =
     { vertical = False
@@ -54,6 +60,11 @@ defaults =
     }
 
 
+{-| The `.n-divider` root: modifier classes (vertical / dashed /
+no-title / title-position), the four `--n-*` vars, `role=separator`, and —
+horizontally with a title — the `line-left / title / line-right` row (the
+elm-ui shrink fix on each line; see the inline comment).
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     let

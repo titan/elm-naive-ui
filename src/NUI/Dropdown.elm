@@ -1,19 +1,4 @@
-module NUI.Dropdown exposing
-    ( DividerOption
-    , GroupOption
-    , LeafOption
-    , Option(..)
-    , Options
-    , Placement
-    , RenderOption
-    , Size(..)
-    , chevronRightPath
-    , cssVars
-    , defaults
-    , placementAttribute
-    , placementName
-    , view
-    )
+module NUI.Dropdown exposing (DividerOption, GroupOption, LeafOption, Option(..), Options, Placement, RenderOption, Size(..), chevronRightPath, cssVars, defaults, placementAttribute, placementName, view)
 
 {-| Naive UI's `Dropdown` — the `n-dropdown-menu` body. Upstream the component
 is the popover runtime with the body swapped (`internalRenderBody`,
@@ -75,6 +60,8 @@ placement is `Bottom` (upstream overrides the popover's top).
     pinned literals in `NUI.Theme.Dropdown` — computed at the default theme;
     a `common` override does not re-derive them (toolchain convention, cf. Tag).
   - The submenu chevron SVG is inlined here (house style, cf. `NUI.Collapse`).
+
+@docs DividerOption, GroupOption, LeafOption, Option, Options, Placement, RenderOption, Size, chevronRightPath, cssVars, defaults, placementAttribute, placementName, view
 
 -}
 

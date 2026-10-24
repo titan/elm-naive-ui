@@ -66,6 +66,8 @@ objects (tags are plain strings), the `tagClass` / `tagStyle` / `inputClass` /
 `itemStyle="display: flex;"` (our Space renders children directly, so there are
 no item wrappers to style).
 
+@docs Options, cssVarsFor, defaults, view
+
 -}
 
 import Element exposing (Element)
@@ -84,6 +86,12 @@ import NUI.Types as T exposing (Kind(..), Size(..))
 import Svg
 
 
+{-| Upstream `n-dynamic-tags`'s props: the tag list, the per-tag props
+(size / kind / round / color / closable / disabled) forwarded onto each
+`NUI.Tag`, the `max` cap, the input state (`showInput` + `inputValue` — your
+model's refs), the custom `trigger` override, and the four callbacks from the
+module docstring.
+-}
 type alias Options msg =
     { value : List String
     , size : Size
@@ -103,6 +111,9 @@ type alias Options msg =
     }
 
 
+{-| Upstream defaults: empty tags, `medium` default-kind square closable
+tags, no `max`, input hidden with an empty draft, no overrides or callbacks.
+-}
 defaults : Options msg
 defaults =
     { value = []
@@ -123,6 +134,11 @@ defaults =
     }
 
 
+{-| The root `NUI.Space` (`size small`, the `n-dynamic-tags` class +
+`--n-input-width` var riding its attributes): one `NUI.Tag` per entry, then
+the add trigger — or the built-in input / your `inputSlot` while
+`showInput` (the module docstring's split).
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts inputSlot =
     let

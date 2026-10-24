@@ -1,8 +1,4 @@
-module NUI.DrawerContent exposing
-    ( Options
-    , defaults
-    , view
-    )
+module NUI.DrawerContent exposing (Options, defaults, view)
 
 {-| Naive UI's `NDrawerContent` (upstream `DrawerContent.tsx`) — the drawer's
 composition unit: the header/body/footer content rendered inside the drawer's
@@ -53,6 +49,8 @@ The `*Class`/`*Style` fields are upstream's `headerClass`/`headerStyle`/
 `bodyClass`/`bodyStyle`/`bodyContentClass`/`bodyContentStyle`/`footerClass`/
 `footerStyle` props (`Nothing` = omitted).
 
+@docs Options, defaults, view
+
 -}
 
 import Element exposing (Element)
@@ -65,6 +63,11 @@ import NUI.Theme exposing (Theme)
 import Svg
 
 
+{-| Upstream `DrawerContent.tsx`'s props: the title / header / footer nodes,
+the close seam, the `nativeScrollbar` body selector, and the per-section
+class/style passthroughs. See the module docstring for the scrollbar
+branch's quirk.
+-}
 type alias Options msg =
     { title : Maybe (Element msg)
     , header : Maybe (Element msg)
@@ -83,6 +86,9 @@ type alias Options msg =
     }
 
 
+{-| Upstream defaults: nothing set, not closable, native scrollbar, every
+passthrough `Nothing`.
+-}
 defaults : Options msg
 defaults =
     { title = Nothing
