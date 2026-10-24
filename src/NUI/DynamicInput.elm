@@ -1,18 +1,4 @@
-module NUI.DynamicInput exposing
-    ( InputOptions
-    , PairOptions
-    , cssVarsFor
-    , inputDefaults
-    , insertAt
-    , insertionDisabled
-    , moveDown
-    , moveUp
-    , pairDefaults
-    , removeAt
-    , removeDisabled
-    , viewInput
-    , viewPair
-    )
+module NUI.DynamicInput exposing (InputOptions, PairOptions, cssVarsFor, inputDefaults, insertAt, insertionDisabled, moveDown, moveUp, pairDefaults, removeAt, removeDisabled, viewInput, viewPair)
 
 {-| Naive UI's `DynamicInput`, rebuilt on elm-ui.
 
@@ -128,6 +114,8 @@ sort presses emit no message, so `onCreate` is never consulted on that path
     Naive UI's scoped rules override (`width`, `display`, `flex`, `margin`),
     which is this library's standard bridge.
 
+@docs InputOptions, PairOptions, cssVarsFor, inputDefaults, insertAt, insertionDisabled, moveDown, moveUp, pairDefaults, removeAt, removeDisabled, viewInput, viewPair
+
 -}
 
 import Element exposing (Element)
@@ -205,6 +193,10 @@ inputDefaults =
     }
 
 
+{-| The `pair` preset's defaults — the same fields as `inputDefaults` with the
+tuple value and the `keyPlaceholder` / `valuePlaceholder` pair (`Nothing` =
+upstream's empty-string placeholders).
+-}
 pairDefaults : PairOptions msg
 pairDefaults =
     { value = []
