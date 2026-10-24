@@ -1,33 +1,4 @@
-module NUI.Upload exposing
-    ( FileInfo
-    , ListType(..)
-    , Options
-    , Status(..)
-    , appendFile
-    , buttonKindOf
-    , cssVarsFor
-    , defaults
-    , filesToSubmit
-    , isImageFile
-    , markError
-    , markFinished
-    , markRemoved
-    , markUploading
-    , matchType
-    , maxReached
-    , pendingFile
-    , progressStatusOf
-    , removeFileById
-    , settle
-    , shouldUseThumbnailUrlDefault
-    , sliceForMax
-    , updateFileList
-    , view
-    , viewAbstract
-    , viewDragger
-    , viewFileList
-    , viewTrigger
-    )
+module NUI.Upload exposing (FileInfo, ListType(..), Options, Status(..), appendFile, buttonKindOf, cssVarsFor, defaults, filesToSubmit, isImageFile, markError, markFinished, markRemoved, markUploading, matchType, maxReached, pendingFile, progressStatusOf, removeFileById, settle, shouldUseThumbnailUrlDefault, sliceForMax, updateFileList, view, viewAbstract, viewDragger, viewFileList, viewTrigger)
 
 {-| Naive UI's `Upload`, rebuilt on elm-ui.
 
@@ -120,10 +91,14 @@ are emitted upstream with no cssr rule (only `--error-status` has one), as is
 inline-theme `themeClass` (house-wide: the inline-theme-optimisation class
 never lands in this port; no-op under the default theme).
 
+\`never lands in this port; no-op under the default theme).
+
 Upstream refs: `upload/src/Upload.tsx` (render :655-680, cssVars :507-561,
 `doChange` :331-366, `handleFileAddition` :367-433, `submit` :434-480),
 `UploadTrigger.tsx`, `UploadFileList.tsx`, `UploadFile.tsx`,
 `UploadDragger.tsx`, `UploadProgress.tsx`, `utils.ts`, `icons.tsx`.
+
+@docs FileInfo, ListType, Options, Status, appendFile, buttonKindOf, cssVarsFor, defaults, filesToSubmit, isImageFile, markError, markFinished, markRemoved, markUploading, matchType, maxReached, pendingFile, progressStatusOf, removeFileById, settle, shouldUseThumbnailUrlDefault, sliceForMax, updateFileList, view, viewAbstract, viewDragger, viewFileList, viewTrigger
 
 -}
 
@@ -185,6 +160,12 @@ type alias FileInfo =
     }
 
 
+{-| The upload options: the `fileList` state plus the display switches
+(`listType`, the five action-button flags, `abstract`), the trigger / file
+input wiring (`accept`, `multiple`, `directory`, the handlers), and the
+render-override slots. The drag state (`dragOver`, `draggerInside`) is
+caller-owned data driven by `onDragStateChange`.
+-}
 type alias Options msg =
     { fileList : List FileInfo
     , showFileList : Bool
@@ -226,6 +207,9 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults: text list shown, trigger shown, no max, no abstract
+wrap, all five action buttons available per status, no handlers.
+-}
 defaults : Options msg
 defaults =
     { fileList = []
