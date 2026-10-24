@@ -1,8 +1,4 @@
-module NUI.Ellipsis exposing
-    ( Options
-    , defaults
-    , view
-    )
+module NUI.Ellipsis exposing (Options, defaults, view)
 
 {-| Naive UI's `Ellipsis`, rebuilt on elm-ui.
 
@@ -37,6 +33,8 @@ needs) for the same end state — one line, ellipsis glyph — through the same
 mechanism the multi-line rows already use (which the `.t` wrapper cannot
 defeat).
 
+@docs Options, defaults, view
+
 -}
 
 import Element exposing (Element)
@@ -45,6 +43,11 @@ import NUI.Internal as I
 import NUI.Theme exposing (Theme)
 
 
+{-| The ellipsis options — Naive UI's props plus the caller-owned `expanded`:
+`lineClamp` (upstream's `lineClamp`, `Nothing` = the single-line mode), the
+`expanded` flag (upstream's internal state), `expandOnClick` (upstream's
+`expand-trigger: 'click'`), `onToggle` fired on that click, and `attributes`.
+-}
 type alias Options msg =
     { lineClamp : Maybe Int
     , expanded : Bool
@@ -54,6 +57,9 @@ type alias Options msg =
     }
 
 
+{-| Naive UI's defaults: no clamp (single-line mode), collapsed, no click
+expansion, no toggle message, no extra attributes.
+-}
 defaults : Options msg
 defaults =
     { lineClamp = Nothing
@@ -64,6 +70,11 @@ defaults =
     }
 
 
+{-| The `n-ellipsis` element — a paragraph carrying `--line-clamp` when
+`lineClamp` is set (plus `--cursor-pointer` under `expandOnClick`), and the
+inline style upstream computes: nothing once `expanded`, the `-webkit-line-clamp`
+when clamped, or the single-line `text-overflow: ellipsis` fallback otherwise.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view _ opts children =
     let
