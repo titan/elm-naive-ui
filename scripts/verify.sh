@@ -12,6 +12,7 @@
 #   6. every component root renders with the elm-ui bridge working   (jsdom)
 #   7. the foundation test suite passes                              (tests/run.sh)
 #   8. sources are elm-format clean
+#   9. the API documentation builds (elm make --docs)
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -36,33 +37,38 @@ if [ ! -d "$ELM_HOME/0.19.1/packages/mdgriffith/elm-ui" ]; then
   ./scripts/install-elm-packages.sh
 fi
 
-echo "== 1/8 class coverage =="
+echo "== 1/9 class coverage =="
 node tools/verify/check-classes.mjs
 
-echo "== 2/8 theme values =="
+echo "== 2/9 theme values =="
 node tools/verify/check-theme.mjs
 
-echo "== 3/8 module exposure =="
+echo "== 3/9 module exposure =="
 node tools/verify/check-exposure.mjs
 
-echo "== 4/8 library build =="
+echo "== 4/9 library build =="
 bust_stale_elm_stuff "$here"
 elm make --output=/dev/null
 
-echo "== 5/8 example build =="
+echo "== 5/9 example build =="
 bust_stale_elm_stuff "$here/examples"
 node tools/gen-demo-code.mjs --check
 ( cd examples && elm make src/Main.elm --output=index.html )
 
-echo "== 6/8 component DOM/bridge =="
+echo "== 6/9 component DOM/bridge =="
 node tools/verify/check-dom.mjs examples/index.html
 
-echo "== 7/8 foundation tests =="
+echo "== 7/9 foundation tests =="
 bust_stale_elm_stuff "$here/tests"
 bash tests/run.sh
 
-echo "== 8/8 elm-format =="
+echo "== 8/9 elm-format =="
 elm-format --validate src examples tests
+
+echo "== 9/9 API docs =="
+# The published API reference must always build: every exposed module
+# documented (@docs complete) — see scripts/gen-docs.sh.
+bash scripts/gen-docs.sh
 
 echo
 echo "ALL CHECKS PASSED"
