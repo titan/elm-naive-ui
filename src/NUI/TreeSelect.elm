@@ -1,17 +1,4 @@
-module NUI.TreeSelect exposing
-    ( Options
-    , Size(..)
-    , checkStrategyOf
-    , clearValue
-    , defaults
-    , deleteOption
-    , handleNodeClick
-    , initialPendingKey
-    , menu
-    , menuVars
-    , mergedCascade
-    , view
-    )
+module NUI.TreeSelect exposing (Options, Size(..), checkStrategyOf, clearValue, defaults, deleteOption, handleNodeClick, initialPendingKey, menu, menuVars, mergedCascade, view)
 
 {-| Naive UI's `TreeSelect` — a `NUI.BaseSelection` trigger plus a
 caller-mounted tree menu (the `NUI.Select` / `NUI.Cascader` composition
@@ -119,6 +106,8 @@ windowing (punted like the `--virtual` columns — the port pins the
 `internalScrollable`-branch bytes, upstream's
 `consistentMenuWidth=false` configuration), numeric option keys
 (`String` keys — the `NUI.SelectMenu` limitation).
+
+@docs Options, Size, checkStrategyOf, clearValue, defaults, deleteOption, handleNodeClick, initialPendingKey, menu, menuVars, mergedCascade, view
 
 -}
 
