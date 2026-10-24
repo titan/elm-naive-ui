@@ -1,9 +1,4 @@
-module NUI.Statistic exposing
-    ( Options
-    , cssVarsFor
-    , defaults
-    , view
-    )
+module NUI.Statistic exposing (Options, cssVarsFor, defaults, view)
 
 {-| Naive UI's `Statistic`, rebuilt on elm-ui.
 
@@ -28,6 +23,8 @@ properties, and `NUI.Css` ships Naive UI's exact CSS.
 The `value` prop wins over the default slot, exactly as upstream: when `value` is
 set the slot is ignored.
 
+@docs Options, cssVarsFor, defaults, view
+
 -}
 
 import Element exposing (Element)
@@ -36,6 +33,10 @@ import NUI.Theme exposing (Theme)
 import NUI.Theme.Statistic as StatisticTheme
 
 
+{-| The statistic's configuration: a `label` above the value, either a plain
+`value` string or slot children for it, numeric alignment, and prefix/suffix
+slots. `attributes` land on the root element.
+-}
 type alias Options msg =
     { label : Maybe String
     , value : Maybe String
@@ -47,6 +48,8 @@ type alias Options msg =
     }
 
 
+{-| An empty statistic: no label, no value, tabular numbers off, no extras.
+-}
 defaults : Options msg
 defaults =
     { label = Nothing
@@ -59,6 +62,9 @@ defaults =
     }
 
 
+{-| Render the statistic. The children are upstream's default slot — the value
+content — and render only when `value` is `Nothing`.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     let
@@ -142,6 +148,9 @@ tabularStyle on =
         []
 
 
+{-| The `--n-*` custom properties the shipped `.n-statistic` CSS consumes
+(theme colours, font sizes and weights).
+-}
 cssVarsFor : Theme -> Options msg -> List ( String, String )
 cssVarsFor theme _ =
     let
