@@ -360,15 +360,11 @@ embedChild child =
 -- THE TILE ------------------------------------------------------------------------
 
 
-{-| The tile as a `data:` URL — what upstream's `canvas.toDataURL()` stood
-for: an SVG of the canvas dimensions, base64-encoded in-library. `content`
-lines render as `<text>`; absent / empty content is the blank tile
-(upstream's `clearRect` branch).
--}
-
-
 {-| The tile as a `data:image/svg+xml;base64,…` URL — what upstream's
-`canvas.toDataURL()` stood for; `view`'s overlay backgrounds itself with it.
+`canvas.toDataURL()` stood for: an SVG of the canvas dimensions with the
+`content` lines as `<text>` (absent / empty content is the blank tile,
+upstream's `clearRect` branch), base64-encoded in-library. `view`'s overlay
+backgrounds itself with it.
 -}
 tileDataUrl : Theme.Theme -> Options msg -> String
 tileDataUrl theme opts =
