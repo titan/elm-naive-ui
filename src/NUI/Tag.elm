@@ -13,6 +13,8 @@ module NUI.Tag exposing (Options, defaults, view)
 The visual result is Naive UI's own: the element carries the `.n-tag` BEM classes and
 Naive UI's `--n-*` custom properties, and `NUI.Css` ships Naive UI's exact CSS.
 
+@docs Options, defaults, view
+
 -}
 
 import Element exposing (Element)
@@ -26,6 +28,12 @@ import NUI.Types as T exposing (Kind(..), Size(..))
 import Svg
 
 
+{-| The tag's configuration: `kind` and `size`, the boolean modifiers, the
+colour overrides (`color` / `textColor` / `borderColor` — `Nothing` keeps the
+kind's theme colour), the `icon` / `avatar` slots, and the `onClose` / `onCheck`
+handlers. `checkable` turns the tag into a checkbox-like control driven by
+`checked` + `onCheck`.
+-}
 type alias Options msg =
     { kind : Kind
     , size : Size
@@ -47,6 +55,8 @@ type alias Options msg =
     }
 
 
+{-| A default medium bordered tag, not round, not checkable, no slots.
+-}
 defaults : Options msg
 defaults =
     { kind = Default
@@ -69,6 +79,8 @@ defaults =
     }
 
 
+{-| Render the tag. Children are the label (upstream's default slot).
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     let
