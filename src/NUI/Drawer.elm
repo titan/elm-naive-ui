@@ -1,12 +1,4 @@
-module NUI.Drawer exposing
-    ( Options
-    , Placement(..)
-    , ShowMask(..)
-    , cssVars
-    , defaults
-    , placementName
-    , view
-    )
+module NUI.Drawer exposing (Options, Placement(..), ShowMask(..), cssVars, defaults, placementName, view)
 
 {-| Naive UI's `Drawer` — the mount-body **sibling** of `NUI.Modal`: like Modal
 it renders its own fixed full-viewport tree (no trigger/follower), but the
@@ -91,6 +83,8 @@ rule — upstream's `$attrs` land on `.n-drawer` instead).
 its module. Upstream has no `preset` prop (Modal's `Preset` has no analog
 here): the slot is the third `view` argument.
 
+@docs Options, Placement, ShowMask, cssVars, defaults, placementName, view
+
 -}
 
 import Element exposing (Element)
@@ -139,6 +133,12 @@ type ShowMask
     | Hidden
 
 
+{-| Upstream `n-drawer`'s props: the show gate, the edge `placement`, the mask
+mode, per-axis sizing with the `251px` fallbacks, the scrollbar and resize
+seams, the caller-driven transition phases, `onMaskClick`, and the container
+`attributes` passthrough. Everything runtime (see the module docstring) is
+yours.
+-}
 type alias Options msg =
     { show : Bool
     , placement : Placement
@@ -162,6 +162,10 @@ type alias Options msg =
     }
 
 
+{-| Upstream defaults: closed, `right` placement, a visible mask, no explicit
+size (`251px` fallbacks), native scrollbar, not resizable / selectable / rtl,
+no z-index, phases or callbacks.
+-}
 defaults : Options msg
 defaults =
     { show = False
@@ -186,6 +190,12 @@ defaults =
     }
 
 
+{-| The full fixed-viewport tree per the module docstring: container (vars +
+caller `attributes`) → mask (interactive, phase-driven) → body host → the
+edge-anchored `.n-drawer` (placement class, transition class last, sizing
+style, resize trigger, content wrapper or scrollbar) around your children.
+Pass your `NUI.DrawerContent` (or anything) as the slot.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     let
