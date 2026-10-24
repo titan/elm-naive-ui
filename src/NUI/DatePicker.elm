@@ -1593,9 +1593,11 @@ monthRangeBody theme opts =
 
 yearColumn : Theme -> Options msg -> CalendarSide -> Maybe CalendarSide -> List (Html msg)
 yearColumn theme opts side quickJump =
-    [ scrollCol theme
-        [ "n-date-panel-month-calendar__picker-col" ]
-        (List.map (pickerItem opts side quickJump True) (yearItems opts side))
+    [ Html.div [ HA.class "n-date-panel-month-calendar__picker-col" ]
+        [ scrollCol theme
+            []
+            (List.map (pickerItem opts side quickJump True) (yearItems opts side))
+        ]
     ]
 
 

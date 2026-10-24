@@ -62,10 +62,12 @@ default is `True`).
     upstream threads a peer theme (extract-theme only reads `self`, so peers
     never reach the generated Elm theme).
   - `[oracle R4]` the root and the loader are `Element.column`s (elm-ui flex
-    columns) where upstream mounts bare `div`s — layout-neutral here: the cssr
-    declares every load-bearing property of `.n-log` / `.n-log-loader`
-    (`position`, `height`, absolute placement), and the loader is the last
-    child either way.
+    columns) where upstream mounts bare `div`s — layout-neutral here EXCEPT
+    width: the cssr declares every load-bearing property of `.n-log` /
+    `.n-log-loader` (`position`, `height`, absolute placement), but upstream's
+    block-div width (fill the container) must be re-asserted via
+    `Element.width Element.fill` because elm-ui's column default is
+    width-content (see `view`); the loader is the last child either way.
 
 -}
 
@@ -251,6 +253,15 @@ view theme opts =
         ([ I.classes [ "n-log" ]
          , Element.htmlAttribute (HA.attribute "style" (rootStyle theme opts))
          , Element.height Element.fill
+
+         -- Upstream's root is a block div: width follows the CONTAINER, so the
+         -- absolutely-placed loader pill (`right: 16px`) sits inside the pane
+         -- whatever the lines measure. elm-ui's column default is width-content,
+         -- which shrink-wraps the root to the longest line — the pill then
+         -- overhangs the pane's left edge (showcase mot-034: an 85px root under
+         -- a 117px pill). `fill` (`wf`, `width: 100%`) restores the block
+         -- behavior; the inline `height: calc(...)` still caps the rows.
+         , Element.width Element.fill
          ]
             ++ opts.attributes
         )

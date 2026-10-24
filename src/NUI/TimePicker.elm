@@ -100,9 +100,9 @@ trigger compares) and are placed in `zone` via its offset at that instant.
 -}
 
 import Element exposing (Element)
-import Element.Events
 import Html
 import Html.Attributes as HA
+import Html.Events
 import NUI.Button as Button
 import NUI.Input as Input
 import NUI.Internal as I
@@ -465,7 +465,7 @@ colNode theme containerId colClasses items =
         [ I.classes colClasses ]
         (Scrollbar.view theme
             scrollbarOpts
-            [ Element.column [] (items ++ [ paddingNode ]) ]
+            (items ++ [ paddingNode ])
         )
 
 
@@ -672,33 +672,39 @@ hoursInPeriod period =
         List.range 12 23
 
 
-{-| One column item — `div.n-time-picker-col__item` (+ `--active` / `--disabled`),
-`data-active=""` when active, clickable only when enabled.
+{-| One column item — `div.n-time-picker-col__item` (+ `--active` / ``` --disabled``), ```data-active=""`when active, clickable only when enabled. Raw Html (the
+DatePicker`pickerItem`convention): the label is a bare text node, so the
+item's own`justify-content: center`centers the digits — an`Element.text`wrapper is a block with`text-align: start\` that fills the item and pins the
+glyphs to the left edge.
 -}
 itemNode : Bool -> Bool -> Maybe msg -> String -> Element msg
 itemNode active disabled click label =
-    Element.el
-        (I.classes
-            ([ "n-time-picker-col__item" ]
-                ++ I.classIf active "n-time-picker-col__item--active"
-                ++ I.classIf disabled "n-time-picker-col__item--disabled"
-            )
-            :: Element.width Element.fill
-            :: (if active then
-                    [ Element.htmlAttribute (HA.attribute "data-active" "") ]
+    Element.html
+        (Html.div
+            ([ HA.class
+                (String.join " "
+                    ([ "n-time-picker-col__item" ]
+                        ++ I.classIf active "n-time-picker-col__item--active"
+                        ++ I.classIf disabled "n-time-picker-col__item--disabled"
+                    )
+                )
+             ]
+                ++ (if active then
+                        [ HA.attribute "data-active" "" ]
 
-                else
-                    []
-               )
-            ++ (case click of
-                    Just m ->
-                        [ Element.Events.onClick m ]
-
-                    Nothing ->
+                    else
                         []
-               )
+                   )
+                ++ (case click of
+                        Just m ->
+                            [ Html.Events.onClick m ]
+
+                        Nothing ->
+                            []
+                   )
+            )
+            [ Html.text label ]
         )
-        (Element.text label)
 
 
 {-| The `.n-time-picker-actions` row — absent when `actions` is empty. Each
@@ -714,7 +720,9 @@ actionsNode theme opts =
     else
         Just
             (Element.row
-                [ I.classes [ "n-time-picker-actions" ] ]
+                [ I.classes [ "n-time-picker-actions" ]
+                , Element.width Element.fill
+                ]
                 (List.filterMap (actionButton theme opts) opts.actions)
             )
 
