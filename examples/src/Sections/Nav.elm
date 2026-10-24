@@ -762,7 +762,7 @@ stepsRows theme =
 
 stepsSection : Theme -> Element msg
 stepsSection theme =
-    section theme "Steps" "Progress through a sequence." (stepsRows theme)
+    section theme "Steps" "A checkout-style progress indicator — wizards, onboarding, multi-step forms. The current step is a caller-owned integer; prev/next/jump are plain messages that clamp into range, and status per step rides the items you pass in. The rows show a fixed two-of-three specimen and a live wizard with working buttons." (stepsRows theme)
 
 
 {-| Live: `#live-steps` (clickable steps + prev/next buttons).
@@ -807,7 +807,7 @@ stepsLiveRow model theme =
 
 stepsLiveSection : Model -> Theme -> Element Msg
 stepsLiveSection model theme =
-    section theme "Steps" "Progress through a sequence." (stepsRows theme ++ [ stepsLiveRow model theme ])
+    section theme "Steps" "A checkout-style progress indicator — wizards, onboarding, multi-step forms. The current step is a caller-owned integer; prev/next/jump are plain messages that clamp into range, and status per step rides the items you pass in. The rows show a fixed two-of-three specimen and a live wizard with working buttons." (stepsRows theme ++ [ stepsLiveRow model theme ])
 
 
 backTopRows : Theme -> List (Element msg)
@@ -831,7 +831,7 @@ backTopRows theme =
 
 backTopSection : Theme -> Element msg
 backTopSection theme =
-    section theme "BackTop" "A fixed back-to-top button (the scroll state is caller-owned). The preview box is the containing block — the button pins to its corner. This specimen shows the default arrow and a custom slot with tuned right/bottom offsets." (backTopRows theme)
+    section theme "BackTop" "A floating back-to-top button that appears after a scroll threshold — long article pages, chat logs. The port is pure: visibility, offsets and the click are caller-owned, so the live demo wires them to a real scrolling container whose scroll events feed the model and whose click scrolls it back to top. The rows show the default arrow, a custom slot with tuned offsets, and the real-scroll specimen." (backTopRows theme)
 
 
 {-| Live: `#live-backtop` — a REAL scrolling container drives the port's
@@ -1072,7 +1072,7 @@ tabsSection : Theme -> Element msg
 tabsSection theme =
     section theme
         "Tabs"
-        "Tabbed navigation with panes. The caller owns the active `value`; `ShowIf` (default) mounts only the active pane."
+        "Tabbed navigation with content panes — settings pages, browser-style panels, dashboards. The active name and the tab list are caller-owned; `onChange`, `onClose` and `onAdd` arrive as messages, and `ShowIf` (default) mounts only the active pane while `Show` mounts them all. The rows show bar, line, card and segment styles, sizes, placements, then a live add/close/switch tab bar."
         (tabsRows theme)
 
 
@@ -1122,7 +1122,7 @@ tabsLiveSection : Model -> Theme -> Element Msg
 tabsLiveSection model theme =
     section theme
         "Tabs"
-        "Tabbed navigation with panes. The caller owns the active `value`; `ShowIf` (default) mounts only the active pane."
+        "Tabbed navigation with content panes — settings pages, browser-style panels, dashboards. The active name and the tab list are caller-owned; `onChange`, `onClose` and `onAdd` arrive as messages, and `ShowIf` (default) mounts only the active pane while `Show` mounts them all. The rows show bar, line, card and segment styles, sizes, placements, then a live add/close/switch tab bar."
         (tabsRows theme ++ [ tabsLiveRow model theme ])
 
 
@@ -1352,7 +1352,7 @@ anchorSection : Theme -> Element msg
 anchorSection theme =
     section theme
         "Anchor"
-        "In-page navigation — the active link is caller-owned scroll state."
+        "An in-page table of contents that tracks where you are — docs pages, long settings forms. The highlighted link is caller-owned scroll state: `activeHref` in, link clicks out; the port ships no scroll listener, so the live demo simulates scrolling by moving `activeHref` through messages. The rows show rail and block styles, rail/background toggles and an affix wrap, then the live simulated-scroll pair."
         (anchorRows theme)
 
 
@@ -1412,7 +1412,7 @@ anchorLiveSection : Model -> Theme -> Element Msg
 anchorLiveSection model theme =
     section theme
         "Anchor"
-        "In-page navigation — the active link is caller-owned scroll state."
+        "An in-page table of contents that tracks where you are — docs pages, long settings forms. The highlighted link is caller-owned scroll state: `activeHref` in, link clicks out; the port ships no scroll listener, so the live demo simulates scrolling by moving `activeHref` through messages. The rows show rail and block styles, rail/background toggles and an affix wrap, then the live simulated-scroll pair."
         (anchorRows theme ++ [ anchorLiveRow model theme ])
 
 
