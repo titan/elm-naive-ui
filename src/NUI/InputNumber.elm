@@ -1,35 +1,21 @@
 module NUI.InputNumber exposing
-    ( ButtonPlacement(..)
-    , DeriveArgs
-    , DerivedValue(..)
-    , NumberContext
-    , Options
-    , addUpdate
-    , addable
-    , contextOf
-    , createValidValue
-    , defaults
-    , deriveValueFromDisplayedValue
-    , displayedValueFor
-    , displayedValueInvalid
-    , format
-    , getMaxPrecision
-    , getPrecision
-    , inputUpdate
-    , isWipValue
-    , minusUpdate
-    , minusable
-    , parse
-    , parseNumber
-    , toFixedJs
-    , validator
-    , view
+    ( ButtonPlacement(..), DeriveArgs, DerivedValue(..), NumberContext, Options
+    , addUpdate, addable, contextOf, createValidValue, defaults
+    , deriveValueFromDisplayedValue, displayedValueFor, displayedValueInvalid
+    , format, getMaxPrecision, getPrecision, inputUpdate, isWipValue
+    , minusUpdate, minusable, parse, parseNumber, toFixedJs, validator, view
     )
 
 {-| Naive UI's `InputNumber`, rebuilt on elm-ui: a text input for numbers with
 clamp-to-`min`/`max`, `precision` formatting and add / minus buttons (real
 `NUI.Button`s, rendered in the input's suffix — or split around it for
 `Both` — with Naive UI's add / remove base-icon glyphs).
+
+@docs ButtonPlacement, DeriveArgs, DerivedValue, NumberContext, Options
+@docs addUpdate, addable, contextOf, createValidValue, defaults
+@docs deriveValueFromDisplayedValue, displayedValueFor, displayedValueInvalid
+@docs format, getMaxPrecision, getPrecision, inputUpdate, isWipValue
+@docs minusUpdate, minusable, parse, parseNumber, toFixedJs, validator, view
 
     import NUI.InputNumber exposing (defaults)
 
@@ -134,6 +120,10 @@ type ButtonPlacement
     | Both
 
 
+{-| The `n-input-number` props. `displayedValue` is the caller-owned typing
+buffer (see the module docs); `onChange` carries `doUpdateValue`'s payload
+(`Maybe Float` — `Nothing` clears), `onInput` the raw keystroke text.
+-}
 type alias Options msg =
     { value : Maybe Float
     , displayedValue : Maybe String
@@ -156,6 +146,9 @@ type alias Options msg =
     }
 
 
+{-| Upstream's initial state: empty value and buffer, no bounds, `step = 1`,
+no precision, medium size, both buttons after the input, live update on.
+-}
 defaults : Options msg
 defaults =
     { value = Nothing
@@ -179,6 +172,11 @@ defaults =
     }
 
 
+{-| The `n-input-number` root: one div wrapping the inner `n-input` with the
+buttons threaded through its prefix / suffix slots. Children: element 0 is
+the `prefix` slot, element 1 the `suffix` slot (both optional, both wrapped
+in `n-input-number-prefix` / `-suffix` spans while `showButton` is on).
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     let

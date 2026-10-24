@@ -1,34 +1,20 @@
 module NUI.ImagePreview exposing
-    ( HorizontalDirection(..)
-    , KeyAction(..)
-    , MoveStrategy
-    , Options
-    , Rect
-    , VerticalDirection(..)
-    , Viewport
-    , Zoom
-    , cssVars
-    , defaults
-    , derivedOffset
-    , imgStyle
-    , keyAction
-    , maxScale
-    , moveStrategy
-    , originalSizeScale
-    , resizeToOriginalSize
-    , rotateClockwise
-    , rotateCounterclockwise
-    , switchReset
-    , toggleOriginalSize
-    , toolbarButtons
-    , transformStyle
-    , view
-    , zoom0
-    , zoomIn
-    , zoomOut
+    ( HorizontalDirection(..), KeyAction(..), MoveStrategy, Options, Rect
+    , VerticalDirection(..), Viewport, Zoom, cssVars, defaults, derivedOffset
+    , imgStyle, keyAction, maxScale, moveStrategy, originalSizeScale
+    , resizeToOriginalSize, rotateClockwise, rotateCounterclockwise
+    , switchReset, toggleOriginalSize, toolbarButtons, transformStyle, view
+    , zoom0, zoomIn, zoomOut
     )
 
 {-| Naive UI's `ImagePreview` (the `n-image` modal), rebuilt on elm-ui.
+
+@docs HorizontalDirection, KeyAction, MoveStrategy, Options, Rect
+@docs VerticalDirection, Viewport, Zoom, cssVars, defaults, derivedOffset
+@docs imgStyle, keyAction, maxScale, moveStrategy, originalSizeScale
+@docs resizeToOriginalSize, rotateClockwise, rotateCounterclockwise
+@docs switchReset, toggleOriginalSize, toolbarButtons, transformStyle, view
+@docs zoom0, zoomIn, zoomOut
 
     import NUI.ImagePreview as ImagePreview
 
@@ -139,6 +125,14 @@ import Svg
 -- OPTIONS
 
 
+{-| The preview-surface props. `show` mounts the overlay / toolbar / wrapper
+(gated per-node: the overlay and toolbar render while `show` or their leave
+phase runs, the wrapper always renders — upstream's `v-show` seat); `zoom` +
+`dragging` + the two `img*` flags drive the img's inline style pack; the
+`Maybe msg` seams are the toolbar / overlay / img event handlers (all
+optional — an unset seam renders the icon with no handler, exactly like
+upstream's `null` slots).
+-}
 type alias Options msg =
     { show : Bool
     , src : Maybe String
@@ -170,6 +164,10 @@ type alias Options msg =
     }
 
 
+{-| A closed, empty preview: toolbar on, the initial zoom, no drag, no
+derived img style (the fresh-open state — upstream derives nothing on mount
+or on `show`), all transitions clear.
+-}
 defaults : Options msg
 defaults =
     { show = False
@@ -220,6 +218,9 @@ type alias Zoom =
     }
 
 
+{-| Upstream's init zoom — `scale = 1`, `scaleExp = 0`, no offset, no
+rotation. Every switchReset returns here.
+-}
 zoom0 : Zoom
 zoom0 =
     { scale = 1
@@ -350,11 +351,16 @@ toggleOriginalSize target z =
     }
 
 
+{-| Rotate the image 90° counterclockwise (upstream `rotateCounterclockwise`
+toolbar action): `rotate - 90`.
+-}
 rotateCounterclockwise : Zoom -> Zoom
 rotateCounterclockwise z =
     { z | rotate = z.rotate - 90 }
 
 
+{-| Rotate 90° clockwise: `rotate + 90`.
+-}
 rotateClockwise : Zoom -> Zoom
 rotateClockwise z =
     { z | rotate = z.rotate + 90 }
@@ -441,17 +447,26 @@ type alias Rect =
     }
 
 
+{-| `window.innerWidth` / `innerHeight` — the drag clamp's viewport (the
+`--n-` container is fixed to cover it).
+-}
 type alias Viewport =
     { width : Float
     , height : Float
     }
 
 
+{-| The sign of a drag's horizontal delta: positive (dragged right-to-left)
+→ `HorizontalLeft`, else `HorizontalRight`.
+-}
 type HorizontalDirection
     = HorizontalLeft
     | HorizontalRight
 
 
+{-| The sign of a drag's vertical delta: positive → `VerticalTop`, else
+`VerticalBottom`.
+-}
 type VerticalDirection
     = VerticalTop
     | VerticalBottom
@@ -605,6 +620,12 @@ type KeyAction
     | Close
 
 
+{-| Upstream's `handleKeydown` as a pure decoder: Space → `SpacePrevent`
+(preventDefault only), ←/→ → `Prev` / `Next` (the raw prev/next — no zoom
+reset; see `switchReset` for the toolbar path), ↑/↓ → `ZoomInKey` /
+`ZoomOutKey` (both preventDefault), Escape → `Close`. Any other key is
+`Nothing`.
+-}
 keyAction : String -> Maybe KeyAction
 keyAction key =
     case key of

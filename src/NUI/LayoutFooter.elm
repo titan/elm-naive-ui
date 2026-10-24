@@ -1,11 +1,8 @@
-module NUI.LayoutFooter exposing
-    ( Options
-    , cssVarsFor
-    , defaults
-    , view
-    )
+module NUI.LayoutFooter exposing (Options, cssVarsFor, defaults, view)
 
 {-| Naive UI's `LayoutFooter`, rebuilt on elm-ui.
+
+@docs Options, cssVarsFor, defaults, view
 
     import NUI.LayoutFooter exposing (defaults)
 
@@ -38,6 +35,10 @@ import NUI.Theme exposing (Theme)
 import NUI.Theme.Layout as LayoutTheme
 
 
+{-| The `n-layout-footer` props: positioning, the bottom border, and the
+inverted colour variant (which also opts out of the visibility chrome —
+see the module docs).
+-}
 type alias Options msg =
     { position : Position
     , bordered : Bool
@@ -46,6 +47,8 @@ type alias Options msg =
     }
 
 
+{-| A static, borderless, non-inverted footer with no extra attributes.
+-}
 defaults : Options msg
 defaults =
     { position = Static
@@ -55,6 +58,10 @@ defaults =
     }
 
 
+{-| The `n-layout-footer` element — `width fill` (see the module docs for
+why the strip must not shrink-wrap), the footer's `--n-*` vars, and the
+non-inverted region chrome merged after them.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     Element.column

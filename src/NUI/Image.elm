@@ -1,15 +1,12 @@
 module NUI.Image exposing
-    ( ObjectFit(..)
-    , Options
-    , cssVars
-    , defaults
-    , errorReplacesImg
-    , loadingValue
-    , resolveSrc
-    , view
+    ( ObjectFit(..), Options, cssVars, defaults
+    , errorReplacesImg, loadingValue, resolveSrc, view
     )
 
 {-| Naive UI's `Image`, rebuilt on elm-ui.
+
+@docs ObjectFit, Options, cssVars, defaults
+@docs errorReplacesImg, loadingValue, resolveSrc, view
 
     import NUI.Image exposing (defaults)
 
@@ -88,6 +85,10 @@ import NUI.Theme exposing (Theme)
 import NUI.Theme.Image as ImageTheme
 
 
+{-| Naive UI's `objectFit` prop — the values of CSS `object-fit` (`fill`, the
+default, `contain`, `cover`, `none`, `scale-down`), emitted as the img's
+inline `object-fit` style by the style pack below.
+-}
 type ObjectFit
     = Fill
     | Contain
@@ -96,6 +97,12 @@ type ObjectFit
     | ScaleDown
 
 
+{-| The `n-image` props. The three state flags (`shouldStartLoading` /
+`loaded` / `showError`) are caller-owned — see the module docs for the
+transition rules that drive them. `width` / `height` / `alt` take the string
+bytes of upstream's `string | number` props; `imgAttributes` is upstream's
+`imgProps` spread and `attributes` land on the root.
+-}
 type alias Options msg =
     { src : Maybe String
     , alt : Maybe String
@@ -120,6 +127,11 @@ type alias Options msg =
     }
 
 
+{-| Upstream's mount state: no src, `Fill`, no lazy loading, and
+`shouldStartLoading = True` — the eager case's `not lazy` initialization
+(upstream flips it to `False` itself when `lazy = True`; the caller owns that
+flip here, `Image.tsx` setup).
+-}
 defaults : Options msg
 defaults =
     { src = Nothing
@@ -145,6 +157,11 @@ defaults =
     }
 
 
+{-| The `n-image` root: the img (or the whole-node `error` slot when
+`errorReplacesImg`) plus the placeholder layer while not `loaded`, with the
+border pair's absence this template has (upstream's root carries no border
+nodes). Pure — the state flags come in through `Options`.
+-}
 view : Theme -> Options msg -> Element msg
 view _ opts =
     let

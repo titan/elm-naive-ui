@@ -1,18 +1,13 @@
 module NUI.Log exposing
-    ( LogEvent(..)
-    , Options
-    , Panel(..)
-    , SpinOverrides
-    , defaults
-    , mergedLines
-    , scrollEvents
-    , styleHeight
-    , view
-    , wheelEvents
+    ( LogEvent(..), Options, Panel(..), SpinOverrides, defaults, mergedLines
+    , scrollEvents, styleHeight, view, wheelEvents
     )
 
 {-| Naive UI's `Log` (`n-log`), rebuilt as a pure pane composing `NUI.Code` and
 `NUI.Scrollbar`.
+
+@docs LogEvent, Options, Panel, SpinOverrides, defaults, mergedLines
+@docs scrollEvents, styleHeight, view, wheelEvents
 
     import NUI.Log as Log
 

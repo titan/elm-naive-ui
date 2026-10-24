@@ -1,19 +1,12 @@
 module NUI.LoadingBar exposing
-    ( Options
-    , State
-    , Status(..)
-    , cssVarsFor
-    , defaults
-    , error
-    , finish
-    , init
-    , kick
-    , start
-    , startFromTo
-    , view
+    ( Options, State, Status(..), cssVarsFor, defaults, error, finish, init
+    , kick, start, startFromTo, view
     )
 
 {-| Naive UI's `LoadingBar` — the bar itself, rebuilt on elm-ui.
+
+@docs Options, State, Status, cssVarsFor, defaults, error, finish, init
+@docs kick, start, startFromTo, view
 
     import NUI.Internal as I
     import NUI.LoadingBar as LoadingBar
@@ -175,6 +168,9 @@ type alias State =
     }
 
 
+{-| Upstream's idle state: not started (the view renders `Element.none`),
+`Starting`, progress 0 staging 80, run 0, not kicked, no phase.
+-}
 init : State
 init =
     { started = False
@@ -281,6 +277,11 @@ isSettling state =
         && isLeavingPhase state.phase
 
 
+{-| The provider-side props upstream threads from `LoadingBarProvider`:
+the container's extra class / style, and the per-variant raw style fragment
+for the bar (the `error` one picked while erroring). `attributes` exists for
+record parity only (the root is raw `Html`; see the module docs).
+-}
 type alias Options msg =
     { containerClass : Maybe String
     , containerStyle : Maybe String
@@ -289,6 +290,9 @@ type alias Options msg =
     }
 
 
+{-| No container class / style, no bar style overrides — upstream's bare
+provider defaults.
+-}
 defaults : Options msg
 defaults =
     { containerClass = Nothing
@@ -298,6 +302,11 @@ defaults =
     }
 
 
+{-| The container element — `Element.none` for a not-started run (upstream's
+`if (!this.started) return null`), else the fixed `n-loading-bar-container`
+holding the `runId`-keyed bar. Mount it wherever the caller wants the bar
+(upstream's teleport target).
+-}
 view : Theme -> Options msg -> State -> Element msg
 view theme opts state =
     if not state.started then

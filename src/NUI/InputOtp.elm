@@ -1,13 +1,8 @@
-module NUI.InputOtp exposing
-    ( Gap(..)
-    , Options
-    , Size(..)
-    , cssVarsFor
-    , defaults
-    , view
-    )
+module NUI.InputOtp exposing (Gap(..), Options, Size(..), cssVarsFor, defaults, view)
 
 {-| Naive UI's `InputOtp`, rebuilt on elm-ui.
+
+@docs Gap, Options, Size, cssVarsFor, defaults, view
 
     import NUI.InputOtp exposing (defaults)
 
@@ -89,6 +84,11 @@ type Gap
     | Custom String
 
 
+{-| The `n-input-otp` props. `value` is the caller-owned per-slot list (the
+view re-justifies it to `length` entries for rendering); `allowInput` is
+upstream's same-named filter (character, slot index, current value);
+`slotInputAttributes` lands on each built-in slot's inner `<input>`.
+-}
 type alias Options msg =
     { value : List String
     , length : Int
@@ -108,6 +108,9 @@ type alias Options msg =
     }
 
 
+{-| Six empty medium slots, no gap override (the theme's medium gap), no
+mask, no filter, no per-slot attributes.
+-}
 defaults : Options msg
 defaults =
     { value = []
@@ -128,6 +131,10 @@ defaults =
     }
 
 
+{-| The `n-input-otp` root: `length` slot elements in a row, children
+replacing built-ins per index (upstream's typed default slot), the two
+`--n-*` vars from `cssVarsFor` on the root.
+-}
 view : Theme -> Options msg -> List (Element msg) -> Element msg
 view theme opts children =
     Element.row
