@@ -20,18 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Tabs CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`tabFontSizeSmall` → `--n-tab-font-size-small`).
-
-Collected by concern:
-
-  - per-size tab font sizes & weights: `tabFontSizeSmall`, `tabFontSizeMedium`, `tabFontSizeLarge`, `tabFontSizeCard`, `tabFontWeightActive`, `tabFontWeight`
-  - per-size gaps & paddings per type (line/bar/card/segment, incl. vertical): `tabGapSmallLine`, `tabGapMediumLine`, `tabGapLargeLine`, `tabGapSmallLineVertical`, `tabGapMediumLineVertical`, `tabGapLargeLineVertical`, `tabPaddingSmallLine`, `tabPaddingMediumLine`, `tabPaddingLargeLine`, `tabPaddingVerticalSmallLine`, `tabPaddingVerticalMediumLine`, `tabPaddingVerticalLargeLine`, `tabGapSmallBar`, `tabGapMediumBar`, `tabGapLargeBar`, `tabGapSmallBarVertical`, `tabGapMediumBarVertical`, `tabGapLargeBarVertical`, `tabPaddingSmallBar`, `tabPaddingMediumBar`, `tabPaddingLargeBar`, `tabPaddingVerticalSmallBar`, `tabPaddingVerticalMediumBar`, `tabPaddingVerticalLargeBar`, `tabGapSmallCard`, `tabGapMediumCard`, `tabGapLargeCard`, `tabGapSmallCardVertical`, `tabGapMediumCardVertical`, `tabGapLargeCardVertical`, `tabPaddingSmallCard`, `tabPaddingMediumCard`, `tabPaddingLargeCard`, `tabPaddingSmallSegment`, `tabPaddingMediumSegment`, `tabPaddingLargeSegment`, `tabPaddingVerticalLargeSegment`, `tabPaddingVerticalSmallCard`, `tabPaddingVerticalMediumCard`, `tabPaddingVerticalLargeCard`, `tabPaddingVerticalSmallSegment`, `tabPaddingVerticalMediumSegment`, `tabGapSmallSegment`, `tabGapMediumSegment`, `tabGapLargeSegment`, `tabGapSmallSegmentVertical`, `tabGapMediumSegmentVertical`, `tabGapLargeSegmentVertical`
-  - pane padding & text: `panePaddingSmall`, `panePaddingMedium`, `panePaddingLarge`, `paneTextColor`
-  - close button (sizes, radius, colors & states): `closeSize`, `closeIconSize`, `closeIconColor`, `closeIconColorHover`, `closeIconColorPressed`, `closeColorHover`, `closeColorPressed`, `closeBorderRadius`
-  - tab text colors per type (line/bar/card/segment): `tabTextColorLine`, `tabTextColorActiveLine`, `tabTextColorHoverLine`, `tabTextColorDisabledLine`, `tabTextColorSegment`, `tabTextColorActiveSegment`, `tabTextColorHoverSegment`, `tabTextColorDisabledSegment`, `tabTextColorBar`, `tabTextColorActiveBar`, `tabTextColorHoverBar`, `tabTextColorDisabledBar`, `tabTextColorCard`, `tabTextColorHoverCard`, `tabTextColorActiveCard`, `tabTextColorDisabledCard`
-  - tab surfaces & borders per type: `tabColor`, `tabColorSegment`, `tabBorderColor`
-  - active bar & misc: `barColor`, `fontWeightStrong`
-  - misc surfaces & radius: `colorSegment`, `tabBorderRadius`
-
 -}
 type alias Vars =
     { tabFontSizeSmall : String

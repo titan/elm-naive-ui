@@ -20,16 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Tag CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`closeIconSizeTiny` → `--n-close-icon-size-tiny`).
-
-Collected by concern:
-
-  - per-size close sizes & icon sizes: `closeIconSizeTiny`, `closeIconSizeSmall`, `closeIconSizeMedium`, `closeIconSizeLarge`, `closeSizeTiny`, `closeSizeSmall`, `closeSizeMedium`, `closeSizeLarge`
-  - per-size heights & font sizes: `heightTiny`, `heightSmall`, `heightMedium`, `heightLarge`, `fontSizeTiny`, `fontSizeSmall`, `fontSizeMedium`, `fontSizeLarge`
-  - base tag look (padding, border, radius, colors, opacity, weight): `padding`, `closeMargin`, `closeBorderRadius`, `borderRadius`, `opacityDisabled`, `fontWeightStrong`, `border`, `textColor`, `color`, `colorBordered`
-  - typed variants (Primary/Info/Success/Warning/Error): `borderPrimary`, `textColorPrimary`, `colorPrimary`, `colorBorderedPrimary`, `closeIconColorPrimary`, `closeIconColorHoverPrimary`, `closeIconColorPressedPrimary`, `closeColorHoverPrimary`, `closeColorPressedPrimary`, `borderInfo`, `textColorInfo`, `colorInfo`, `colorBorderedInfo`, `closeIconColorInfo`, `closeIconColorHoverInfo`, `closeIconColorPressedInfo`, `closeColorHoverInfo`, `closeColorPressedInfo`, `borderSuccess`, `textColorSuccess`, `colorSuccess`, `colorBorderedSuccess`, `closeIconColorSuccess`, `closeIconColorHoverSuccess`, `closeIconColorPressedSuccess`, `closeColorHoverSuccess`, `closeColorPressedSuccess`, `borderWarning`, `textColorWarning`, `colorWarning`, `colorBorderedWarning`, `closeIconColorWarning`, `closeIconColorHoverWarning`, `closeIconColorPressedWarning`, `closeColorHoverWarning`, `closeColorPressedWarning`, `borderError`, `textColorError`, `colorError`, `colorBorderedError`, `closeIconColorError`, `closeIconColorHoverError`, `closeIconColorPressedError`, `closeColorHoverError`, `closeColorPressedError`
-  - checkable states: `textColorCheckable`, `textColorHoverCheckable`, `textColorPressedCheckable`, `textColorChecked`, `colorCheckable`, `colorHoverCheckable`, `colorPressedCheckable`, `colorChecked`, `colorCheckedHover`, `colorCheckedPressed`
-  - close button colors & states: `closeIconColor`, `closeIconColorHover`, `closeIconColorPressed`, `closeColorHover`, `closeColorPressed`
-
 -}
 type alias Vars =
     { closeIconSizeTiny : String

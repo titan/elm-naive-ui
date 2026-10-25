@@ -20,13 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Steps CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`stepHeaderFontSizeSmall` → `--n-step-header-font-size-small`).
-
-Collected by concern:
-
-  - per-size header & index font sizes: `stepHeaderFontSizeSmall`, `stepHeaderFontSizeMedium`, `indicatorIndexFontSizeSmall`, `indicatorIndexFontSizeMedium`, `stepHeaderFontWeight`
-  - per-size indicator & icon sizes: `indicatorSizeSmall`, `indicatorSizeMedium`, `indicatorIconSizeSmall`, `indicatorIconSizeMedium`
-  - state palettes (process/wait/finish/error): `indicatorTextColorProcess`, `indicatorTextColorWait`, `indicatorTextColorFinish`, `indicatorTextColorError`, `indicatorBorderColorProcess`, `indicatorBorderColorWait`, `indicatorBorderColorFinish`, `indicatorBorderColorError`, `indicatorColorProcess`, `indicatorColorWait`, `indicatorColorFinish`, `indicatorColorError`, `splitorColorProcess`, `splitorColorWait`, `splitorColorFinish`, `splitorColorError`, `headerTextColorProcess`, `headerTextColorWait`, `headerTextColorFinish`, `headerTextColorError`, `descriptionTextColorProcess`, `descriptionTextColorWait`, `descriptionTextColorFinish`, `descriptionTextColorError`
-
 -}
 type alias Vars =
     { stepHeaderFontSizeSmall : String

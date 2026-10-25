@@ -18,138 +18,167 @@ swatch grid, then the action / undo-redo rows.
     ColorPicker.panel theme
         { ColorPicker.defaultOptions | value = Just model.color }
 
-Trigger (`view`) DOM:
-
-    div.n-color-picker [--disabled]                       ← the 10 --n-* vars
-      └─ div.n-color-picker__fill
-         ├─ div.n-color-picker-checkboard
-         ├─ div (absolute, background-color = hsla string or unset)
-         └─ div.n-color-picker__value (white/black via getWCAGContrast)
-
-Panel (`panel`) DOM:
-
-    div.n-color-picker-panel [fade-in-scale-up-transition class] [tabindex 0]
-      ├─ div.n-color-picker-control
-      │   ├─ div.n-color-picker-pallete (2 gradient layers + optional handle)
-      │   ├─ div.n-color-picker-preview
-      │   │   ├─ div.n-color-picker-preview__sliders (hue rail + optional alpha)
-      │   │   └─ div.n-color-picker-preview__preview (optional)
-      │   ├─ div.n-color-picker-input (__mode label + NInputGroup of units)
-      │   └─ div.n-color-picker-swatches (optional)
-      ├─ div.n-color-picker-action (actions confirm/clear, optional)
-      ├─ div.n-color-picker-action (actionSlot's custom row — or, when no
-      │   slot is given, the internalActions undo/redo row; the slot wins)
-      └─ the inert focus detector (last child)
+Both trees render Naive UI's own classes: the `div.n-color-picker` trigger
+(the 10 `--n-*` vars) and the `div.n-color-picker-panel` body with its
+control (palette square, hue/alpha rails, preview, mode inputs, swatches)
+and action rows — the full node-by-node walkthrough lives in the porting
+comment below.
 
 `show`, closing and positioning stay caller-owned (the `NUI.DatePicker`
 convention): the trigger emits `onUpdateShow True`; the panel never emits a
 show/closing message — a confirm/clear emits ONE message (`onConfirm`/`onClear`
 when set, else the committed value on `onUpdateValue`) and the caller closes.
+Pointer drags ride the `onMousedown PointerPress` signal (area + press
+geometry, no DOM reads) and the pure `svFromPoint` / `hueFromPoint` /
+`alphaFromPoint` resolve them.
 
-**`[oracle D]` divergences (documented, not bugs):**
-
-1.  **clickoutside-capture → focus detector.** Upstream closes via a
-    `clickoutside` directive in the capture phase (`ColorPicker.tsx:745-759`);
-    the port instead appends the house inert focus-detector sentinel as the
-    panel's last child (`DatePicker.elm:1303-1305`) and leaves closing to the
-    caller.
-
-2.  **named-colour swatches.** Upstream resolves a bare colour name with a
-    canvas (`ColorPickerSwatches.tsx:20-26`); the port uses the static 149-entry
-    seemly table (`NUI.Internal.Color`), so CSS _system_ colours that a canvas
-    could resolve fall back to `'#000000'`, and a name resolves to that table's
-    hex form (e.g. `red` → `#F00`) rather than a canvas' `#ff0000`.
-
-3.  **undo/redo stack is caller-owned.** Upstream keeps `undoStackRef`/
-    `valueIndexRef` as runtime state (`ColorPicker.tsx:322-324, 518-530`); the
-    port takes `undoable`/`redoable` flags and `onUndo`/`onRedo` msgs.
-
-4.  **`normalizeHue` clamps `360 → 359`** (upstream `utils.ts:99` vs seemly
-    `roundDeg`'s `360 → 0`). Kept as-is; both live in `NUI.Internal.Color`.
-
-5.  The cssr header comment (`styles/index.cssr.ts:5-13`) lists only 9 vars —
-    it omits `--n-border`; the port emits all 10 (the actual `cssVarsRef` set).
-
-6.  Upstream's `slots.default` is declared but never read (`ColorPicker.tsx:
-    143`); it has no port counterpart.
-
-7.  **No pointer-drag wiring in the view.** Upstream binds document
-    `mousemove`/`mouseup` on `mousedown` and reads `getBoundingClientRect`
-    (`Pallete.tsx:34-52`, `HueSlider.tsx:36-60`, `AlphaSlider.tsx:35-58`);
-    the port emits an `onMousedown PointerPress` signal (area + press
-    coordinates + the pressed surface's size and viewport origin, all read
-    synchronously inside the event decoder, so a press commits immediately
-    the way upstream's `handleMouseDown` does) and exports the pure geometry
-    (`svFromPoint`, `hueFromPoint`, `alphaFromPoint`) for the caller to run
-    against that captured rect. The surfaces' purely visual children
-    (gradient layers, handles, the alpha checkboard rail) carry
-    `pointer-events: none` so a press always targets the surface itself —
-    upstream's rect read is target-independent (`railRef`, absolute
-    `clientX`), while the port's `offsetX` is target-relative and would
-    skew by the child's own offset. The `pointerAreaIds` seam still puts
-    inert `id`s on the three drag surfaces (test anchors / caller
-    instrumentation), and the panel-root `attributes` seam (raw `Html`
-    attributes, appended after the component's own) carries e.g. an `id`
-    for the whole panel.
-
-8.  **Unit inputs commit on input, not on change.** Upstream `ColorInputUnit`
-    parses on `change`/blur (`ColorInputUnit.tsx:112-163`); the port's embedded
-    `NInput` has no change seam, so `onUnitInput index raw` fires per keystroke
-    and the caller normalizes with the exported unit normalizers.
-
-9.  **`padding: 0 4px` on the unit inputs** — upstream passes
-    `builtinThemeOverrides.inputThemeOverrides` (`ColorInputUnit.tsx:46-48,
-    157`) to the embedded `NInput`; the port threads it through
-    `Input.varOverrides` (`[ ( "--n-padding-left", "4px" ), ( "--n-padding-right", "4px" ) ]`
-    — the vars upstream's theme-peers chain lands in), so the unit inputs
-    carry the narrow padding.
-
-10. **panel `ondragstart` `preventDefault` is not ported** (`ColorPicker.tsx`
-    `renderPanel`): `elm/html` cannot `preventDefault` without a message seam.
-
-11. **Swatch keyboard select (Enter) is not ported** (`ColorPickerSwatches.tsx:
-    94-97`); `elm/html` has no `onKeyDown`, and a decoder seam would need a
-    no-op message. Swatches stay clickable and focusable.
-
-12. **Upstream's `onComplete` has no port option.** Upstream fires it after a
-    drag mouse-up and after an input commit (`ColorPicker.tsx` `handleComplete`);
-    both moments are caller-owned here (drag runs via `onMousedown` + the pure
-    geometry helpers, input commits via `onUnitInput`), so the caller fires its
-    own complete — an option the panel could never trigger would be dead
-    config.
-
-13. **Displayed H/α/S/V are value-derived per render.** Upstream keeps
-    `displayedHueRef`/`displayedAlphaRef`/`displayedSvRef` resynced to the
-    parsed value on change (`ColorPicker.tsx:322-324, 531-545`); the port
-    derives them from `value` each render (identical steady state; during a
-    drag the caller owns it, see 7). Consequence: `defaultOptions.displayedMode
-    = Rgb` matches upstream's computed default only while `value` is unset —
-    with a `value`, upstream derives the mode from it (`ColorPicker.tsx:
-    234-236`), so set `displayedMode` alongside `value`.
-
-14. **Peer theme overrides are not plumbed.** Upstream threads
-    `mergedTheme.peers.Input`/`peers.Button` into the embedded unit inputs and
-    action buttons (`ColorInputUnit.tsx:155-156`); the port reads
-    `NUI.Theme.Input`/`NUI.Theme.Button` directly (the `NUI.DatePicker`
-    precedent).
-
-15. **The panel root carries `tabindex 0`** (house overlay convention,
-    `DatePicker.elm:1145`, pairing with 1); upstream `renderPanel` has none.
-
-16. **The trigger colour layer omits the empty `background-color`** upstream
-    always emits when the value is mode-less (`backgroundColor: hsla ? … : ''`,
-    `ColorPickerTrigger.tsx:47-55`) — visual no-op, the attribute string
-    differs.
-
-17. **`getWCAGContrast` exposes only the default-args form**
-    (`contrastColor = [255, 255, 255]`, `level = 'AA'`; `utils.ts:58-61`) —
-    the only call site (the trigger label) uses the defaults.
-
-18. **`deriveDefaultValue`'s `__DEV__` warn is dropped** (`utils.ts:38-39`) —
-    a dev-only `console.warn`, no-op in production.
+18 documented port divergences — see the comment below (clickoutside →
+focus detector, the static named-colour table, caller-owned undo/redo,
+per-keystroke unit commits, and 14 smaller edges).
 
 @docs Mode, HSLA, Action, InternalAction, PointerPress, PointerArea, Options, defaultOptions, convertColor, deriveDefaultValue, getModeFromValue, getWCAGContrast, normalizeHue, normalizeAlpha, normalizeRgbUnit, normalizeHueUnit, normalizeSlvUnit, normalizeHexaUnit, normalizeAlphaUnit, svFromPoint, hueFromPoint, alphaFromPoint, nextDisplayedMode, view, panel, panelNode
 
+-}
+
+{-
+   PORTING NOTES (plain comment — not published to docs.json). Moved verbatim
+   from the module doc; the module doc keeps the caller-facing contract.
+
+   Trigger (`view`) DOM:
+
+       div.n-color-picker [--disabled]                       <- the 10 --n-* vars
+         └─ div.n-color-picker__fill
+            ├─ div.n-color-picker-checkboard
+            ├─ div (absolute, background-color = hsla string or unset)
+            └─ div.n-color-picker__value (white/black via getWCAGContrast)
+
+   Panel (`panel`) DOM:
+
+       div.n-color-picker-panel [fade-in-scale-up-transition class] [tabindex 0]
+         ├─ div.n-color-picker-control
+         │   ├─ div.n-color-picker-pallete (2 gradient layers + optional handle)
+         │   ├─ div.n-color-picker-preview
+         │   │   ├─ div.n-color-picker-preview__sliders (hue rail + optional alpha)
+         │   │   └─ div.n-color-picker-preview__preview (optional)
+         │   ├─ div.n-color-picker-input (__mode label + NInputGroup of units)
+         │   └─ div.n-color-picker-swatches (optional)
+         ├─ div.n-color-picker-action (actions confirm/clear, optional)
+         ├─ div.n-color-picker-action (actionSlot's custom row — or, when no
+         │   slot is given, the internalActions undo/redo row; the slot wins)
+         └─ the inert focus detector (last child)
+
+   **`[oracle D]` divergences (documented, not bugs):**
+
+   1.  **clickoutside-capture → focus detector.** Upstream closes via a
+       `clickoutside` directive in the capture phase (`ColorPicker.tsx:745-759`);
+       the port instead appends the house inert focus-detector sentinel as the
+       panel's last child (`DatePicker.elm:1303-1305`) and leaves closing to the
+       caller.
+
+   2.  **named-colour swatches.** Upstream resolves a bare colour name with a
+       canvas (`ColorPickerSwatches.tsx:20-26`); the port uses the static 149-entry
+       seemly table (`NUI.Internal.Color`), so CSS _system_ colours that a canvas
+       could resolve fall back to `'#000000'`, and a name resolves to that table's
+       hex form (e.g. `red` → `#F00`) rather than a canvas' `#ff0000`.
+
+   3.  **undo/redo stack is caller-owned.** Upstream keeps `undoStackRef`/
+       `valueIndexRef` as runtime state (`ColorPicker.tsx:322-324, 518-530`); the
+       port takes `undoable`/`redoable` flags and `onUndo`/`onRedo` msgs.
+
+   4.  **`normalizeHue` clamps `360 → 359`** (upstream `utils.ts:99` vs seemly
+       `roundDeg`'s `360 → 0`). Kept as-is; both live in `NUI.Internal.Color`.
+
+   5.  The cssr header comment (`styles/index.cssr.ts:5-13`) lists only 9 vars —
+       it omits `--n-border`; the port emits all 10 (the actual `cssVarsRef` set).
+
+   6.  Upstream's `slots.default` is declared but never read (`ColorPicker.tsx`:
+       143); it has no port counterpart.
+
+   7.  **No pointer-drag wiring in the view.** Upstream binds document
+       `mousemove`/`mouseup` on `mousedown` and reads `getBoundingClientRect`
+       (`Pallete.tsx:34-52`, `HueSlider.tsx:36-60`, `AlphaSlider.tsx:35-58`);
+       the port emits an `onMousedown PointerPress` signal (area + press
+       coordinates + the pressed surface's size and viewport origin, all read
+       synchronously inside the event decoder, so a press commits immediately
+       the way upstream's `handleMouseDown` does) and exports the pure geometry
+       (`svFromPoint`, `hueFromPoint`, `alphaFromPoint`) for the caller to run
+       against that captured rect. The surfaces' purely visual children
+       (gradient layers, handles, the alpha checkboard rail) carry
+       `pointer-events: none` so a press always targets the surface itself —
+       upstream's rect read is target-independent (`railRef`, absolute
+       `clientX`), while the port's `offsetX` is target-relative and would
+       skew by the child's own offset. The `pointerAreaIds` seam still puts
+       inert `id`s on the three drag surfaces (test anchors / caller
+       instrumentation), and the panel-root `attributes` seam (raw `Html`
+       attributes, appended after the component's own) carries e.g. an `id`
+       for the whole panel.
+
+   8.  **Unit inputs commit on input, not on change.** Upstream `ColorInputUnit`
+       parses on `change`/blur (`ColorInputUnit.tsx:112-163`); the port's embedded
+       `NInput` has no change seam, so `onUnitInput index raw` fires per keystroke
+       and the caller normalizes with the exported unit normalizers.
+
+   9.  **`padding: 0 4px` on the unit inputs** — upstream passes
+       `builtinThemeOverrides.inputThemeOverrides` (`ColorInputUnit.tsx:46-48,
+       157`) to the embedded `NInput`; the port threads it through
+       `Input.varOverrides` (`[ ( "--n-padding-left", "4px" ), ( "--n-padding-right", "4px" ) ]`
+       — the vars upstream's theme-peers chain lands in), so the unit inputs
+       carry the narrow padding.
+
+   10. **panel `ondragstart` `preventDefault` is not ported** (`ColorPicker.tsx`
+       `renderPanel`): `elm/html` cannot `preventDefault` without a message seam.
+
+   11. **Swatch keyboard select (Enter) is not ported** (`ColorPickerSwatches.tsx`:
+       94-97); `elm/html` has no `onKeyDown`, and a decoder seam would need a
+       no-op message. Swatches stay clickable and focusable.
+
+   12. **Upstream's `onComplete` has no port option.** Upstream fires it after a
+       drag mouse-up and after an input commit (`ColorPicker.tsx` `handleComplete`);
+       both moments are caller-owned here (drag runs via `onMousedown` + the pure
+       geometry helpers, input commits via `onUnitInput`), so the caller fires its
+       own complete — an option the panel could never trigger would be dead
+       config.
+
+   13. **Displayed H/α/S/V are value-derived per render.** Upstream keeps
+       `displayedHueRef`/`displayedAlphaRef`/`displayedSvRef` resynced to the
+       parsed value on change (`ColorPicker.tsx:322-324, 531-545`); the port
+       derives them from `value` each render (identical steady state; during a
+       drag the caller owns it, see 7). Consequence: `defaultOptions.displayedMode
+       = Rgb` matches upstream's computed default only while `value` is unset —
+       with a `value`, upstream derives the mode from it (`ColorPicker.tsx`:
+       234-236`), so set `displayedMode` alongside `value`.
+
+   14. **Peer theme overrides are not plumbed.** Upstream threads
+       `mergedTheme.peers.Input`/`peers.Button` into the embedded unit inputs and
+       action buttons (`ColorInputUnit.tsx:155-156`); the port reads
+       `NUI.Theme.Input`/`NUI.Theme.Button` directly (the `NUI.DatePicker`
+       precedent).
+
+   15. **The panel root carries `tabindex 0`** (house overlay convention,
+       `DatePicker.elm:1145`, pairing with 1); upstream `renderPanel` has none.
+
+   16. **The trigger colour layer omits the empty `background-color`** upstream
+       always emits when the value is mode-less (`backgroundColor: hsla ? … : ''`,
+       `ColorPickerTrigger.tsx:47-55`) — visual no-op, the attribute string
+       differs.
+
+   17. **`getWCAGContrast` exposes only the default-args form**
+       (`contrastColor = [255, 255, 255]`, `level = 'AA'`; `utils.ts:58-61`) —
+       the only call site (the trigger label) uses the defaults.
+
+   18. **`deriveDefaultValue`'s `__DEV__` warn is dropped** (`utils.ts:38-39`) —
+       a dev-only `console.warn`, no-op in production.
+
+   `PointerPress` doc detail (moved): `x`/`y` are the pointer relative to the
+   pressed surface (offsetX/Y; exactly upstream's `e.clientX - rect.left`
+   against a fresh `getBoundingClientRect`); `width`/`height` the surface's
+   size (currentTarget.clientWidth/Height); `left`/`top` the surface's
+   viewport origin (clientX − offsetX), so the caller can convert later
+   `mousemove` client coords without any DOM read. Everything the geometry
+   helpers need rides on the event itself — a press commits in the same tick
+   (upstream `Pallete.tsx handleMouseDown` calls `handleMouseMove(e)` on
+   press; a click without any move still selects) and drags track per-frame
+   with zero layout reads.
 -}
 
 import Char
@@ -235,20 +264,12 @@ type InternalAction
 
 
 {-| The drag surface a `onMousedown` signal came from, with the press
-geometry read synchronously inside the event decoder:
-
-  - `x`/`y` — the pointer relative to the pressed surface (offsetX/Y;
-    exactly upstream's `e.clientX - rect.left` against a fresh
-    `getBoundingClientRect`)
-  - `width`/`height` — the surface's size (currentTarget.clientWidth/Height)
-  - `left`/`top` — the surface's viewport origin (clientX − offsetX), so the
-    caller can convert later `mousemove` client coords without any DOM read
-
-Everything the geometry helpers need rides on the event itself — a press
-commits in the same tick (upstream `Pallete.tsx handleMouseDown` calls
-`handleMouseMove(e)` on press; a click without any move still selects) and
-drags track per-frame with zero layout reads.
-
+geometry read synchronously inside the event decoder: `x`/`y` relative to
+the pressed surface (exactly upstream's `e.clientX - rect.left` against a
+fresh rect), `width`/`height` its size, `left`/`top` its viewport origin —
+so the caller can convert later `mousemove` client coords without any DOM
+read. A press commits in the same tick and drags track per-frame with zero
+layout reads (divergence 7 in the porting comment below the module doc).
 -}
 type alias PointerPress =
     { area : PointerArea

@@ -7,7 +7,13 @@ module NUI.ImagePreview exposing
     , zoom0, zoomIn, zoomOut
     )
 
-{-| Naive UI's `ImagePreview` (the `n-image` modal), rebuilt on elm-ui.
+{-| Naive UI's `ImagePreview` (the `n-image` modal), rebuilt on elm-ui: the
+`.n-image-preview-container` overlay tree — container (the five `--n-*`
+preview vars), `.n-image-preview-overlay` (click-to-close),
+`.n-image-preview-toolbar` (prev/next when `onPrev` is set, then rotateCCW,
+rotateCW, original size, zoomOut, zoomIn, download, close) and
+`.n-image-preview-wrapper` holding `img.n-image-preview`. `NUI.Css` ships
+Naive UI's exact CSS.
 
 @docs HorizontalDirection, KeyAction, MoveStrategy, Options, Rect
 @docs VerticalDirection, Viewport, Zoom, cssVars, defaults, derivedOffset
@@ -26,87 +32,89 @@ module NUI.ImagePreview exposing
             , onClose = Just Closed
         }
 
-The element is the `.n-image-preview-container` overlay tree: container
-(the five `--n-*` preview vars), `.n-image-preview-overlay` (click-to-close
-seam), `.n-image-preview-toolbar` (prev/next when `onPrev` is set — upstream
-keys both on `onPrev` alone — then rotateCCW, rotateCW, original size,
-zoomOut, zoomIn, download, close, each an `i.n-base-icon`), and
-`.n-image-preview-wrapper` holding `img.n-image-preview`. `NUI.Css` ships
-Naive UI's exact CSS (the whole preview family came with the image batch).
+**The caller-owned contract** (Modal/Slider precedent). No teleport: mount
+`view` wherever you like and unmount when fully closed
+(`displayDirective: 'if'` semantics); while a leave phase runs keep it
+mounted by passing the phase through `overlayTransition` /
+`toolbarTransition` (`fade-in-transition`) or `wrapperTransition`
+(`fade-in-scale-up-transition`). All the interaction math is exported pure —
+run it from your `update`:
 
-The runtime is caller-owned (Modal/Slider precedent):
+  - **Zoom / drag state.** `zoom` is the whole upstream vector (init `zoom0`).
+    `zoomIn` / `zoomOut` / `resizeToOriginalSize` / `toggleOriginalSize`
+    (dblclick) / `rotateCounterclockwise` / `rotateClockwise` /
+    `switchReset` (prev/next switch) are the transforms; `maxScale` /
+    `originalSizeScale` take the img natural size plus the viewport. For
+    `zoomOut`'s offset clamp apply `zoomOut`, re-measure, then
+    `derivedOffset`.
+  - **The img style.** Upstream derives the style pack ONLY on interaction;
+    set `imgDerived` in every interaction handler (alongside the zoom
+    transforms) and the full pack (`imgStyle`: cursor, transition,
+    `transformStyle`) renders; before that only the controlled
+    `previewedImgStyle` pairs.
+  - **Drag.** `moveStrategy` + `derivedOffset` port the viewport clamp; bind
+    `onImgMousedown` and run them in your update. `keepDragOffset` is simply
+    "skip the `derivedOffset` application on mouseup".
+  - **Keyboard.** Bind `keydown` yourself and feed `keyAction` (Space →
+    preventDefault only, ←/→ → prev/next, ↑/↓ → zoom, Escape → close).
+    ←/→ fire the RAW `onPrev`/`onNext` — keyboard navigation does NOT reset
+    zoom/offset/rotate; apply `switchReset` on the toolbar switch path only.
 
-  - **Mounting.** No teleport — mount `view` wherever you like and unmount
-    when fully closed (`displayDirective: 'if'` semantics). While a leave
-    phase runs, keep it mounted: pass the phase through
-    `overlayTransition` / `toolbarTransition` (`fade-in-transition`) or
-    `wrapperTransition` (`fade-in-scale-up-transition`) and the matching
-    node stays rendered with its phase class.
-  - **Zoom / drag state.** `zoom` is the whole upstream vector
-    (`scale`/`scaleExp`/`offsetX`/`offsetY`/`rotate`, init `zoom0`). The
-    transforms are exported pure: `zoomIn` / `zoomOut` /
-    `resizeToOriginalSize` / `toggleOriginalSize` (dblclick — does NOT touch
-    `scaleExp`, upstream bytes) / `rotateCounterclockwise` /
-    `rotateClockwise` / `switchReset` (prev/next switch: scale 1, exp 0,
-    offsets 0, rotate 0). `maxScale` / `originalSizeScale` take the img
-    natural size plus the viewport (`BLEEDING = 32` lives inside).
-    `zoomOut`'s upstream dance (measure the rect at the new scale, clamp
-    offsets, restore) is the caller's two-step: apply `zoomOut`,
-    re-measure, then `derivedOffset` + write `zoom.offsetX/Y`.
-  - **The img style.** Upstream derives the style pack ONLY on interaction
-    (every zoom/rotate/resize/dblclick/drag handler calls
-    `derivePreviewStyle`; nothing derives on mount or on `show`), so a
-    freshly opened preview's img carries just `previewedImgProps.style` —
-    no inline cursor/transform. The port mirrors that: set `imgDerived`
-    (in every interaction handler, alongside the zoom/drag transforms) and
-    the full pack renders; before that, only the controlled pairs.
-    `transformStyle` is the exact transform fragment (raw floats —
-    `String.fromFloat` ≡ `String(number)`) and the pack renders
-    `cursor: grab`/`grabbing` in upstream order (dragging: `transition:
-    none` BEFORE the transform, else AFTER, and only when the transition
-    is suppressed). `previewedImgStyle` is the controlled prefix (upstream
-    `previewedImgProps.style`); pass keys already kebab-cased.
-  - **Drag.** `moveStrategy` + `derivedOffset` port `getMoveStrategy` /
-    `getDerivedOffset` (the viewport clamp); bind `onImgMousedown` and run
-    them in your update. `keepDragOffset` is simply "skip the
-    `derivedOffset` application on mouseup". Two upstream guards the seam
-    leaves to you: mousedown starts a drag only for the primary button
-    (`event.button !== 0` early-returns), and dragstart is ALWAYS
-    preventDefault-ed — guard both in your decoders (a custom
-    `Events.on` / `preventDefault` decoder via `previewedImgAttributes`,
-    since the plain `onImgMousedown` seam carries no button info).
-  - **Keyboard.** Upstream binds `keydown` on `document`; bind it in your
-    own runtime and feed `keyAction` (Space → preventDefault only, ←/→ →
-    prev/next, ↑/↓ → zoom in/out, Escape → close). ←/→ fire the RAW
-    `onPrev`/`onNext` upstream — keyboard navigation does NOT reset
-    zoom/offset/rotate (only the toolbar switch buttons route through
-    `handleSwitch*`), so apply `switchReset` on the toolbar path only.
-  - **`syncTransformOrigin`.** Measure the thumbnail's bounding-rect center
-    and write it into `wrapperStyle` as `("transform-origin",
-    "<tx>px <ty>px")` on enter/before-leave.
-  - **Wheel.** Upstream only `preventDefault`s on the container — attach it
-    yourself via `attributes` (`Html.Events.custom "wheel"` with
-    `preventDefault = True`).
-
-Accepted edges (documented divergences):
-
-  - Toolbar tooltips (`showToolbarTooltip`) are not wired: upstream wraps
-    each icon in a renderless Binder, so the closed-state DOM is identical;
-    the open tooltip body is the caller's `NUI.Tooltip` seam.
-  - `renderToolbar` is not modelled; `toolbarButtons` exposes the exact
-    default node list so a caller can recompose it.
-  - The download button renders; the browser download itself is the
-    caller's msg (upstream `_utils` `download`).
-  - `zindexable` is the caller's `attributes` seam — upstream's directive
-    writes an inline `z-index` while shown; put the rule (or a style
-    override) on the container yourself.
-  - Vue's `key={previewSrc}` (img node re-created on src change) is not
-    modelled; Elm re-renders the attribute.
-  - The container in group mode is identical (`NUI.ImageGroup` composes
-    this view); `previewedImgProps` only flow in standalone mode upstream
-    (group's preview gets no `imageContext`) — the group passes none.
+(The interaction-handler byte walkthrough, the guard details and the
+accepted-edge list live in the plain comment right below — internal port
+notes, deliberately kept out of the published docs.)
 
 Note: record updates bind `defaults` to a local first, then patch fields.
+
+-}
+
+{- INTERNAL PORT NOTES — moved out of the module doc (plain comments do not
+      enter docs.json; the published docs must stay under the package-size
+      limit). Nothing here changes the public contract summarised above.
+
+     - **The img style.** Upstream derives the style pack ONLY on interaction
+       (every zoom/rotate/resize/dblclick/drag handler calls
+       `derivePreviewStyle`; nothing derives on mount or on `show`), so a
+       freshly opened preview's img carries just `previewedImgProps.style` —
+       no inline cursor/transform. The port mirrors that: set `imgDerived`
+       (in every interaction handler, alongside the zoom/drag transforms) and
+       the full pack renders; before that, only the controlled pairs.
+       `transformStyle` is the exact transform fragment (raw floats —
+       `String.fromFloat` ≡ `String(number)`) and the pack renders
+       `cursor: grab`/`grabbing` in upstream order (dragging: `transition:
+       none` BEFORE the transform, else AFTER, and only when the transition
+       is suppressed). `previewedImgStyle` is the controlled prefix (upstream
+       `previewedImgProps.style`); pass keys already kebab-cased.
+     - **Drag.** Two upstream guards the seam leaves to you: mousedown starts a
+       drag only for the primary button (`event.button !== 0` early-returns),
+       and dragstart is ALWAYS preventDefault-ed — guard both in your decoders
+       (a custom `Events.on` / `preventDefault` decoder via
+       `previewedImgAttributes`, since the plain `onImgMousedown` seam carries
+       no button info).
+     - **`syncTransformOrigin`.** Measure the thumbnail's bounding-rect center
+       and write it into `wrapperStyle` as `("transform-origin",
+       "<tx>px <ty>px")` on enter/before-leave.
+     - **Wheel.** Upstream only `preventDefault`s on the container — attach it
+       yourself via `attributes` (`Html.Events.custom "wheel"` with
+       `preventDefault = True`).
+
+   Accepted edges (documented divergences):
+
+     - Toolbar tooltips (`showToolbarTooltip`) are not wired: upstream wraps
+       each icon in a renderless Binder, so the closed-state DOM is identical;
+       the open tooltip body is the caller's `NUI.Tooltip` seam.
+     - `renderToolbar` is not modelled; `toolbarButtons` exposes the exact
+       default node list so a caller can recompose it.
+     - The download button renders; the browser download itself is the
+       caller's msg (upstream `_utils` `download`).
+     - `zindexable` is the caller's `attributes` seam — upstream's directive
+       writes an inline `z-index` while shown; put the rule (or a style
+       override) on the container yourself.
+     - Vue's `key={previewSrc}` (img node re-created on src change) is not
+       modelled; Elm re-renders the attribute.
+     - The container in group mode is identical (`NUI.ImageGroup` composes
+       this view); `previewedImgProps` only flow in standalone mode upstream
+       (group's preview gets no `imageContext`) — the group passes none.
 
 -}
 

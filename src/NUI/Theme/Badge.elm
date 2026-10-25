@@ -20,12 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Badge CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`color` → `--n-color`).
-
-Collected by concern:
-
-  - dot colors (default + typed): `color`, `colorInfo`, `colorSuccess`, `colorError`, `colorWarning`
-  - count typography: `fontSize`, `fontFamily`
-
 -}
 type alias Vars =
     { color : String

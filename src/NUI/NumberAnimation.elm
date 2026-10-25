@@ -26,17 +26,11 @@ Upstream's `formattedValueRef`, directly assertable:
 displayed value from `performance.now()`. This library is pure, so the caller
 owns the clock — the same contract as `NUI.Countdown` — and passes `elapsed`,
 the milliseconds since the animation started. `tweenValue` maps that onto
-upstream's exact expression, including the
-`elapsedTime = Math.min(current - startTime, duration)` clamp and the exact
-`to` that upstream's `onFinish` assigns once that clamp bites: `elapsed = 0`
-displays `from`, any `elapsed >= duration` displays `to` (and a `duration`
-of `0` finishes immediately, as upstream's `elapsedTime === duration` does).
-
-`elapsed` was chosen over an already-resolved `value` so that `from` / `to` /
-`duration` stay live inside the options — the record remains the single
-source of truth and the caller supplies only what a clock actually knows.
-Upstream's `active` and `play()` collapse into when the caller starts
-advancing `elapsed`, and `onFinish` into noticing `elapsed >= duration`.
+upstream's exact expression: `elapsed = 0` displays `from`, any
+`elapsed >= duration` displays `to` (and a `duration` of `0` finishes
+immediately). Upstream's `active` and `play()` collapse into when the caller
+starts advancing `elapsed`, and `onFinish` into noticing
+`elapsed >= duration`.
 
 Elm has no `Intl`, so the locale-derived strings are inputs too:
 `decimalSeparator` and `groupSeparator` default to `"."` / `","` — en-US,
@@ -45,10 +39,53 @@ Naive UI's fallback locale, and zh-CN agree on both. Grouping is fixed
 no equivalent.
 
 NumberAnimation carries no classes and no `--n-*` variables of its own
-(like `NUI.Countdown`).
+(like `NUI.Countdown`). Why `elapsed` rather than a resolved value, and the
+lodash/`toFixed` fidelity notes for `roundTo` / `formatToFixed`, live in the
+porting comment below.
 
 @docs Formatted, Options, defaults, view, easeOut, tweenValue, roundTo, formatToFixed, format, groupDigits
 
+-}
+
+{-
+   PORTING NOTES (plain comment — not published to docs.json). Moved verbatim
+   from the module doc; the module doc keeps the caller-facing contract.
+
+   `elapsed` was chosen over an already-resolved `value` so that `from` / `to` /
+   `duration` stay live inside the options — the record remains the single
+   source of truth and the caller supplies only what a clock actually knows.
+
+   `tweenValue` fidelity: upstream's loop computes
+   `from + (to - from) * easeOut(Math.min(current - startTime, duration) / duration)`
+   and its `onFinish` then assigns `to` exactly. So `elapsed >= duration`
+   returns `to` outright (no `from + (to - from) * easeOut 1`, which can sit one
+   ulp off `to` in Float), and `duration = 0` finishes immediately. Negative
+   `elapsed` flows through the formula unclamped — upstream's monotonic clock
+   can never produce it, and this port changes no upstream expression.
+
+   lodash `round` fidelity (see `roundTo`): the decimal point is shifted
+   through the number's _string_ form (`"1.005e2"`, round, `"101e-2"` back),
+   lodash's exponent trick, so binary representation error never enters —
+   `roundTo 2 1.005 == 1.01` where the naive `toFloat (round (v * 10 ^ p)) /
+   10 ^ p` yields `1` (`1.005 * 100 == 100.49999…` as a Float). Ties go up,
+   JS `Math.round`-style — half towards `+Infinity`, not away from zero. That
+   is exactly what elm/core's `round` _implements_ (its kernel is
+   `Math.round`, so `round -1.5 == -1` — run it), even though the elm/core
+   _docs_ claim ".5 away from zero", which would give `-2`; `roundTo` follows
+   the implementation, matching lodash (`roundTo 0 -1.5 == -1`,
+   `roundTo 2 -1.005 == -1`). Negative precision works as in lodash
+   (`roundTo -2 1234 == 1200`), and as in lodash the precision is capped at
+   `292`. Precision `0` skips the shift and rounds directly, mirroring
+   lodash's `if (precision && …)` guard.
+
+   JS `toFixed` fidelity (see `formatToFixed`): never uses exponent notation
+   and always emits exactly `precision` fractional digits — unlike
+   `String.fromFloat`, which produces `"1e-7"` below `1e-7`. (The one
+   divergence kept: JS `toFixed` switches to `"1e+21"` at `1e21` and beyond,
+   where this still writes the digits out — upstream never animates that
+   high.) The sign is that of the _rounded_ value, so `-0.0004` at precision 2
+   is `"0.00"`, not `"-0.00"` — upstream's round trip already loses the
+   negative zero there.
 -}
 
 import Element exposing (Element)
@@ -173,23 +210,16 @@ displayedValue opts =
 
 {-| lodash's `round(value, precision)` — what upstream formats the displayed
 value with. The decimal point is shifted through the number's _string_ form
-(`"1.005e2"`, round, `"101e-2"` back), lodash's exponent trick, so binary
-representation error never enters:
+(the exponent trick), so binary representation error never enters:
 
     roundTo 2 1.005 == 1.01
 
 where the naive `roundTo p v = toFloat (round (v * 10 ^ p)) / 10 ^ p` yields
-`1` (`1.005 * 100 == 100.49999…` as a Float).
-
-Ties go up, JS `Math.round`-style — half towards `+Infinity`, not away from
-zero. That is exactly what elm/core's `round` _implements_ (its kernel is
-`Math.round`, so `round -1.5 == -1` — run it), even though the elm/core
-_docs_ claim ".5 away from zero", which would give `-2`; `roundTo` follows
-the implementation, matching lodash (`roundTo 0 -1.5 == -1`,
-`roundTo 2 -1.005 == -1`). Negative precision works as in lodash
-(`roundTo -2 1234 == 1200`), and as in lodash the precision is capped at
-`292`. Precision `0` skips the shift and rounds directly, mirroring
-lodash's `if (precision && …)` guard.
+`1` (`1.005 * 100 == 100.49999…` as a Float). Ties go up, JS
+`Math.round`-style (elm/core's `round` kernel — its docs claim otherwise);
+negative precision and the `292` cap work as in lodash; precision `0` rounds
+directly. The full fidelity notes live in the porting comment below the
+module doc.
 
 -}
 roundTo : Int -> Float -> Float
@@ -264,12 +294,10 @@ splitExponent s =
     formatToFixed 3 0.0005 == "0.001"
 
 JS `toFixed` never uses exponent notation and always emits exactly
-`precision` fractional digits — unlike `String.fromFloat`, which produces
-`"1e-7"` below `1e-7`. (The one divergence kept: JS `toFixed` switches to
-`"1e+21"` at `1e21` and beyond, where this still writes the digits out —
-upstream never animates that high.) The sign is that of the _rounded_ value,
-so `-0.0004` at precision 2 is `"0.00"`, not `"-0.00"` — upstream's round
-trip already loses the negative zero there.
+`precision` fractional digits (unlike `String.fromFloat`); the sign is that
+of the _rounded_ value, so `-0.0004` at precision 2 is `"0.00"`. The kept
+divergence (`1e21` and beyond) and the fidelity notes live in the porting
+comment below the module doc.
 
 -}
 formatToFixed : Int -> Float -> String
@@ -423,9 +451,6 @@ right and a leading `-` stays put:
     groupDigits "," "1234567" == "1,234,567"
 
     groupDigits "," "-1234567" == "-1,234,567"
-
-Locales with other group sizes (hi-IN's `12,34,567`) are out of scope — see
-the module docs.
 
 -}
 groupDigits : String -> String -> String

@@ -20,13 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the TimePicker CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`itemFontSize` → `--n-item-font-size`).
-
-Collected by concern:
-
-  - panel chrome (padding, color, shadow, divider, radius): `panelActionPadding`, `panelColor`, `panelBoxShadow`, `panelDividerColor`, `borderRadius`
-  - option items (sizes, text colors, surfaces, radius, opacity): `itemFontSize`, `itemHeight`, `itemWidth`, `itemTextColor`, `itemTextColorActive`, `itemColorHover`, `itemOpacityDisabled`, `itemBorderRadius`
-  - icons (default & disabled): `iconColor`, `iconColorDisabled`
-
 -}
 type alias Vars =
     { itemFontSize : String

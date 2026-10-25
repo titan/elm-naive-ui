@@ -20,13 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Scrollbar CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`railInsetHorizontalBottom` → `--n-rail-inset-horizontal-bottom`).
-
-Collected by concern:
-
-  - rail insets per placement: `railInsetHorizontalBottom`, `railInsetHorizontalTop`, `railInsetVerticalRight`, `railInsetVerticalLeft`
-  - rail color: `railColor`
-  - thumb geometry, radius & colors: `height`, `width`, `borderRadius`, `color`, `colorHover`
-
 -}
 type alias Vars =
     { railInsetHorizontalBottom : String

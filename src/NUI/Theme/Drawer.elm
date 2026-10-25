@@ -20,12 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Drawer CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`bodyPadding` → `--n-body-padding`).
-
-Collected by concern:
-
-  - layout metrics: `bodyPadding`, `borderRadius`, `headerPadding`, `footerPadding`, `titleFontSize`, `titleFontWeight`, `lineHeight`, `closeSize`, `closeIconSize`
-  - chrome colors & states: `color`, `textColor`, `titleTextColor`, `boxShadow`, `headerBorderBottom`, `footerBorderTop`, `closeIconColor`, `closeIconColorHover`, `closeIconColorPressed`, `closeColorHover`, `closeColorPressed`, `closeBorderRadius`, `resizableTriggerColorHover`
-
 -}
 type alias Vars =
     { bodyPadding : String

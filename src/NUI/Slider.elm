@@ -43,47 +43,54 @@ only when a handle is picked) and arrow-key stepping are the caller's
 **The popover seam.** Upstream teleports the value indicator through
 `VBinder/VFollower` (`fade-in-scale-up` transition). The port anchors the
 indicator to the handle wrapper itself — absolutely positioned against the
-handle (the placement's side + centring transform, one margin offset from the
-CSS `--{placement}` rule) — the positioned/teleported wrapper remains the
-caller's (`NUI.Popover` conventions). `tooltip` gates the indicator;
+handle (the placement's side + centring transform, one margin offset from
+the CSS `--{placement}` rule) — the positioned/teleported wrapper remains
+the caller's (`NUI.Popover` conventions). `tooltip` gates the indicator;
 `showTooltip` is the persistent non-range override (upstream's
 `enabled = showTooltip && !range` is the follower seam).
 
 **The rail anchor.** Upstream's fill/dots/handles/marks are absolutely
 positioned DIRECT children of `.n-slider-rail` (its `position: relative`
 makes it the containing block). The port renders them exactly so — any
-intermediate wrapper would become the offset parent itself (elm-ui's
-`.s { position: relative }`) at zero content width and collapse every
-percentage offset inside it.
+intermediate wrapper would become the offset parent itself at zero content
+width and collapse every percentage offset inside it.
 
-**Divergences from upstream (documented):**
-
-  - `marks` is a `List Mark` in caller order (upstream's
-    `Record<string,…>` insertion order); an empty list stands for absent
-    marks (upstream's truthy-empty-object edge is a Vue-ism not modelled).
-  - The `keyboard` prop and the `to`/teleport plumbing are not ported
-    (above); `onUpdate:value`'s emission rides the caller's drag runtime,
-    so the view carries no value-change handler — `onDragstart`/
-    `onDragend` likewise (the root `onMousedown` signal covers the start).
-  - `formatTooltip` formats the indicator text only (upstream default is
-    the raw number — `String.fromFloat` is byte-identical to JS
-    `String(number)`).
-  - Upstream's `handleCountExceeds2` (more than two values: the fill
-    renders unstyled — a bare node is kept — and all dots go inactive) is
-    kept; `aria-disabled` reads the RAW `disabled` prop (upstream quirk —
-    the attribute is emitted only when disabled; never the form-item
-    merge, which the port has none of).
-  - Accepted edges: `stepPrecision` counts the decimals segment of the
-    step's string (upstream counts every char after the dot, exponent
-    included — only reachable for degenerate exponent-form steps); the
-    sanitize buffer is always `±1` (upstream treats a falsy `0` as unset
-    and substitutes the direction default — the port's call sites never
-    pass anything but `±1`).
-
+The documented divergences (marks as a list, the unported `keyboard` prop,
+`formatTooltip` scope, `handleCountExceeds2`, the `stepPrecision` and
+sanitize-buffer edges) are itemised in the porting comment below.
 (Record updates bind `defaults` to a local first — see `NUI.Button`.)
 
 @docs Mark, Options, Step, closestMark, cssVars, defaults, indicatorCssVars, pointerToValue, sanitizeValue, stepValue, valueToPercentage, view
 
+-}
+
+{-
+   PORTING NOTES (plain comment — not published to docs.json). Moved verbatim
+   from the module doc; the module doc keeps the caller-facing contract.
+
+   **Divergences from upstream (documented):**
+
+     - `marks` is a `List Mark` in caller order (upstream's
+       `Record<string,…>` insertion order); an empty list stands for absent
+       marks (upstream's truthy-empty-object edge is a Vue-ism not modelled).
+     - The `keyboard` prop and the `to`/teleport plumbing are not ported
+       (above); `onUpdate:value`'s emission rides the caller's drag runtime,
+       so the view carries no value-change handler — `onDragstart`/
+       `onDragend` likewise (the root `onMousedown` signal covers the start).
+     - `formatTooltip` formats the indicator text only (upstream default is
+       the raw number — `String.fromFloat` is byte-identical to JS
+       `String(number)`).
+     - Upstream's `handleCountExceeds2` (more than two values: the fill
+       renders unstyled — a bare node is kept — and all dots go inactive) is
+       kept; `aria-disabled` reads the RAW `disabled` prop (upstream quirk —
+       the attribute is emitted only when disabled; never the form-item
+       merge, which the port has none of).
+     - Accepted edges: `stepPrecision` counts the decimals segment of the
+       step's string (upstream counts every char after the dot, exponent
+       included — only reachable for degenerate exponent-form steps); the
+       sanitize buffer is always `±1` (upstream treats a falsy `0` as unset
+       and substitutes the direction default — the port's call sites never
+       pass anything but `±1`).
 -}
 
 import Element exposing (Element)

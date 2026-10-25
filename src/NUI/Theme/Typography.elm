@@ -22,14 +22,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Typography CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`pMargin` → `--n-p-margin`).
-
-Collected by concern:
-
-  - headers (scales 1–6 font sizes, margins, prefix & bar widths; weight, text & bar colors): `headerFontSize1`, `headerFontSize2`, `headerFontSize3`, `headerFontSize4`, `headerFontSize5`, `headerFontSize6`, `headerMargin1`, `headerMargin2`, `headerMargin3`, `headerMargin4`, `headerMargin5`, `headerMargin6`, `headerPrefixWidth1`, `headerPrefixWidth2`, `headerPrefixWidth3`, `headerPrefixWidth4`, `headerPrefixWidth5`, `headerPrefixWidth6`, `headerBarWidth1`, `headerBarWidth2`, `headerBarWidth3`, `headerBarWidth4`, `headerBarWidth5`, `headerBarWidth6`, `headerFontWeight`, `headerTextColor`, `headerBarColor`, `headerBarColorPrimary`, `headerBarColorInfo`, `headerBarColorError`, `headerBarColorWarning`, `headerBarColorSuccess`
-  - paragraph/list/blockquote/anchor metrics & colors: `pMargin`, `liMargin`, `olPadding`, `ulPadding`, `aTextColor`, `blockquoteTextColor`, `blockquotePrefixColor`, `blockquoteLineHeight`, `blockquoteFontSize`, `codeBorderRadius`, `liTextColor`, `liLineHeight`, `liFontSize`, `hrColor`, `pTextColor`, `pTextColor1Depth`, `pTextColor2Depth`, `pTextColor3Depth`, `pLineHeight`, `pFontSize`
-  - text color depths (1/2/3) & typed colors: `textColor`, `textColor1Depth`, `textColor2Depth`, `textColor3Depth`, `textColorPrimary`, `textColorInfo`, `textColorSuccess`, `textColorWarning`, `textColorError`
-  - inline code look: `codeTextColor`, `codeColor`, `codeBorder`
-
 -}
 type alias Vars =
     { headerFontSize1 : String

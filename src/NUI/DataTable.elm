@@ -22,376 +22,408 @@ rebuilt on elm-ui.
 
 (Record updates bind `defaults` to a local first — see `NUI.Button`.)
 
-DOM (batch-4 — three body shapes; `headerInBody = maxHeight unset &&
-!flexHeight`, the scrollbar wraps unless the merged layout is `fixed`
-with no explicit scroll props):
-
-    div.n-data-table [--rtl] [--bordered] [--bottom-bordered] [--single-line]
-                     [--single-column] [--loading] [--flex-height] [--empty]
-      style = the 47 `--n-*` vars
-      ├─ div.n-data-table-wrapper
-      │  └─ div.n-data-table-base-table
-      │     ├─ basic (no maxHeight/flexHeight, scrollable):
-      │     │  └─ div.n-data-table-base-table-body (the `n-scrollbar` root)
-      │     │     └─ div.n-scrollbar-container > div.n-scrollbar-content
-      │     │        ├─ table.n-data-table-table [inline table-layout:{merged}]
-      │     │        │  ├─ colgroup > col (style width/min-width/max-width — always;
-      │     │        │  │   selection/expand cols default the width pair to 40px)
-      │     │        │  ├─ thead.n-data-table-thead[data-n-id] (iff showHeader)
-      │     │        │  │  └─ tr.n-data-table-tr (ONE PER HEADER ROW —
-      │     │        │  │     grouped columns stack) > th[colspan rowspan]
-      │     │        │  │     [data-col-key] [--fixed-left|right] [--sorting]
-      │     │        │  │     [--filterable] [--sortable] [--selection] [--last]
-      │     │        │  │     style: [left/right fixed offset] width [text-align]
-      │     │        │  │     ├─ basic/group col: div.n-data-table-th__title-wrapper
-      │     │        │  │     │   (title div [> th__ellipsis | NEllipsis] + sorter
-      │     │        │  │     │    span iff sortable — never on a group th)
-      │     │        │  │     ├─ div.n-data-table-filter [--active] [--show]
-      │     │        │  │     │   [data-data-table-filter] > i.n-base-icon >
-      │     │        │  │     │   FilterIcon svg            (iff filterable)
-      │     │        │  │     └─ selection col (multiple): NCheckbox
-      │     │        │  │         [+ i.n-data-table-check-extra iff column options]
-      │     │        │  └─ tbody.n-data-table-tbody[data-n-id]             (iff rows)
-      │     │        │     └─ tr.n-data-table-tr [--summary] [--striped]
-      │     │        │        [--expanded] > td[colspan rowspan][data-col-key]
-      │     │        │          [--summary] [--sorting] [--fixed-left|right]
-      │     │        │          [--{align}-align] [--selection|--expand]
-      │     │        │          [--last-col] [--last-row]
-      │     │        │          style: [text-align] [width] [left/right offset]
-      │     │        │          (the seed `--indent-offset` is EMPTY on flat
-      │     │        │          data and CSSOM drops an empty custom
-      │     │        │          property — no byte, no attribute at rest)
-      │     │        └─ div.n-data-table-empty[--hide] [style bodyStyle +
-      │     │           sticky string iff xScrollable] > NEmpty        (iff empty)
-      │     ├─ split (maxHeight/flexHeight): div.n-data-table-base-table-header
-      │     │  > table [style min-width?+table-layout:fixed] > colgroup + thead,
-      │     │  then the body scrollbar WITHOUT the inline thead (its slot
-      │     │  renders ONLY the empty div when empty — no table)
-      │     └─ bare (merged layout fixed, no scrollX/maxHeight/flexHeight —
-      │        `tableLayout = TableFixed` or any ellipsis column): the table
-      │        [table-layout:fixed] + empty div directly, NO scrollbar wrapper
-      └─ div.n-data-table__pagination > NPagination + the prefix slot   (iff pagination shown)
-      └─ div.n-data-table-loading-wrapper > the NBaseLoading chain     (iff loading)
-
 Cell content is `Element msg`, embedded through `Element.layoutWith`
 (`display: contents`, the `NUI.Table` precedent); the scroll area is
 `NUI.Scrollbar.view`, the empty state `NUI.Empty.view` and the pager
 `NUI.Pagination.view`.
 
-Divergences (documented):
+Field groups, briefly. `Options`: `columns` / `data` / `rowKey` are the
+table core; `bordered`, `bottomBordered`, `singleLine`, `singleColumn`,
+`striped`, `rowClassName`, `rowAttributes`, `showHeader`, `rtl` and
+`attributes` the shell; `sortStates` + `onSorterChange` (+ `remote`)
+the sort surface; `pagination`, `paginationPrefix`, `paginateSinglePage`
+and `onUpdatePage` / `onUpdatePageSize` the pager; `filterStates` +
+`onUpdateFilters`, `filterMenuShown`, `onFilterTriggerClick` and
+`paginationBehaviorOnFilter` the filter surface; `checkedRowKeys` +
+`onUpdateCheckedRowKeys` + `lastSelectedKey`, `expandedRowKeys` +
+`onUpdateExpandedRowKeys`, `stickyExpandedRows`, `bodyWidth`,
+`renderExpandIcon` and `onCheckExtraClick` the selection / expand
+surface; `loading` (+ the `spin*` fields), `maxHeight`, `minHeight`,
+`flexHeight`, `scrollX` and `tableLayout` the scroll / layout surface;
+and `summary` + `summaryPlacement` the summary rows. `Column`: `key` /
+`title` / `view` the cell core; the `width` trio with `className`,
+`align`, `titleAlign`, `fixed` and `ellipsis` the geometry; `sorter`,
+`defaultSortOrder` and `sortOrder` the sort opt-in; the `filter*` fields
+the filter opt-in; `kind`, `multiple`, `disabled` and `options` the
+selection column; `renderExpand` / `expandable` the expand column; and
+`children`, `titleColSpan`, `colSpan` and `rowSpan` the group / merge
+surface.
 
-  - **Batch-6 scope.** Group headers (`children`), summary rows
-    (`summary` + `summaryPlacement`) and merge cells (`colSpan` /
-    `rowSpan` / `titleColSpan` + the `cordToPass` skip grid) ship here —
-    the two-pass `headerRows` walk, the leaf-flatten of every data-side
-    column pipeline, the summary prepend / append around the expand
-    tiling and the span math / skip grid of the body cells — on top of
-    batch-5's filter, batch-4's scroll / layout, batch-3's selection /
-    expand, batch-2's sort / pagination and the b1 core. Resizable
-    columns, virtual scroll and tree data (`children` on ROWS / cascade /
-    async `onLoad`) remain upcoming batches; the port models flat data
-    only.
-  - **`rowClassName` / `rowAttributes` are skipped on summary rows.**
-    Upstream invokes both with `(summaryRecord, -1)` on every row — the
-    summary payload included; the port's `row ->` signatures cannot carry
-    the assoc-list summary record, so summary rows take neither (the
-    `--summary` tr class still lands; DOM-identical unless a caller's
-    fn keyed off the summary row).
-  - **Summary rows never tile.** Upstream's expand tiling would run over
-    a summary entry whose `__n_summary__${i}` key a caller authored into
-    `expandedRowKeys` (the tiling gates read the summary RECORD —
-    `renderExpand(record, -1)`); the port's tiling needs a data row and
-    skips summary entries outright — an inherited edge only a caller
-    authoring Vue-internal keys reaches. The `--expanded` tr class
-    likewise never lands on a summary row in the port (same key-lookup
-    gap).
-  - **The cross-row `--hover` coordination is not ported.** Upstream's
-    `cordKey` / `hoverKey` maps (a merged td highlights its whole area on
-    hover) are runtime mouse state — a static render never mounts them,
-    so the `td--hover` class is unreachable here (the tr-hover cssr is
-    unaffected; documented, DOM-identical at rest).
-  - **Group nesting is permissive.** Upstream types `children` as base
-    columns only — a selection / expand / further-group column under a
-    group is a TS error; the port's flat record accepts it and walks the
-    leaves (`leafColumns` finds nested special columns; upstream's
-    `selectionColumnRef` short-circuits at the first group, so a
-    selection column AFTER a group is silently ignored upstream but
-    found here). Group columns carry their `fixed` / `width` / `align` /
-    `className` / ellipsis through the same th seams (CommonColumnInfo
-    upstream), and a `Just []` children list is a group with an empty
-    row — `colspan=0`, byte-faithful. Related: **`children` rides a
-    `ColumnChild` wrapper** — Elm forbids a record alias referencing
-    itself, so the child list is `List (ColumnChild row msg)` (a
-    one-token unwrap per child, the recursion carrier of the
-    `NUI.Tree`-style wrapper with the flat-record update ergonomics
-    kept).
-  - **The summary return collapses single-vs-array.** Upstream's
-    `CreateSummary` returns a row object or an array of them (distinct
-    keys `__n_summary__` / `__n_summary__${i}`, Vue-internal — never a
-    DOM byte); the port's fn returns a list and the single object is the
-    one-element list.
-  - **Fixed GROUP columns flatten to leaves.** Upstream's fixed maps
-    seed their traverse from a TOP-LEVEL `fixed` filter
-    (`props.columns.filter`): a fixed group registers its own key (its
-    th takes `--fixed-left` + the offset) and auto-fixes its descendants
-    through map membership (their ths take the class + offsets off the
-    group's `fixed` alone), while a leaf marked `fixed` under an UNFIXED
-    group never enters the map at all (upstream th: no class, no offset;
-    td: the `--fixed-*` class — the td class reads `column.fixed`
-    directly — but no offset). The port's leaf walk keys only columns
-    marked `fixed` THEMSELVES — a fixed group's own th keeps the class
-    (the port reads `column.fixed` for it) but takes no offset, its
-    children render unfixed without their own `fixed`, and a nested
-    fixed leaf registers class + offset. Flat column lists are
-    unaffected (top-level membership ⟺ `column.fixed`).
-  - **The td's seed `--indent-offset` never lands.** Upstream spreads
-    `{'--indent-offset': ''}` into every td style array, but the value
-    only ever fills for tree children (`hasChildren`), and the
-    empty-string custom property is DROPPED by CSSOM `setProperty` (the
-    client patchStyle path) — no byte, and a td with no width / align /
-    fixed-offset fields carries NO style attribute at all. The port
-    renders exactly that (the field-only `stylePairs`); an earlier batch
-    had pinned the literal `--indent-offset:` tail, corrected in the b6
-    oracle round.
-  - **Render-prop sorter customizations are not modelled.** Upstream's
-    `renderSorter` / `renderSorterIcon` (per-column and the global
-    `DataTable.renderSorter` component prop) and `customNextSortOrder` have
-    no Elm surface: the sort button always renders the base icon span and
-    the click cycle is fixed `false → descend → ascend`.
-  - **Render-prop filter customizations are not modelled.** Upstream's
-    `renderFilter` / `renderFilterIcon` / `renderFilterMenu` (per-column
-    and the global `DataTable.renderFilter` component prop) and the
-    `filterIconPopoverProps` popover spread have no Elm surface:
-    `isColumnFilterable` reads `filter` × `filterOptions` only (upstream's
-    third leg is `|| !!column.renderFilterMenu`) and the trigger always
-    renders the base filter icon.
-  - **The filter popover is trigger + caller runtime.** Upstream wraps
-    the trigger in `NPopover` (`trigger="click"`, `placement="bottom"`,
-    `style padding: 0`); the port renders the at-rest trigger — `--active`
-    from the merged state, `--show` from `filterMenuShown`, the click
-    firing `onFilterTriggerClick` — and the menu body is the exported
-    `filterMenu` over the caller's `NUI.Popover` (the selection-menu
-    precedent). The menu-local temporal value is caller-owned too:
-    checkbox checks push / splice it, radios set it (`onChange`), the
-    confirm commits `filtersAfterChange opts column value` through
-    `onUpdateFilters` and the clear commits the cleared payload
-    (`[]` in multiple / array-single mode, else `null`).
-  - **One filter channel + caller-applied page reset.** Upstream's
-    `doUpdateFilters` fires three handlers
-    (`onUpdate:filters` / `onUpdateFilters` / deprecated `onFiltersChange`)
-    with `(filterState, sourceColumn)`, and `FilterButton`'s change handler
-    then resets the page on `paginationBehaviorOnFilter === 'first'`;
-    the port carries `onUpdateFilters` (the next whole state + the source
-    column key) and the flag, the caller applying the reset through
-    `onUpdatePage`. The imperative `filter()` / `filters()` /
-    `clearFilter()` / `clearFilters()` surface is the caller writing
-    `filterStates` (`filtersAfterChange` is `createFilterState` over the
-    merged state — upstream's confirm emit carries the whole merged map,
-    controlled parts included).
-  - **Filter `null` collapses.** `filterOptionValues: null` ≡ `Just []`
-    (both skip filtering and read inactive — upstream's `null` entry and
-    its empty array agree downstream); `defaultFilterOptionValues: null`
-    ≡ `[]` ≡ `Just []` (both seed the empty array). `filterOptionValue`'s
-    undefined / null split IS modelled — `Nothing` is the uncontrolled
-    column, `Just Nothing` upstream's controlled `null`.
-  - **`filterMultiple` is a `Bool`, not upstream's tri-state.** The menu /
-    trigger read upstream `filterMultiple !== false` (default multiple,
-    FilterButton.tsx :41), but the uncontrolled seed walk branches on
-    TRUTHINESS (`if (column.filterMultiple)` — `undefined` takes the
-    single branch, use-table-data.ts :198); the port's `Bool` (default
-    `True` ≡ `!== false`) collapses `undefined` onto `true`, so the seed
-    walk takes the multiple branch. Every cell coincides downstream (a
-    `null` and an `[]` seed agree everywhere) except `filterMultiple`
-    unset + `defaultFilterOptionValue` set (`defaultFilterOptionValues`
-    unset): upstream seeds the scalar (an `--active` trigger with no
-    checked boxes), the port seeds `[]` — a contradictory configuration
-    (a single-mode default on a multiple-mode column) the `Bool` cannot
-    express.
-  - **Menu labels and option values are port-typed.** `clearLabel` /
-    `confirmLabel` are caller-supplied (`filterMenuDefaults` carries the
-    enUS bytes `'Clear'` / `'Confirm'` — upstream injects locale data),
-    `FilterOption.value` is `String` (upstream `string | number`, the
-    `RowKey` collapse), and the radio group `name` (`String(columnKey)`)
-    lands nowhere — the radio port renders no `<input>` (the `BodyRadio`
-    precedent).
-  - **One checked-rows channel, one expanded-rows channel.** Upstream's
-    `doUpdateCheckedRowKeys` fires three handlers (`onUpdate:checkedRowKeys`,
-    `onUpdateCheckedRowKeys`, deprecated `onCheckedRowKeysChange`) with
-    `(keys, rows, { row, action })`, and `doUpdateExpandedRowKeys` two; the
-    port carries `onUpdateCheckedRowKeys` (the full payload, `CheckEmit`)
-    and `onUpdateExpandedRowKeys` (keys only) — `emitRows` drops keys that
-    resolve to no row, where upstream pushes `undefined` holes (reachable
-    only with caller-authored bogus keys).
-  - **`checkedRowKeys` / `expandedRowKeys` are single caller-owned fields.**
-    Upstream's controlled-prop / uncontrolled-internal split collapses:
-    the caller seeds their model (`defaultCheckedRowKeys`,
-    `defaultExpandedRowKeys`, or `defaultExpandAllKeys` for the flat-data
-    reading of `defaultExpandAll` — which seeds nothing without an
-    `expandable` fn, an upstream truthiness quirk kept byte-faithful) and
-    passes the current list; the pure `checkedKeysAfter*` helpers are the
-    `doCheck` / `doUncheck` / `doCheckAll` / `doUncheckAll` transforms,
-    following the flat-data treemate derivation (check = display state then
-    appended new keys; uncheck = display state minus the keys; display
-    merge = data-order members of the source list, `multiple = False`
-    slicing to the first key). Indeterminate keys are always `[]` on flat
-    data, so body checkboxes pass `indeterminate = False`.
-  - **`lastSelectedKey` is caller-owned** (upstream keeps it as component-
-    instance mutable state, init `''`): pass the clicked row's key back
-    through `Options.lastSelectedKey` — the emit payload's `row` carries it
-    — and `checkedKeysAfterRowClick` runs the shift-click range algorithm
-    (current-page rows, `disabled` filtered) over `paginatedData`.
-  - **The selection menu is trigger-icon + caller runtime.** Upstream
-    wraps the `i.n-data-table-check-extra` chevron-down trigger in an
-    `NDropdown`; the port renders the at-rest trigger icon only (its click
-    fires `onCheckExtraClick`) — the menu body, positioning and the
-    `'_n_all__'` / `'_n_none__'` whole-table actions are the caller's
-    `NUI.Dropdown` runtime over `checkedKeysAfterCheckAll` /
-    `checkedKeysAfterUncheckAll` with `wholeTable = True`; custom options
-    keep their own `onSelect` over the page rows. The menu labels are
-    locale data upstream (enUS `'Select all in the table'` / `'Unselect all
-    in the table'`) — caller-supplied here.
-  - **`stickyExpandedRows` needs a measured width.** Upstream reads the
-    body's `ResizeObserver` width; the port takes the caller-measured
-    `Options.bodyWidth` (`Nothing` renders the sticky wrapper without the
-    inline width, as upstream does before its first measurement).
-  - **`renderExpandIcon` replaces the chevron inside the expand trigger**
-    (upstream's table-level renderable slot); the custom icon and the
-    `renderExpand` content ride the same `display: contents` embed wrapper
-    as cell content, and the raw-SVG default trigger does not. Upstream's
-    expand-trigger `onMousedown` `preventDefault` has no Elm surface
-    without a no-op `msg` and leaves no DOM byte — text-selection dragging
-    from the trigger differs.
-  - **Body radios inherit the radio port's no-input edge.** Upstream's
-    `BodyRadio` passes `name = componentId` onto the inner
-    `<input class="n-radio-input">`; the `NUI.Radio` port renders no input,
-    so the name lands nowhere (DOM otherwise equal), and clicking an
-    already-checked radio fires nothing either way (upstream's change event
-    never fires; the port gates `onChange` on `checked`).
-  - **`loading` gates stay caller-side.** Upstream's `doCheck` / `doUncheck`
-    / `doCheckAll` / `doUncheckAll` return early while `props.loading`; the
-    port's pure `checkedKeysAfter*` helpers do not (the caller simply does
-    not apply them while loading). The DOM surface IS batch-4: the root
-    `--loading` class, the `n-data-table-empty--hide` empty dimmer, the
-    force-disabled pager and the `n-data-table-loading-wrapper` overlay
-    with the `NBaseLoading` chain.
-  - **Selection/expand columns are flat-record fields, not variant types.**
-    `Column.kind` discriminates; upstream's TS `never` fields become
-    ignored-if-set with one byte-verified asymmetry: the controlled-sorter
-    filter gates `kind /= KindSelection` only (upstream gates
-    `type !== 'selection'`, use-sorter.ts:112), so a sorter on an expand
-    column behaves like a normal column's and `defaultSortStates` seeds
-    either kind — both unreachable upstream. The `--sorting` class
-    comparison stays on the raw `key` (upstream `isColumnSorting`), which
-    selection/expand columns never match upstream (`key` undefined there).
-  - **The selection/expand `<col>` width pair defaults to 40px**
-    (`getStringColWidth`'s `SELECTION_COL_WIDTH` / `EXPAND_COL_WIDTH`
-    fallbacks) while the th/td inline `width` keeps upstream's bare
-    `pxfy(column.width)` — `undefined` and dropped when unset. The
-    `data-col-key` identity is the `__n_selection__` / `__n_expand__`
-    sentinel (`getColKey`), not the caller key.
-  - **One sorter-change channel.** Upstream's `doUpdateSorter` fires
-    `'onUpdate:sorter'`, then `onUpdateSorter`, then the deprecated
-    `onSorterChange`, and the component exposes imperative
-    `sort(columnKey, order)` / `clearSorter()` methods; the port carries
-    `onSorterChange` only — the imperative surface is the caller applying
-    the exposed pure `createNextSorter` / `deriveNextSorter` (empty key
-    ≙ `clearSorter`).
-  - **`column.cellProps` is not modelled.** Upstream's
-    `CommonColumnInfo.cellProps` resolves per-cell class / style / attrs
-    onto every td of the column (`resolvedCellProps`); the field is
-    absent — extend `Column` when a batch needs it.
-  - **`upsertSortState` replaces every same-key state.** Upstream's
-    `updateSortStatesByNewSortState` replaces the FIRST matching index
-    only; reachable only with caller-authored duplicate keys in
-    `sortStates` / columns (`defaultSortStates` / `deriveNextSorter`
-    never produce duplicates).
-  - **`getSortFunction` omits upstream's truthy-`columnKey` gate** on the
-    default-sorter branch (`columnKey &&`): a `""`-keyed `SorterDefault`
-    column diverges (upstream ties through `row['']` being undefined;
-    the port sorts by the accessor) — pathological.
-  - **An ordinal `compare` stands in for `localeCompare`** in the default
-    sorter (`sortValueCompare`) — Elm has no `String.compare` / ICU
-    collation, so string ordering is by code point.
-  - **One page / page-size handler channel.** Upstream fires the pagination
-    object's own handlers, then the table-level `onUpdate:page` /
-    `onUpdate:pageSize`, then the deprecated `onChange` / `onPageSizeChange`,
-    then writes uncontrolled refs; Elm carries the table-level
-    `onUpdatePage` / `onUpdatePageSize` only, and `mergedPaginationOpts`
-    replaces the pagination record's own handlers with them. Upstream also
-    force-disables the pager while `loading` — the override is in force
-    since the loading batch (upstream's `disabled={loading}` rides AHEAD
-    of the pagination spread, so an explicit `disabled: false` key in the
-    caller's pagination object would override IT — a distinction the
-    port's `Bool` field cannot express, and every expressible caller
-    state renders the same either way).
-  - **`pagination.defaultPage` / `defaultPageSize` seeds are caller-owned.**
-    `NUI.Pagination` has no such fields, so callers seed their model and
-    pass `currentPage` / `pageSize` explicitly; the pagination prefix
-    (upstream: a render-prop on the pagination object) rides
-    `paginationPrefix` into the pager's prefix slot.
-  - **The sort click handler only attaches to a th when the column is
-    sortable and `onSorterChange` is set.** Upstream attaches the listener
-    to every basic-column th and no-ops inside it — listener presence is
-    not a DOM byte, so this is a compile-time guard, not a port change.
-  - **JS sort is stable by spec**; `List.sortWith`'s tie order is an
-    implementation detail — if a pinned tie order ever disagrees, re-derive
-    from the upstream bytes.
-  - **`data-n-id` is the constant `"1"`.** Upstream stamps a random seemly
-    component id on thead/tbody; it only keys the fixed-column ACTIVE-shadow
-    cssr (`[data-n-id] [data-col-key]::after/before`), which mounts at
-    runtime only when the scroll position activates a column — unreachable
-    in a pure render, so the shadow strips never mount (the static
-    `cM('fixed-left')` sticky / z-index / geometry rules DO ship, and the
-    `--n-box-shadow-*` vars stay on the root). Upstream's
-    `--transition-disabled` imperative toggling is the same story — added
-    post-mount, removed on first measure; the initial render carries
-    neither.
-  - **`tableLayout` merges per upstream** (`mergedTableLayoutRef`):
-    `fixed` when `flexHeight` / `maxHeight` / any ellipsis column (virtual
-    scroll is the fourth upstream trigger — out of scope), else the
-    caller's `tableLayout`. A `fixed` merged layout with no scrollX /
-    maxHeight / flexHeight makes the body NScrollbar render the slot BARE
-    (no `n-scrollbar` wrapper, no `n-data-table-base-table-body` class,
-    the bodyStyle dropped) — byte-faithful to upstream's
-    `if (!scrollable) return slot`.
-  - **`title` is a plain `String`** until the header-render batch (upstream
-    also accepts a render function returning VNodes).
-  - **`rowAttributes` land verbatim after the row's `class` attribute.**
-    Upstream merges `rowProps(row, index).class` into the row's class list;
-    Elm attributes are opaque, and a caller `Html.Attributes.class` would
-    replace the whole `className` (Elm properties are last-wins), so prefer
-    `rowClassName` for classes.
-  - **Scrollbar-content children ride elm-ui layout wrappers.** The table
-    and the empty node reach `.n-scrollbar-content` as
-    `display: contents` wrapper divs (the `NUI.Scrollbar` child-embedding
-    shape shared with the menu consumers), not as flat children — the
-    first raw `<table>` consumer. Verified equivalent: no cssr rule on
-    either side uses a direct-child combinator past the content div, and
-    the `--empty` height chain targets the content div itself.
-  - **`Column.width` / `scrollX` / `maxHeight` / `minHeight` are
-    `Maybe Int` (px).** Upstream accepts `number | string` (`'10%'`);
-    a string form arrives if a batch needs it. The port's `showHeader` is
-    an extension — upstream has NO `show-header` prop (the header always
-    renders, inline or discrete); the port gates both headers on it.
-    Upstream's `scrollbarProps` (attr passthrough onto the body
-    NScrollbar) has no surface — extend `NUI.Scrollbar.Options` if a
-    batch needs it.
-  - **`formatLength`'s zero special-case is not reproduced on the scroll /
-    layout length seams.** Upstream formats the body fallthrough style
-    (`max-height` / `min-height`), the scrollbar content `min-width` +
-    `width:100%`, the discrete header's `min-width` and the `<col>` width
-    pair through `_utils`'s `formatLength`, whose `0` input renders the
-    bare `'0'` — every non-zero number is `Npx`, exactly like the port's
-    `pxfy`. A caller-set `Just 0` on those seams therefore renders `0px`
-    (CSS-equivalent), reachable only with that degenerate input; the
-    th / td inline `width` and the fixed-column offsets go through
-    seemly's `pxfy` upstream, where `0` really is `'0px'` (the port
-    matches, pinned). Same family: upstream guards the content
-    `width:100%` with `if (scrollX)` (a truthiness check), so `scrollX =
-    0` drops it where the port keeps it.
+Porting notes, the full DOM shape and the upstream divergence list live
+in the plain block comment just below this module doc (kept out of the
+published docs for size).
 
 @docs Align, CheckAction, CheckEmit, Column, ColumnChild, ColumnEllipsis, ColumnKind, Filter, FilterMenuOptions, FilterMode, FilterOption, FilterValue, FixedSide, Options, PaginationBehavior, SelectionOption, Size, SortOrder, SortState, SortValue, Sorter, SorterCompare, SummaryCell, SummaryPlacement, TableLayout, allRowsChecked, boundedPage, checkedKeysAfterCheck, checkedKeysAfterCheckAll, checkedKeysAfterRowClick, checkedKeysAfterUncheck, checkedKeysAfterUncheckAll, columnDefaults, createNextSorter, cssVars, defaultExpandAllKeys, defaultFilterStates, defaultSortStates, defaults, deriveNextSorter, filterMenu, filterMenuDefaults, filteredData, filtersAfterChange, fixedColumnLeftMap, fixedColumnRightMap, getMultiplePriority, getSortFunction, headerCheckboxDisabled, headerRows, isColumnFilterable, isColumnSorting, isSortable, leafColumns, mergedCheckedRowKeys, mergedFilterStates, mergedItemCount, mergedPageSize, mergedPaginationOpts, mergedSortStates, nextSortOrder, paginatedData, shouldUseArrayInSingleMode, showPagination, someRowsChecked, sortValueCompare, sortedData, toggleExpandedRowKey, view
 
+-}
+
+{-
+   PORTING NOTES — moved out of the module doc (plain comments do not
+   enter docs.json). Everything below is the verbatim porting record:
+   the full DOM shape, then the upstream divergence list.
+
+   DOM (batch-4 — three body shapes; `headerInBody = maxHeight unset &&
+   !flexHeight`, the scrollbar wraps unless the merged layout is `fixed`
+   with no explicit scroll props):
+
+       div.n-data-table [--rtl] [--bordered] [--bottom-bordered] [--single-line]
+                        [--single-column] [--loading] [--flex-height] [--empty]
+         style = the 47 `--n-*` vars
+         ├─ div.n-data-table-wrapper
+         │  └─ div.n-data-table-base-table
+         │     ├─ basic (no maxHeight/flexHeight, scrollable):
+         │     │  └─ div.n-data-table-base-table-body (the `n-scrollbar` root)
+         │     │     └─ div.n-scrollbar-container > div.n-scrollbar-content
+         │     │        ├─ table.n-data-table-table [inline table-layout:{merged}]
+         │     │        │  ├─ colgroup > col (style width/min-width/max-width — always;
+         │     │        │  │   selection/expand cols default the width pair to 40px)
+         │     │        │  ├─ thead.n-data-table-thead[data-n-id] (iff showHeader)
+         │     │        │  │  └─ tr.n-data-table-tr (ONE PER HEADER ROW —
+         │     │        │  │     grouped columns stack) > th[colspan rowspan]
+         │     │        │  │     [data-col-key] [--fixed-left|right] [--sorting]
+         │     │        │  │     [--filterable] [--sortable] [--selection] [--last]
+         │     │        │  │     style: [left/right fixed offset] width [text-align]
+         │     │        │  │     ├─ basic/group col: div.n-data-table-th__title-wrapper
+         │     │        │  │     │   (title div [> th__ellipsis | NEllipsis] + sorter
+         │     │        │  │     │    span iff sortable — never on a group th)
+         │     │        │  │     ├─ div.n-data-table-filter [--active] [--show]
+         │     │        │  │     │   [data-data-table-filter] > i.n-base-icon >
+         │     │        │  │     │   FilterIcon svg            (iff filterable)
+         │     │        │  │     └─ selection col (multiple): NCheckbox
+         │     │        │  │         [+ i.n-data-table-check-extra iff column options]
+         │     │        │  └─ tbody.n-data-table-tbody[data-n-id]             (iff rows)
+         │     │        │     └─ tr.n-data-table-tr [--summary] [--striped]
+         │     │        │        [--expanded] > td[colspan rowspan][data-col-key]
+         │     │        │          [--summary] [--sorting] [--fixed-left|right]
+         │     │        │          [--{align}-align] [--selection|--expand]
+         │     │        │          [--last-col] [--last-row]
+         │     │        │          style: [text-align] [width] [left/right offset]
+         │     │        │          (the seed `--indent-offset` is EMPTY on flat
+         │     │        │          data and CSSOM drops an empty custom
+         │     │        │          property — no byte, no attribute at rest)
+         │     │        └─ div.n-data-table-empty[--hide] [style bodyStyle +
+         │     │           sticky string iff xScrollable] > NEmpty        (iff empty)
+         │     ├─ split (maxHeight/flexHeight): div.n-data-table-base-table-header
+         │     │  > table [style min-width?+table-layout:fixed] > colgroup + thead,
+         │     │  then the body scrollbar WITHOUT the inline thead (its slot
+         │     │  renders ONLY the empty div when empty — no table)
+         │     └─ bare (merged layout fixed, no scrollX/maxHeight/flexHeight —
+         │        `tableLayout = TableFixed` or any ellipsis column): the table
+         │        [table-layout:fixed] + empty div directly, NO scrollbar wrapper
+         └─ div.n-data-table__pagination > NPagination + the prefix slot   (iff pagination shown)
+         └─ div.n-data-table-loading-wrapper > the NBaseLoading chain     (iff loading)
+
+   Divergences (documented):
+
+     - **Batch-6 scope.** Group headers (`children`), summary rows
+       (`summary` + `summaryPlacement`) and merge cells (`colSpan` /
+       `rowSpan` / `titleColSpan` + the `cordToPass` skip grid) ship here —
+       the two-pass `headerRows` walk, the leaf-flatten of every data-side
+       column pipeline, the summary prepend / append around the expand
+       tiling and the span math / skip grid of the body cells — on top of
+       batch-5's filter, batch-4's scroll / layout, batch-3's selection /
+       expand, batch-2's sort / pagination and the b1 core. Resizable
+       columns, virtual scroll and tree data (`children` on ROWS / cascade /
+       async `onLoad`) remain upcoming batches; the port models flat data
+       only.
+     - **`rowClassName` / `rowAttributes` are skipped on summary rows.**
+       Upstream invokes both with `(summaryRecord, -1)` on every row — the
+       summary payload included; the port's `row ->` signatures cannot carry
+       the assoc-list summary record, so summary rows take neither (the
+       `--summary` tr class still lands; DOM-identical unless a caller's
+       fn keyed off the summary row).
+     - **Summary rows never tile.** Upstream's expand tiling would run over
+       a summary entry whose `__n_summary__${i}` key a caller authored into
+       `expandedRowKeys` (the tiling gates read the summary RECORD —
+       `renderExpand(record, -1)`); the port's tiling needs a data row and
+       skips summary entries outright — an inherited edge only a caller
+       authoring Vue-internal keys reaches. The `--expanded` tr class
+       likewise never lands on a summary row in the port (same key-lookup
+       gap).
+     - **The cross-row `--hover` coordination is not ported.** Upstream's
+       `cordKey` / `hoverKey` maps (a merged td highlights its whole area on
+       hover) are runtime mouse state — a static render never mounts them,
+       so the `td--hover` class is unreachable here (the tr-hover cssr is
+       unaffected; documented, DOM-identical at rest).
+     - **Group nesting is permissive.** Upstream types `children` as base
+       columns only — a selection / expand / further-group column under a
+       group is a TS error; the port's flat record accepts it and walks the
+       leaves (`leafColumns` finds nested special columns; upstream's
+       `selectionColumnRef` short-circuits at the first group, so a
+       selection column AFTER a group is silently ignored upstream but
+       found here). Group columns carry their `fixed` / `width` / `align` /
+       `className` / ellipsis through the same th seams (CommonColumnInfo
+       upstream), and a `Just []` children list is a group with an empty
+       row — `colspan=0`, byte-faithful. Related: **`children` rides a
+       `ColumnChild` wrapper** — Elm forbids a record alias referencing
+       itself, so the child list is `List (ColumnChild row msg)` (a
+       one-token unwrap per child, the recursion carrier of the
+       `NUI.Tree`-style wrapper with the flat-record update ergonomics
+       kept).
+     - **The summary return collapses single-vs-array.** Upstream's
+       `CreateSummary` returns a row object or an array of them (distinct
+       keys `__n_summary__` / `__n_summary__${i}`, Vue-internal — never a
+       DOM byte); the port's fn returns a list and the single object is the
+       one-element list.
+     - **Fixed GROUP columns flatten to leaves.** Upstream's fixed maps
+       seed their traverse from a TOP-LEVEL `fixed` filter
+       (`props.columns.filter`): a fixed group registers its own key (its
+       th takes `--fixed-left` + the offset) and auto-fixes its descendants
+       through map membership (their ths take the class + offsets off the
+       group's `fixed` alone), while a leaf marked `fixed` under an UNFIXED
+       group never enters the map at all (upstream th: no class, no offset;
+       td: the `--fixed-*` class — the td class reads `column.fixed`
+       directly — but no offset). The port's leaf walk keys only columns
+       marked `fixed` THEMSELVES — a fixed group's own th keeps the class
+       (the port reads `column.fixed` for it) but takes no offset, its
+       children render unfixed without their own `fixed`, and a nested
+       fixed leaf registers class + offset. Flat column lists are
+       unaffected (top-level membership ⟺ `column.fixed`).
+     - **The td's seed `--indent-offset` never lands.** Upstream spreads
+       `{'--indent-offset': ''}` into every td style array, but the value
+       only ever fills for tree children (`hasChildren`), and the
+       empty-string custom property is DROPPED by CSSOM `setProperty` (the
+       client patchStyle path) — no byte, and a td with no width / align /
+       fixed-offset fields carries NO style attribute at all. The port
+       renders exactly that (the field-only `stylePairs`); an earlier batch
+       had pinned the literal `--indent-offset:` tail, corrected in the b6
+       oracle round.
+     - **Render-prop sorter customizations are not modelled.** Upstream's
+       `renderSorter` / `renderSorterIcon` (per-column and the global
+       `DataTable.renderSorter` component prop) and `customNextSortOrder` have
+       no Elm surface: the sort button always renders the base icon span and
+       the click cycle is fixed `false → descend → ascend`.
+     - **Render-prop filter customizations are not modelled.** Upstream's
+       `renderFilter` / `renderFilterIcon` / `renderFilterMenu` (per-column
+       and the global `DataTable.renderFilter` component prop) and the
+       `filterIconPopoverProps` popover spread have no Elm surface:
+       `isColumnFilterable` reads `filter` × `filterOptions` only (upstream's
+       third leg is `|| !!column.renderFilterMenu`) and the trigger always
+       renders the base filter icon.
+     - **The filter popover is trigger + caller runtime.** Upstream wraps
+       the trigger in `NPopover` (`trigger="click"`, `placement="bottom"`,
+       `style padding: 0`); the port renders the at-rest trigger — `--active`
+       from the merged state, `--show` from `filterMenuShown`, the click
+       firing `onFilterTriggerClick` — and the menu body is the exported
+       `filterMenu` over the caller's `NUI.Popover` (the selection-menu
+       precedent). The menu-local temporal value is caller-owned too:
+       checkbox checks push / splice it, radios set it (`onChange`), the
+       confirm commits `filtersAfterChange opts column value` through
+       `onUpdateFilters` and the clear commits the cleared payload
+       (`[]` in multiple / array-single mode, else `null`).
+     - **One filter channel + caller-applied page reset.** Upstream's
+       `doUpdateFilters` fires three handlers
+       (`onUpdate:filters` / `onUpdateFilters` / deprecated `onFiltersChange`)
+       with `(filterState, sourceColumn)`, and `FilterButton`'s change handler
+       then resets the page on `paginationBehaviorOnFilter === 'first'`;
+       the port carries `onUpdateFilters` (the next whole state + the source
+       column key) and the flag, the caller applying the reset through
+       `onUpdatePage`. The imperative `filter()` / `filters()` /
+       `clearFilter()` / `clearFilters()` surface is the caller writing
+       `filterStates` (`filtersAfterChange` is `createFilterState` over the
+       merged state — upstream's confirm emit carries the whole merged map,
+       controlled parts included).
+     - **Filter `null` collapses.** `filterOptionValues: null` ≡ `Just []`
+       (both skip filtering and read inactive — upstream's `null` entry and
+       its empty array agree downstream); `defaultFilterOptionValues: null`
+       ≡ `[]` ≡ `Just []` (both seed the empty array). `filterOptionValue`'s
+       undefined / null split IS modelled — `Nothing` is the uncontrolled
+       column, `Just Nothing` upstream's controlled `null`.
+     - **`filterMultiple` is a `Bool`, not upstream's tri-state.** The menu /
+       trigger read upstream `filterMultiple !== false` (default multiple,
+       FilterButton.tsx :41), but the uncontrolled seed walk branches on
+       TRUTHINESS (`if (column.filterMultiple)` — `undefined` takes the
+       single branch, use-table-data.ts :198); the port's `Bool` (default
+       `True` ≡ `!== false`) collapses `undefined` onto `true`, so the seed
+       walk takes the multiple branch. Every cell coincides downstream (a
+       `null` and an `[]` seed agree everywhere) except `filterMultiple`
+       unset + `defaultFilterOptionValue` set (`defaultFilterOptionValues`
+       unset): upstream seeds the scalar (an `--active` trigger with no
+       checked boxes), the port seeds `[]` — a contradictory configuration
+       (a single-mode default on a multiple-mode column) the `Bool` cannot
+       express.
+     - **Menu labels and option values are port-typed.** `clearLabel` /
+       `confirmLabel` are caller-supplied (`filterMenuDefaults` carries the
+       enUS bytes `'Clear'` / `'Confirm'` — upstream injects locale data),
+       `FilterOption.value` is `String` (upstream `string | number`, the
+       `RowKey` collapse), and the radio group `name` (`String(columnKey)`)
+       lands nowhere — the radio port renders no `<input>` (the `BodyRadio`
+       precedent).
+     - **One checked-rows channel, one expanded-rows channel.** Upstream's
+       `doUpdateCheckedRowKeys` fires three handlers (`onUpdate:checkedRowKeys`,
+       `onUpdateCheckedRowKeys`, deprecated `onCheckedRowKeysChange`) with
+       `(keys, rows, { row, action })`, and `doUpdateExpandedRowKeys` two; the
+       port carries `onUpdateCheckedRowKeys` (the full payload, `CheckEmit`)
+       and `onUpdateExpandedRowKeys` (keys only) — `emitRows` drops keys that
+       resolve to no row, where upstream pushes `undefined` holes (reachable
+       only with caller-authored bogus keys).
+     - **`checkedRowKeys` / `expandedRowKeys` are single caller-owned fields.**
+       Upstream's controlled-prop / uncontrolled-internal split collapses:
+       the caller seeds their model (`defaultCheckedRowKeys`,
+       `defaultExpandedRowKeys`, or `defaultExpandAllKeys` for the flat-data
+       reading of `defaultExpandAll` — which seeds nothing without an
+       `expandable` fn, an upstream truthiness quirk kept byte-faithful) and
+       passes the current list; the pure `checkedKeysAfter*` helpers are the
+       `doCheck` / `doUncheck` / `doCheckAll` / `doUncheckAll` transforms,
+       following the flat-data treemate derivation (check = display state then
+       appended new keys; uncheck = display state minus the keys; display
+       merge = data-order members of the source list, `multiple = False`
+       slicing to the first key). Indeterminate keys are always `[]` on flat
+       data, so body checkboxes pass `indeterminate = False`.
+     - **`lastSelectedKey` is caller-owned** (upstream keeps it as component-
+       instance mutable state, init `''`): pass the clicked row's key back
+       through `Options.lastSelectedKey` — the emit payload's `row` carries it
+       — and `checkedKeysAfterRowClick` runs the shift-click range algorithm
+       (current-page rows, `disabled` filtered) over `paginatedData`.
+     - **The selection menu is trigger-icon + caller runtime.** Upstream
+       wraps the `i.n-data-table-check-extra` chevron-down trigger in an
+       `NDropdown`; the port renders the at-rest trigger icon only (its click
+       fires `onCheckExtraClick`) — the menu body, positioning and the
+       `'_n_all__'` / `'_n_none__'` whole-table actions are the caller's
+       `NUI.Dropdown` runtime over `checkedKeysAfterCheckAll` /
+       `checkedKeysAfterUncheckAll` with `wholeTable = True`; custom options
+       keep their own `onSelect` over the page rows. The menu labels are
+       locale data upstream (enUS `'Select all in the table'` / `'Unselect all
+       in the table'`) — caller-supplied here.
+     - **`stickyExpandedRows` needs a measured width.** Upstream reads the
+       body's `ResizeObserver` width; the port takes the caller-measured
+       `Options.bodyWidth` (`Nothing` renders the sticky wrapper without the
+       inline width, as upstream does before its first measurement).
+     - **`renderExpandIcon` replaces the chevron inside the expand trigger**
+       (upstream's table-level renderable slot); the custom icon and the
+       `renderExpand` content ride the same `display: contents` embed wrapper
+       as cell content, and the raw-SVG default trigger does not. Upstream's
+       expand-trigger `onMousedown` `preventDefault` has no Elm surface
+       without a no-op `msg` and leaves no DOM byte — text-selection dragging
+       from the trigger differs.
+     - **Body radios inherit the radio port's no-input edge.** Upstream's
+       `BodyRadio` passes `name = componentId` onto the inner
+       `<input class="n-radio-input">`; the `NUI.Radio` port renders no input,
+       so the name lands nowhere (DOM otherwise equal), and clicking an
+       already-checked radio fires nothing either way (upstream's change event
+       never fires; the port gates `onChange` on `checked`).
+     - **`loading` gates stay caller-side.** Upstream's `doCheck` / `doUncheck`
+       / `doCheckAll` / `doUncheckAll` return early while `props.loading`; the
+       port's pure `checkedKeysAfter*` helpers do not (the caller simply does
+       not apply them while loading). The DOM surface IS batch-4: the root
+       `--loading` class, the `n-data-table-empty--hide` empty dimmer, the
+       force-disabled pager and the `n-data-table-loading-wrapper` overlay
+       with the `NBaseLoading` chain.
+     - **Selection/expand columns are flat-record fields, not variant types.**
+       `Column.kind` discriminates; upstream's TS `never` fields become
+       ignored-if-set with one byte-verified asymmetry: the controlled-sorter
+       filter gates `kind /= KindSelection` only (upstream gates
+       `type !== 'selection'`, use-sorter.ts:112), so a sorter on an expand
+       column behaves like a normal column's and `defaultSortStates` seeds
+       either kind — both unreachable upstream. The `--sorting` class
+       comparison stays on the raw `key` (upstream `isColumnSorting`), which
+       selection/expand columns never match upstream (`key` undefined there).
+     - **The selection/expand `<col>` width pair defaults to 40px**
+       (`getStringColWidth`'s `SELECTION_COL_WIDTH` / `EXPAND_COL_WIDTH`
+       fallbacks) while the th/td inline `width` keeps upstream's bare
+       `pxfy(column.width)` — `undefined` and dropped when unset. The
+       `data-col-key` identity is the `__n_selection__` / `__n_expand__`
+       sentinel (`getColKey`), not the caller key.
+     - **One sorter-change channel.** Upstream's `doUpdateSorter` fires
+       `'onUpdate:sorter'`, then `onUpdateSorter`, then the deprecated
+       `onSorterChange`, and the component exposes imperative
+       `sort(columnKey, order)` / `clearSorter()` methods; the port carries
+       `onSorterChange` only — the imperative surface is the caller applying
+       the exposed pure `createNextSorter` / `deriveNextSorter` (empty key
+       ≙ `clearSorter`).
+     - **`column.cellProps` is not modelled.** Upstream's
+       `CommonColumnInfo.cellProps` resolves per-cell class / style / attrs
+       onto every td of the column (`resolvedCellProps`); the field is
+       absent — extend `Column` when a batch needs it.
+     - **`upsertSortState` replaces every same-key state.** Upstream's
+       `updateSortStatesByNewSortState` replaces the FIRST matching index
+       only; reachable only with caller-authored duplicate keys in
+       `sortStates` / columns (`defaultSortStates` / `deriveNextSorter`
+       never produce duplicates).
+     - **`getSortFunction` omits upstream's truthy-`columnKey` gate** on the
+       default-sorter branch (`columnKey &&`): a `""`-keyed `SorterDefault`
+       column diverges (upstream ties through `row['']` being undefined;
+       the port sorts by the accessor) — pathological.
+     - **An ordinal `compare` stands in for `localeCompare`** in the default
+       sorter (`sortValueCompare`) — Elm has no `String.compare` / ICU
+       collation, so string ordering is by code point.
+     - **One page / page-size handler channel.** Upstream fires the pagination
+       object's own handlers, then the table-level `onUpdate:page` /
+       `onUpdate:pageSize`, then the deprecated `onChange` / `onPageSizeChange`,
+       then writes uncontrolled refs; Elm carries the table-level
+       `onUpdatePage` / `onUpdatePageSize` only, and `mergedPaginationOpts`
+       replaces the pagination record's own handlers with them. Upstream also
+       force-disables the pager while `loading` — the override is in force
+       since the loading batch (upstream's `disabled={loading}` rides AHEAD
+       of the pagination spread, so an explicit `disabled: false` key in the
+       caller's pagination object would override IT — a distinction the
+       port's `Bool` field cannot express, and every expressible caller
+       state renders the same either way).
+     - **`pagination.defaultPage` / `defaultPageSize` seeds are caller-owned.**
+       `NUI.Pagination` has no such fields, so callers seed their model and
+       pass `currentPage` / `pageSize` explicitly; the pagination prefix
+       (upstream: a render-prop on the pagination object) rides
+       `paginationPrefix` into the pager's prefix slot.
+     - **The sort click handler only attaches to a th when the column is
+       sortable and `onSorterChange` is set.** Upstream attaches the listener
+       to every basic-column th and no-ops inside it — listener presence is
+       not a DOM byte, so this is a compile-time guard, not a port change.
+     - **JS sort is stable by spec**; `List.sortWith`'s tie order is an
+       implementation detail — if a pinned tie order ever disagrees, re-derive
+       from the upstream bytes.
+     - **`data-n-id` is the constant `"1"`.** Upstream stamps a random seemly
+       component id on thead/tbody; it only keys the fixed-column ACTIVE-shadow
+       cssr (`[data-n-id] [data-col-key]::after/before`), which mounts at
+       runtime only when the scroll position activates a column — unreachable
+       in a pure render, so the shadow strips never mount (the static
+       `cM('fixed-left')` sticky / z-index / geometry rules DO ship, and the
+       `--n-box-shadow-*` vars stay on the root). Upstream's
+       `--transition-disabled` imperative toggling is the same story — added
+       post-mount, removed on first measure; the initial render carries
+       neither.
+     - **`tableLayout` merges per upstream** (`mergedTableLayoutRef`):
+       `fixed` when `flexHeight` / `maxHeight` / any ellipsis column (virtual
+       scroll is the fourth upstream trigger — out of scope), else the
+       caller's `tableLayout`. A `fixed` merged layout with no scrollX /
+       maxHeight / flexHeight makes the body NScrollbar render the slot BARE
+       (no `n-scrollbar` wrapper, no `n-data-table-base-table-body` class,
+       the bodyStyle dropped) — byte-faithful to upstream's
+       `if (!scrollable) return slot`.
+     - **`title` is a plain `String`** until the header-render batch (upstream
+       also accepts a render function returning VNodes).
+     - **`rowAttributes` land verbatim after the row's `class` attribute.**
+       Upstream merges `rowProps(row, index).class` into the row's class list;
+       Elm attributes are opaque, and a caller `Html.Attributes.class` would
+       replace the whole `className` (Elm properties are last-wins), so prefer
+       `rowClassName` for classes.
+     - **Scrollbar-content children ride elm-ui layout wrappers.** The table
+       and the empty node reach `.n-scrollbar-content` as
+       `display: contents` wrapper divs (the `NUI.Scrollbar` child-embedding
+       shape shared with the menu consumers), not as flat children — the
+       first raw `<table>` consumer. Verified equivalent: no cssr rule on
+       either side uses a direct-child combinator past the content div, and
+       the `--empty` height chain targets the content div itself.
+     - **`Column.width` / `scrollX` / `maxHeight` / `minHeight` are
+       `Maybe Int` (px).** Upstream accepts `number | string` (`'10%'`);
+       a string form arrives if a batch needs it. The port's `showHeader` is
+       an extension — upstream has NO `show-header` prop (the header always
+       renders, inline or discrete); the port gates both headers on it.
+       Upstream's `scrollbarProps` (attr passthrough onto the body
+       NScrollbar) has no surface — extend `NUI.Scrollbar.Options` if a
+       batch needs it.
+     - **`formatLength`'s zero special-case is not reproduced on the scroll /
+       layout length seams.** Upstream formats the body fallthrough style
+       (`max-height` / `min-height`), the scrollbar content `min-width` +
+       `width:100%`, the discrete header's `min-width` and the `<col>` width
+       pair through `_utils`'s `formatLength`, whose `0` input renders the
+       bare `'0'` — every non-zero number is `Npx`, exactly like the port's
+       `pxfy`. A caller-set `Just 0` on those seams therefore renders `0px`
+       (CSS-equivalent), reachable only with that degenerate input; the
+       th / td inline `width` and the fixed-column offsets go through
+       seemly's `pxfy` upstream, where `0` really is `'0px'` (the port
+       matches, pinned). Same family: upstream guards the content
+       `width:100%` with `if (scrollX)` (a truthiness check), so `scrollX =
+       0` drops it where the port keeps it.
 -}
 
 import Element exposing (Element)
@@ -659,50 +691,67 @@ type ColumnChild row msg
     = ColumnChild (Column row msg)
 
 
-{-| One column — upstream's `TableBaseColumn` (`type: undefined`):
-`key` sources the `data-col-key` attribute, `view` renders the cell body
-(upstream `render`, falling back to `row[key]`). The width fields feed the
-`<col>` / `<th>` / `<td>` styles exactly like upstream's
-`createCustomWidthStyle` (a set `width` also backs an unset `minWidth` on
-the `<col>` only). `className` lands on both the `th` and every `td` of
-the column, after the base class. The sorter fields: `sorter` opts the
-column into sorting (`isColumnSortable`), `defaultSortOrder` seeds the
-initial uncontrolled state (`NoSort` ≙ upstream's `false`), `sortOrder`
-marks the column controlled — its `Just` value (a `NoSort` included) wins
-over the uncontrolled list.
 
-The filter fields: `filter` opts the column into filtering
-(`isColumnFilterable` — with `filterOptions` set; `Just []` keeps the
-button, upstream's empty array is truthy), `filterMultiple` (default on)
-switches the menu's checkbox / radio mode, `filterMode` the or / and
-walk, the `filterOption*` pair the CONTROLLED state (overriding
-`filterStates` in `mergedFilterStates` — a `Just Nothing` single value is
-upstream's `null`), and the `defaultFilterOption*` pair the uncontrolled
-seed (`defaultFilterStates`).
+{-
+    One column — upstream's `TableBaseColumn` (`type: undefined`):
+   `key` sources the `data-col-key` attribute, `view` renders the cell body
+   (upstream `render`, falling back to `row[key]`). The width fields feed the
+   `<col>` / `<th>` / `<td>` styles exactly like upstream's
+   `createCustomWidthStyle` (a set `width` also backs an unset `minWidth` on
+   the `<col>` only). `className` lands on both the `th` and every `td` of
+   the column, after the base class. The sorter fields: `sorter` opts the
+   column into sorting (`isColumnSortable`), `defaultSortOrder` seeds the
+   initial uncontrolled state (`NoSort` ≙ upstream's `false`), `sortOrder`
+   marks the column controlled — its `Just` value (a `NoSort` included) wins
+   over the uncontrolled list.
 
-`kind` / `multiple` / `disabled` / `options` are the selection column's
-fields and `renderExpand` / `expandable` the expand column's (upstream
-`TableSelectionColumn` / `TableExpandColumn`) — ignored on the other
-kinds; a `KindSelection` / `KindExpand` column takes its width, align and
-class fields through the same `<col>` / th / td paths as a basic column
-(see the divergence notes for the 40px col default and the `never`
-fields).
+   The filter fields: `filter` opts the column into filtering
+   (`isColumnFilterable` — with `filterOptions` set; `Just []` keeps the
+   button, upstream's empty array is truthy), `filterMultiple` (default on)
+   switches the menu's checkbox / radio mode, `filterMode` the or / and
+   walk, the `filterOption*` pair the CONTROLLED state (overriding
+   `filterStates` in `mergedFilterStates` — a `Just Nothing` single value is
+   upstream's `null`), and the `defaultFilterOption*` pair the uncontrolled
+   seed (`defaultFilterStates`).
 
-The group / merge surface: `children` present (`Just`, even `Just []` —
-upstream's `'children' in column` key-presence gate) makes the column a
-GROUP header — each child rides the `ColumnChild` wrapper (Elm forbids
-the recursive record alias — see its doc) — and the group's own `view` /
-`sorter` / `filter` fields go inert (the header walks render its children
-as the leaves and the group th as a bare title); upstream types children
-as base columns only, so nesting selection / expand / further group
-columns under one is caller error the port walks permissively (see the
-divergence notes). `titleColSpan` spans
-a leaf th across the next `n` header cells (swallowing their ths);
-`colSpan` / `rowSpan` are the merge-cell fns — args `(row,
-actualRowIndex)` (the paginated index; −1 is unreachable for data rows),
-absent reads 1 and a fn result of 0 is KEPT (upstream renders the
-collapsed cell; the summary side differs — see `SummaryCell`).
+   `kind` / `multiple` / `disabled` / `options` are the selection column's
+   fields and `renderExpand` / `expandable` the expand column's (upstream
+   `TableSelectionColumn` / `TableExpandColumn`) — ignored on the other
+   kinds; a `KindSelection` / `KindExpand` column takes its width, align and
+   class fields through the same `<col>` / th / td paths as a basic column
+   (see the divergence notes for the 40px col default and the `never`
+   fields).
 
+   The group / merge surface: `children` present (`Just`, even `Just []` —
+   upstream's `'children' in column` key-presence gate) makes the column a
+   GROUP header — each child rides the `ColumnChild` wrapper (Elm forbids
+   the recursive record alias — see its doc) — and the group's own `view` /
+   `sorter` / `filter` fields go inert (the header walks render its children
+   as the leaves and the group th as a bare title); upstream types children
+   as base columns only, so nesting selection / expand / further group
+   columns under one is caller error the port walks permissively (see the
+   divergence notes). `titleColSpan` spans
+   a leaf th across the next `n` header cells (swallowing their ths);
+   `colSpan` / `rowSpan` are the merge-cell fns — args `(row,
+   actualRowIndex)` (the paginated index; −1 is unreachable for data rows),
+   absent reads 1 and a fn result of 0 is KEPT (upstream renders the
+   collapsed cell; the summary side differs — see `SummaryCell`).
+-}
+
+
+{-| One column — upstream `TableBaseColumn` (`type: undefined`): `key`
+sources the `data-col-key` attribute, `view` renders the cell body
+(upstream `render`), the `width` trio + `className` / `align` /
+`titleAlign` / `fixed` / `ellipsis` the geometry. Sort: `sorter` opts
+in, `defaultSortOrder` seeds the uncontrolled state, `sortOrder` marks
+the column controlled. Filter: `filter` + `filterOptions` opt in,
+`filterMultiple` / `filterMode` shape the menu and the walk, the
+`filterOption*` pair the controlled state, the `defaultFilterOption*`
+pair the seed. Selection / expand columns: `kind` + `multiple` /
+`disabled` / `options`, `renderExpand` / `expandable`. Group / merge:
+`children` (each child a `ColumnChild`) makes a group header,
+`titleColSpan` spans the th, `colSpan` / `rowSpan` merge cells (a fn
+result of 0 is kept). Full detail: the block comment above.
 -}
 type alias Column row msg =
     { key : String
@@ -780,56 +829,75 @@ columnDefaults =
     }
 
 
-{-| The data-table options (upstream `dataTableProps`):
-`bordered`, `bottomBordered` and `singleLine` default `True` (upstream's
-booleans). `bottomBordered` is emitted only when `bordered` is off —
-upstream `mergedBottomBordered` (the wrapper border wins when bordered).
-`--single-line` keeps upstream's inverted CSS semantics: `True` means _no_
-vertical cell borders (`cNotM('single-line')` rules add them). The sort /
-pagination surface: `sortStates` is the uncontrolled sort state (seed it
-with `defaultSortStates`), `onSorterChange` the click channel (without it
-the sortable headers render but never fire), `remote` hands the data and
-the page window to the caller, `pagination` carries the
-`NUI.Pagination.Options` object merged per upstream, `paginationPrefix`
-its prefix slot, and `onUpdatePage` / `onUpdatePageSize` the table-level
-handlers that replace the object's own (see the divergence notes).
 
-The filter surface: `filterStates` is the caller-owned uncontrolled
-filter state (seed it with `defaultFilterStates`), `onUpdateFilters` the
-commit channel — the next whole state over the merged map
-(`filtersAfterChange`) plus the source column key; `filterMenuShown` the
-open-menu keys (the trigger's `--show`), `onFilterTriggerClick` the
-trigger click (the popover runtime is the caller's), and
-`paginationBehaviorOnFilter` the page-reset flag (`PaginationFirst`
-resets to page 1 on commit — caller-applied).
+{-
+    The data-table options (upstream `dataTableProps`):
+   `bordered`, `bottomBordered` and `singleLine` default `True` (upstream's
+   booleans). `bottomBordered` is emitted only when `bordered` is off —
+   upstream `mergedBottomBordered` (the wrapper border wins when bordered).
+   `--single-line` keeps upstream's inverted CSS semantics: `True` means _no_
+   vertical cell borders (`cNotM('single-line')` rules add them). The sort /
+   pagination surface: `sortStates` is the uncontrolled sort state (seed it
+   with `defaultSortStates`), `onSorterChange` the click channel (without it
+   the sortable headers render but never fire), `remote` hands the data and
+   the page window to the caller, `pagination` carries the
+   `NUI.Pagination.Options` object merged per upstream, `paginationPrefix`
+   its prefix slot, and `onUpdatePage` / `onUpdatePageSize` the table-level
+   handlers that replace the object's own (see the divergence notes).
 
-The selection / expand surface: `checkedRowKeys` is the caller-owned
-checked-keys state (the display merge runs over it — see
-`mergedCheckedRowKeys`), `onUpdateCheckedRowKeys` the single emit channel,
-`lastSelectedKey` the caller-owned shift-click anchor; `expandedRowKeys`
-the caller-owned expanded-keys state with `onUpdateExpandedRowKeys` its
-toggle channel; `stickyExpandedRows` + `bodyWidth` the sticky expanded
-wrapper; `renderExpandIcon` the table-level expand-trigger icon slot; and
-`onCheckExtraClick` the click seam on the selection menu's trigger icon
-(the open menu is the caller's `NUI.Dropdown` runtime).
+   The filter surface: `filterStates` is the caller-owned uncontrolled
+   filter state (seed it with `defaultFilterStates`), `onUpdateFilters` the
+   commit channel — the next whole state over the merged map
+   (`filtersAfterChange`) plus the source column key; `filterMenuShown` the
+   open-menu keys (the trigger's `--show`), `onFilterTriggerClick` the
+   trigger click (the popover runtime is the caller's), and
+   `paginationBehaviorOnFilter` the page-reset flag (`PaginationFirst`
+   resets to page 1 on commit — caller-applied).
 
-The scroll / layout surface: `loading` (the root `--loading` class, the
-`--hide` empty dimmer, the force-disabled pager and the
-`n-data-table-loading-wrapper` overlay — the `spin*` fields the per-field
-`spinProps` spread over the sw-20 / r-100 / scale-1 baseline), `maxHeight`
-/ `minHeight` (the body fallthrough style) and `flexHeight` (the root
-`--flex-height` class) — `maxHeight` / `flexHeight` split the header into
-its own discrete table — `scrollX` (the scrollbar content `min-width` +
-`width:100%` and the discrete header's `min-width`), and `tableLayout`
-(the base layout under the `fixed` overrides — see the divergence notes).
+   The selection / expand surface: `checkedRowKeys` is the caller-owned
+   checked-keys state (the display merge runs over it — see
+   `mergedCheckedRowKeys`), `onUpdateCheckedRowKeys` the single emit channel,
+   `lastSelectedKey` the caller-owned shift-click anchor; `expandedRowKeys`
+   the caller-owned expanded-keys state with `onUpdateExpandedRowKeys` its
+   toggle channel; `stickyExpandedRows` + `bodyWidth` the sticky expanded
+   wrapper; `renderExpandIcon` the table-level expand-trigger icon slot; and
+   `onCheckExtraClick` the click seam on the selection menu's trigger icon
+   (the open menu is the caller's `NUI.Dropdown` runtime).
 
-The summary surface (b6): `summary` receives the PAGED rows and returns
-the summary rows, each an assoc list of `(columnKey, SummaryCell)` —
-upstream's single-object return is the one-element list (the row keys
-are Vue-internal, never DOM) — and `summaryPlacement` prepends
-(`SummaryTop`) or appends (`SummaryBottom`, the default) them around the
-data rows, before the expand tiling.
+   The scroll / layout surface: `loading` (the root `--loading` class, the
+   `--hide` empty dimmer, the force-disabled pager and the
+   `n-data-table-loading-wrapper` overlay — the `spin*` fields the per-field
+   `spinProps` spread over the sw-20 / r-100 / scale-1 baseline), `maxHeight`
+   / `minHeight` (the body fallthrough style) and `flexHeight` (the root
+   `--flex-height` class) — `maxHeight` / `flexHeight` split the header into
+   its own discrete table — `scrollX` (the scrollbar content `min-width` +
+   `width:100%` and the discrete header's `min-width`), and `tableLayout`
+   (the base layout under the `fixed` overrides — see the divergence notes).
 
+   The summary surface (b6): `summary` receives the PAGED rows and returns
+   the summary rows, each an assoc list of `(columnKey, SummaryCell)` —
+   upstream's single-object return is the one-element list (the row keys
+   are Vue-internal, never DOM) — and `summaryPlacement` prepends
+   (`SummaryTop`) or appends (`SummaryBottom`, the default) them around the
+   data rows, before the expand tiling.
+-}
+
+
+{-| The data-table options (upstream `dataTableProps`). Core: `columns`,
+`data`, `rowKey`. Shell: `bordered` / `bottomBordered` / `singleLine`
+(defaults `True`; `singleLine` has inverted CSS semantics) and the
+class / attr / size fields. Sort: `sortStates` + `onSorterChange` (+
+`remote`). Pager: `pagination` + `paginationPrefix` +
+`paginateSinglePage`, with `onUpdatePage` / `onUpdatePageSize`
+replacing the object's own handlers. Filter: `filterStates` +
+`onUpdateFilters`, `filterMenuShown`, `onFilterTriggerClick`,
+`paginationBehaviorOnFilter`. Selection / expand: `checkedRowKeys` +
+`onUpdateCheckedRowKeys` + `lastSelectedKey`, `expandedRowKeys` +
+`onUpdateExpandedRowKeys`, `stickyExpandedRows` / `bodyWidth`,
+`renderExpandIcon`, `onCheckExtraClick`. Scroll / layout: `loading` (+
+the `spin*` fields), `maxHeight` / `minHeight`, `flexHeight`,
+`scrollX`, `tableLayout`. Summary: `summary` + `summaryPlacement`.
+Full detail: the block comment above.
 -}
 type alias Options row msg =
     { columns : List (Column row msg)
@@ -1315,34 +1383,49 @@ theadNode theme opts merged =
     ]
 
 
-{-| One header cell — `Header.tsx`'s th over its `RowItem`: base class,
-then `--fixed-left` / `--fixed-right` (iff the column is fixed), then
-`--sorting` (iff a state names this key with a truthy order), then
-`--sortable` (iff the column carries a sorter), then `--selection` (iff
-the column IS the selection column), then `--last` (the RowItem's
-`isLast` flag — the span-aware last formula, not the list tail), then
-`column.className`; the always-present `data-col-key` (`getColKey`: the
-`__n_selection__` / `__n_expand__` sentinel on the special kinds, the
-caller key on a basic column); the style built only from the set fields —
-`left` / `right` (the fixed-offset maps) FIRST, then `width`, then
-`text-align` from `titleAlign || align` (upstream's style-array order;
-the body-path `height` stays `undefined`). `colspan` / `rowspan` render
-the RowItem's spans (EVERY th carries them, spans of 1 included — a
-group th spans its children's total, a leaf th under groups spans the
-remaining depth, a `titleColSpan` leaf spans the swallowed cells);
-attribute order matches upstream (`style`, spans, `data-col-key`,
-`class`, then the sort click handler — last, and only on a basic column
-with a sorter and `onSorterChange` set; the selection/expand kinds AND
-children-present columns gate the listener off, `Header.tsx`'s `type !==
-'selection' && type !== 'expand' && !('children' in column)` click guard
-— the group gate rides `isSortable` returning false). The content
-branches per kind: a selection column with `multiple` renders the header
-checkbox (plus the selection-menu trigger iff the FIRST selection column
-carries options) and one with `multiple = False` renders nothing (an
-empty th); every other kind — GROUP columns included — renders the title
-wrapper: title div (the bare title, the `th__ellipsis` wrapper or the
-`NEllipsis` form), then the sorter span when the column is sortable
-(never on a group — `isColumnSortable`'s children gate).
+
+{-
+    One header cell — `Header.tsx`'s th over its `RowItem`: base class,
+   then `--fixed-left` / `--fixed-right` (iff the column is fixed), then
+   `--sorting` (iff a state names this key with a truthy order), then
+   `--sortable` (iff the column carries a sorter), then `--selection` (iff
+   the column IS the selection column), then `--last` (the RowItem's
+   `isLast` flag — the span-aware last formula, not the list tail), then
+   `column.className`; the always-present `data-col-key` (`getColKey`: the
+   `__n_selection__` / `__n_expand__` sentinel on the special kinds, the
+   caller key on a basic column); the style built only from the set fields —
+   `left` / `right` (the fixed-offset maps) FIRST, then `width`, then
+   `text-align` from `titleAlign || align` (upstream's style-array order;
+   the body-path `height` stays `undefined`). `colspan` / `rowspan` render
+   the RowItem's spans (EVERY th carries them, spans of 1 included — a
+   group th spans its children's total, a leaf th under groups spans the
+   remaining depth, a `titleColSpan` leaf spans the swallowed cells);
+   attribute order matches upstream (`style`, spans, `data-col-key`,
+   `class`, then the sort click handler — last, and only on a basic column
+   with a sorter and `onSorterChange` set; the selection/expand kinds AND
+   children-present columns gate the listener off, `Header.tsx`'s `type !==
+   'selection' && type !== 'expand' && !('children' in column)` click guard
+   — the group gate rides `isSortable` returning false). The content
+   branches per kind: a selection column with `multiple` renders the header
+   checkbox (plus the selection-menu trigger iff the FIRST selection column
+   carries options) and one with `multiple = False` renders nothing (an
+   empty th); every other kind — GROUP columns included — renders the title
+   wrapper: title div (the bare title, the `th__ellipsis` wrapper or the
+   `NEllipsis` form), then the sorter span when the column is sortable
+   (never on a group — `isColumnSortable`'s children gate).
+-}
+
+
+{-| One header cell — `Header.tsx`'s th over its `RowItem`: the base
+class, then the fixed / sorting / sortable / selection / `--last`
+modifiers and `column.className`; the always-present `data-col-key`
+(the sentinel keys on the special kinds); the style built only from
+the set fields (fixed offsets, `width`, `text-align` in upstream's
+order); `colspan` / `rowspan` on EVERY th; the sort click handler
+last, only on a basic sortable column with `onSorterChange` set.
+Content branches per kind: the header checkbox (selection, `multiple`)
+or the title wrapper + sorter span (every other kind — never a sorter
+on a group).
 -}
 thNode :
     Theme
@@ -1879,43 +1962,57 @@ rowAttrsOf opts dr =
             []
 
 
-{-| One body cell — `Body.tsx`'s td over a LEAF column (the body iterates
-`cols`, `colIndex = col.index`): class order is base → `column.className`
-→ `--summary` (a summary row) → `--sorting` (iff a state names this key
-with a truthy order — the whole-column highlight) → `--fixed-left` /
-`--fixed-right` (iff the column is fixed) → `--{align}-align` (iff align
-set — redundant with the inline `text-align`, upstream emits both) →
-`--selection` / `--expand` (the cell's column kind) → `--last-col` →
-`--last-row`; `--last-col` / `--last-row` are the SPAN-AWARE formulas
-(`colIndex + mergedColSpan === colCount`, `displayedRowIndex +
-mergedRowSpan === rowCount` — a merged cell carries the flags of the
-area it closes, not of its own list slot); the always-present
-`data-col-key` (the `__n_selection__` / `__n_expand__` sentinel on the
-special kinds); the style is built only from the set fields —
-`text-align`, `width`, then the `left` / `right` fixed offsets (upstream's
-style-array order; the offsets sit after `width`) and NEVER the seed
-`--indent-offset` (upstream spreads `{'--indent-offset': ''}` on every td,
-but an empty-string custom property is DROPPED by CSSOM `setProperty` — the
-value only ever fills for tree children, out of the port's flat scope — and
-a td with no set fields carries NO style attribute at all), with `colspan`/`rowspan` the MERGED spans (both attrs on
-every td). The span math per `Body.tsx`: a summary cell reads its
-`SummaryCell.colSpan` / `rowSpan` through the `|| 1` collapse (0 /
-undefined both render 1, the #1276 fix), a data cell its column's
-`colSpan(row, actualRowIndex)` / `rowSpan(…)` fns with absent reading 1
-and a fn result of 0 KEPT (the collapsed cell); a span over 1 (either
-axis) registers the covered coordinates in `cordToPass` (the returned
-grid) — a later cell whose coordinate is registered never renders. The
-cell body branches per kind: a selection column renders the body
-checkbox (or the body radio on `multiple = False`) — NOTHING on a
-summary row; an expand column the expand trigger (suppressed — an empty
-td — unless `!expandable || expandable(row)` over the cell's OWN column —
-upstream `Body.tsx` reads `column.expandable`, not the first expand
-column's) — NOTHING on a summary row; a basic column renders the
-caller's element — on a summary row the `SummaryCell.value` looked up by
-column key (a missing key renders an empty td) — bare, wrapped in the
-`span.n-data-table-td__ellipsis` (plain ellipsis) or the `NEllipsis`
-form (the `NUI.Ellipsis` embed) — the SAME wrap for summary values
-(`Cell.tsx` wraps after the summary branch) — all through `layoutWith`.
+
+{-
+    One body cell — `Body.tsx`'s td over a LEAF column (the body iterates
+   `cols`, `colIndex = col.index`): class order is base → `column.className`
+   → `--summary` (a summary row) → `--sorting` (iff a state names this key
+   with a truthy order — the whole-column highlight) → `--fixed-left` /
+   `--fixed-right` (iff the column is fixed) → `--{align}-align` (iff align
+   set — redundant with the inline `text-align`, upstream emits both) →
+   `--selection` / `--expand` (the cell's column kind) → `--last-col` →
+   `--last-row`; `--last-col` / `--last-row` are the SPAN-AWARE formulas
+   (`colIndex + mergedColSpan === colCount`, `displayedRowIndex +
+   mergedRowSpan === rowCount` — a merged cell carries the flags of the
+   area it closes, not of its own list slot); the always-present
+   `data-col-key` (the `__n_selection__` / `__n_expand__` sentinel on the
+   special kinds); the style is built only from the set fields —
+   `text-align`, `width`, then the `left` / `right` fixed offsets (upstream's
+   style-array order; the offsets sit after `width`) and NEVER the seed
+   `--indent-offset` (upstream spreads `{'--indent-offset': ''}` on every td,
+   but an empty-string custom property is DROPPED by CSSOM `setProperty` — the
+   value only ever fills for tree children, out of the port's flat scope — and
+   a td with no set fields carries NO style attribute at all), with `colspan`/`rowspan` the MERGED spans (both attrs on
+   every td). The span math per `Body.tsx`: a summary cell reads its
+   `SummaryCell.colSpan` / `rowSpan` through the `|| 1` collapse (0 /
+   undefined both render 1, the #1276 fix), a data cell its column's
+   `colSpan(row, actualRowIndex)` / `rowSpan(…)` fns with absent reading 1
+   and a fn result of 0 KEPT (the collapsed cell); a span over 1 (either
+   axis) registers the covered coordinates in `cordToPass` (the returned
+   grid) — a later cell whose coordinate is registered never renders. The
+   cell body branches per kind: a selection column renders the body
+   checkbox (or the body radio on `multiple = False`) — NOTHING on a
+   summary row; an expand column the expand trigger (suppressed — an empty
+   td — unless `!expandable || expandable(row)` over the cell's OWN column —
+   upstream `Body.tsx` reads `column.expandable`, not the first expand
+   column's) — NOTHING on a summary row; a basic column renders the
+   caller's element — on a summary row the `SummaryCell.value` looked up by
+   column key (a missing key renders an empty td) — bare, wrapped in the
+   `span.n-data-table-td__ellipsis` (plain ellipsis) or the `NEllipsis`
+   form (the `NUI.Ellipsis` embed) — the SAME wrap for summary values
+   (`Cell.tsx` wraps after the summary branch) — all through `layoutWith`.
+-}
+
+
+{-| One body cell — `Body.tsx`'s td over a LEAF column: class order base
+→ `column.className` → summary / sorting / fixed / align / selection /
+expand / the span-aware `--last-col` / `--last-row`; `data-col-key`;
+the style from the set fields only (never the seed `--indent-offset`);
+`colspan` / `rowspan` the MERGED spans (summary cells collapse 0 /
+undefined to 1, data-cell fns keep 0), spans over 1 registering the
+covered coordinates in the skip grid. Content per kind: the body
+checkbox / radio, the expand trigger, or the caller's element (summary
+rows read `SummaryCell.value`) — all ellipsis-wrappable.
 -}
 tdNode :
     Theme
@@ -3499,29 +3596,41 @@ childColumns col =
     Maybe.map (List.map (\(ColumnChild child) -> child)) col.children
 
 
-{-| `getRowsAndCols` pass-2 — the header-row layout, both passes verbatim:
-pass 1 (`maxDepthOf` + `leafColumns`) fixes the leaf count
-(`totalRowSpan`), the deepest group depth and the per-depth row lists;
-pass 2 walks with a thread of the running `currentLeafIndex` and a
-`hideUntilIndex` local to EACH recursion level (an argument here — it
-does not leak across sibling subtrees):
 
-  - a leaf under `hideUntilIndex` is swallowed by an earlier
-    `titleColSpan` th — the index advances, no cell, nothing rendered;
-  - a leaf otherwise takes `titleColSpan ?? 1`, sets `hideUntilIndex` to
-    `index + colSpan` when the span exceeds 1, and lands `rowSpan =
-    maxDepth - depth + 1` with `isLast = index + colSpan == totalRowSpan`;
-  - a group saves the entry index, recurses with a FRESH
-    `hideUntilIndex` (post-order — its cell lands after its children's,
-    fixing intra-depth order), sums its direct children's cells'
-    `colSpan` (a `Just []` group sums 0 — the th renders `colspan=0`,
-    byte-faithful) and lands `rowSpan = 1` with
-    `isLast = savedIndex + colSpan == totalRowSpan`.
+{-
+    `getRowsAndCols` pass-2 — the header-row layout, both passes verbatim:
+   pass 1 (`maxDepthOf` + `leafColumns`) fixes the leaf count
+   (`totalRowSpan`), the deepest group depth and the per-depth row lists;
+   pass 2 walks with a thread of the running `currentLeafIndex` and a
+   `hideUntilIndex` local to EACH recursion level (an argument here — it
+   does not leak across sibling subtrees):
 
-The rows come back depth-bucketed in push order — `rows[depth]` exists
-for every depth pass 1 entered, empty ones included (the `Just []`
-edge's phantom row).
+     - a leaf under `hideUntilIndex` is swallowed by an earlier
+       `titleColSpan` th — the index advances, no cell, nothing rendered;
+     - a leaf otherwise takes `titleColSpan ?? 1`, sets `hideUntilIndex` to
+       `index + colSpan` when the span exceeds 1, and lands `rowSpan =
+       maxDepth - depth + 1` with `isLast = index + colSpan == totalRowSpan`;
+     - a group saves the entry index, recurses with a FRESH
+       `hideUntilIndex` (post-order — its cell lands after its children's,
+       fixing intra-depth order), sums its direct children's cells'
+       `colSpan` (a `Just []` group sums 0 — the th renders `colspan=0`,
+       byte-faithful) and lands `rowSpan = 1` with
+       `isLast = savedIndex + colSpan == totalRowSpan`.
 
+   The rows come back depth-bucketed in push order — `rows[depth]` exists
+   for every depth pass 1 entered, empty ones included (the `Just []`
+   edge's phantom row).
+-}
+
+
+{-| `getRowsAndCols` pass-2 — the header-row layout: pass 1 fixes the
+leaf count, the deepest group depth and the per-depth row lists; pass
+2 walks the tree threading `currentLeafIndex` and a per-recursion-level
+`hideUntilIndex` — a swallowed leaf renders nothing, a leaf takes
+`titleColSpan ?? 1` with `rowSpan = maxDepth - depth + 1`, a group
+recurses fresh (post-order), sums its children's spans and lands
+`rowSpan = 1`. Rows come back depth-bucketed in push order, empty ones
+included. Full detail: the block comment above.
 -}
 headerRows : List (Column row msg) -> List (List (HeaderCell row msg))
 headerRows columns =

@@ -20,12 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the LoadingBar CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`colorError` → `--n-color-error`).
-
-Collected by concern:
-
-  - bar colors: `colorError`, `colorLoading`
-  - geometry: `height`
-
 -}
 type alias Vars =
     { colorError : String

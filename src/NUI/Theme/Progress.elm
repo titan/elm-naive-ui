@@ -20,15 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Progress CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`fontSize` → `--n-font-size`).
-
-Collected by concern:
-
-  - typography & circle font weight: `fontSize`, `fontSizeCircle`, `fontWeightCircle`
-  - rail & fill geometry/colors (incl. typed variants): `railColor`, `railHeight`, `fillColor`, `fillColorInfo`, `fillColorSuccess`, `fillColorWarning`, `fillColorError`, `lineBgProcessing`
-  - icon sizes (line & circle): `iconSizeCircle`, `iconSizeLine`
-  - icon colors (default & typed): `iconColor`, `iconColorInfo`, `iconColorSuccess`, `iconColorWarning`, `iconColorError`
-  - label text colors (circle & line): `textColorCircle`, `textColorLineInner`, `textColorLineOuter`
-
 -}
 type alias Vars =
     { fontSize : String

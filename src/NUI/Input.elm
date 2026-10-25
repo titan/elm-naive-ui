@@ -55,108 +55,121 @@ The visual result is Naive UI's own: the elements carry the `.n-input` BEM
 classes and Naive UI's `--n-*` custom properties, and `NUI.Css` ships Naive
 UI's exact CSS.
 
-Three seams beyond the basic props:
+Beyond the basic props, `Options` carries seams for the picker
+components (`varOverrides`, `autosize`, `loading`, `inputAttributes`,
+pair mode, the manual-activation focus split, `textDecoration`,
+`attrSize`, `onFocus` / `onBlur`, `extraRootClasses` /
+`extraRootAttributes`, `clearIconPlaceholder`) — all default-off; the
+standalone input renders byte-identically without them. Trigger/panel DOM
+shapes and porting notes live in the comment block below the module doc.
 
-  - `varOverrides` — upstream's per-instance `builtinThemeOverrides` as a
-    key/value patch over the resolved `--n-*` vars (a known key is swapped
-    in place, an unknown one appended — `NUI.Button.varOverrides` is the
-    same seam); `NUI.InputOtp`'s slots use it for upstream's
-    `{ paddingTiny, …, paddingLarge: '0' }` zeroing (`InputOtp.tsx` render:
-    `--n-padding-left/right: 0`).
+-}
 
-  - `autosize` — upstream `autosize: Boolean | {minRows?, maxRows?}`
-    (`Input.tsx:89`); here `Bool` only. `True` emits `n-input--autosize`
-    on the root and suppresses `n-input--resizable` (upstream
-    `Input.tsx:1130-1131` gates `--resizable` on `resizable && !autosize`
-    and fires `--autosize` on the flag alone, ungated on `type`). The
-    height measurement itself (`Input.tsx:339-375` — the minRows/maxRows
-    math, `overflow` toggling) is runtime DOM sizing — caller-owned; the
-    object form maps to the caller setting `rows` / CSS.
+{- DOM shapes and porting notes for `NUI.Input` — moved verbatim out of the
+      module docstring (docs.json must stay under elm publish's 768kb limit);
+      plain comments do not enter the published API docs.
 
-  - `loading` — upstream renders its `NBaseSuffix` spinner whenever the
-    `loading` prop is set (`Input.tsx:1345-1352`); here `loading = True`.
-    DOM (the `NUI.BaseSelection` suffix idiom): `div.n-base-loading
-    .n-base-suffix` (strokeWidth 24, scale 0.85, `role="img"
-    aria-label="loading"`) > `__transition-wrapper` > `__container` > the
-    spinner svg. It renders inside `.n-input__suffix` — which now appears
-    for loading alone too — in upstream order `[clear, loading, suffix
-    slot]` (`internalLoadingBeforeSuffix` defaults true).
+   Three seams beyond the basic props:
 
-  - `inputAttributes` — upstream's `inputProps`: raw attributes onto the
-    inner `<input>` / `<textarea>` element (upstream demos pass
-    `autocomplete='disabled'`, `id`, `max`). The field-owned attributes
-    (`type` / `value` / `placeholder` / `maxlength` / `minlength` /
-    `disabled` / `readonly` / `rows` / the input event) always render
-    FIRST and win duplicate names (HTML keeps the first occurrence; the
-    raw list appends after) — pass only attributes the fields above don't
-    own.
+     - `varOverrides` — upstream's per-instance `builtinThemeOverrides` as a
+       key/value patch over the resolved `--n-*` vars (a known key is swapped
+       in place, an unknown one appended — `NUI.Button.varOverrides` is the
+       same seam); `NUI.InputOtp`'s slots use it for upstream's
+       `{ paddingTiny, …, paddingLarge: '0' }` zeroing (`InputOtp.tsx` render:
+       `--n-padding-left/right: 0`).
 
-Picker-trigger seams (all default-off — the standalone input renders
-byte-identically without them; upstream drives them from the picker
-components' `NInput` invocations):
+     - `autosize` — upstream `autosize: Boolean | {minRows?, maxRows?}`
+       (`Input.tsx:89`); here `Bool` only. `True` emits `n-input--autosize`
+       on the root and suppresses `n-input--resizable` (upstream
+       `Input.tsx:1130-1131` gates `--resizable` on `resizable && !autosize`
+       and fires `--autosize` on the flag alone, ungated on `type`). The
+       height measurement itself (`Input.tsx:339-375` — the minRows/maxRows
+       math, `overflow` toggling) is runtime DOM sizing — caller-owned; the
+       object form maps to the caller setting `rows` / CSS.
 
-  - `passivelyActivated` / `activated` — the manual-activation focus split
-    (upstream `Input.tsx:1140-1143` on the root, `:1203` / `:1273` / `:1410`
-    on the inner elements): while `passivelyActivated && !activated` the ROOT
-    carries `tabindex 0` (iff not disabled) and the inner input / textarea
-    carry `tabindex -1`. Enter / Escape activation
-    (`handleWrapperKeydownEnter` / `...Esc`) and programmatic focus
-    (`focus()` / `activate()`) are caller-owned runtime — no ports in house
-    style; flip `activated` yourself.
+     - `loading` — upstream renders its `NBaseSuffix` spinner whenever the
+       `loading` prop is set (`Input.tsx:1345-1352`); here `loading = True`.
+       DOM (the `NUI.BaseSelection` suffix idiom): `div.n-base-loading
+       .n-base-suffix` (strokeWidth 24, scale 0.85, `role="img"
+       aria-label="loading"`) > `__transition-wrapper` > `__container` > the
+       spinner svg. It renders inside `.n-input__suffix` — which now appears
+       for loading alone too — in upstream order `[clear, loading, suffix
+       slot]` (`internalLoadingBeforeSuffix` defaults true).
 
-  - `internalForceFocus` — upstream's visual-only focus seam (`mergedFocus`,
-    `Input.tsx:283-285`): adds `n-input--focus` to the root. Upstream has NO
-    `--active` / `--hover` classes at all (hover is pure CSS `:hover`,
-    activation is state-only).
+     - `inputAttributes` — upstream's `inputProps`: raw attributes onto the
+       inner `<input>` / `<textarea>` element (upstream demos pass
+       `autocomplete='disabled'`, `id`, `max`). The field-owned attributes
+       (`type` / `value` / `placeholder` / `maxlength` / `minlength` /
+       `disabled` / `readonly` / `rows` / the input event) always render
+       FIRST and win duplicate names (HTML keeps the first occurrence; the
+       raw list appends after) — pass only attributes the fields above don't
+       own.
 
-  - `textDecoration` — inline `text-decoration` on the input / textarea
-    element (upstream `:1208` / `:1269`; the pickers pass `'line-through'`
-    while the value is invalid).
+   Picker-trigger seams (all default-off — the standalone input renders
+   byte-identically without them; upstream drives them from the picker
+   components' `NInput` invocations):
 
-  - `attrSize` — the native `size` attribute on the `<input>` only (upstream
-    `:1288`; the default 20 equals the HTML default, so it is emitted only
-    when set — TimePicker passes `format.length + 4`). Never the textarea.
+     - `passivelyActivated` / `activated` — the manual-activation focus split
+       (upstream `Input.tsx:1140-1143` on the root, `:1203` / `:1273` / `:1410`
+       on the inner elements): while `passivelyActivated && !activated` the ROOT
+       carries `tabindex 0` (iff not disabled) and the inner input / textarea
+       carry `tabindex -1`. Enter / Escape activation
+       (`handleWrapperKeydownEnter` / `...Esc`) and programmatic focus
+       (`focus()` / `activate()`) are caller-owned runtime — no ports in house
+       style; flip `activated` yourself.
 
-  - `onFocus` / `onBlur` — raw focus / blur events on the input / textarea
-    element; in pair mode BOTH inputs carry them (upstream `Input.tsx:1289` /
-    `:1422` binds focus/blur on each pair input — mirrored into `pairEvents`
-    2026-10 after the live smoke found a pair trigger wired like DatePicker's
-    daterange could never hear a focus).
+     - `internalForceFocus` — upstream's visual-only focus seam (`mergedFocus`,
+       `Input.tsx:283-285`): adds `n-input--focus` to the root. Upstream has NO
+       `--active` / `--hover` classes at all (hover is pure CSS `:hover`,
+       activation is state-only).
 
-  - pair mode — upstream `Input.tsx:1395-1465`. Set `pairValue = Just (
-    start, end )` and the root gains `n-input--pair` and the body becomes
-    `div.n-input-wrapper` (input 1, NO suffix) → `span.n-input__separator`
-    (`separatorNode`) → `div.n-input-wrapper` (input 2 + the pair-only
-    `div.n-input__suffix`). Input 1 carries the `attrSize` `size` attribute and
-    `pairTextDecoration`'s first half; input 2 carries neither (`Input.tsx:1434`
-    — no `inputProps` spread, no `size`). Typing emits through `onPairInput`
-    with the whole pair and a `PairSource` tag (`PairFirst` / `PairSecond`; the
-    clear control emits `("", "")` + `PairClear`, upstream's `0 | 1 | 'clear'`).
-    Standalone single-input bytes are unchanged — every field defaults off.
+     - `textDecoration` — inline `text-decoration` on the input / textarea
+       element (upstream `:1208` / `:1269`; the pickers pass `'line-through'`
+       while the value is invalid).
 
-  - `extraRootClasses` — upstream's fallthrough `class` merge onto the
-    `.n-input` root (the pickers pass their own marker here, e.g.
-    `n-date-panel-date-input`); appended after the component classes.
+     - `attrSize` — the native `size` attribute on the `<input>` only (upstream
+       `:1288`; the default 20 equals the HTML default, so it is emitted only
+       when set — TimePicker passes `format.length + 4`). Never the textarea.
 
-  - `extraRootAttributes` — upstream's fallthrough `style`/attrs onto the
-    root (ColorPicker's alpha unit passes `flex-grow: 1.25` here,
-    `ColorInputUnit.tsx:162`); appended after the component's own, so a
-    duplicate name wins HTML's first-occurrence rule against them — pass
-    only attributes the component does not own.
+     - `onFocus` / `onBlur` — raw focus / blur events on the input / textarea
+       element; in pair mode BOTH inputs carry them (upstream `Input.tsx:1289` /
+       `:1422` binds focus/blur on each pair input — mirrored into `pairEvents`
+       2026-10 after the live smoke found a pair trigger wired like DatePicker's
+       daterange could never hear a focus).
 
-  - `clearIconPlaceholder` — upstream's `clear-icon-placeholder` slot: the
-    content shown inside `NBaseClear`'s placeholder while the clear button
-    is hidden. `NBaseClear` renders iff `clearable` OR this is set (upstream
-    `:1324-1346`), but the `.n-input__suffix` wrapper itself still needs
-    `clearable` / a suffix / loading (upstream's own suffix condition,
-    `:1316-1320`) — exactly as upstream. A picker's icon rides this slot
-    when `clearable` (it swaps to the clear icon over a value) and `suffix`
-    otherwise. The port's `NBaseClear` DOM diverges from upstream only in
-    carrying the `_internal/clear` rules as inline styles (that cssr is not
-    part of the generated stylesheet — the existing clear implementation's
-    divergence); an `Element` here embeds with `display:contents`
-    (`clearPlaceholder` is the raw-`Html` twin).
+     - pair mode — upstream `Input.tsx:1395-1465`. Set `pairValue = Just (
+       start, end )` and the root gains `n-input--pair` and the body becomes
+       `div.n-input-wrapper` (input 1, NO suffix) → `span.n-input__separator`
+       (`separatorNode`) → `div.n-input-wrapper` (input 2 + the pair-only
+       `div.n-input__suffix`). Input 1 carries the `attrSize` `size` attribute and
+       `pairTextDecoration`'s first half; input 2 carries neither (`Input.tsx:1434`
+       — no `inputProps` spread, no `size`). Typing emits through `onPairInput`
+       with the whole pair and a `PairSource` tag (`PairFirst` / `PairSecond`; the
+       clear control emits `("", "")` + `PairClear`, upstream's `0 | 1 | 'clear'`).
+       Standalone single-input bytes are unchanged — every field defaults off.
 
+     - `extraRootClasses` — upstream's fallthrough `class` merge onto the
+       `.n-input` root (the pickers pass their own marker here, e.g.
+       `n-date-panel-date-input`); appended after the component classes.
+
+     - `extraRootAttributes` — upstream's fallthrough `style`/attrs onto the
+       root (ColorPicker's alpha unit passes `flex-grow: 1.25` here,
+       `ColorInputUnit.tsx:162`); appended after the component's own, so a
+       duplicate name wins HTML's first-occurrence rule against them — pass
+       only attributes the component does not own.
+
+     - `clearIconPlaceholder` — upstream's `clear-icon-placeholder` slot: the
+       content shown inside `NBaseClear`'s placeholder while the clear button
+       is hidden. `NBaseClear` renders iff `clearable` OR this is set (upstream
+       `:1324-1346`), but the `.n-input__suffix` wrapper itself still needs
+       `clearable` / a suffix / loading (upstream's own suffix condition,
+       `:1316-1320`) — exactly as upstream. A picker's icon rides this slot
+       when `clearable` (it swaps to the clear icon over a value) and `suffix`
+       otherwise. The port's `NBaseClear` DOM diverges from upstream only in
+       carrying the `_internal/clear` rules as inline styles (that cssr is not
+       part of the generated stylesheet — the existing clear implementation's
+       divergence); an `Element` here embeds with `display:contents`
+       (`clearPlaceholder` is the raw-`Html` twin).
 -}
 
 import Element exposing (Element)

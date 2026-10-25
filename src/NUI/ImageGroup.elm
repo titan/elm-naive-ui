@@ -28,57 +28,73 @@ preview container — `ImageGroup.view` emits exactly the
 `NUI.ImagePreview` tree fed from the group state, so mount it under the
 same rules (unmount when fully closed, keep mounted through leave phases).
 
-Two url registries, byte-faithful to upstream's merged map:
-
-  - `srcList` — the `p${index}` keys (`p0`, `p1`, …). When non-empty it
-    WINS over the registered map, and upstream throws if a child `n-image`
-    registers anyway (a caller-side contract here — don't mix them).
-  - `registered` — the `r`-scheme entries the child `n-image`s contribute,
-    as `(imageId, url)` pairs. Model it as upstream's keyed map: keep the
-    imageIds UNIQUE and let a later registration overwrite (upstream's
-    `registerImageUrl` double-prefixes its `has('r' + sid)` check, so the
-    `set` always runs — re-registration overwrites the url); and treat
-    unregistration as a no-op (upstream's `unregisterPreviewUrl` deletes
-    only when the key is NOT present, so it never deletes — unmounted
-    children stay walkable in the wrap space). The port does not dedupe
-    for you; duplicate ids would double-count in `imageIds` and skew the
-    walk's index space.
-
-Index walk (all pure, upstream bytes):
-
-  - `nextIndex` / `prevIndex` wrap around, skipping falsy urls
-    (empty strings) — `Just index` only when some url exists.
-  - `go 1` / `go -1` is upstream's `go(step)`: step 1 moves to `nextIndex`
-    (and is what upstream's toolbar "next" fires, `onPreviewNext` along the
-    way), step -1 to `prevIndex`.
-  - `showImage imageId` is `toggleShow`'s `setCurrentId` half: index of the
-    id, set only when it differs. `toggleShow` also opens (`show = True`) —
-    do both in your msg handler.
-  - `currentId` / `currentUrl` read the merged registry.
-
-Prev/next wiring (upstream has TWO paths with different resets): the
-toolbar switch buttons route through `handleSwitchPrev/Next` — reset the
-zoom (`NUI.ImagePreview.switchReset`), then fire `go`. The document
-keyboard handlers (←/→) fire the RAW prev/next — `go` WITHOUT the reset.
-So the `onPrev` / `onNext` msgs here are YOUR toolbar msgs (reset + go);
-keep the keyboard path reset-free by mapping `NUI.ImagePreview.keyAction`
-Prev/Next to `go` only.
-
-`NUI.ImagePreview`'s `previewedImgProps` do not apply: in group mode
-upstream's preview gets no `imageContext` (the inject fails), so the img
-carries no controlled class/style — the port omits those fields entirely.
-
-Accepted edges:
-
-  - Child `n-image`s don't auto-register (no injection in a pure tree) —
-    you thread their urls into `registered` yourself; their thumbnails keep
-    `data-group-id=""` (upstream stamps a random `c<uuid>` there, which is
-    not byte-pinnable).
-  - `groupId`, `renderToolbar`, `showToolbarTooltip`, `keepDragOffset` ride
-    the preview's seams/edges (see `NUI.ImagePreview`).
-
 Note: record updates bind `defaults` to a local first, then patch fields.
 
+Essential contract: `view` emits exactly the `NUI.ImagePreview` tree fed
+from the group state — mount it under the same rules (unmount when fully
+closed, keep mounted through leave phases) and render the `n-image`
+children in flow yourself. Two url registries (`srcList`'s `p${index}`
+keys WIN over `registered`'s `r`-scheme pairs — don't mix), the wrap-around
+index walk and the two prev/next paths (toolbar = reset + `go`, keyboard =
+`go` only) are specified below.
+
+DOM shapes, fidelity notes and porting details live in the comment block
+below the module doc.
+
+-}
+
+{- DOM shapes, fidelity notes and porting details for `NUI.ImageGroup` — moved verbatim
+      out of the module docstring (docs.json must stay under elm publish's 768kb
+      limit); plain comments do not enter the published API docs.
+
+   Two url registries, byte-faithful to upstream's merged map:
+
+     - `srcList` — the `p${index}` keys (`p0`, `p1`, …). When non-empty it
+       WINS over the registered map, and upstream throws if a child `n-image`
+       registers anyway (a caller-side contract here — don't mix them).
+     - `registered` — the `r`-scheme entries the child `n-image`s contribute,
+       as `(imageId, url)` pairs. Model it as upstream's keyed map: keep the
+       imageIds UNIQUE and let a later registration overwrite (upstream's
+       `registerImageUrl` double-prefixes its `has('r' + sid)` check, so the
+       `set` always runs — re-registration overwrites the url); and treat
+       unregistration as a no-op (upstream's `unregisterPreviewUrl` deletes
+       only when the key is NOT present, so it never deletes — unmounted
+       children stay walkable in the wrap space). The port does not dedupe
+       for you; duplicate ids would double-count in `imageIds` and skew the
+       walk's index space.
+
+   Index walk (all pure, upstream bytes):
+
+     - `nextIndex` / `prevIndex` wrap around, skipping falsy urls
+       (empty strings) — `Just index` only when some url exists.
+     - `go 1` / `go -1` is upstream's `go(step)`: step 1 moves to `nextIndex`
+       (and is what upstream's toolbar "next" fires, `onPreviewNext` along the
+       way), step -1 to `prevIndex`.
+     - `showImage imageId` is `toggleShow`'s `setCurrentId` half: index of the
+       id, set only when it differs. `toggleShow` also opens (`show = True`) —
+       do both in your msg handler.
+     - `currentId` / `currentUrl` read the merged registry.
+
+   Prev/next wiring (upstream has TWO paths with different resets): the
+   toolbar switch buttons route through `handleSwitchPrev/Next` — reset the
+   zoom (`NUI.ImagePreview.switchReset`), then fire `go`. The document
+   keyboard handlers (←/→) fire the RAW prev/next — `go` WITHOUT the reset.
+   So the `onPrev` / `onNext` msgs here are YOUR toolbar msgs (reset + go);
+   keep the keyboard path reset-free by mapping `NUI.ImagePreview.keyAction`
+   Prev/Next to `go` only.
+
+   `NUI.ImagePreview`'s `previewedImgProps` do not apply: in group mode
+   upstream's preview gets no `imageContext` (the inject fails), so the img
+   carries no controlled class/style — the port omits those fields entirely.
+
+   Accepted edges:
+
+     - Child `n-image`s don't auto-register (no injection in a pure tree) —
+       you thread their urls into `registered` yourself; their thumbnails keep
+       `data-group-id=""` (upstream stamps a random `c<uuid>` there, which is
+       not byte-pinnable).
+     - `groupId`, `renderToolbar`, `showToolbarTooltip`, `keepDragOffset` ride
+       the preview's seams/edges (see `NUI.ImagePreview`).
 -}
 
 import Element exposing (Element)

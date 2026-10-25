@@ -20,12 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Statistic CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`labelFontSize` → `--n-label-font-size`).
-
-Collected by concern:
-
-  - label typography & color: `labelFontSize`, `labelFontWeight`, `labelTextColor`
-  - value typography, prefix/suffix & color: `valueFontWeight`, `valueFontSize`, `valuePrefixTextColor`, `valueSuffixTextColor`, `valueTextColor`
-
 -}
 type alias Vars =
     { labelFontSize : String

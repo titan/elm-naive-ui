@@ -20,16 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Transfer CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`extraFontSizeSmall` → `--n-extra-font-size-small`).
-
-Collected by concern:
-
-  - per-size typography (extra/title/body font sizes): `extraFontSizeSmall`, `extraFontSizeMedium`, `extraFontSizeLarge`, `titleFontSizeSmall`, `titleFontSizeMedium`, `titleFontSizeLarge`, `fontSizeSmall`, `fontSizeMedium`, `fontSizeLarge`
-  - per-size header & item heights: `headerHeightSmall`, `headerHeightMedium`, `headerHeightLarge`, `itemHeightSmall`, `itemHeightMedium`, `itemHeightLarge`
-  - close button (sizes, colors & states): `closeSize`, `closeIconSize`, `closeColorHover`, `closeColorPressed`, `closeIconColor`, `closeIconColorHover`, `closeIconColorPressed`
-  - surfaces, borders & divider: `borderRadius`, `dividerColor`, `borderColor`, `listColor`, `headerColor`
-  - text colors (title/extra/item, incl. disabled): `titleTextColor`, `titleTextColorDisabled`, `extraTextColor`, `extraTextColorDisabled`, `itemTextColor`, `itemTextColorDisabled`
-  - misc (title weight, pending surface): `itemColorPending`, `titleFontWeight`
-
 -}
 type alias Vars =
     { extraFontSizeSmall : String

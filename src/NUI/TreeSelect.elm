@@ -16,99 +16,113 @@ positioning, clickoutside and keyboard are caller-owned runtime).
             , onUpdateValue = Just Changed
         }
 
-Trigger (`view`) DOM — the `.n-tree-select` wrapper is bare (no vars, no
-extra classes; `z-index / outline / width / position` come from the
-stylesheet):
+Essential contract: node clicks, tag closes and clears run through the
+exported pure helpers (`handleNodeClick`, `deleteOption`, `clearValue`,
+`initialPendingKey`) — upstream's unified select / check convergence,
+frozen below; mount `menu` in your own positioned wrapper and drive the
+`--pending` key through `pendingKey`.
 
-    div.n-tree-select
-      └─ NUI.BaseSelection.view (see its docstring for the full tree;
-         `view` derives the display state from `value` + `options` — a
-         value whose node is MISSING drops entirely, no fallback label)
-
-Menu (`menu`) DOM — the body carrying the 11 tree-select vars:
-
-    div.n-tree-select-menu [fade-in-scale-up-transition-*]
-      tabindex = 0 (upstream hardcodes it)
-      style = 11 vars → --n-header-divider-color
-      ├─ div.n-tree-select-menu__header [data-header]     — iff header
-      ├─ NUI.Tree.view (internalScrollable — see below)   — iff nodes visible
-      ├─ div.n-tree-select-menu__empty                    — iff NO visible
-      │    > {empty slot | NUI.Empty}                     nodes (replaces the
-      ├─ div.n-tree-select-menu__action [data-action]     whole tree — iff action
-      └─ div[width:0;height:0][tabindex 0]                — NFocusDetector
-
-The embedded tree (`NUI.Tree` with `internalScrollable`): the whole
-`.n-tree` root — classes, 18 vars — rides ON the scrollbar's root via
-fallthrough, the content carries `padding:4px` (the theme's `menuPadding`),
-and the node rows wrap in one attribute-less `div`:
-
-    div.n-scrollbar.n-tree.n-tree--block-node.n-tree--block-line
-         [.n-tree--checkable iff checkable] [.n-tree--rtl iff rtl]
-      style = scrollbar's own 23 vars ; tree's 18 vars (fallthrough last)
-      └─ .n-scrollbar-container > .n-scrollbar-content[padding:4px]
-         > div > .n-tree-node-wrapper*   (checkboxes inert + not focusable)
-
-`data-header` / `data-action` serialize `"true"` (upstream's bare JSX
-attrs compile to `{true}` — the `NUI.Transfer` close-icon aria-hidden
-precedent).
-
-Value algebra — pure helpers (the `NUI.Transfer` derive precedent).
-Upstream passes `internalUnifySelectCheck` UNCONDITIONALLY, so line
-clicks, label clicks and checkbox clicks all converge:
-
-  - `handleNodeClick opts value key` — single: `Single (Just key)` whatever
-    was clicked (checkbox included — cancelable is off upstream; a disabled
-    or missing node is a no-op). multiple + checkable: flips the node
-    through the tree's cascade check / uncheck under the MERGED cascade
-    (`multiple && cascade && checkable`) and MERGED strategy
-    (`checkStrategyOf` — `leafOnly` folds to `child`), checked-status base
-    normalized with the default `All` strategy exactly as upstream's
-    `displayedCheckedKeysRef`. multiple + plain: `Tree.toggleSelect` (rows
-    toggle in and out — the checkbox renders states only; a wired checkbox
-    would double-fire with the row click, the `NUI.Cascader` note).
-    A NON-leaf is dead under the merged `child` strategy without the
-    cascade multiple mode (`TreeNode.tsx:111-121` under
-    `internalTreeSelect` — no `--selectable`, the click never selects);
-    leaves and every non-`child` node click through.
-  - `deleteOption opts value key` — the tag close: base =
-    `Tree.getCheckedKeys` with cascade + allowNotLoaded but NO strategy
-    (upstream `TreeSelect.tsx:623-629` — treemate's default `all`); a key
-    outside the base is a no-op; checkable runs `Tree.uncheck` under the
-    RAW `checkStrategy` (upstream `:643` passes `props.checkStrategy`
-    unmerged — the deprecated `leafOnly` folds everywhere EXCEPT this
-    delete path, upstream's own inconsistency), plain splices the single
-    index.
-  - `clearValue value` — `Multiple []` / `Single Nothing`.
-  - `initialPendingKey opts` — the `--pending` seed: `Nothing` under
-    `checkable`, else the LAST key of an initial list value (a single value
-    seeds nothing). The caller feeds it (and every later click — upstream's
-    `pendingNodeKeyRef`) through `pendingKey`.
-
-Caller-owned runtime (the port-wide convention): show state and follower
-positioning (`placement` / `to` / `consistentMenuWidth` — mount `menu` in
-your own positioned wrapper), the `fade-in-scale-up-transition` phases
-(`transition` carries the class), clickoutside + the keyboard ladder
-(Enter / Escape / ArrowDown through the tree), `onLoad` async
-(`loadingKeys` data), `watchProps`, IME, focus return, the filter's
-expand-to-reveal (a non-empty `pattern` fires `onUpdateExpandedKeys` with
-`Tree.filterTree`'s reveal keys upstream — merge them yourself), and
-`clearFilterAfterSelect` (reset `pattern` after a multiple check).
-
-Not ported: `getChildren` (fixed record fields — the `NUI.Cascader`
-note), `renderTag` + `ellipsisTagPopoverProps` + the responsive
-`maxTagCount` overflow (numeric slicing is the static seam, as in
-`NUI.Select`), `defaultExpandAll` / `defaultExpandedKeys` (seed
-`expandedKeys` — `Tree.getNonLeafKeys` expands everything),
-`overrideDefaultNodeClickBehavior` (behaviour-only), `menuProps`'s raw
-`style` (use `attributes`; the class rides it too),
-`leafOnly` is deprecated (folds into `checkStrategyOf`), `virtualScroll`'s
-windowing (punted like the `--virtual` columns — the port pins the
-`internalScrollable`-branch bytes, upstream's
-`consistentMenuWidth=false` configuration), numeric option keys
-(`String` keys — the `NUI.SelectMenu` limitation).
+Trigger/panel DOM shapes and porting notes live in the comment block below
+the module doc.
 
 @docs Options, Size, checkStrategyOf, clearValue, defaults, deleteOption, handleNodeClick, initialPendingKey, menu, menuVars, mergedCascade, view
 
+-}
+
+{- DOM shapes and porting notes for `NUI.TreeSelect` — moved verbatim out of the
+      module docstring (docs.json must stay under elm publish's 768kb limit);
+      plain comments do not enter the published API docs.
+
+   Trigger (`view`) DOM — the `.n-tree-select` wrapper is bare (no vars, no
+   extra classes; `z-index / outline / width / position` come from the
+   stylesheet):
+
+       div.n-tree-select
+         └─ NUI.BaseSelection.view (see its docstring for the full tree;
+            `view` derives the display state from `value` + `options` — a
+            value whose node is MISSING drops entirely, no fallback label)
+
+   Menu (`menu`) DOM — the body carrying the 11 tree-select vars:
+
+       div.n-tree-select-menu [fade-in-scale-up-transition-*]
+         tabindex = 0 (upstream hardcodes it)
+         style = 11 vars → --n-header-divider-color
+         ├─ div.n-tree-select-menu__header [data-header]     — iff header
+         ├─ NUI.Tree.view (internalScrollable — see below)   — iff nodes visible
+         ├─ div.n-tree-select-menu__empty                    — iff NO visible
+         │    > {empty slot | NUI.Empty}                     nodes (replaces the
+         ├─ div.n-tree-select-menu__action [data-action]     whole tree — iff action
+         └─ div[width:0;height:0][tabindex 0]                — NFocusDetector
+
+   The embedded tree (`NUI.Tree` with `internalScrollable`): the whole
+   `.n-tree` root — classes, 18 vars — rides ON the scrollbar's root via
+   fallthrough, the content carries `padding:4px` (the theme's `menuPadding`),
+   and the node rows wrap in one attribute-less `div`:
+
+       div.n-scrollbar.n-tree.n-tree--block-node.n-tree--block-line
+            [.n-tree--checkable iff checkable] [.n-tree--rtl iff rtl]
+         style = scrollbar's own 23 vars ; tree's 18 vars (fallthrough last)
+         └─ .n-scrollbar-container > .n-scrollbar-content[padding:4px]
+            > div > .n-tree-node-wrapper*   (checkboxes inert + not focusable)
+
+   `data-header` / `data-action` serialize `"true"` (upstream's bare JSX
+   attrs compile to `{true}` — the `NUI.Transfer` close-icon aria-hidden
+   precedent).
+
+   Value algebra — pure helpers (the `NUI.Transfer` derive precedent).
+   Upstream passes `internalUnifySelectCheck` UNCONDITIONALLY, so line
+   clicks, label clicks and checkbox clicks all converge:
+
+     - `handleNodeClick opts value key` — single: `Single (Just key)` whatever
+       was clicked (checkbox included — cancelable is off upstream; a disabled
+       or missing node is a no-op). multiple + checkable: flips the node
+       through the tree's cascade check / uncheck under the MERGED cascade
+       (`multiple && cascade && checkable`) and MERGED strategy
+       (`checkStrategyOf` — `leafOnly` folds to `child`), checked-status base
+       normalized with the default `All` strategy exactly as upstream's
+       `displayedCheckedKeysRef`. multiple + plain: `Tree.toggleSelect` (rows
+       toggle in and out — the checkbox renders states only; a wired checkbox
+       would double-fire with the row click, the `NUI.Cascader` note).
+       A NON-leaf is dead under the merged `child` strategy without the
+       cascade multiple mode (`TreeNode.tsx:111-121` under
+       `internalTreeSelect` — no `--selectable`, the click never selects);
+       leaves and every non-`child` node click through.
+     - `deleteOption opts value key` — the tag close: base =
+       `Tree.getCheckedKeys` with cascade + allowNotLoaded but NO strategy
+       (upstream `TreeSelect.tsx:623-629` — treemate's default `all`); a key
+       outside the base is a no-op; checkable runs `Tree.uncheck` under the
+       RAW `checkStrategy` (upstream `:643` passes `props.checkStrategy`
+       unmerged — the deprecated `leafOnly` folds everywhere EXCEPT this
+       delete path, upstream's own inconsistency), plain splices the single
+       index.
+     - `clearValue value` — `Multiple []` / `Single Nothing`.
+     - `initialPendingKey opts` — the `--pending` seed: `Nothing` under
+       `checkable`, else the LAST key of an initial list value (a single value
+       seeds nothing). The caller feeds it (and every later click — upstream's
+       `pendingNodeKeyRef`) through `pendingKey`.
+
+   Caller-owned runtime (the port-wide convention): show state and follower
+   positioning (`placement` / `to` / `consistentMenuWidth` — mount `menu` in
+   your own positioned wrapper), the `fade-in-scale-up-transition` phases
+   (`transition` carries the class), clickoutside + the keyboard ladder
+   (Enter / Escape / ArrowDown through the tree), `onLoad` async
+   (`loadingKeys` data), `watchProps`, IME, focus return, the filter's
+   expand-to-reveal (a non-empty `pattern` fires `onUpdateExpandedKeys` with
+   `Tree.filterTree`'s reveal keys upstream — merge them yourself), and
+   `clearFilterAfterSelect` (reset `pattern` after a multiple check).
+
+   Not ported: `getChildren` (fixed record fields — the `NUI.Cascader`
+   note), `renderTag` + `ellipsisTagPopoverProps` + the responsive
+   `maxTagCount` overflow (numeric slicing is the static seam, as in
+   `NUI.Select`), `defaultExpandAll` / `defaultExpandedKeys` (seed
+   `expandedKeys` — `Tree.getNonLeafKeys` expands everything),
+   `overrideDefaultNodeClickBehavior` (behaviour-only), `menuProps`'s raw
+   `style` (use `attributes`; the class rides it too),
+   `leafOnly` is deprecated (folds into `checkStrategyOf`), `virtualScroll`'s
+   windowing (punted like the `--virtual` columns — the port pins the
+   `internalScrollable`-branch bytes, upstream's
+   `consistentMenuWidth=false` configuration), numeric option keys
+   (`String` keys — the `NUI.SelectMenu` limitation).
 -}
 
 import Element exposing (Element)

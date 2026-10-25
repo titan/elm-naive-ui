@@ -3,7 +3,12 @@ module NUI.LoadingBar exposing
     , kick, start, startFromTo, view
     )
 
-{-| Naive UI's `LoadingBar` — the bar itself, rebuilt on elm-ui.
+{-| Naive UI's `LoadingBar` — the bar itself, rebuilt on elm-ui: one
+`div.n-loading-bar-container` (fixed to the top of the viewport) wrapping one
+`div.n-loading-bar.n-loading-bar--{status}` whose inline `max-width` is the
+progress. `NUI.Css` ships Naive UI's exact CSS — including the `max-width 4s
+linear` tween for `--starting` and the `.2s` ones for `--finishing` /
+`--error`. The `--n-*` custom properties come from `NUI.Theme.LoadingBar`.
 
 @docs Options, State, Status, cssVarsFor, defaults, error, finish, init
 @docs kick, start, startFromTo, view
@@ -21,111 +26,116 @@ module NUI.LoadingBar exposing
     --
     --   view: LoadingBar.view theme LoadingBar.defaults model
 
-The element is Naive UI's own DOM: one `div.n-loading-bar-container` (fixed to
-the top of the viewport) wrapping one `div.n-loading-bar
-.n-loading-bar--{status}` whose inline `max-width` is the progress. The
-`--n-*` custom properties come from `NUI.Theme.LoadingBar` and `NUI.Css`
-ships Naive UI's exact CSS — including the `max-width 4s linear` tween for
-`--starting` and the `.2s` ones for `--finishing` / `--error`.
+**The caller-owned contract.** Upstream drives the bar imperatively inside a
+`LoadingBarProvider`; the port is a pure state machine the caller steps (the
+`NUI.Countdown` precedent). No timers live here — the fade phases are
+caller-driven (the `NUI.BackTop` / `NUI.Spin` precedent):
 
-**Caller-owned runtime.** Upstream mounts the bar inside a `LoadingBarProvider`
-and drives it imperatively (`useLoadingBar()` → `start` / `finish` / `error`),
-mutating the live DOM node across `nextTick`s — `el.className = …`,
-`el.style.maxWidth = …`, `el.style.transition = 'none'` … `''`, with forced
-reflashes (`void el.offsetWidth`, LoadingBar.tsx:70-77). The provider, the
-teleport (`to`), and the composable are not ported; the component is a pure
-state machine the caller steps (the `NUI.Countdown` precedent), and `view`
-renders exactly the DOM those mutations would have produced:
+  - `start` / `startFromTo` (defaults `0 → 80`) — a fresh run whose `runId`
+    change remounts the bar (keyed) so it reappears at `from` with an inline
+    `transition: none` instead of tweening from the previous run's width;
+    `toProgress` is staged for `kick`.
+  - `kick` — invoke one animation frame after `start` (e.g. from
+    `Browser.Events.onAnimationFrame`): the bar moves to `toProgress` and the
+    CSS tween takes over.
+  - `finish` — `--finishing` (the CSS retargets `max-width` to `100%` in
+    `.2s`); no-op unless a run is loading.
+  - `error` — mid-run: `--error` and a `.2s` tween to `100%`; from idle: an
+    already-finished error run (`start(100, 100, 'error')` — drive it like a
+    `start`). No-op while a finish/error is still fading out.
+  - **Fade phases + the guard.** Set `phase = Just I.EnterFrom` in the same
+    update as `start` (or an idle `error`), advance to `EnterActive` next
+    frame, clear to `Nothing` after the `.3s` fade; set `LeaveFrom` with
+    `finish` / `error`, advance to `LeaveActive` and clear after the `.8s`
+    fade — that clear is the port's `handleAfterLeave` and releases the
+    finish/error no-op guard (hold the `Leave` phase, and a second
+    `error`/`finish` no-ops instead of restarting).
+  - **Visibility.** A started run paints its bar for EVERY status — a
+    `--starting` tween, a settled `--finishing` at 100%, an `--error` at 100%
+    in the error colour; a not-started run renders `Element.none`. A settled
+    finished/errored run STAYS painted at its final width (the frozen static
+    demos rely on it).
 
-  - `start` / `startFromTo` — upstream `start()` (LoadingBar.tsx:58-77;
-    defaults `0 → 80`): a fresh run whose `runId` change remounts the bar
-    (keyed), so it reappears at `from` instead of tweening from the previous
-    run's width, with an inline `transition: none` so the first frame paints
-    `from` without animating.
-  - `kick` — invoke one frame after `start` (e.g. from
-    `Browser.Events.onAnimationFrame`); it moves the bar to `toProgress` and
-    drops the inline `transition: none`, letting the CSS tween `max-width`
-    take over. This replaces upstream's forced-reflow dance
-    (LoadingBar.tsx:73-76).
-  - `finish` — upstream `finish()` (LoadingBar.tsx:79-92): `--finishing`
-    (the CSS retargets `max-width` to `100%` in `.2s`) and hides the bar.
-    No-op unless a run is loading — upstream's live `finishing || erroring`
-    guard (LoadingBar.tsx:80-81).
-  - `error` — upstream `error()` (LoadingBar.tsx:94-117): mid-run it switches
-    to `--error` and tweens to `100%` (the `.2s` retarget); from idle it
-    starts an already-finished error run (upstream's `start(100, 100,
-    'error')`, LoadingBar.tsx:99-107). No-op while a finish/error is still
-    fading out (see the guard divergence below).
-  - `init` — `started = False`; the view renders `Element.none` (upstream:
-    `if (!this.started) return null`, LoadingBar.tsx:171-172).
+(The upstream imperative-mutation walkthrough, the per-function upstream
+mapping with line citations and the full divergence list live in the plain
+comment right below — internal port notes, deliberately kept out of the
+published docs.)
 
-**Visibility.** Upstream shows the container via `v-show` on `loading ||
-(!loading && entering)` — i.e. `loading || entering` — inside a
-`<Transition name="fade-in-transition" appear>` (LoadingBar.tsx:176-209); a
-hiding element only collapses once the `.8s` leave fade has finished, and
-`handleAfterLeave` then resets the flags (LoadingBar.tsx:125-127). The port
-keeps the bar painted for EVERY status a started run can hold — `--starting`
-tweens, and `--finishing` / `--error` settle at `100%` (red for `--error`)
-— so a finished/errored run is visible at its final width; an enter/leave
-fade phase (upstream's `entering`, plus the leave hold) additionally keeps
-the container mounted mid-fade. `display: none` is emitted only for a
-not-started run, which `view` already renders as `Element.none`. The fade
-phases themselves are caller-driven (the `NUI.BackTop` / `NUI.Spin`
-precedent) — no timers live here:
+-}
 
-  - on `start` (or an idle `error`), set `phase = Just I.EnterFrom` in the
-    same update (upstream's `appear` / v-show enter), advance to
-    `I.EnterActive` next frame and clear to `Nothing` after the `.3s` fade;
-  - on `finish` / `error`, set `phase = Just I.LeaveFrom` in the same update,
-    advance to `I.LeaveActive` and clear after the `.8s` fade — that clear is
-    the port's `handleAfterLeave`: it releases the finish/error no-op guard
-    (the container itself stays painted at `100%` — see Visibility). Leave
-    phases keep the container mounted and visible mid-fade
-    (`I.isLeavePhase`, the `NUI.Spin` hold).
+{- INTERNAL PORT NOTES — moved out of the module doc (plain comments do not
+      enter docs.json; the published docs must stay under the package-size
+      limit). Nothing here changes the public contract summarised above.
 
-**Divergences from upstream** (everything else is a faithful port):
+   **Caller-owned runtime.** Upstream mounts the bar inside a `LoadingBarProvider`
+   and drives it imperatively (`useLoadingBar()` → `start` / `finish` / `error`),
+   mutating the live DOM node across `nextTick`s — `el.className = …`,
+   `el.style.maxWidth = …`, `el.style.transition = 'none'` … `''`, with forced
+   reflows (`void el.offsetWidth`, LoadingBar.tsx:70-77). The provider, the
+   teleport (`to`), and the composable are not ported; the component is a pure
+   state machine the caller steps, and `view` renders exactly the DOM those
+   mutations would have produced:
 
-  - **Provider skipped.** No `LoadingBarProvider` / `useLoadingBar` /
-    teleport (`to`): the caller owns one `State`, renders the bar where it
-    wants it, and passes the provider's props (`containerClass`,
-    `containerStyle`, `loadingBarStyle`) as `Options` instead.
-  - **The reflow dance is data.** Upstream juggles `className` / `maxWidth` /
-    `transition` imperatively across `nextTick`s; the port encodes the same
-    frames declaratively (`kicked`, the `runId` keyed remount). One transient
-    upstream frame disappears: the just-mounted bar with the bare
-    `n-loading-bar` class (no modifier, no `max-width`, transparent) before
-    `start`'s callback lands — here `start` sets the status atomically, with
-    the same (invisible) rendering.
-  - **A settled `--finishing` / `--error` run stays painted.** Upstream's
-    `v-show` retargets to `false` the moment `loading` clears (on
-    `finish` / `error`), so the bar survives only the `.8s` leave fade before
-    `handleAfterLeave` collapses it. The port has no collapse signal once the
-    caller clears the phase, so `isDisplayed` keeps a finished/errored run
-    visible at its final width — the frozen static demos (which call
-    `finish` / `error` with no phase) rely on it.
-  - **`transitionDisabled` / `css=false`** — upstream's flag that keeps
-    Vue's transition engine from fighting those imperative style writes
-    (LoadingBar.tsx:34, 52-53, 183) — has no equivalent; the pure port has no
-    such race.
-  - **Guard window.** Upstream holds the `finishing || erroring` no-op guard
-    from `finish`/`error` until the leave fade ends
-    (`handleAfterLeave` → `init()`); the port holds it while a `Leave` phase
-    is set. A second `error` in the very same update as the first
-    `error`/`finish` — before the caller has attached the `Leave` phase —
-    restarts the run instead of no-oping. Unreachable when the recipe above
-    is followed (set the `Leave` phase together with `finish`/`error`).
-  - **`loadingBarStyle`** — upstream accepts `string | CSSProperties` per
-    variant (LoadingBar.tsx:43-48); the port takes raw CSS strings, merged
-    verbatim after the themed vars and `max-width` (so the fragment wins on
-    conflicts), the `error` variant picked while erroring. Same for
-    `containerStyle` (a raw fragment on the container, after the view's own
-    `display: none`).
-  - **`inlineThemeDisabled` / `themeClass`** mode is not ported — the port
-    always emits the inline `--n-*` vars on the bar (upstream's default
-    mode, LoadingBar.tsx:200-206).
-  - **`attributes` exists for record parity only** — the root is raw HTML
-    (`Element.html`, the `NUI.Highlight` / `NUI.Heatmap` precedent: an
-    `Element.Attribute` cannot attach to a raw node), so it is unused.
+     - `start` / `startFromTo` — upstream `start()` (LoadingBar.tsx:58-77).
+     - `kick` — replaces upstream's forced-reflow dance (LoadingBar.tsx:73-76).
+     - `finish` — upstream `finish()` (LoadingBar.tsx:79-92). No-op unless a run
+       is loading — upstream's live `finishing || erroring` guard
+       (LoadingBar.tsx:80-81).
+     - `error` — upstream `error()` (LoadingBar.tsx:94-117); from idle it starts
+       an already-finished error run (upstream's `start(100, 100, 'error')`,
+       LoadingBar.tsx:99-107).
+     - `init` — `started = False`; the view renders `Element.none` (upstream:
+       `if (!this.started) return null`, LoadingBar.tsx:171-172).
+
+   **Visibility.** Upstream shows the container via `v-show` on `loading ||
+   (!loading && entering)` — i.e. `loading || entering` — inside a
+   `<Transition name="fade-in-transition" appear>` (LoadingBar.tsx:176-209); a
+   hiding element only collapses once the `.8s` leave fade has finished, and
+   `handleAfterLeave` then resets the flags (LoadingBar.tsx:125-127).
+
+   **Divergences from upstream** (everything else is a faithful port):
+
+     - **Provider skipped.** No `LoadingBarProvider` / `useLoadingBar` /
+       teleport (`to`): the caller owns one `State`, renders the bar where it
+       wants it, and passes the provider's props (`containerClass`,
+       `containerStyle`, `loadingBarStyle`) as `Options` instead.
+     - **The reflow dance is data.** Upstream juggles `className` / `maxWidth` /
+       `transition` imperatively across `nextTick`s; the port encodes the same
+       frames declaratively (`kicked`, the `runId` keyed remount). One transient
+       upstream frame disappears: the just-mounted bar with the bare
+       `n-loading-bar` class (no modifier, no `max-width`, transparent) before
+       `start`'s callback lands — here `start` sets the status atomically, with
+       the same (invisible) rendering.
+     - **A settled `--finishing` / `--error` run stays painted.** Upstream's
+       `v-show` retargets to `false` the moment `loading` clears (on
+       `finish` / `error`), so the bar survives only the `.8s` leave fade before
+       `handleAfterLeave` collapses it. The port has no collapse signal once the
+       caller clears the phase, so `isDisplayed` keeps a finished/errored run
+       visible at its final width — the frozen static demos (which call
+       `finish` / `error` with no phase) rely on it.
+     - **`transitionDisabled` / `css=false`** — upstream's flag that keeps
+       Vue's transition engine from fighting those imperative style writes
+       (LoadingBar.tsx:34, 52-53, 183) — has no equivalent; the pure port has no
+       such race.
+     - **Guard window.** Upstream holds the `finishing || erroring` no-op guard
+       from `finish`/`error` until the leave fade ends
+       (`handleAfterLeave` → `init()`); the port holds it while a `Leave` phase
+       is set. A second `error` in the very same update as the first
+       `error`/`finish` — before the caller has attached the `Leave` phase —
+       restarts the run instead of no-oping. Unreachable when the recipe above
+       is followed (set the `Leave` phase together with `finish`/`error`).
+     - **`loadingBarStyle`** — upstream accepts `string | CSSProperties` per
+       variant (LoadingBar.tsx:43-48); the port takes raw CSS strings, merged
+       verbatim after the themed vars and `max-width` (so the fragment wins on
+       conflicts), the `error` variant picked while erroring. Same for
+       `containerStyle` (a raw fragment on the container, after the view's own
+       `display: none`).
+     - **`inlineThemeDisabled` / `themeClass`** mode is not ported — the port
+       always emits the inline `--n-*` vars on the bar (upstream's default
+       mode, LoadingBar.tsx:200-206).
+     - **`attributes` exists for record parity only** — the root is raw HTML
+       (`Element.html`, the `NUI.Highlight` / `NUI.Heatmap` precedent: an
+       `Element.Attribute` cannot attach to a raw node), so it is unused.
 
 -}
 

@@ -20,13 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the List CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`textColor` → `--n-text-color`).
-
-Collected by concern:
-
-  - item surface colors & hover, incl. modal/popover: `color`, `colorHover`, `colorModal`, `colorHoverModal`, `colorPopover`, `colorHoverPopover`
-  - borders & radius: `borderColor`, `borderColorModal`, `borderColorPopover`, `borderRadius`
-  - typography: `textColor`, `fontSize`
-
 -}
 type alias Vars =
     { textColor : String

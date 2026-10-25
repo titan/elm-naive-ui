@@ -20,12 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Empty CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`iconSizeTiny` → `--n-icon-size-tiny`).
-
-Collected by concern:
-
-  - per-size icon & font sizes: `iconSizeTiny`, `iconSizeSmall`, `iconSizeMedium`, `iconSizeLarge`, `iconSizeHuge`, `fontSizeTiny`, `fontSizeSmall`, `fontSizeMedium`, `fontSizeLarge`, `fontSizeHuge`
-  - text colors: `textColor`, `iconColor`, `extraTextColor`
-
 -}
 type alias Vars =
     { iconSizeTiny : String

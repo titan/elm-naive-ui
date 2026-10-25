@@ -20,12 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Carousel CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`dotSize` → `--n-dot-size`).
-
-Collected by concern:
-
-  - dot indicators: `dotSize`, `dotColor`, `dotColorActive`, `dotColorFocus`, `dotLineWidth`, `dotLineWidthActive`
-  - arrows: `arrowColor`
-
 -}
 type alias Vars =
     { dotSize : String

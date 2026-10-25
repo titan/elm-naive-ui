@@ -20,15 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Table CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`thPaddingSmall` → `--n-th-padding-small`).
-
-Collected by concern:
-
-  - per-size cell paddings (th/td): `thPaddingSmall`, `thPaddingMedium`, `thPaddingLarge`, `tdPaddingSmall`, `tdPaddingMedium`, `tdPaddingLarge`
-  - per-size font sizes, line height & radius: `fontSizeSmall`, `fontSizeMedium`, `fontSizeLarge`, `lineHeight`, `borderRadius`
-  - borders (incl. modal/popover): `borderColor`, `borderColorModal`, `borderColorPopover`
-  - cell surfaces (th/td, striped, modal/popover): `tdColor`, `tdColorModal`, `tdColorPopover`, `tdColorStriped`, `tdColorStripedModal`, `tdColorStripedPopover`, `thColor`, `thColorModal`, `thColorPopover`
-  - header & cell text: `thTextColor`, `tdTextColor`, `thFontWeight`
-
 -}
 type alias Vars =
     { thPaddingSmall : String

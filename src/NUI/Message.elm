@@ -11,107 +11,118 @@ module NUI.Message exposing
 
     -- in `update` (the caller owns the queue and the hide clock):
     --
-    --   ShowMessage  -> ( Message.create "hi" { Message.defaults | content = "Saved" } model.messages
-    --                   , ...schedule a `Hide` msg via `Message.effectiveDuration` ...
-    --                   )
-    --   Hide         -> ( Message.destroy "hi" model.messages, ... )          -- stamp LeaveFrom
-    --   AfterLeave   -> ( Message.remove "hi" model.messages, ... )           -- splice when the leave ends
+    --   ShowMessage -> ( Message.create "hi" { Message.defaults | content = "Saved" } model.messages
+    --                  , ...schedule a `Hide` msg via `Message.effectiveDuration` ...
+    --                  )
+    --   Hide        -> ( Message.destroy "hi" model.messages, ... )     -- stamp LeaveFrom
+    --   AfterLeave  -> ( Message.remove "hi" model.messages, ... )      -- splice when the leave ends
     --
     --   view: Message.view theme model.messages
 
-Upstream is a `MessageProvider` holding a queue of `MessageEnvironment`s. Each
-environment renders `<NFadeInExpandTransition appear>` around a `div
-.n-message-wrapper` (whose inline `align-items` and `--n-*` vars the message
-carries) and owns a `setTimeout(hide, duration)` clock. This library is pure —
-no ports, no `update` — so the provider's props and the queue live in one
-caller-owned `State`, the transforms here are the provider API, and `view`
-renders exactly the DOM the environments would show:
+**The caller-owned contract.** This library is pure — no ports, no `update` —
+so the upstream provider's props and the queue live in one caller-owned
+`State` and `view` renders exactly the DOM the upstream environments would
+show. Config the transforms READ while transforming lives in `State` (`max`,
+`duration`, `keepAliveOnHover`, `closable`, `rtl`); view-only config lives in
+`Options`; the three mergeable props merge per-item-then-provider exactly as
+the provider's JSX does:
 
-  - `create` — upstream `create()` (MessageProvider.tsx): appends to `items` in
-    DOM order. It stamps `phase = Just I.EnterFrom` (upstream mounts with
-    `appear`, so the first paint already carries the
-    `fade-in-height-expand-transition-enter-from` class). When the provider is
-    at `max`, the OLDEST item is dropped from the state instantly — no leave
+  - `create` — appends in DOM order, stamped `phase = Just I.EnterFrom`. At
+    `max` the OLDEST item is dropped from the state INSTANTLY — no leave
     phase, none of its callbacks fire (upstream `shift()` unmounts it
-    untransitioned). `max` follows JS truthiness: `Just 0` and `Nothing` are
-    UNLIMITED (a negative `Just` would be truthy upstream — evicting on every
-    create — while the port never evicts for `n <= 0`; the same pathological
-    divergence noted on `NUI.Notification`), and
-    the count includes items already leaving. Exactly one drop per create.
-  - `info` / `success` / `warning` / `error` / `loading` — upstream's typed
-    API: `create` with the kind stamped (`{ type: 'info', ...options }`).
-  - `destroy` — upstream `destroy()` → the environment's `hide()`:
-    `phase := Just I.LeaveFrom`. NO-OP when the item is already in a leave
-    phase — upstream's `showRef` is already `false`, and resetting the ladder
-    would restart the collapse (a byte-visible divergence); an unknown key is a
-    no-op too. Note the ladder resets to `LeaveFrom` even mid-enter (upstream
-    starts the leave from whatever state it is in).
-  - `destroyAll` — upstream `destroyAll()`: the same rule for every item.
-  - `remove` — upstream `onInternalAfterLeave` → `splice`: drops the item once
-    its leave has ended (caller-owned clock: fire your after-leave msg one
-    leave-duration after `destroy`, then `remove`). This is what empties the
-    container — `view` renders `Element.none` while `items` is empty. Removing
-    mid-leave makes the container vanish before the animation ends.
-  - `effectiveDuration` — the resolved hide timeout: the item's `duration`
-    when set, otherwise the provider default (`State.duration`). Upstream's
-    `setHideTimeout` guards `if (duration)`, so `Just 0` means NEVER (no
-    fallback to the provider default — the falsy check wins).
+    untransitioned); the count includes items already leaving; exactly one
+    drop per create; `Just 0` and `Nothing` are UNLIMITED.
+  - `info` / `success` / `warning` / `error` / `loading` — `create` with the
+    kind stamped (`loading` renders the `n-base-loading` spinner).
+  - `destroy` / `destroyAll` — stamp `Just I.LeaveFrom` (the ladder resets to
+    `LeaveFrom` even mid-enter); NO-OP for items already leaving; unknown
+    keys are no-ops.
+  - `remove` — splice the item once its leave has ended (fire your
+    after-leave msg one leave-duration after `destroy`). Removing mid-leave
+    makes the container vanish before the animation ends.
+  - `effectiveDuration` — the resolved hide timeout the caller arms: the
+    item's `duration` when set, else the provider default on `State`; `Just
+    0` stays `Just 0` and means NEVER (the upstream falsy check beats the
+    provider default).
+  - **The hide clock is data.** The caller owns the timer (clear/re-arm on
+    hover for `keepAliveOnHover`) and fires `onLeave` / `onAfterLeave` from
+    it — on EVERY transition leave, timer expiry included, but NOT on
+    max-eviction (the evictee is unmounted without a transition and fires
+    nothing at all). A close-icon click emits `onClose` fire-and-forget; a
+    message's close is never vetoed — completing it is the caller's
+    `destroy` in the same update.
 
-**Service-template rule.** Config upstream READS while transforming lives in
-`State` (`max`, `duration`, `keepAliveOnHover`, `closable`, `rtl` — the
-provider props), view-only config lives in `Options`. The three mergeable
-props merge per-item-then-provider exactly as the provider's JSX does
-(`message.duration === undefined ? this.duration : message.duration`), at
-transform/view time.
-
-**Callback matrix** (upstream MessageEnvironment.tsx):
-
-  - close-icon click → `onClose` only — fire-and-forget; a message's close is
-    never vetoed (upstream ignores `onClose`'s return and `hide()`s
-    unconditionally). The port emits `onClose`; completing the close is the
-    caller's `destroy` in the same update.
-  - timer expiry / `destroy` / `destroyAll` → hide WITHOUT `onClose`.
-  - `onLeave` / `onAfterLeave` fire on every transition leave — timer expiry
-    included — but NOT on max-eviction (the evictee is unmounted without a
-    transition and fires nothing at all). A pure view cannot fire messages on
-    its own; the caller fires them from the clock it owns (onLeave when
-    stamping the leave, onAfterLeave when the leave has run its 300ms).
-
-**Icon wrapper.** Upstream renders `div.n-message__icon` iff
-`showIcon && (icon /= Nothing || kind /= Default)` — a `Default` message
-without a custom icon has NO icon wrapper even at `showIcon = True`, and
-`render /= Nothing` replaces the whole body (icon, content and close included)
-so it never renders one. The `NIconSwitchTransition` around the icon (an
-animation for live TYPE changes) is dropped: items are immutable here — edit
-the item's `options` instead.
-
-**Divergences from upstream** (everything else is a faithful port):
-
-  - **Provider / teleport skipped.** No `MessageProvider`, no `to` teleport:
-    the caller owns one `State` and mounts the container where it wants it
-    (the `NUI.LoadingBar` precedent).
-  - **The hide clock is data.** Upstream arms `setTimeout` on mount, clears it
-    on hover and re-arms it on leave (`keepAliveOnHover`); the caller owns the
-    timer and steps the phases. The wrapper's internal mouseenter/mouseleave
-    listeners are still emitted — but only when the MERGED `keepAliveOnHover`
-    is on, and attached to a decoder that can never produce a message (the
-    options expose no public mouse handlers — upstream's API has none either;
-    pausing the clock on hover is the caller's job).
-  - **`max-height` pinning of `fade-in-height-expand`** (upstream measures the
-    element at runtime) is not reproduced — the phase classes and the caller
-    clock drive the CSS transition, the `NUI.Menu` precedent.
-  - **`MessageReactive` mutability** — upstream lets `create`'s return value
-    mutate `content` / `type` live; here an item's `options` are plain data —
-    rebuild the state with the edited options.
-  - **`spinProps`** — the loading icon's bytes are fixed (strokeWidth 24,
-    scale 0.85, upstream's defaults at the message call site). The deprecated
-    `hide` / `deactivate` / `onHide` / `onAfterHide` aliases are not ported.
-  - **`onClose` return value** — ignored (upstream ignores it too).
-  - **`themeClass` / `inlineThemeDisabled`** — not ported; the inline
-    `--n-*` vars are always emitted (upstream's default mode).
+(The upstream provider/DOM walkthrough, the callback matrix, the
+icon-wrapper rules and the full divergence list live in the plain comment
+right below — internal port notes, deliberately kept out of the published
+docs.)
 
 @docs Placement, Kind, Options, defaults, Item, item, State, init, create, info, success, warning, error
 @docs loading, destroy, destroyAll, remove, effectiveDuration, view, cssVarsFor
+
+-}
+
+{- INTERNAL PORT NOTES — moved out of the module doc (plain comments do not
+      enter docs.json; the published docs must stay under the package-size
+      limit). Nothing here changes the public contract summarised above.
+
+   Upstream is a `MessageProvider` holding a queue of `MessageEnvironment`s.
+   Each environment renders `<NFadeInExpandTransition appear>` around a `div
+   .n-message-wrapper` (whose inline `align-items` and `--n-*` vars the message
+   carries) and owns a `setTimeout(hide, duration)` clock.
+
+   **Service-template rule.** Config upstream READS while transforming lives in
+   `State` (`max`, `duration`, `keepAliveOnHover`, `closable`, `rtl` — the
+   provider props), view-only config lives in `Options`. The three mergeable
+   props merge per-item-then-provider exactly as the provider's JSX does
+   (`message.duration === undefined ? this.duration : message.duration`), at
+   transform/view time.
+
+   **Callback matrix** (upstream MessageEnvironment.tsx):
+
+     - close-icon click → `onClose` only — fire-and-forget; a message's close is
+       never vetoed (upstream ignores `onClose`'s return and `hide()`s
+       unconditionally). The port emits `onClose`; completing the close is the
+       caller's `destroy` in the same update.
+     - timer expiry / `destroy` / `destroyAll` → hide WITHOUT `onClose`.
+     - `onLeave` / `onAfterLeave` fire on every transition leave — timer expiry
+       included — but NOT on max-eviction (the evictee is unmounted without a
+       transition and fires nothing at all). A pure view cannot fire messages on
+       its own; the caller fires them from the clock it owns (onLeave when
+       stamping the leave, onAfterLeave when the leave has run its 300ms).
+
+   **Icon wrapper.** Upstream renders `div.n-message__icon` iff
+   `showIcon && (icon /= Nothing || kind /= Default)` — a `Default` message
+   without a custom icon has NO icon wrapper even at `showIcon = True`, and
+   `render /= Nothing` replaces the whole body (icon, content and close included)
+   so it never renders one. The `NIconSwitchTransition` around the icon (an
+   animation for live TYPE changes) is dropped: items are immutable here — edit
+   the item's `options` instead.
+
+   **Divergences from upstream** (everything else is a faithful port):
+
+     - **Provider / teleport skipped.** No `MessageProvider`, no `to` teleport:
+       the caller owns one `State` and mounts the container where it wants it
+       (the `NUI.LoadingBar` precedent).
+     - **The hide clock is data.** Upstream arms `setTimeout` on mount, clears it
+       on hover and re-arms it on leave (`keepAliveOnHover`); the caller owns the
+       timer and steps the phases. The wrapper's internal mouseenter/mouseleave
+       listeners are still emitted — but only when the MERGED `keepAliveOnHover`
+       is on, and attached to a decoder that can never produce a message (the
+       options expose no public mouse handlers — upstream's API has none either;
+       pausing the clock on hover is the caller's job).
+     - **`max-height` pinning of `fade-in-height-expand`** (upstream measures the
+       element at runtime) is not reproduced — the phase classes and the caller
+       clock drive the CSS transition, the `NUI.Menu` precedent.
+     - **`MessageReactive` mutability** — upstream lets `create`'s return value
+       mutate `content` / `type` live; here an item's `options` are plain data —
+       rebuild the state with the edited options.
+     - **`spinProps`** — the loading icon's bytes are fixed (strokeWidth 24,
+       scale 0.85, upstream's defaults at the message call site). The deprecated
+       `hide` / `deactivate` / `onHide` / `onAfterHide` aliases are not ported.
+     - **`onClose` return value** — ignored (upstream ignores it too).
+     - **`themeClass` / `inlineThemeDisabled`** — not ported; the inline
+       `--n-*` vars are always emitted (upstream's default mode).
 
 -}
 

@@ -20,15 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Heatmap CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`activeColors` → `--n-active-colors`).
-
-Collected by concern:
-
-  - palette (min + per-level active colors): `activeColors`, `mininumColor`
-  - cell shape: `borderRadius`, `rectSizeSmall`, `rectSizeMedium`, `rectSizeLarge`, `borderRadiusSmall`, `borderRadiusMedium`, `borderRadiusLarge`
-  - grid gaps per size: `xGapSmall`, `xGapMedium`, `xGapLarge`, `yGapSmall`, `yGapMedium`, `yGapLarge`
-  - typography, borders & per-size fonts: `borderColor`, `textColor`, `fontWeight`, `fontSizeSmall`, `fontSizeMedium`, `fontSizeLarge`
-  - loading gradient: `loadingColorStart`, `loadingColorEnd`
-
 -}
 type alias Vars =
     { activeColors : List String

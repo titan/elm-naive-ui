@@ -20,13 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Breadcrumb CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`fontWeightActive` → `--n-font-weight-active`).
-
-Collected by concern:
-
-  - typography: `fontWeightActive`, `fontSize`, `itemLineHeight`
-  - item text states: `itemTextColor`, `itemTextColorHover`, `itemTextColorPressed`, `itemTextColorActive`
-  - hover/press surfaces & separator: `itemBorderRadius`, `itemColorHover`, `itemColorPressed`, `separatorColor`
-
 -}
 type alias Vars =
     { fontWeightActive : String

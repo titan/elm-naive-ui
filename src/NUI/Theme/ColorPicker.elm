@@ -20,13 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the ColorPicker CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`panelFontSize` → `--n-panel-font-size`).
-
-Collected by concern:
-
-  - panel chrome: `panelFontSize`, `boxShadow`, `dividerColor`
-  - per-size control metrics: `heightSmall`, `heightMedium`, `heightLarge`, `fontSizeSmall`, `fontSizeMedium`, `fontSizeLarge`
-  - control colors & border: `color`, `textColor`, `borderRadius`, `border`
-
 -}
 type alias Vars =
     { panelFontSize : String

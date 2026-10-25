@@ -20,13 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Dialog CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`titleFontSize` → `--n-title-font-size`).
-
-Collected by concern:
-
-  - layout metrics: `titleFontSize`, `padding`, `iconSize`, `actionSpace`, `contentMargin`, `iconMargin`, `iconMarginIconTop`, `closeSize`, `closeIconSize`, `closeMargin`, `closeMarginIconTop`, `fontSize`, `lineHeight`, `borderRadius`, `titleFontWeight`
-  - chrome colors: `border`, `titleTextColor`, `textColor`, `color`, `closeColorHover`, `closeColorPressed`, `closeIconColor`, `closeIconColorHover`, `closeIconColorPressed`, `closeBorderRadius`
-  - typed icon colors: `iconColor`, `iconColorInfo`, `iconColorSuccess`, `iconColorWarning`, `iconColorError`
-
 -}
 type alias Vars =
     { titleFontSize : String

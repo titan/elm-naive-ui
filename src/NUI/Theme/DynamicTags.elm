@@ -20,11 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the DynamicTags CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`inputWidth` → `--n-input-width`).
-
-Collected by concern:
-
-  - inline editor width: `inputWidth`
-
 -}
 type alias Vars =
     { inputWidth : String

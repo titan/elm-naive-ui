@@ -20,12 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the BackTop CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`width` → `--n-width`).
-
-Collected by concern:
-
-  - shape & size: `width`, `height`, `borderRadius`, `iconSize`
-  - surface & states: `color`, `textColor`, `iconColor`, `iconColorHover`, `iconColorPressed`, `boxShadow`, `boxShadowHover`, `boxShadowPressed`
-
 -}
 type alias Vars =
     { width : String

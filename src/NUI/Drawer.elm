@@ -4,17 +4,6 @@ module NUI.Drawer exposing (Options, Placement(..), ShowMask(..), cssVars, defau
 it renders its own fixed full-viewport tree (no trigger/follower), but the
 body is **edge-anchored** (`.n-drawer` is `position: absolute` pinned to a
 side by `placement`, sized on the placement's axis) instead of flex-centred.
-Upstream `Drawer.tsx` orchestrates `DrawerBodyWrapper.tsx` (the component
-named `NDrawerContent` in its `name` field — the body wrapper) whose default
-slot receives `DrawerContent.tsx` (the inner header/body/footer unit):
-
-    div.n-drawer-container (role=none, the 25 css vars [+ z-index])
-      div.n-drawer-mask (aria-hidden) [--invisible]      — iff showMask ≠ Hidden
-      div role=none (unclassed host)                      — the body gate
-        div.n-drawer [--rtl --{p}-placement] role=dialog aria-modal
-          div.n-drawer__resize-trigger [--hover]          — iff resizable
-          (content wrapper — see nativeScrollbar below)
-            the caller's content (usually `NUI.DrawerContent`)
 
     import NUI.Drawer as Drawer
     import NUI.DrawerContent as DrawerContent
@@ -30,61 +19,93 @@ slot receives `DrawerContent.tsx` (the inner header/body/footer unit):
             [ Element.text "Content" ]
         ]
 
-**Everything runtime is caller-owned** (the popover-family precedent, applied
-to the mount-body family — upstream provides the `*BodyInjectionKey`s, it
-consumes nothing):
+Essential contract: everything runtime is caller-owned — mounting and
+`show` (`displayDirective: 'if'` semantics; unmount when fully closed), the
+mask / body transitions (phases via `maskTransition` / `bodyTransition`,
+mounted through leave phases; body phase class forced last), `onMaskClick`
+as the primary close surface (the mask IS interactive, unlike `NUI.Modal`),
+resizable drag state and `zIndex`. `showMask` is `Visible | Transparent |
+Hidden`; `nativeScrollbar` (default true) picks a plain content wrapper (no
+scrollbar node) or an embedded `NUI.Scrollbar`; `width` / `height` resolve
+per axis with the `251` fallback onto `.n-drawer`'s single inline style.
+`NUI.DrawerContent` is the composition unit for the inner
+header/body/footer.
 
-  - **Mounting and `show`.** The caller decides where the tree lives and owns
-    the show state (`displayDirective: 'if'` semantics only). `show = False`
-    with no leave phase renders a bare container — unmount the view when fully
-    closed; the keep-mounted `display: none` variant is not modelled
-    (caller `attributes` can carry it).
-  - **Transitions.** The mask (`fade-in-transition`) and the body
-    (`slide-in-from-{placement}-transition`, derived from `placement`) run on
-    the same clock the caller drives: pass the phase through
-    `maskTransition`/`bodyTransition` and keep the view mounted while either
-    is a leave phase (`I.isLeavePhase`). The mask/body nodes render only while
-    `show || isLeavePhase …`. Upstream timings: mask `.2s`; body enter `.3s`,
-    leave `.2s` (fixed beziers, not the `--n-bezier-*` vars — unlike the
-    mask, which reads `--n-bezier-in/out`). The body phase class is forced
-    **last** on `.n-drawer`'s class list (the house invariant).
-  - **Mask clicks ARE interactive** (the divergence from `NUI.Modal`, whose
-    fixed body-wrapper overlays an inert mask): upstream's mask carries
-    `onClick=handleMaskClick` (`Drawer.tsx` — `.n-drawer` is out of flow, so
-    the zero-height body host does not cover it). Pass `onMaskClick` for the
-    primary close surface; `maskClosable` reduces to "pass your close msg".
-    Esc (`closeOnEsc`), focus trap, `blockScroll` and the `clickoutside`
-    (only when the mask is hidden) stay caller runtime.
-  - **Resizable drag.** The trigger node (`resizable = True`) and its
-    `--hover` modifier (`showResizeTriggerHover`) are DOM; the drag itself
-    (global mousemove/mouseup, min/max clamping, `--unselectable` while
-    dragging) is caller runtime — set `unselectable` while your drag is
-    active to reproduce upstream.
-  - **z-index.** No `zindexable` auto-increment: pass `zIndex` (rendered as
-    `z-index` appended after the vars).
-
-**`showMask`** is upstream's `boolean | 'transparent'`: `Visible` (the
-default) renders the mask, `Transparent` renders it with
-`n-drawer-mask--invisible`, `Hidden` omits the node entirely.
-
-**`nativeScrollbar`** (upstream default **true**) selects the content seam:
-`True` renders a plain `div.n-drawer-content-wrapper` (no scrollbar node —
-unlike `NUI.Modal`, the default tree embeds no `NUI.Scrollbar`); `False`
-embeds `NUI.Scrollbar` with `contentClass = "n-drawer-content-wrapper "` +
-your `contentClass`. **Sizing**: `width` (left/right) / `height`
-(top/bottom) resolve per axis with the `defaultWidth`/`defaultHeight`
-fallback (upstream `251`), emitted as the single inline `style` on
-`.n-drawer` (exact upstream pin: `width: 600px;`). Upstream's deprecated
-`drawerStyle`/`drawerClass` and the `scrollbarProps` escape hatch are not
-modelled; `attributes` is the container passthrough (the `NUI.Modal` house
-rule — upstream's `$attrs` land on `.n-drawer` instead).
-
-`NUI.DrawerContent` is the composition unit (upstream `NDrawerContent`) — see
-its module. Upstream has no `preset` prop (Modal's `Preset` has no analog
-here): the slot is the third `view` argument.
+DOM shapes, fidelity notes and porting details live in the comment block
+below the module doc.
 
 @docs Options, Placement, ShowMask, cssVars, defaults, placementName, view
 
+-}
+
+{- DOM shapes, fidelity notes and porting details for `NUI.Drawer` — moved verbatim
+      out of the module docstring (docs.json must stay under elm publish's 768kb
+      limit); plain comments do not enter the published API docs.
+
+   Upstream `Drawer.tsx` orchestrates `DrawerBodyWrapper.tsx` (the component
+   named `NDrawerContent` in its `name` field — the body wrapper) whose default
+   slot receives `DrawerContent.tsx` (the inner header/body/footer unit):
+
+       div.n-drawer-container (role=none, the 25 css vars [+ z-index])
+         div.n-drawer-mask (aria-hidden) [--invisible]      — iff showMask ≠ Hidden
+         div role=none (unclassed host)                      — the body gate
+           div.n-drawer [--rtl --{p}-placement] role=dialog aria-modal
+             div.n-drawer__resize-trigger [--hover]          — iff resizable
+             (content wrapper — see nativeScrollbar below)
+               the caller's content (usually `NUI.DrawerContent`)
+
+   **Everything runtime is caller-owned** (the popover-family precedent, applied
+   to the mount-body family — upstream provides the `*BodyInjectionKey`s, it
+   consumes nothing):
+
+     - **Mounting and `show`.** The caller decides where the tree lives and owns
+       the show state (`displayDirective: 'if'` semantics only). `show = False`
+       with no leave phase renders a bare container — unmount the view when fully
+       closed; the keep-mounted `display: none` variant is not modelled
+       (caller `attributes` can carry it).
+     - **Transitions.** The mask (`fade-in-transition`) and the body
+       (`slide-in-from-{placement}-transition`, derived from `placement`) run on
+       the same clock the caller drives: pass the phase through
+       `maskTransition`/`bodyTransition` and keep the view mounted while either
+       is a leave phase (`I.isLeavePhase`). The mask/body nodes render only while
+       `show || isLeavePhase …`. Upstream timings: mask `.2s`; body enter `.3s`,
+       leave `.2s` (fixed beziers, not the `--n-bezier-*` vars — unlike the
+       mask, which reads `--n-bezier-in/out`). The body phase class is forced
+       **last** on `.n-drawer`'s class list (the house invariant).
+     - **Mask clicks ARE interactive** (the divergence from `NUI.Modal`, whose
+       fixed body-wrapper overlays an inert mask): upstream's mask carries
+       `onClick=handleMaskClick` (`Drawer.tsx` — `.n-drawer` is out of flow, so
+       the zero-height body host does not cover it). Pass `onMaskClick` for the
+       primary close surface; `maskClosable` reduces to "pass your close msg".
+       Esc (`closeOnEsc`), focus trap, `blockScroll` and the `clickoutside`
+       (only when the mask is hidden) stay caller runtime.
+     - **Resizable drag.** The trigger node (`resizable = True`) and its
+       `--hover` modifier (`showResizeTriggerHover`) are DOM; the drag itself
+       (global mousemove/mouseup, min/max clamping, `--unselectable` while
+       dragging) is caller runtime — set `unselectable` while your drag is
+       active to reproduce upstream.
+     - **z-index.** No `zindexable` auto-increment: pass `zIndex` (rendered as
+       `z-index` appended after the vars).
+
+   **`showMask`** is upstream's `boolean | 'transparent'`: `Visible` (the
+   default) renders the mask, `Transparent` renders it with
+   `n-drawer-mask--invisible`, `Hidden` omits the node entirely.
+
+   **`nativeScrollbar`** (upstream default **true**) selects the content seam:
+   `True` renders a plain `div.n-drawer-content-wrapper` (no scrollbar node —
+   unlike `NUI.Modal`, the default tree embeds no `NUI.Scrollbar`); `False`
+   embeds `NUI.Scrollbar` with `contentClass = "n-drawer-content-wrapper "` +
+   your `contentClass`. **Sizing**: `width` (left/right) / `height`
+   (top/bottom) resolve per axis with the `defaultWidth`/`defaultHeight`
+   fallback (upstream `251`), emitted as the single inline `style` on
+   `.n-drawer` (exact upstream pin: `width: 600px;`). Upstream's deprecated
+   `drawerStyle`/`drawerClass` and the `scrollbarProps` escape hatch are not
+   modelled; `attributes` is the container passthrough (the `NUI.Modal` house
+   rule — upstream's `$attrs` land on `.n-drawer` instead).
+
+   `NUI.DrawerContent` is the composition unit (upstream `NDrawerContent`) — see
+   its module. Upstream has no `preset` prop (Modal's `Preset` has no analog
+   here): the slot is the third `view` argument.
 -}
 
 import Element exposing (Element)

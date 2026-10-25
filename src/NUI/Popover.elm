@@ -34,35 +34,51 @@ fallbacks, so an unset var degrades the arrow position to `auto` (the
 `--v-target-*` vars carry their own `, 0px` fallbacks and matter only for
 `arrowPointToCenter`).
 
-**Documented gaps:**
+Essential contract: only the **body** is ported — the caller owns the show
+state (mount/unmount), the trigger and the positioned wrapper the body
+must sit in: a wrapper carrying the `v-placement` attribute
+(`placementAttribute` emits it), living inside `nui-root`, positioned by
+the caller (upstream's follower applies the `transform`, z-index and the
+`--v-*` runtime variables — set `--v-offset-left/top: 0` on it, the arrow
+rules read them without fallbacks).
 
-  - `trigger` (`'hover' | 'click' | 'focus' | 'manual'`), `delay`, `duration`,
-    `keepAliveOnHover`, `disabled`, `flip`, `zIndex`, `to`, `x`/`y` and the
-    events (`on-update:show`, `on-clickoutside`) are runtime — not modelled.
-    Bind the trigger's DOM events with your own handlers.
-  - `show` is modelled by mounting / unmounting this element (upstream's
-    `displayDirective: 'if'`, the default). `'show'`-style keep-mounted hiding
-    is the caller's (`attributes` can carry `display: none`), and the
-    enter/leave animation is driven through `transition` phases below.
-  - `placement` has no `Options` field: it affects only the wrapper attribute
-    (`placementAttribute`), never the body node.
-  - `width: 'trigger'` (match-trigger-width) is runtime measurement — set the
-    px yourself. A numeric `width` upstream becomes `"<n>px"`; the port takes
-    raw CSS.
-  - `minWidth` / `maxWidth` are deprecated upstream (and upstream pushes
-    `minWidth` as `maxWidth` — an upstream bug) — not modelled.
-  - `internalRenderBody` and the other `internal*` props (the dropdown /
-    tooltip reuse lane) are not modelled; those components will compose this
-    module directly.
-  - `n-popover--show-header-or-footer` and the header / footer nodes exist only
-    while `header` / `footer` are `Just` (upstream renders each wrapper only
-    when its slot is non-empty).
-  - `extraClasses` is upstream's `internalExtraClass` slot — extra classes
-    after `n-popover-shared` (and `--rtl`), before the conditional modifiers.
-    `NUI.Tooltip` uses it to add its `n-tooltip` marker.
+DOM shapes, fidelity notes and porting details live in the comment block
+below the module doc.
 
 @docs Placement, placementName, placementAttribute, Options, defaults, view, viewWithVars, cssVars
 
+-}
+
+{- DOM shapes, fidelity notes and porting details for `NUI.Popover` — moved verbatim
+      out of the module docstring (docs.json must stay under elm publish's 768kb
+      limit); plain comments do not enter the published API docs.
+
+   **Documented gaps:**
+
+     - `trigger` (`'hover' | 'click' | 'focus' | 'manual'`), `delay`, `duration`,
+       `keepAliveOnHover`, `disabled`, `flip`, `zIndex`, `to`, `x`/`y` and the
+       events (`on-update:show`, `on-clickoutside`) are runtime — not modelled.
+       Bind the trigger's DOM events with your own handlers.
+     - `show` is modelled by mounting / unmounting this element (upstream's
+       `displayDirective: 'if'`, the default). `'show'`-style keep-mounted hiding
+       is the caller's (`attributes` can carry `display: none`), and the
+       enter/leave animation is driven through `transition` phases below.
+     - `placement` has no `Options` field: it affects only the wrapper attribute
+       (`placementAttribute`), never the body node.
+     - `width: 'trigger'` (match-trigger-width) is runtime measurement — set the
+       px yourself. A numeric `width` upstream becomes `"<n>px"`; the port takes
+       raw CSS.
+     - `minWidth` / `maxWidth` are deprecated upstream (and upstream pushes
+       `minWidth` as `maxWidth` — an upstream bug) — not modelled.
+     - `internalRenderBody` and the other `internal*` props (the dropdown /
+       tooltip reuse lane) are not modelled; those components will compose this
+       module directly.
+     - `n-popover--show-header-or-footer` and the header / footer nodes exist only
+       while `header` / `footer` are `Just` (upstream renders each wrapper only
+       when its slot is non-empty).
+     - `extraClasses` is upstream's `internalExtraClass` slot — extra classes
+       after `n-popover-shared` (and `--rtl`), before the conditional modifiers.
+       `NUI.Tooltip` uses it to add its `n-tooltip` marker.
 -}
 
 import Element exposing (Element)

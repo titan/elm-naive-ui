@@ -21,62 +21,80 @@ exact CSS. Highlighting needs `highlight.js` injected — this port never ships
 it; the caller passes the same two methods upstream consumes (`getLanguage`,
 `highlight`).
 
-**Raw-Html root (the `NUI.Highlight` / `NUI.Carousel` precedent).** Upstream's
-root is a plain `<code>` whose children are inserted imperatively (`innerHTML` /
-`textContent` / a `pre.__code__`); the port reproduces that DOM as ONE raw
-`Html` tree, so `view` returns an `Element` only through `Element.html` and its
-`attributes` field is a `List (Html.Attribute msg)` (an `Element.Attribute`
-cannot attach to a raw node).
+Essential contract: the root is ONE raw `Html` tree (upstream inserts
+children imperatively), so `view` returns an `Element` only through
+`Element.html` and its `attributes` field is a `List (Html.Attribute msg)`.
+The highlighter's HTML string is PARSED, not injected — elm/html blocks
+`innerHTML`, so the port runs the same resolved string through
+`NUI.Internal.RawHtml.nodes` and real `hljs-*` markup renders as elements.
+`view` emits the state upstream's `setCode` would settle into; `uri` decode
+falls back to the raw string (`Url.percentDecode` vs upstream's throw).
+The remaining divergences are itemised below.
 
-**⚠ `[D]` Raw HTML is parsed, not injected.** `Code.tsx` embeds the
-highlighter's output with `el.innerHTML = html`; elm/html blocks that path — the
-VirtualDom kernel remaps the `innerHTML` property key
-(`_VirtualDom_noInnerHtmlOrFormAction`) and `setAttribute "innerHTML"` is a
-no-op. The port instead runs the SAME resolved string through
-`NUI.Internal.RawHtml.nodes`, a pure parser of the highlight.js / KaTeX output
-shapes (its grammar and recovery semantics are docstringed there). Real
-highlight.js output containing `<span class="hljs-…">` markup therefore renders
-as elements, faithfully; the class / style / line-number structure stays
-byte-faithful. (Recon-2 §5(b) claimed `HA.property "innerHTML"` works;
-empirically it does not.)
-
-**Static image of `setCode`.** Upstream writes the code content imperatively on
-mount; there is no pure render path for it. `view` therefore emits the state
-`setCode` would settle into (the decision tree of `Code.tsx:62-108`), which is
-also what the DOM probes assert:
-
-  - a caller `children` list (Log's slot path) short-circuits `setCode`
-    (`Code.tsx:63`) — the line-numbers `<pre>` is rendered, then the children
-    untouched;
-  - otherwise `inline` puts the highlighted string as the `<code>` root's
-    children (parsed — `[D]`), or the plain code as a text node
-    (`textContent`);
-  - the block form renders the line-numbers `<pre>` then a `pre.__code__`
-    carrying the highlighted string (parsed — `[D]`) or the plain code as
-    text (`textContent`).
-
-**Caller-owned runtime.** The `uri` / `inline` / `wordWrap` / `showLineNumbers`
-/ `internalFontSize` / `internalNoHighlight` props are all modelled exactly;
-`internalFontSize` / `internalNoHighlight` exist only for `NUI.Log`'s embedding
-(Log passes `Just fontSize` + `True`). `internalNoHighlight` makes the port skip
-highlighting entirely (LogLine does its own per-line highlight).
-
-**Divergences (`[D]`):**
-
-  - `[D]` URI decode: upstream `window.decodeURIComponent(props.code)` THROWS on
-    a malformed string (an uncaught crash). `Url.percentDecode` returns
-    `Nothing`; the port falls back to the RAW string.
-  - `[D]` `lineNumbers` runs over the RAW `props.code`, **not** the URI-decoded
-    string (`Code.tsx:172-189` uses `props.code`; `setCode` decodes a local).
-    This upstream quirk is kept.
-  - `[D]` `themeClass` (the `useThemeClass` inline-theme handle) is never emitted
-    (house-wide: the port has no `inlineThemeDisabled`).
-  - `[D]` `codeHtml`'s "language" is `Maybe String`; upstream's
-    `!(language && hljs.getLanguage(language))` treats an EMPTY string as "no
-    language" (`Code.tsx:49-50`), so `Just ""` returns `Nothing` here too.
+DOM shapes, fidelity notes and porting details live in the comment block
+below the module doc.
 
 @docs Hljs, Options, defaults, view, codeHtml, lineNumbers, mergedShowLineNumbers, cssVarsFor
 
+-}
+
+{- DOM shapes, fidelity notes and porting details for `NUI.Code` — moved verbatim
+      out of the module docstring (docs.json must stay under elm publish's 768kb
+      limit); plain comments do not enter the published API docs.
+
+   **Raw-Html root (the `NUI.Highlight` / `NUI.Carousel` precedent).** Upstream's
+   root is a plain `<code>` whose children are inserted imperatively (`innerHTML` /
+   `textContent` / a `pre.__code__`); the port reproduces that DOM as ONE raw
+   `Html` tree, so `view` returns an `Element` only through `Element.html` and its
+   `attributes` field is a `List (Html.Attribute msg)` (an `Element.Attribute`
+   cannot attach to a raw node).
+
+   **⚠ `[D]` Raw HTML is parsed, not injected.** `Code.tsx` embeds the
+   highlighter's output with `el.innerHTML = html`; elm/html blocks that path — the
+   VirtualDom kernel remaps the `innerHTML` property key
+   (`_VirtualDom_noInnerHtmlOrFormAction`) and `setAttribute "innerHTML"` is a
+   no-op. The port instead runs the SAME resolved string through
+   `NUI.Internal.RawHtml.nodes`, a pure parser of the highlight.js / KaTeX output
+   shapes (its grammar and recovery semantics are docstringed there). Real
+   highlight.js output containing `<span class="hljs-…">` markup therefore renders
+   as elements, faithfully; the class / style / line-number structure stays
+   byte-faithful. (Recon-2 §5(b) claimed `HA.property "innerHTML"` works;
+   empirically it does not.)
+
+   **Static image of `setCode`.** Upstream writes the code content imperatively on
+   mount; there is no pure render path for it. `view` therefore emits the state
+   `setCode` would settle into (the decision tree of `Code.tsx:62-108`), which is
+   also what the DOM probes assert:
+
+     - a caller `children` list (Log's slot path) short-circuits `setCode`
+       (`Code.tsx:63`) — the line-numbers `<pre>` is rendered, then the children
+       untouched;
+     - otherwise `inline` puts the highlighted string as the `<code>` root's
+       children (parsed — `[D]`), or the plain code as a text node
+       (`textContent`);
+     - the block form renders the line-numbers `<pre>` then a `pre.__code__`
+       carrying the highlighted string (parsed — `[D]`) or the plain code as
+       text (`textContent`).
+
+   **Caller-owned runtime.** The `uri` / `inline` / `wordWrap` / `showLineNumbers`
+   / `internalFontSize` / `internalNoHighlight` props are all modelled exactly;
+   `internalFontSize` / `internalNoHighlight` exist only for `NUI.Log`'s embedding
+   (Log passes `Just fontSize` + `True`). `internalNoHighlight` makes the port skip
+   highlighting entirely (LogLine does its own per-line highlight).
+
+   **Divergences (`[D]`):**
+
+     - `[D]` URI decode: upstream `window.decodeURIComponent(props.code)` THROWS on
+       a malformed string (an uncaught crash). `Url.percentDecode` returns
+       `Nothing`; the port falls back to the RAW string.
+     - `[D]` `lineNumbers` runs over the RAW `props.code`, **not** the URI-decoded
+       string (`Code.tsx:172-189` uses `props.code`; `setCode` decodes a local).
+       This upstream quirk is kept.
+     - `[D]` `themeClass` (the `useThemeClass` inline-theme handle) is never emitted
+       (house-wide: the port has no `inlineThemeDisabled`).
+     - `[D]` `codeHtml`'s "language" is `Maybe String`; upstream's
+       `!(language && hljs.getLanguage(language))` treats an EMPTY string as "no
+       language" (`Code.tsx:49-50`), so `Just ""` returns `Nothing` here too.
 -}
 
 import Element exposing (Element)

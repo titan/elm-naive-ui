@@ -20,13 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Code CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`textColor` → `--n-text-color`).
-
-Collected by concern:
-
-  - base typography: `textColor`, `fontSize`, `fontWeightStrong`
-  - syntax palette: `mono3`, `hue1`, `hue2`, `hue3`, `hue4`, `hue5`, `hue52`, `hue6`, `hue62`
-  - gutter: `lineNumberTextColor`
-
 -}
 type alias Vars =
     { textColor : String

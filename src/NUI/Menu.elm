@@ -34,37 +34,15 @@ internal and render here as one recursive walk (upstream `itemRenderer`).
         , Menu.Divider { attributes = [] }
         ]
 
-**DOM** (vertical; leaf, submenu, group, divider):
-
-    div.n-menu.n-menu--vertical [style: 43 --n-* vars; role=menu]
-    ├─ div.n-menu-item [role=menuitem]
-    │   └─ div.n-menu-item-content(--selected) [padding-left]
-    │       ├─ div.n-menu-item-content__icon [w/h/font-size/margin-right]
-    │       └─ div.n-menu-item-content-header > (text | span.__extra)
-    ├─ div.n-submenu [role=menu; aria-expanded]
-    │   ├─ div.n-menu-item > div.n-menu-item-content(--child-active) (+__arrow)
-    │   └─ div.n-submenu-children [role=menu] > …
-    ├─ div.n-menu-item-group [role=group]
-    │   ├─ div.n-menu-item-group-title [padding-left] > (text | text extra)
-    │   └─ div > …
-    └─ div.n-menu-divider
-
-Horizontal swaps `--vertical`/`role=menu` for `--horizontal`/`role=menubar`,
-drops arrows, indent and inline submenu children, and nulls dividers;
-`--collapsed` (menu-collapsed, vertical) renders icon-only rows with
-upstream's centering arithmetic (`padding-left = collapsedWidth/2 −
-maxIconSize/2`, `icon-margin-right` compensation).
-
-**The state contract.** `value` and `expandedKeys` are caller state (upstream's
-controlled props); the view emits `onSelect` (leaf click → key; upstream
-`on-update:value` without the raw option) and `onExpandedKeysChange` (submenu
-toggle → the whole new list, accordion applied — upstream `toggleExpand`).
-Pure helpers mirror upstream's imperative/uncontrolled seams:
-`initialExpandedKeys` (`defaultExpandAll` / the value's ancestor path —
-upstream's uncontrolled init), `toggleExpanded` (accordion: expanding a
-level-1 submenu closes the first open level-1 sibling), `expandTo`
-(`MenuInst.showOption`, accordion-aware), `keyPathTo` (treemate
-`getPath().keyPath`).
+**The state contract.** `value` and `expandedKeys` are caller state
+(upstream's controlled props); the view emits `onSelect` (leaf click → key;
+upstream `on-update:value` without the raw option) and
+`onExpandedKeysChange` (submenu toggle → the whole new list, accordion
+applied). Pure helpers mirror upstream's imperative/uncontrolled seams:
+`initialExpandedKeys` (`defaultExpandAll` / the value's ancestor path),
+`toggleExpanded` (accordion: expanding a level-1 submenu closes the first
+open level-1 sibling), `expandTo` (`MenuInst.showOption`, accordion-aware),
+`keyPathTo` (treemate `getPath().keyPath`).
 
 **The popover seam.** Everything in `NUI.Popover`'s docstring about the
 caller-owned runtime applies: upstream horizontal submenus, menu-collapsed
@@ -72,55 +50,90 @@ submenus (`NDropdown`) and menu-collapsed leaf labels (`NTooltip`) are
 teleported popovers. The port renders the full inline DOM — the trigger rows
 included — and exports `submenuDropdownOptions`, the pure `rawNodes →
 NDropdown options` mapping upstream hands its popovers, so a caller mounting
-`NUI.Dropdown.view` bodies (upstream config: size `Large`,
-`fontSizeLarge 14px`, `optionIconSizeLarge 18px`, `dropdownPlacement`,
-`inverted`, hover trigger, `placementAttribute` on the wrapper) reproduces
-the popover layer.
+`NUI.Dropdown.view` bodies reproduces the popover layer. Submenu expand
+animation: the caller owns the phase clock via the `transition` field (cf.
+`NUI.Modal` / `NUI.Dropdown`).
 
-**Divergences from upstream (documented):**
-
-  - No popover body mounts (above); the `--hover` content modifier (upstream:
-    popover-open state) is never emitted.
-  - Submenu expand animation: upstream `NFadeInExpandTransition` measures
-    heights at runtime; the cssr `fade-in-height-expand-*` rules are
-    extracted and `transition` carries the phase classes — the caller owns
-    the clock (cf. `NUI.Modal` / `NUI.Dropdown` `transition` fields).
-  - `responsive` (VOverflow measurement, the `__ellpisisGroup__` counter,
-    `deriveResponsiveState`) and `watchProps` (Vue controlled/uncontrolled
-    re-sync) are not ported; `collapsed` is explicit (upstream can inherit it
-    from `NLayoutSider`).
-  - `label`/`icon`/`extra` replace the `label|title`/`titleExtra` aliases and
-    the `render*` hooks; the `*Field` overrides are not modelled (typed
-    records); `nodeProps` becomes per-option `attributes` (leaf/submenu: the
-    `n-menu-item` wrapper; group: the title div — upstream puts them there);
-    `expandIcon` is the inlined filled chevron (house style, cf.
-    `NUI.BaseSelection`); `dropdownProps`/`domId` ride the caller's popover;
-    `dropdownPlacement` is carried for that seam (upstream default `bottom` —
-    the docs' `top` is wrong; code wins).
-  - `show === false` options are omitted by the caller (cf. `NUI.Dropdown`);
-    `type: 'render'` options are not modelled — upstream drops them silently
-    (their `render` field is never called).
-  - Upstream quirk kept: menu-level `disabled` flows into submenus (it is
-    checked in `NSubmenu` only), never into root-level options or groups.
-    Group `disabled` is likewise an injection its LEAF children read — a
-    submenu (or nested group) under a disabled group stays alive, and a leaf
-    under `submenu > group` reads the submenu's merged state and ignores the
-    group's (upstream's `NSubmenu ? … : …` ternary).
-  - Upstream's leading-space text nodes before `extra` are kept (`" extra"`).
-  - Derived colours (`itemColorActive*` = `changeColor(primary, α)`) are
-    pinned literals in `NUI.Theme.Menu` (toolchain convention, cf. Tag).
-
-**Not ported:** `MenuInst` imperatives (`showOption` → `expandTo`,
-`deriveResponsiveState` → meaningless without `responsive`), the deprecated
-aliases (`items`, `title`, `titleExtra`, `expandedNames`,
-`onOpenNamesChange`, `onExpandedNamesChange`; the port's `onSelect` IS the
-new `on-update:value`), and keyboard navigation (upstream has none — only
-`:focus-within` CSS parity, which the extracted rules carry).
+(The DOM shape walkthrough, the disabled-injection quirk, the naming-mapping
+table and the not-ported list live in the plain comment right below —
+internal port notes, deliberately kept out of the published docs.)
 
 (Record updates bind `defaults` to a local first — see `NUI.Button`.)
 
 @docs Placement, Mode, Option, LeafOption, GroupOption, DividerOption, Options, defaults, view, keyPathTo
 @docs initialExpandedKeys, toggleExpanded, expandTo, submenuDropdownOptions, cssVars
+
+-}
+
+{- INTERNAL PORT NOTES — moved out of the module doc (plain comments do not
+      enter docs.json; the published docs must stay under the package-size
+      limit). Nothing here changes the public contract summarised above.
+
+   **DOM** (vertical; leaf, submenu, group, divider):
+
+       div.n-menu.n-menu--vertical [style: 43 --n-* vars; role=menu]
+       ├─ div.n-menu-item [role=menuitem]
+       │   └─ div.n-menu-item-content(--selected) [padding-left]
+       │       ├─ div.n-menu-item-content__icon [w/h/font-size/margin-right]
+       │       └─ div.n-menu-item-content-header > (text | span.__extra)
+       ├─ div.n-submenu [role=menu; aria-expanded]
+       │   ├─ div.n-menu-item > div.n-menu-item-content(--child-active) (+__arrow)
+       │   └─ div.n-submenu-children [role=menu] > …
+       ├─ div.n-menu-item-group [role=group]
+       │   ├─ div.n-menu-item-group-title [padding-left] > (text | text extra)
+       │   └─ div > …
+       └─ div.n-menu-divider
+
+   Horizontal swaps `--vertical`/`role=menu` for `--horizontal`/`role=menubar`,
+   drops arrows, indent and inline submenu children, and nulls dividers;
+   `--collapsed` (menu-collapsed, vertical) renders icon-only rows with
+   upstream's centering arithmetic (`padding-left = collapsedWidth/2 −
+   maxIconSize/2`, `icon-margin-right` compensation).
+
+   Popover seam config a caller reproducing the dropdown layer needs: size
+   `Large`, `fontSizeLarge 14px`, `optionIconSizeLarge 18px`,
+   `dropdownPlacement`, `inverted`, hover trigger, `placementAttribute` on the
+   wrapper.
+
+   **Divergences from upstream (documented):**
+
+     - No popover body mounts (above); the `--hover` content modifier (upstream:
+       popover-open state) is never emitted.
+     - Submenu expand animation: upstream `NFadeInExpandTransition` measures
+       heights at runtime; the cssr `fade-in-height-expand-*` rules are
+       extracted and `transition` carries the phase classes — the caller owns
+       the clock (cf. `NUI.Modal` / `NUI.Dropdown` `transition` fields).
+     - `responsive` (VOverflow measurement, the `__ellpisisGroup__` counter,
+       `deriveResponsiveState`) and `watchProps` (Vue controlled/uncontrolled
+       re-sync) are not ported; `collapsed` is explicit (upstream can inherit it
+       from `NLayoutSider`).
+     - `label`/`icon`/`extra` replace the `label|title`/`titleExtra` aliases and
+       the `render*` hooks; the `*Field` overrides are not modelled (typed
+       records); `nodeProps` becomes per-option `attributes` (leaf/submenu: the
+       `n-menu-item` wrapper; group: the title div — upstream puts them there);
+       `expandIcon` is the inlined filled chevron (house style, cf.
+       `NUI.BaseSelection`); `dropdownProps`/`domId` ride the caller's popover;
+       `dropdownPlacement` is carried for that seam (upstream default `bottom` —
+       the docs' `top` is wrong; code wins).
+     - `show === false` options are omitted by the caller (cf. `NUI.Dropdown`);
+       `type: 'render'` options are not modelled — upstream drops them silently
+       (their `render` field is never called).
+     - Upstream quirk kept: menu-level `disabled` flows into submenus (it is
+       checked in `NSubmenu` only), never into root-level options or groups.
+       Group `disabled` is likewise an injection its LEAF children read — a
+       submenu (or nested group) under a disabled group stays alive, and a leaf
+       under `submenu > group` reads the submenu's merged state and ignores the
+       group's (upstream's `NSubmenu ? … : …` ternary).
+     - Upstream's leading-space text nodes before `extra` are kept (`" extra"`).
+     - Derived colours (`itemColorActive*` = `changeColor(primary, α)`) are
+       pinned literals in `NUI.Theme.Menu` (toolchain convention, cf. Tag).
+
+   **Not ported:** `MenuInst` imperatives (`showOption` → `expandTo`,
+   `deriveResponsiveState` → meaningless without `responsive`), the deprecated
+   aliases (`items`, `title`, `titleExtra`, `expandedNames`,
+   `onOpenNamesChange`, `onExpandedNamesChange`; the port's `onSelect` IS the
+   new `on-update:value`), and keyboard navigation (upstream has none — only
+   `:focus-within` CSS parity, which the extracted rules carry).
 
 -}
 

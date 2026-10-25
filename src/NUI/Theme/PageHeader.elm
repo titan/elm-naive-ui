@@ -20,12 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the PageHeader CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`titleFontSize` → `--n-title-font-size`).
-
-Collected by concern:
-
-  - typography: `titleFontSize`, `titleFontWeight`, `fontSize`, `titleTextColor`, `subtitleTextColor`
-  - back button: `backSize`, `backColor`, `backColorHover`, `backColorPressed`
-
 -}
 type alias Vars =
     { titleFontSize : String

@@ -20,13 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Spin CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`fontSize` → `--n-font-size`).
-
-Collected by concern:
-
-  - typography & text color: `fontSize`, `textColor`
-  - per-size spinner sizes: `sizeTiny`, `sizeSmall`, `sizeMedium`, `sizeLarge`, `sizeHuge`
-  - spinner color & spinning opacity: `color`, `opacitySpinning`
-
 -}
 type alias Vars =
     { fontSize : String

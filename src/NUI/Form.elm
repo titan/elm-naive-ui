@@ -23,92 +23,110 @@ plus the two views.
 The module has the same split as `NUI.Countdown` / `NUI.LoadingBar`: a **pure
 engine** (`validateValue` / `validateForm` / `isRequired`) that returns
 `Feedback`s, and the views (`view` = the `form.n-form`, `item` = one
-`n-form-item`) which render what the engine produced. Upstream keeps validation
-state inside the form item and validates as a side effect; here the caller owns
-it — state lives in your model and transitions through your `update`.
+`n-form-item`) which render what the engine produced. Upstream keeps
+validation state inside the form item and validates as a side effect; here
+the caller owns it — state lives in your model and transitions through your
+`update`.
 
 **The caller-owned validation recipe** (upstream's blur/change wiring, made
 explicit). Upstream's `NFormItem` subscribes to its child input's
 `update:value` / `blur` / `focus` events and runs the matching `trigger`ed
-rules, writing the result into internal state. A pure port has no such channel,
-so you wire it:
+rules; a pure port has no such channel, so you wire it:
 
 1.  the input's events become `Msg`s you already own (`onInput`, `onBlur`, …);
 2.  in `update`, call `validateValue (Just trigger) field rules (Just value)`
-    — `OnBlur` from a blur `Msg`, `OnChange` from a change `Msg`, `Nothing` for
-    a manual submit-time validate of every rule;
-3.  store the returned `List Feedback` in your model (e.g.
-    `{ model | nameFeedback = feedback }`);
+    — `OnBlur` from a blur `Msg`, `OnChange` from a change `Msg`, `Nothing`
+    for a manual submit-time validate of every rule;
+3.  store the returned `List Feedback` in your model;
 4.  pass it back down as `ItemOptions.validation`; the item renders the
     messages and resolves the status from them.
 
 Because the engine is pure, this composes with anything (debounce, async
 lookups, cross-field rules) without a registry or provide/inject.
 
-**Markup divergences** (DOM details the port cannot reproduce exactly):
+**Divergence summaries.** Markup: the `<form>` children are `Element`s
+embedded through `Element.layoutWith` (`display: contents` wrapper, one
+extra DOM node per child); `onSubmit` has NO implicit `preventDefault` (the
+caller decides). Engine: the port of async-validator@4.2.5's exercised
+subset — `pattern` uses elm/regex with an in-band fail for uncompilable
+sources, `LabelWidth` has no `'auto'`, the success status and the feedback /
+label slots are not ported, and the fade-down feedback transition is not
+driven (the caller can own the phase like `NUI.LoadingBar`).
 
-  - `view` returns a real `<form class="n-form">`, but its children are
-    `Element`s and elm-ui has no public `Element` → `Html` conversion, so each
-    child is embedded through `Element.layoutWith` (with
-    `Element.noStaticStyleSheet`, so the per-child _static_ stylesheet is not
-    re-emitted — only elm-ui's small dynamic font sheet remains; see the note
-    on `embedChild`) — a wrapper `div` carrying elm-ui's root styles. The
-    wrapper gets an inline `display: contents` (so the child participates
-    directly in the form's flex/grid) and inline `font` / `color: inherit`
-    (best-effort neutralisation of elm-ui's class-based root font; jsdom drops
-    the `font` shorthand from the serialised attribute). This mirrors
-    `NUI.DynamicInput`'s pair-input wrapper: geometry preserved, one extra DOM
-    node per child.
-
-  - `item` / its label / blank / feedback wrapper are built in elm-ui /
-    `Element.html` land. The item root and the blank are elm-ui elements whose
-    flex scaffolding (`display: flex`) would normally fight the extracted
-    stylesheet; as everywhere in this library the doubled `.nui-root.nui-root`
-    scoping wins (`.n-form-item { display: grid }`), and the label / feedback
-    wrapper are raw `Html` nodes so the exact tag and class strings survive.
-
-  - `onSubmit` maps to `Html.Events.onSubmit` with **no** implicit
-    `preventDefault` — upstream calls `event.preventDefault()` itself; here the
-    caller decides (return a `Msg` that re-renders, or none).
-
-**Divergences** (engine / API only; documented, not accidental):
-
-  - the engine is the port of async-validator@4.2.5's exercised subset. Not
-    ported: `asyncValidator`, `transform`, `defaultField` / nested fields,
-    `renderMessage`, `first`, nested rule trees, the `validateMessages`
-    override, and the `url` / `email` / `date` / `method` / `regexp` /
-    `integer` / `float` / `object` / `hex` types (and `pattern`-as-a-type).
-
-  - no form-item registry and no provide/inject cascade: the item's `size`,
-    `disabled`, `showLabel`, `showFeedback`, … are not inherited from a parent
-    form, no input is told to validate on blur/change, there is no path
-    watch/restore and no `ignorePathChange`. `validateForm` is the pure analog
-    of upstream's `form.validate`.
-
-  - `pattern` uses elm/regex; an **uncompilable** source makes the rule FAIL
-    with `rule.message` (fallback `"Validation error on field %s"`) instead of
-    upstream's runtime throw — fail loudly, in band.
-
-  - `LabelWidth` has no `'auto'` (upstream measures the widest child label in
-    the DOM); only `Px Int` / `Custom String` are ported.
-
-  - the success validation status is not ported (`success` feedback styling);
-    `level` is `ErrorLevel` / `WarningLevel` only.
-
-  - the `feedback` / `label` **slots** are not ported (`feedback : Maybe String`
-    and `label : Maybe String` cover the string forms), `labelProps` beyond
-    `for` are not ported, and the deprecated `FormItemRow` / `FormItemCol` /
-    `FormItemGridItem` components have no counterpart.
-
-  - the fade-down transition between feedback states exists in the stylesheet
-    but is **not driven** — the port swaps instantly. As an optional upgrade,
-    the caller can own the phase: keep the previous feedback, render the
-    outgoing lines under `"fade-down-transition-leave-active"` for one frame via
-    `NUI.Internal.transitionClass "fade-down-transition"`, then mount the new
-    lines under the enter classes (exactly the caller-driven pattern of
-    `NUI.LoadingBar`).
+(The markup-divergence detail, the engine's unported surface and the
+transition recipe live in the plain comment right below — internal port
+notes, deliberately kept out of the published docs.)
 
 @docs Align, Feedback, ItemOptions, LabelWidth, Level, Options, Placement, RequireMarkPlacement, Rule, RuleType, Rules, Size, Trigger, Value, Values, cssVarsForItem, defaultRule, defaults, isRequired, item, itemDefaults, validateForm, validateValue, view
+
+-}
+
+{- INTERNAL PORT NOTES — moved out of the module doc (plain comments do not
+      enter docs.json; the published docs must stay under the package-size
+      limit). Nothing here changes the public contract summarised above.
+
+   **Markup divergences** (DOM details the port cannot reproduce exactly):
+
+     - `view` returns a real `<form class="n-form">`, but its children are
+       `Element`s and elm-ui has no public `Element` → `Html` conversion, so each
+       child is embedded through `Element.layoutWith` (with
+       `Element.noStaticStyleSheet`, so the per-child _static_ stylesheet is not
+       re-emitted — only elm-ui's small dynamic font sheet remains; see the note
+       on `embedChild`) — a wrapper `div` carrying elm-ui's root styles. The
+       wrapper gets an inline `display: contents` (so the child participates
+       directly in the form's flex/grid) and inline `font` / `color: inherit`
+       (best-effort neutralisation of elm-ui's class-based root font; jsdom drops
+       the `font` shorthand from the serialised attribute). This mirrors
+       `NUI.DynamicInput`'s pair-input wrapper: geometry preserved, one extra DOM
+       node per child.
+
+     - `item` / its label / blank / feedback wrapper are built in elm-ui /
+       `Element.html` land. The item root and the blank are elm-ui elements whose
+       flex scaffolding (`display: flex`) would normally fight the extracted
+       stylesheet; as everywhere in this library the doubled `.nui-root.nui-root`
+       scoping wins (`.n-form-item { display: grid }`), and the label / feedback
+       wrapper are raw `Html` nodes so the exact tag and class strings survive.
+
+     - `onSubmit` maps to `Html.Events.onSubmit` with **no** implicit
+       `preventDefault` — upstream calls `event.preventDefault()` itself; here the
+       caller decides (return a `Msg` that re-renders, or none).
+
+   **Divergences** (engine / API only; documented, not accidental):
+
+     - the engine is the port of async-validator@4.2.5's exercised subset. Not
+       ported: `asyncValidator`, `transform`, `defaultField` / nested fields,
+       `renderMessage`, `first`, nested rule trees, the `validateMessages`
+       override, and the `url` / `email` / `date` / `method` / `regexp` /
+       `integer` / `float` / `object` / `hex` types (and `pattern`-as-a-type).
+
+     - no form-item registry and no provide/inject cascade: the item's `size`,
+       `disabled`, `showLabel`, `showFeedback`, … are not inherited from a parent
+       form, no input is told to validate on blur/change, there is no path
+       watch/restore and no `ignorePathChange`. `validateForm` is the pure analog
+       of upstream's `form.validate`.
+
+     - `pattern` uses elm/regex; an **uncompilable** source makes the rule FAIL
+       with `rule.message` (fallback `"Validation error on field %s"`) instead of
+       upstream's runtime throw — fail loudly, in band.
+
+     - `LabelWidth` has no `'auto'` (upstream measures the widest child label in
+       the DOM); only `Px Int` / `Custom String` are ported.
+
+     - the success validation status is not ported (`success` feedback styling);
+       `level` is `ErrorLevel` / `WarningLevel` only.
+
+     - the `feedback` / `label` **slots** are not ported (`feedback : Maybe String`
+       and `label : Maybe String` cover the string forms), `labelProps` beyond
+       `for` are not ported, and the deprecated `FormItemRow` / `FormItemCol` /
+       `FormItemGridItem` components have no counterpart.
+
+     - the fade-down transition between feedback states exists in the stylesheet
+       but is **not driven** — the port swaps instantly. As an optional upgrade,
+       the caller can own the phase: keep the previous feedback, render the
+       outgoing lines under `"fade-down-transition-leave-active"` for one frame via
+       `NUI.Internal.transitionClass "fade-down-transition"`, then mount the new
+       lines under the enter classes (exactly the caller-driven pattern of
+       `NUI.LoadingBar`).
 
 -}
 

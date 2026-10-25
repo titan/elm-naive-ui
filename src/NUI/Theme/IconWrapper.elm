@@ -20,11 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the IconWrapper CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`color` → `--n-color`).
-
-Collected by concern:
-
-  - surface & glyph colors: `color`, `iconColor`
-
 -}
 type alias Vars =
     { color : String

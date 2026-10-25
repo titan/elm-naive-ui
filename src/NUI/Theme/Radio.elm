@@ -20,16 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Radio CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`radioSizeSmall` → `--n-radio-size-small`).
-
-Collected by concern:
-
-  - per-size radio sizes & font sizes: `radioSizeSmall`, `radioSizeMedium`, `radioSizeLarge`, `fontSizeSmall`, `fontSizeMedium`, `fontSizeLarge`
-  - label: `labelPadding`, `labelFontWeight`, `labelLineHeight`
-  - box shadows (default & button focus/hover): `boxShadow`, `boxShadowActive`, `boxShadowFocus`, `boxShadowHover`, `boxShadowDisabled`
-  - dot colors: `dotColorActive`, `dotColorDisabled`
-  - button-mode surfaces, borders & text: `buttonHeightSmall`, `buttonHeightMedium`, `buttonHeightLarge`, `buttonBorderColor`, `buttonBorderColorActive`, `buttonBorderColorHover`, `buttonColor`, `buttonColorActive`, `buttonTextColor`, `buttonTextColorActive`, `buttonTextColorHover`, `buttonBoxShadowFocus`, `buttonBoxShadowHover`, `buttonBoxShadow`, `buttonBorderRadius`
-  - plain radio surfaces & text: `color`, `colorDisabled`, `colorActive`, `textColor`, `textColorDisabled`, `opacityDisabled`
-
 -}
 type alias Vars =
     { radioSizeSmall : String

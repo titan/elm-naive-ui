@@ -20,13 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Popover CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`space` → `--n-space`).
-
-Collected by concern:
-
-  - arrow geometry: `space`, `spaceArrow`, `arrowOffset`, `arrowOffsetVertical`, `arrowHeight`
-  - panel chrome: `padding`, `fontSize`, `borderRadius`
-  - surface, text & shadow: `color`, `dividerColor`, `textColor`, `boxShadow`
-
 -}
 type alias Vars =
     { space : String

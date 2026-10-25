@@ -20,15 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Switch CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`buttonHeightSmall` → `--n-button-height-small`).
-
-Collected by concern:
-
-  - per-size rail geometry & radius: `railHeightSmall`, `railHeightMedium`, `railHeightLarge`, `railWidthSmall`, `railWidthMedium`, `railWidthLarge`, `railColor`, `railColorActive`, `railBorderRadiusSmall`, `railBorderRadiusMedium`, `railBorderRadiusLarge`
-  - per-size button geometry, radius & shadow: `buttonHeightSmall`, `buttonHeightMedium`, `buttonHeightLarge`, `buttonWidthSmall`, `buttonWidthMedium`, `buttonWidthLarge`, `buttonWidthPressedSmall`, `buttonWidthPressedMedium`, `buttonWidthPressedLarge`, `buttonBoxShadow`, `buttonColor`, `buttonBorderRadiusSmall`, `buttonBorderRadiusMedium`, `buttonBorderRadiusLarge`
-  - box shadow focus: `boxShadowFocus`
-  - surfaces & text: `textColor`, `opacityDisabled`
-  - icon & loading colors: `iconColor`, `loadingColor`
-
 -}
 type alias Vars =
     { buttonHeightSmall : String

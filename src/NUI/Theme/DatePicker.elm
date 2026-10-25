@@ -20,16 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the DatePicker CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`itemSize` → `--n-item-size`).
-
-Collected by concern:
-
-  - calendar geometry: `itemSize`, `itemCellWidth`, `itemCellHeight`, `scrollItemWidth`, `scrollItemHeight`, `itemFontSize`, `itemBorderRadius`, `scrollItemBorderRadius`
-  - panel paddings (extra footer/action/header) & chrome: `panelExtraFooterPadding`, `panelActionPadding`, `calendarTitlePadding`, `calendarTitleHeight`, `arrowSize`, `panelHeaderPadding`, `calendarDaysHeight`, `panelBorderRadius`, `calendarTitleFontWeight`
-  - date-panel left/right padding grid templates: `calendarLeftPaddingDate`, `calendarLeftPaddingDatetime`, `calendarLeftPaddingDaterange`, `calendarLeftPaddingDatetimerange`, `calendarLeftPaddingMonth`, `calendarLeftPaddingYear`, `calendarLeftPaddingQuarter`, `calendarLeftPaddingMonthrange`, `calendarLeftPaddingQuarterrange`, `calendarLeftPaddingYearrange`, `calendarLeftPaddingWeek`, `calendarRightPaddingDate`, `calendarRightPaddingDatetime`, `calendarRightPaddingDaterange`, `calendarRightPaddingDatetimerange`, `calendarRightPaddingMonth`, `calendarRightPaddingYear`, `calendarRightPaddingQuarter`, `calendarRightPaddingMonthrange`, `calendarRightPaddingQuarterrange`, `calendarRightPaddingYearrange`, `calendarRightPaddingWeek`
-  - title grid template: `calendarTitleGridTempateColumns`
-  - calendar text: `calendarDaysFontSize`, `calendarTitleFontSize`, `itemTextColor`, `itemTextColorDisabled`, `itemTextColorActive`, `itemTextColorCurrent`, `panelTextColor`, `arrowColor`, `calendarTitleTextColor`, `calendarDaysTextColor`, `iconColor`, `iconColorDisabled`
-  - day/item surfaces & dividers: `itemColorIncluded`, `itemColorHover`, `itemColorDisabled`, `itemColorActive`, `panelColor`, `calendarTitleColorHover`, `panelHeaderDividerColor`, `calendarDaysDividerColor`, `calendarDividerColor`, `panelActionDividerColor`, `panelBoxShadow`
-
 -}
 type alias Vars =
     { itemSize : String

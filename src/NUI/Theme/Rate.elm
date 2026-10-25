@@ -20,12 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Rate CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`itemColor` → `--n-item-color`).
-
-Collected by concern:
-
-  - star colors: `itemColor`, `itemColorActive`
-  - per-size star sizes: `sizeSmall`, `sizeMedium`, `sizeLarge`
-
 -}
 type alias Vars =
     { itemColor : String

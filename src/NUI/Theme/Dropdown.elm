@@ -20,14 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Dropdown CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`padding` → `--n-padding`).
-
-Collected by concern:
-
-  - inverted variants: `optionTextColorInverted`, `optionTextColorHoverInverted`, `optionTextColorActiveInverted`, `optionTextColorChildActiveInverted`, `colorInverted`, `dividerColorInverted`, `suffixColorInverted`, `prefixColorInverted`, `optionColorHoverInverted`, `optionColorActiveInverted`, `groupHeaderTextColorInverted`
-  - menu padding & per-size option metrics: `padding`, `optionIconSizeSmall`, `optionIconSizeMedium`, `optionIconSizeLarge`, `optionIconSizeHuge`, `optionSuffixWidthSmall`, `optionSuffixWidthMedium`, `optionSuffixWidthLarge`, `optionSuffixWidthHuge`, `optionIconSuffixWidthSmall`, `optionIconSuffixWidthMedium`, `optionIconSuffixWidthLarge`, `optionIconSuffixWidthHuge`, `optionPrefixWidthSmall`, `optionPrefixWidthMedium`, `optionPrefixWidthLarge`, `optionPrefixWidthHuge`, `optionIconPrefixWidthSmall`, `optionIconPrefixWidthMedium`, `optionIconPrefixWidthLarge`, `optionIconPrefixWidthHuge`, `optionHeightSmall`, `optionHeightMedium`, `optionHeightLarge`, `optionHeightHuge`, `borderRadius`, `fontSizeSmall`, `fontSizeMedium`, `fontSizeLarge`, `fontSizeHuge`
-  - option text states: `optionTextColor`, `optionTextColorHover`, `optionTextColorActive`, `optionTextColorChildActive`
-  - surfaces, dividers & disabled opacity: `color`, `dividerColor`, `suffixColor`, `prefixColor`, `optionColorHover`, `optionColorActive`, `groupHeaderTextColor`, `optionOpacityDisabled`
-
 -}
 type alias Vars =
     { padding : String

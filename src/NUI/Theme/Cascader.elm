@@ -20,13 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Cascader CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`menuBorderRadius` → `--n-menu-border-radius`).
-
-Collected by concern:
-
-  - menu chrome: `menuBorderRadius`, `menuColor`, `menuBoxShadow`, `menuDividerColor`, `menuHeight`
-  - option text states: `optionTextColor`, `optionTextColorActive`, `optionTextColorDisabled`
-  - option metrics, check-mark & loading: `optionArrowColor`, `optionHeight`, `optionFontSize`, `optionColorHover`, `optionCheckMarkColor`, `loadingColor`, `columnWidth`
-
 -}
 type alias Vars =
     { menuBorderRadius : String

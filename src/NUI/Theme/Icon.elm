@@ -20,12 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Icon CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`color` → `--n-color`).
-
-Collected by concern:
-
-  - base color: `color`
-  - depth opacity scale: `opacity1Depth`, `opacity2Depth`, `opacity3Depth`, `opacity4Depth`, `opacity5Depth`
-
 -}
 type alias Vars =
     { color : String

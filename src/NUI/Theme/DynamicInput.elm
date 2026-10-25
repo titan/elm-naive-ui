@@ -20,11 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the DynamicInput CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`actionMargin` → `--n-action-margin`).
-
-Collected by concern:
-
-  - action margin (LTR & RTL): `actionMargin`, `actionMarginRtl`
-
 -}
 type alias Vars =
     { actionMargin : String

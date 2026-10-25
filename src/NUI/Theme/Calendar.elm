@@ -20,13 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Calendar CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`titleFontSize` → `--n-title-font-size`).
-
-Collected by concern:
-
-  - title & shape: `titleFontSize`, `borderRadius`, `titleFontWeight`, `titleTextColor`
-  - borders/surfaces incl. modal & popover: `borderColor`, `borderColorModal`, `borderColorPopover`, `dateColorCurrent`, `cellColorHover`, `cellColorHoverModal`, `cellColorHoverPopover`, `cellColor`, `cellColorModal`, `cellColorPopover`, `barColor`
-  - typography: `textColor`, `dayTextColor`, `fontSize`, `lineHeight`, `dateTextColorCurrent`
-
 -}
 type alias Vars =
     { titleFontSize : String

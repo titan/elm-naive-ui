@@ -20,17 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the SelectMenu CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`height` → `--n-height`).
-
-Collected by concern:
-
-  - menu paddings & height: `height`, `paddingTiny`, `paddingSmall`, `paddingMedium`, `paddingLarge`, `paddingHuge`
-  - per-size option paddings: `optionPaddingTiny`, `optionPaddingSmall`, `optionPaddingMedium`, `optionPaddingLarge`, `optionPaddingHuge`
-  - per-size option font sizes & heights: `optionFontSizeTiny`, `optionFontSizeSmall`, `optionFontSizeMedium`, `optionFontSizeLarge`, `optionFontSizeHuge`, `optionHeightTiny`, `optionHeightSmall`, `optionHeightMedium`, `optionHeightLarge`, `optionHeightHuge`
-  - option text colors & disabled opacity: `optionTextColor`, `optionTextColorPressed`, `optionTextColorDisabled`, `optionTextColorActive`, `optionOpacityDisabled`
-  - option surfaces (pending/active) & check color: `optionCheckColor`, `optionColorPending`, `optionColorActive`, `optionColorActivePending`
-  - group headers, action area & loading: `loadingSize`, `groupHeaderTextColor`, `actionDividerColor`, `actionTextColor`, `loadingColor`
-  - menu surface & radius: `borderRadius`, `color`
-
 -}
 type alias Vars =
     { height : String

@@ -21,84 +21,89 @@ module NUI.Upload exposing (FileInfo, ListType(..), Options, Status(..), appendF
                 ]
         }
 
-The DOM is Naive UI's own: the root `div.n-upload` (the 16 `--n-*` vars), the
-`input.n-upload-file-input`, the `div.n-upload-trigger` (with its image-card
-dragger), the `div.n-upload-file-list` and the `div.n-upload-file` rows
-(`__info` / `__thumbnail` / `__name` / `__action`), plus the line progress bar
-while a file is uploading. `css/naive-ui.css` ships Naive UI's exact CSS.
+**The caller-owned contract.** Upstream's `Upload` is imperative: it opens
+the file dialog, drives XHR (or a `customRequest`), reads `File` objects,
+resolves thumbnails asynchronously. This library is pure, so the port exposes
+the render surface plus the **pure state machine** — the DOM is Naive UI's
+own (root `div.n-upload` with the 16 `--n-*` vars, `input.n-upload-file-input`,
+`div.n-upload-trigger`, the file-list rows, the line progress bar;
+`css/naive-ui.css` ships the exact CSS) and the host app owns the effects:
 
-**Caller-owned runtime.** Upstream's `Upload` is an imperative component: it
-opens the file dialog, drives XHR (or a `customRequest`), reads `File` objects
-into a `FileList`, resolves thumbnails asynchronously and serialises
-`doChange` through `nextTick`. This library is pure, so the port exposes the
-render surface and the **pure state machine**, and the host app owns the
-effects:
-
-  - `fileList` is the caller's list. Every open/close/append/replace is a
-    caller update; the module's `settle` / `pendingFile` / `updateFileList` /
-    `appendFile` / `removeFileById` / `mark*` helpers are the ports of
-    upstream's `createSettledFileInfo` / `handleFileAddition` / `doChange` /
-    the XHR-handler transitions — the caller applies them in its `Msg` handlers.
+  - `fileList` is the caller's list; every transition is a caller update.
+    `settle` / `pendingFile` / `updateFileList` / `appendFile` /
+    `removeFileById` / `markUploading` / `markFinished` / `markError` /
+    `markRemoved` are the ports of upstream's pure transitions — apply them
+    in your `Msg` handlers.
   - The events (`onTriggerClick` / `onFileChange` / `onDrop` /
-    `onDragStateChange` / `onRemove` / `onRetry` / `onDownload` / `onPreview`)
-    are Elm channels — Vue listeners never become DOM attributes (no byte
-    impact). `onFileChange` fires on the input's `change`; read the picked
-    `File`s through ports, run `handleFileAddition`'s pure steps
-    (`sliceForMax` + `pendingFile` + `appendFile`), then submit.
+    `onDragStateChange` / `onRemove` / `onRetry` / `onDownload` /
+    `onPreview`) are Elm channels — Vue listeners never become DOM
+    attributes. On `onFileChange` read the picked `File`s through ports, run
+    `handleFileAddition`'s pure steps (`sliceForMax` + `pendingFile` +
+    `appendFile`), then submit.
+  - `maxReached` / `filesToSubmit` are the selection rules (`filesToSubmit`
+    is the `defaultUpload` rule; nothing auto-fires).
 
-**Accepted edges (documented divergences):**
-
-1.  `file : File` is dropped from `FileInfo` — Elm has no `File`. Thumbnail
-    resolution (`createImageDataUrl` / `URL.createObjectURL`) is caller-side:
-    write the resolved URL into `thumbnailUrl`. `environmentSupportFile ≡
-    true` (every targeted browser supports it).
-2.  XHR + `customRequest` + `onBeforeUpload` / `onFinish` / `onError` rewrites
-      - directory-entry (`webkitGetAsEntry`) traversal are host ports; the
-        module exposes only the pure transitions (`markUploading` /
-        `markFinished` / `markError` / `markRemoved`, `filesToSubmit`).
-3.  `draggerInside` is explicit (a pure tree cannot introspect the slot for
-    `uploadDraggerKey`); `abstract` renders a Fragment — upstream teleports
-    the input to `body`, the port returns `[ inputNode, slot ]` for the caller
-    to place.
-4.  `onRemove` carries the file **id** (upstream passes `{ file, fileList,
-    index }` — the caller derives those); the trigger's `options`-object slot
-    is dropped (wire drag/click messages directly).
-5.  RTL is dropped (`rtlEnabled` defaults false, house precedent).
-6.  `scheduleDoChange` / `nextTick` serialisation is unnecessary in a
-    synchronous pure render.
-7.  `defaultUpload` auto-submit after addition is the caller's
-    responsibility — `filesToSubmit` is the selection rule, nothing
-    auto-fires.
-8.  The `value = ''` reset of the `<input>` after a change is a host DOM
-    command (Elm holds no element ref).
-9.  The image-card thumbnail's `NImage` is embedded through `Element.layoutWith`
-    (`display:contents` wrapper) — elm-ui has no public `Element → Html`. The
-    `NImage`-in-`NImageGroup` context is the same approximation `NUI.Image`
-    documents (no group registration, `data-group-id=""`).
-10. `imageGroupOptions` is accepted for API parity but is inert: upstream's
-    `NImageGroup` renders a Fragment (its preview container is teleported to
-    `body`), so it adds no in-flow node to the file list — mount
-    `NUI.ImageGroup.view` yourself with the file urls.
-
-Fidelity notes: the `n-upload-file--info-status` / `--success-status` classes
-are emitted upstream with no cssr rule (only `--error-status` has one), as is
-`n-upload-file-info__action--text-type`; the icon glyphs are byte-verbatim
-(9 private constants). The action buttons are icon-only `NUI.Button`s carrying
-`varOverrides = { paddingMedium, heightMedium, iconSizeMedium }`
-(`UploadFile.tsx:21-25`); they always render an empty `n-button__content`
-(the `NUI.Button` content-span behaviour, shared with `NUI.InputNumber`).
-[oracle D13] The root and (abstract) file-list class arrays omit Naive UI's
-inline-theme `themeClass` (house-wide: the inline-theme-optimisation class
-never lands in this port; no-op under the default theme).
-
-\`never lands in this port; no-op under the default theme).
-
-Upstream refs: `upload/src/Upload.tsx` (render :655-680, cssVars :507-561,
-`doChange` :331-366, `handleFileAddition` :367-433, `submit` :434-480),
-`UploadTrigger.tsx`, `UploadFileList.tsx`, `UploadFile.tsx`,
-`UploadDragger.tsx`, `UploadProgress.tsx`, `utils.ts`, `icons.tsx`.
+(The accepted-edge list — dropped `File` field, XHR/`customRequest` ports,
+the fidelity notes and upstream file refs — lives in the plain comment right
+below: internal port notes, deliberately kept out of the published docs.)
 
 @docs FileInfo, ListType, Options, Status, appendFile, buttonKindOf, cssVarsFor, defaults, filesToSubmit, isImageFile, markError, markFinished, markRemoved, markUploading, matchType, maxReached, pendingFile, progressStatusOf, removeFileById, settle, shouldUseThumbnailUrlDefault, sliceForMax, updateFileList, view, viewAbstract, viewDragger, viewFileList, viewTrigger
+
+-}
+
+{- INTERNAL PORT NOTES — moved out of the module doc (plain comments do not
+      enter docs.json; the published docs must stay under the package-size
+      limit). Nothing here changes the public contract summarised above.
+
+   **Accepted edges (documented divergences):**
+
+   1.  `file : File` is dropped from `FileInfo` — Elm has no `File`. Thumbnail
+       resolution (`createImageDataUrl` / `URL.createObjectURL`) is caller-side:
+       write the resolved URL into `thumbnailUrl`. `environmentSupportFile ≡
+       true` (every targeted browser supports it).
+   2.  XHR + `customRequest` + `onBeforeUpload` / `onFinish` / `onError` rewrites
+         - directory-entry (`webkitGetAsEntry`) traversal are host ports; the
+           module exposes only the pure transitions (`markUploading` /
+           `markFinished` / `markError` / `markRemoved`, `filesToSubmit`).
+   3.  `draggerInside` is explicit (a pure tree cannot introspect the slot for
+       `uploadDraggerKey`); `abstract` renders a Fragment — upstream teleports
+       the input to `body`, the port returns `[ inputNode, slot ]` for the caller
+       to place.
+   4.  `onRemove` carries the file **id** (upstream passes `{ file, fileList,
+       index }` — the caller derives those); the trigger's `options`-object slot
+       is dropped (wire drag/click messages directly).
+   5.  RTL is dropped (`rtlEnabled` defaults false, house precedent).
+   6.  `scheduleDoChange` / `nextTick` serialisation is unnecessary in a
+       synchronous pure render.
+   7.  `defaultUpload` auto-submit after addition is the caller's
+       responsibility — `filesToSubmit` is the selection rule, nothing
+       auto-fires.
+   8.  The `value = ''` reset of the `<input>` after a change is a host DOM
+       command (Elm holds no element ref).
+   9.  The image-card thumbnail's `NImage` is embedded through `Element.layoutWith`
+       (`display:contents` wrapper) — elm-ui has no public `Element → Html`. The
+       `NImage`-in-`NImageGroup` context is the same approximation `NUI.Image`
+       documents (no group registration, `data-group-id=""`).
+   10. `imageGroupOptions` is accepted for API parity but is inert: upstream's
+       `NImageGroup` renders a Fragment (its preview container is teleported to
+       `body`), so it adds no in-flow node to the file list — mount
+       `NUI.ImageGroup.view` yourself with the file urls.
+
+   Fidelity notes: the `n-upload-file--info-status` / `--success-status` classes
+   are emitted upstream with no cssr rule (only `--error-status` has one), as is
+   `n-upload-file-info__action--text-type`; the icon glyphs are byte-verbatim
+   (9 private constants). The action buttons are icon-only `NUI.Button`s carrying
+   `varOverrides = { paddingMedium, heightMedium, iconSizeMedium }`
+   (`UploadFile.tsx:21-25`); they always render an empty `n-button__content`
+   (the `NUI.Button` content-span behaviour, shared with `NUI.InputNumber`).
+   [oracle D13] The root and (abstract) file-list class arrays omit Naive UI's
+   inline-theme `themeClass` (house-wide: the inline-theme-optimisation class
+   never lands in this port; no-op under the default theme).
+
+   Upstream refs: `upload/src/Upload.tsx` (render :655-680, cssVars :507-561,
+   `doChange` :331-366, `handleFileAddition` :367-433, `submit` :434-480),
+   `UploadTrigger.tsx`, `UploadFileList.tsx`, `UploadFile.tsx`,
+   `UploadDragger.tsx`, `UploadProgress.tsx`, `utils.ts`, `icons.tsx`.
 
 -}
 

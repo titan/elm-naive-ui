@@ -20,12 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the FloatButtonGroup CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`color` → `--n-color`).
-
-Collected by concern:
-
-  - group surface & borders: `color`, `buttonBorderColor`
-  - shape & elevation: `borderRadiusSquare`, `boxShadow`
-
 -}
 type alias Vars =
     { color : String

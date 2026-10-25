@@ -20,15 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the DataTable CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`thPaddingSmall` → `--n-th-padding-small`).
-
-Collected by concern:
-
-  - per-size cell paddings: `thPaddingSmall`, `thPaddingMedium`, `thPaddingLarge`, `tdPaddingSmall`, `tdPaddingMedium`, `tdPaddingLarge`
-  - control widget sizes & action chrome: `sorterSize`, `resizableContainerSize`, `resizableSize`, `filterSize`, `paginationMargin`, `emptyPadding`, `actionPadding`, `actionButtonMargin`, `actionDividerColor`
-  - loading: `loadingColor`, `loadingSize`, `opacityLoading`
-  - per-size fonts, line height & radius: `lineHeight`, `borderRadius`, `fontSizeSmall`, `fontSizeMedium`, `fontSizeLarge`, `thFontWeight`
-  - cell surfaces & borders incl. modal & popover: `borderColor`, `tdColorHover`, `tdColorSorting`, `tdColorStriped`, `thColor`, `thColorHover`, `thColorSorting`, `tdColor`, `tdTextColor`, `thTextColor`, `thButtonColorHover`, `thIconColor`, `thIconColorActive`, `borderColorModal`, `tdColorHoverModal`, `tdColorSortingModal`, `tdColorStripedModal`, `thColorModal`, `thColorHoverModal`, `thColorSortingModal`, `tdColorModal`, `borderColorPopover`, `tdColorHoverPopover`, `tdColorSortingPopover`, `tdColorStripedPopover`, `thColorPopover`, `thColorHoverPopover`, `thColorSortingPopover`, `tdColorPopover`, `boxShadowBefore`, `boxShadowAfter`
-
 -}
 type alias Vars =
     { thPaddingSmall : String

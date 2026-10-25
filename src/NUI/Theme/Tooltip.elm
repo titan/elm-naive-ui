@@ -20,11 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Tooltip CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`padding` → `--n-padding`).
-
-Collected by concern:
-
-  - panel chrome (padding, radius, shadow, surface & text): `padding`, `borderRadius`, `boxShadow`, `color`, `textColor`
-
 -}
 type alias Vars =
     { padding : String

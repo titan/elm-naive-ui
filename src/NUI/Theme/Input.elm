@@ -20,16 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Input CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`paddingTiny` → `--n-padding-tiny`).
-
-Collected by concern:
-
-  - Warning/Error state colors: `loadingColorWarning`, `borderWarning`, `borderHoverWarning`, `colorFocusWarning`, `borderFocusWarning`, `boxShadowFocusWarning`, `caretColorWarning`, `loadingColorError`, `borderError`, `borderHoverError`, `colorFocusError`, `borderFocusError`, `boxShadowFocusError`, `caretColorError`
-  - clear button states: `clearColor`, `clearColorHover`, `clearColorPressed`
-  - icon & suffix colors: `iconColor`, `iconColorDisabled`, `iconColorHover`, `iconColorPressed`, `suffixTextColor`
-  - loading spinners: `loadingColor`
-  - per-size paddings & metrics: `paddingTiny`, `paddingSmall`, `paddingMedium`, `paddingLarge`, `clearSize`, `heightTiny`, `heightSmall`, `heightMedium`, `heightLarge`, `fontSizeTiny`, `fontSizeSmall`, `fontSizeMedium`, `fontSizeLarge`, `lineHeightTextarea`
-  - base text, placeholder, surfaces, borders & focus ring: `fontWeight`, `countTextColorDisabled`, `countTextColor`, `lineHeight`, `borderRadius`, `iconSize`, `groupLabelColor`, `groupLabelTextColor`, `textColor`, `textColorDisabled`, `textDecorationColor`, `caretColor`, `placeholderColor`, `placeholderColorDisabled`, `color`, `colorHover`, `colorDisabled`, `colorFocus`, `groupLabelBorder`, `border`, `borderHover`, `borderDisabled`, `borderFocus`, `boxShadowFocus`
-
 -}
 type alias Vars =
     { paddingTiny : String

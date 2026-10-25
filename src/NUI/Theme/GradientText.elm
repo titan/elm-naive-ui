@@ -20,12 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the GradientText CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`fontWeight` → `--n-font-weight`).
-
-Collected by concern:
-
-  - gradient label typography: `fontWeight`, `rotate`
-  - gradient start/end stops per type: `colorStartPrimary`, `colorEndPrimary`, `colorStartInfo`, `colorEndInfo`, `colorStartWarning`, `colorEndWarning`, `colorStartError`, `colorEndError`, `colorStartSuccess`, `colorEndSuccess`
-
 -}
 type alias Vars =
     { fontWeight : String

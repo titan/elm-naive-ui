@@ -38,64 +38,72 @@ clamp-to-`min`/`max`, `precision` formatting and add / minus buttons (real
         }
         []
 
-**Caller-owned runtime** (same contract as `NUI.Calendar`'s `now` / `panel`).
-Upstream keeps a `displayedValueRef` text buffer and derives everything from
-it; this library is pure, so the caller owns the buffer and the value:
+**The caller-owned contract** (same shape as `NUI.Calendar`'s `now` /
+`panel`). Upstream keeps a `displayedValueRef` text buffer and derives
+everything from it; this library is pure, so the caller owns the buffer and
+the value:
 
   - `displayedValue : Maybe String` — **the text buffer, the option that
-    carries the typing state.** `Nothing` means "not typing": the view derives
-    the text from `value` exactly like upstream's `deriveDisplayedValueFromValue`
-    (see `displayedValueFor`). `Just raw` means the user is mid-edit: the raw
-    text is shown verbatim (including wip values like `"0."` or `"-0"`).
+    carries the typing state.** `Nothing` means "not typing": the view
+    derives the text from `value` (`displayedValueFor`). `Just raw` means the
+    user is mid-edit: the raw text is shown verbatim (including wip values
+    like `"0."` or `"-0"`).
   - `onInput` fires with the raw text of every keystroke. Store it
     (`displayedValue = Just raw`) and, when `updateValueOnInput` is on and no
-    `precision` is set, apply `inputUpdate opts raw` to `value` — the port of
-    upstream's `handleUpdateDisplayedValue` live-sync guard and all.
-  - `onChange` fires with upstream's `doUpdateValue` payload. The add / minus
-    buttons emit it via `addUpdate` / `minusUpdate`; on receipt set
+    `precision` is set, apply `inputUpdate opts raw` to `value`.
+  - `onChange` fires with upstream's `doUpdateValue` payload. The add /
+    minus buttons emit it via `addUpdate` / `minusUpdate`; on receipt set
     `value = payload` and `displayedValue = Nothing` (the buffer re-derives).
   - What stays with the caller: the blur / Enter commit
     (`deriveValueFromDisplayedValue ctx { offset = 0, doUpdateIfValid = True,
-    fixPrecision = True, isInputing = False }` — upstream's exact `doBlur` /
-    Enter-key call), the ArrowUp / ArrowDown keys (commit, then
-    `addUpdate` / `minusUpdate`), and the hold-to-repeat timers (800 ms
-    threshold, 100 ms interval — each tick is one `addUpdate` / `minusUpdate`).
-    `NUI.Input` exposes no focus / blur / keydown hooks, so those cannot be
-    wired from `view`.
+    fixPrecision = True, isInputing = False }`), the ArrowUp / ArrowDown keys
+    (commit, then `addUpdate` / `minusUpdate`), and the hold-to-repeat timers
+    (800 ms threshold, 100 ms interval — each tick one `addUpdate` /
+    `minusUpdate`).
 
-**Slots.** The children model upstream's `prefix` / `suffix` slots: the first
-child is the prefix slot, the second the suffix slot (both optional). While
-`showButton` is on, upstream wraps slot content in `n-input-number-prefix` /
-`n-input-number-suffix` spans — so does `view`.
+**Slots.** The children model upstream's `prefix` / `suffix` slots: the
+first child is the prefix slot, the second the suffix slot (both optional,
+both wrapped in `n-input-number-prefix` / `-suffix` spans while `showButton`
+is on).
 
-**Upstream utils, ported faithfully and exposed** (a tester asserts them):
-`parse`, `isWipValue`, `validator`, `format`, `parseNumber` from
-`input-number/src/utils.ts`, plus `toFixedJs` (JavaScript's
-`Number.prototype.toFixed`, computed from the exact decimal expansion of the
-double — `String.fromFloat` is already byte-identical to JS `String(number)`,
-verified against Node). `parse` keeps upstream's null-vs-NaN distinction:
-empty / whitespace-only input is `Nothing` (upstream `null`, which clears the
-value), while unparseable text is `Just (0/0)` (upstream `NaN`, which is
-invalid and commits nothing) — `deriveValueFromDisplayedValue` behaves
-differently for the two, exactly like upstream.
+**Upstream utils, ported faithfully and exposed:** `parse`, `isWipValue`,
+`validator`, `format`, `parseNumber` from `input-number/src/utils.ts`, plus
+`toFixedJs` (JavaScript's `Number.prototype.toFixed`, computed from the exact
+decimal expansion of the double). `parse` keeps upstream's null-vs-NaN
+distinction: empty / whitespace-only input is `Nothing` (clears the value),
+unparseable text is `Just (0/0)` (invalid, commits nothing).
 
-**Gaps vs upstream (documented, not worked around):**
+(The gaps-vs-upstream list — padding, line-through, slot wrappers, unported
+props — lives in the plain comment right below: internal port notes,
+deliberately kept out of the published docs.)
 
-  - Upstream narrows the inner input's padding through `builtinThemeOverrides`
-    (`small "0 8px 0 10px"`, `medium "0 8px 0 12px"`, `large "0 8px 0 14px"`);
-    `NUI.Input` has no padding option (see `NUI.InputOtp`'s header), so the
-    input renders with its own defaults (`"0 10px"` / `"0 12px"` / `"0 14px"`)
-    — the right padding is 2–6 px wider than upstream when buttons show.
-  - Upstream strikes invalid text through (`textDecoration = 'line-through'`
-    when `displayedValueInvalid`); `NUI.Input` has no text-decoration option.
-  - `NUI.Input`'s `prefix` / `suffix` are single `Element`s, so a slot holding
-    both a span and the buttons needs one extra wrapper `div` (an unclassed
-    flex row — visually inert inside the inline-flex `n-input__suffix`).
-  - Upstream sets `focusable={false}` on the buttons; `NUI.Button` always
-    renders `tabindex 0` when enabled.
-  - Upstream props not carried by this API: `autofocus`, `loading`,
-    `clearable`, `round`, `keyboard`, `inputProps`, `bordered` and the custom
-    `parse` / `format` / `validator` functions.
+-}
+
+{- INTERNAL PORT NOTES — moved out of the module doc (plain comments do not
+      enter docs.json; the published docs must stay under the package-size
+      limit). Nothing here changes the public contract summarised above.
+
+   **Gaps vs upstream (documented, not worked around):**
+
+     - Upstream narrows the inner input's padding through `builtinThemeOverrides`
+       (`small "0 8px 0 10px"`, `medium "0 8px 0 12px"`, `large "0 8px 0 14px"`);
+       `NUI.Input` has no padding option (see `NUI.InputOtp`'s header), so the
+       input renders with its own defaults (`"0 10px"` / `"0 12px"` / `"0 14px"`)
+       — the right padding is 2–6 px wider than upstream when buttons show.
+     - Upstream strikes invalid text through (`textDecoration = 'line-through'`
+       when `displayedValueInvalid`); `NUI.Input` has no text-decoration option.
+     - `NUI.Input`'s `prefix` / `suffix` are single `Element`s, so a slot holding
+       both a span and the buttons needs one extra wrapper `div` (an unclassed
+       flex row — visually inert inside the inline-flex `n-input__suffix`).
+     - Upstream sets `focusable={false}` on the buttons; `NUI.Button` always
+       renders `tabindex 0` when enabled.
+     - Upstream props not carried by this API: `autofocus`, `loading`,
+       `clearable`, `round`, `keyboard`, `inputProps`, `bordered` and the custom
+       `parse` / `format` / `validator` functions.
+
+   `toFixedJs` is computed from the exact decimal expansion of the double —
+   `String.fromFloat` is already byte-identical to JS `String(number)`, verified
+   against Node.
 
 -}
 

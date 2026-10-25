@@ -21,65 +21,6 @@ clickoutside and keyboard are caller-owned runtime).
             , onUpdateValue = Just SetTime
         }
 
-Trigger (`view`) DOM:
-
-    div.n-time-picker
-      style = 3 trigger vars → --n-icon-color-disabled-override, --n-bezier
-      └─ NUI.Input.view (see its docstring) with the picker seams on:
-         `passivelyActivated`, `attrSize = format.length + 4`,
-         `internalForceFocus = show`, `textDecoration = 'line-through'` while
-         the value is invalid, `readonly = inputReadonly || disabled`, and the
-         clock icon riding `suffix` (not clearable) or `clear-icon-placeholder`
-         (clearable — swaps to the clear icon over a value) inside
-         `i.n-base-icon.n-time-picker-icon`.
-
-Panel (`panel`) DOM — the body carrying the 14 time-picker vars:
-
-    div.n-time-picker-panel [fade-in-scale-up-transition-*]
-      tabindex = 0
-      style = 14 vars → --n-item-border-radius
-      ├─ div.n-time-picker-cols
-      │   └─ per visible unit: div.n-time-picker-col
-      │        [.n-time-picker-col--invalid] [.n-time-picker-col--transition-disabled]
-      │        └─ NUI.Scrollbar.view > item divs + div.n-time-picker-col__padding
-      ├─ div.n-time-picker-actions        — iff actions non-empty
-      │    └─ NUI.Button size=tiny each (confirm: type primary + class
-      │       .n-time-picker-actions__confirm + disabled iff invalid)
-      └─ div[width:0;height:0][tabindex 0]  — NBaseFocusDetector
-
-Visible units follow the format string exactly as upstream
-(`hourInFormat = /H|h|K|k/.test(format)`, `format.includes('m')`,
-`format.includes('s')`), plus the AM/PM column whenever `use12Hours`.
-
-**Punts (caller-owned runtime, the port-wide convention).**
-
-  - The scroll-to-active `scrollTimer` (`TimePicker.tsx:657-676`) measures the
-    active item's `offsetTop` and scrolls each column — DOM geometry, no
-    static effect. `data-active` rides the active item (`NUI.Scrollbar`'s
-    position is caller-owned via `yBarStyle`), and the `colContainerIds` seam
-    puts inert `id`s on the visible columns' `n-scrollbar-container` divs so
-    the caller can drive that scroll with `Browser.Dom.setViewportOf`.
-  - The IANA `timeZone` prop is replaced by `zone : Time.Zone` (caller
-    supplied; `Time.utc` by default). `formatValue` / `parseInput` take it
-    explicitly.
-  - The `memorizedValue` auto-restore (`watch(mergedShow)` re-emits the
-    memorized value when the current one is invalid, `:801-805`) is
-    caller-owned data.
-  - The panel's Tab handling (`handleMenuKeydown`) is caller-owned; the inert
-    focus-detector sentinel at the panel's tail is what the runtime watches.
-  - Enter / Escape activation (`handleWrapperKeydownEnter` / `...Esc`),
-    programmatic focus / blur, the `onActivate` / `onDeactivate` emissions,
-    clickoutside and the follower placement are caller-owned (no ports in
-    house style — flip `show` yourself).
-  - `onUpdate:value` fires with `(value, formattedValue)` upstream; a single
-    Elm message cannot carry both — use `onUpdateValue` (format with
-    `formatValue` when you need the string) and `onUpdateFormattedValue`
-    separately.
-  - `[oracle D]` **actions order.** The port renders `opts.actions` in the
-    caller's list order; upstream renders a fixed `clear, now, confirm` gated by
-    membership (`Panel.tsx:328-360`). Identical for the default
-    `[Now, Confirm]`; only a non-canonical caller list reorders.
-
 `formatValue` implements the date-fns token subset `H HH h hh K k m mm s ss a`
 plus `'...'` literals (`''` → `'`); everything else passes through verbatim.
 `parseInput` is `strictParse` (`date-picker/src/utils.ts:480-495`): parse then
@@ -87,8 +28,85 @@ re-`format` and require string equality, else `Nothing`. Parsed fields fill from
 1970-01-01 (upstream's backup is `new Date()`; the time-of-day is what the
 trigger compares) and are placed in `zone` via its offset at that instant.
 
+Essential contract: show state, positioning, clickoutside, keyboard and
+the scroll-to-active column scroll are caller-owned (the port-wide
+convention) — `data-active` marks the active item and `colContainerIds`
+puts inert `id`s on the columns' `n-scrollbar-container` divs for
+`Browser.Dom.setViewportOf`. `zone : Time.Zone` replaces the IANA
+`timeZone` prop; the trigger's picker seams (`readonly`, the invalid-value
+`textDecoration`, `internalForceFocus = show`, the clock icon slot) ride
+`NUI.Input`; a commit emits `onUpdateValue` (format with `formatValue`)
+when set, else `onUpdateFormattedValue`.
+
+DOM shapes, fidelity notes and porting details live in the comment block
+below the module doc.
+
 @docs Options, TimeAction, UnitFilter, defaultOptions, formatValue, panel, parseInput, snapNow, view
 
+-}
+
+{- DOM shapes, fidelity notes and porting details for `NUI.TimePicker` — moved verbatim
+      out of the module docstring (docs.json must stay under elm publish's 768kb
+      limit); plain comments do not enter the published API docs.
+
+   Trigger (`view`) DOM:
+
+       div.n-time-picker
+         style = 3 trigger vars → --n-icon-color-disabled-override, --n-bezier
+         └─ NUI.Input.view (see its docstring) with the picker seams on:
+            `passivelyActivated`, `attrSize = format.length + 4`,
+            `internalForceFocus = show`, `textDecoration = 'line-through'` while
+            the value is invalid, `readonly = inputReadonly || disabled`, and the
+            clock icon riding `suffix` (not clearable) or `clear-icon-placeholder`
+            (clearable — swaps to the clear icon over a value) inside
+            `i.n-base-icon.n-time-picker-icon`.
+
+   Panel (`panel`) DOM — the body carrying the 14 time-picker vars:
+
+       div.n-time-picker-panel [fade-in-scale-up-transition-*]
+         tabindex = 0
+         style = 14 vars → --n-item-border-radius
+         ├─ div.n-time-picker-cols
+         │   └─ per visible unit: div.n-time-picker-col
+         │        [.n-time-picker-col--invalid] [.n-time-picker-col--transition-disabled]
+         │        └─ NUI.Scrollbar.view > item divs + div.n-time-picker-col__padding
+         ├─ div.n-time-picker-actions        — iff actions non-empty
+         │    └─ NUI.Button size=tiny each (confirm: type primary + class
+         │       .n-time-picker-actions__confirm + disabled iff invalid)
+         └─ div[width:0;height:0][tabindex 0]  — NBaseFocusDetector
+
+   Visible units follow the format string exactly as upstream
+   (`hourInFormat = /H|h|K|k/.test(format)`, `format.includes('m')`,
+   `format.includes('s')`), plus the AM/PM column whenever `use12Hours`.
+
+   **Punts (caller-owned runtime, the port-wide convention).**
+
+     - The scroll-to-active `scrollTimer` (`TimePicker.tsx:657-676`) measures the
+       active item's `offsetTop` and scrolls each column — DOM geometry, no
+       static effect. `data-active` rides the active item (`NUI.Scrollbar`'s
+       position is caller-owned via `yBarStyle`), and the `colContainerIds` seam
+       puts inert `id`s on the visible columns' `n-scrollbar-container` divs so
+       the caller can drive that scroll with `Browser.Dom.setViewportOf`.
+     - The IANA `timeZone` prop is replaced by `zone : Time.Zone` (caller
+       supplied; `Time.utc` by default). `formatValue` / `parseInput` take it
+       explicitly.
+     - The `memorizedValue` auto-restore (`watch(mergedShow)` re-emits the
+       memorized value when the current one is invalid, `:801-805`) is
+       caller-owned data.
+     - The panel's Tab handling (`handleMenuKeydown`) is caller-owned; the inert
+       focus-detector sentinel at the panel's tail is what the runtime watches.
+     - Enter / Escape activation (`handleWrapperKeydownEnter` / `...Esc`),
+       programmatic focus / blur, the `onActivate` / `onDeactivate` emissions,
+       clickoutside and the follower placement are caller-owned (no ports in
+       house style — flip `show` yourself).
+     - `onUpdate:value` fires with `(value, formattedValue)` upstream; a single
+       Elm message cannot carry both — use `onUpdateValue` (format with
+       `formatValue` when you need the string) and `onUpdateFormattedValue`
+       separately.
+     - `[oracle D]` **actions order.** The port renders `opts.actions` in the
+       caller's list order; upstream renders a fixed `clear, now, confirm` gated by
+       membership (`Panel.tsx:328-360`). Identical for the default
+       `[Now, Confirm]`; only a non-canonical caller list reorders.
 -}
 
 import Element exposing (Element)

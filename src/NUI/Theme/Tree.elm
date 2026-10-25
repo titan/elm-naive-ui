@@ -20,14 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Tree CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`fontSize` → `--n-font-size`).
-
-Collected by concern:
-
-  - node chrome (font, line height, node height, padding, radius): `fontSize`, `lineHeight`, `nodeHeight`, `nodeWrapperPadding`, `nodeBorderRadius`
-  - node surfaces & text (hover/pressed/active, disabled): `nodeColorHover`, `nodeColorPressed`, `nodeColorActive`, `nodeTextColor`, `nodeTextColorDisabled`
-  - arrow & loading spinner: `arrowColor`, `loadingColor`
-  - drop mark & indent line: `dropMarkColor`, `lineColor`
-
 -}
 type alias Vars =
     { fontSize : String

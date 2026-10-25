@@ -21,58 +21,74 @@ header (title + select/clear button + count `__extra`), an optional filter
 input, and the item list (`__background` / `__checkbox` / `__label` /
 `__close`), exactly Naive UI's DOM.
 
-**Fidelity notes (read before diverging):**
+Essential contract: state is caller-owned — `value`, both filter patterns
+and every mutation flow out through one channel, `onCheck` (item toggles,
+source check/uncheck all, target clear all), plus `onSourceFilterInput` /
+`onTargetFilterInput` fed back as `sourcePattern` / `targetPattern`. The
+header labels default to the en-US locale bytes; `size` keys the theme
+vars (`Tiny` clamps to the small set, upstream has no tiny); the default
+filter is an empty-passes-all lowercase `contains` on the label.
 
-  - **State is caller-owned.** Upstream keeps `value` and the two filter
-    patterns in refs; the port takes them as inputs and reports every
-    mutation through one channel, `onCheck : Maybe (List String -> msg)`
-    (upstream's single `doUpdateValue` — item toggles, source check/uncheck
-    all and target clear all all collapse into it). The filter inputs wire
-    `onSourceFilterInput` / `onTargetFilterInput`; feed the text back as
-    `sourcePattern` / `targetPattern`.
-  - **Sizes.** `size` drives the five size-keyed theme vars and the header
-    button size (`Large` → small buttons, anything else → tiny — upstream
-    `size === 'large' ? 'small' : 'tiny'`). Upstream has no `tiny` transfer;
-    the port's wider `Size` clamps `Tiny` to the small var set.
-  - **Titles.** An empty-string title renders NO `__title` div (upstream's
-    `title &&` guard — `''` is falsy). Function-valued titles
-    (`[String, Function]` upstream) are not modelled — `Maybe String`
-    only; a custom node is the caller's `renderSourceLabel`.
-  - **Locale bytes are the defaults.** The header button labels default to
-    the enUS `'Select all'` / `'Unselect all'` / `'Clear'` and `__extra` to
-    `'Total {n} items'` / `'{n} items selected'` (upstream injects locale
-    data; caller-supplied precedent, cf. DataTable's filter labels).
-    `selectAllText` / `clearText` override the first two.
-  - **`sourceFilterable` is already merged.** Upstream's deprecated
-    `filterable` ORs into it; the port takes the merged value.
-  - **The target filter reuses `sourceFilterPlaceholder`.** Upstream
-    Transfer.tsx :374 wires `this.sourceFilterPlaceholder` into the target
-    filter too — a faithful mirror, not a copy-paste bug of ours.
-  - **`virtualScroll` is not modelled** — the plain (non-windowed) list
-    path is the only renderer (Cascader/Select precedent).
-  - **`renderEmpty` (config channel) is not modelled** — an empty list
-    always renders the default `NUI.Empty` (no `NConfigProvider`).
-  - **The default filter** matches upstream's: an empty pattern passes
-    everything; otherwise a lowercase `contains` over the label. A custom
-    `filter` receives the side (`Source` / `Target`).
-  - **Duplicate option values** resolve last-wins (upstream's forEach +
-    `Map.set` overwrite); `value` entries without an option are dropped
-    from the target list, exactly upstream's `optionMap.get(v)` miss.
-    Duplicate `value` ENTRIES are not deduped (upstream's three header ops
-    start from `new Set(value)`; the port's list ops keep the raw order —
-    degenerate-input divergence, same observable for duplicate-free input).
-  - **`headerColor`** is generated in `NUI.Theme.Transfer` (the extractor
-    executes upstream's `composite(cardColor, tableHeaderColor)`) but no
-    css var consumes it — unused upstream too.
-  - **Icon bytes.** The close icon is the generic `CloseIcon` `d` verbatim;
-    the search icon's `d` is whitespace-normalized (upstream wraps the path
-    data across lines — SVG-path-grammar identical, not byte-identical).
-    The close button omits `NBaseClose`'s `onMousedown` preventDefault
-    (a focus-steal guard for `focusable=false` — no serialized-DOM
-    difference; `addEventListener` only).
+DOM shapes, fidelity notes and porting details live in the comment block
+below the module doc.
 
 @docs Filter, Option, Options, RenderListProps, Side, cssVarsFor, defaults, view
 
+-}
+
+{- DOM shapes, fidelity notes and porting details for `NUI.Transfer` — moved verbatim
+      out of the module docstring (docs.json must stay under elm publish's 768kb
+      limit); plain comments do not enter the published API docs.
+
+   **Fidelity notes (read before diverging):**
+
+     - **State is caller-owned.** Upstream keeps `value` and the two filter
+       patterns in refs; the port takes them as inputs and reports every
+       mutation through one channel, `onCheck : Maybe (List String -> msg)`
+       (upstream's single `doUpdateValue` — item toggles, source check/uncheck
+       all and target clear all all collapse into it). The filter inputs wire
+       `onSourceFilterInput` / `onTargetFilterInput`; feed the text back as
+       `sourcePattern` / `targetPattern`.
+     - **Sizes.** `size` drives the five size-keyed theme vars and the header
+       button size (`Large` → small buttons, anything else → tiny — upstream
+       `size === 'large' ? 'small' : 'tiny'`). Upstream has no `tiny` transfer;
+       the port's wider `Size` clamps `Tiny` to the small var set.
+     - **Titles.** An empty-string title renders NO `__title` div (upstream's
+       `title &&` guard — `''` is falsy). Function-valued titles
+       (`[String, Function]` upstream) are not modelled — `Maybe String`
+       only; a custom node is the caller's `renderSourceLabel`.
+     - **Locale bytes are the defaults.** The header button labels default to
+       the enUS `'Select all'` / `'Unselect all'` / `'Clear'` and `__extra` to
+       `'Total {n} items'` / `'{n} items selected'` (upstream injects locale
+       data; caller-supplied precedent, cf. DataTable's filter labels).
+       `selectAllText` / `clearText` override the first two.
+     - **`sourceFilterable` is already merged.** Upstream's deprecated
+       `filterable` ORs into it; the port takes the merged value.
+     - **The target filter reuses `sourceFilterPlaceholder`.** Upstream
+       Transfer.tsx :374 wires `this.sourceFilterPlaceholder` into the target
+       filter too — a faithful mirror, not a copy-paste bug of ours.
+     - **`virtualScroll` is not modelled** — the plain (non-windowed) list
+       path is the only renderer (Cascader/Select precedent).
+     - **`renderEmpty` (config channel) is not modelled** — an empty list
+       always renders the default `NUI.Empty` (no `NConfigProvider`).
+     - **The default filter** matches upstream's: an empty pattern passes
+       everything; otherwise a lowercase `contains` over the label. A custom
+       `filter` receives the side (`Source` / `Target`).
+     - **Duplicate option values** resolve last-wins (upstream's forEach +
+       `Map.set` overwrite); `value` entries without an option are dropped
+       from the target list, exactly upstream's `optionMap.get(v)` miss.
+       Duplicate `value` ENTRIES are not deduped (upstream's three header ops
+       start from `new Set(value)`; the port's list ops keep the raw order —
+       degenerate-input divergence, same observable for duplicate-free input).
+     - **`headerColor`** is generated in `NUI.Theme.Transfer` (the extractor
+       executes upstream's `composite(cardColor, tableHeaderColor)`) but no
+       css var consumes it — unused upstream too.
+     - **Icon bytes.** The close icon is the generic `CloseIcon` `d` verbatim;
+       the search icon's `d` is whitespace-normalized (upstream wraps the path
+       data across lines — SVG-path-grammar identical, not byte-identical).
+       The close button omits `NBaseClose`'s `onMousedown` preventDefault
+       (a focus-steal guard for `focusable=false` — no serialized-DOM
+       difference; `addEventListener` only).
 -}
 
 import Dict exposing (Dict)

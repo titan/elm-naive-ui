@@ -20,15 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Checkbox CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`sizeSmall` → `--n-size-small`).
-
-Collected by concern:
-
-  - per-size box/label/font metrics: `sizeSmall`, `sizeMedium`, `sizeLarge`, `labelPadding`, `labelFontWeight`, `labelLineHeight`, `fontSizeSmall`, `fontSizeMedium`, `fontSizeLarge`, `borderRadius`
-  - box fill states: `color`, `colorChecked`, `colorDisabled`, `colorDisabledChecked`, `colorTableHeader`, `colorTableHeaderModal`, `colorTableHeaderPopover`
-  - check-mark colors: `checkMarkColor`, `checkMarkColorDisabled`, `checkMarkColorDisabledChecked`
-  - borders & focus ring: `border`, `borderDisabled`, `borderDisabledChecked`, `borderChecked`, `borderFocus`, `boxShadowFocus`
-  - label text: `textColor`, `textColorDisabled`
-
 -}
 type alias Vars =
     { sizeSmall : String

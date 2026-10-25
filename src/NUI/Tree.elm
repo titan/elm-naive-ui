@@ -14,11 +14,6 @@ checkbox, and the content (prefix / label / suffix). All interaction state —
 expanded / checked / selected / pending / loading keys — is caller-owned
 data, exactly as upstream's controlled props; the view emits the DOM for it.
 
-Upstream: `src/tree/src/Tree.tsx` (render + cssVars), `TreeNode.tsx`,
-`TreeNodeSwitcher.tsx`, `TreeNodeCheckbox.tsx`, `TreeNodeContent.tsx`,
-`utils.ts` (`filterTree`), and treemate (`getCheckedKeys`, flatten, check /
-uncheck cascade math).
-
 Not ported (runtime, caller-owned): the virtual-list branch (plain wrapper
 path only, as in Select/Cascader), the expand/collapse `MotionWrapper`
 transition, drag-drop event wiring (the drop mark itself is data:
@@ -26,8 +21,65 @@ transition, drag-drop event wiring (the drop mark itself is data:
 `onLoad` dance (`loadingKeys` is data). `--n-drop-mark-color` /
 `--n-loading-color` stay live through those data fields.
 
+The display-derivation walkthrough and the upstream file refs
+(`Tree.tsx`, `TreeNode.tsx`, `utils.ts`, treemate) live in the porting
+comment below.
+
 @docs CheckResult, CheckStrategy, CheckboxPlacement, DropMark, DropPosition, FilteredTree, FlatNode, Options, TreeOption, check, cssVars, defaults, filterTree, flatten, getCheckedKeys, getNonLeafKeys, toggleExpand, toggleSelect, uncheck, view
 
+-}
+
+{-
+   PORTING NOTES (plain comment — not published to docs.json). Moved verbatim
+   from the module doc and the `view` / `rowNode` / `getCheckedKeys` docs; the
+   module doc keeps the caller-facing contract.
+
+   Upstream: `src/tree/src/Tree.tsx` (render + cssVars), `TreeNode.tsx`,
+   `TreeNodeSwitcher.tsx`, `TreeNodeCheckbox.tsx`, `TreeNodeContent.tsx`,
+   `utils.ts` (`filterTree`), and treemate (`getCheckedKeys`, flatten, check /
+   uncheck cascade math).
+
+   `view`: the tree — the `div.n-tree` root (`--rtl` / `--checkable` /
+   `--block-node` (blockLine OR blockNode, `Tree.tsx:1775-1776`) /
+   `--block-line` / `--ellipsis` modifiers, `tabindex 0` unless `disabled`,
+   inline `--n-*` vars) and one `n-tree-node-wrapper` row per flattened node
+   (`TreeNode.tsx:399-501`); the `.n-tree__empty` body (an `NUI.Empty`
+   carrying the class itself, `Tree.tsx:1896-1903`) when nothing is visible.
+   The display derivation (`Tree.tsx:395-474, 565-576`): a non-empty `pattern`
+   runs `filterTree` unconditionally — its highlight set feeds `--highlight`
+   whatever `showIrrelevantNodes` does (that switch only picks the DISPLAY
+   tree); the highlight set is `highlightKeys` when given, else the filter's
+   match set. Checked / indeterminate normalize against the FULL data tree
+   with the default `All` strategy (upstream passes no `checkStrategy` to
+   `getCheckedKeys` — the configured one applies only to `check` / `uncheck`);
+   `indeterminateKeys` overrides the computed set wholesale.
+
+   `rowNode`: one visible node's row — the wrapper div (its padding is
+   CSS-only) over the `.n-tree-node` flex row with the state classes
+   (`TreeNode.tsx:435-447`, declaration order): `--selected`, `--checkable`
+   (the per-node gate `TreeNode.tsx:122-129`: under `cascade` or a non-`Child`
+   strategy every node, otherwise leaves only), `--highlight`, `--pending`,
+   `--disabled`, `--selectable` (`TreeNode.tsx:111-121` — the node's own
+   enabled state, the tree switch, and under the `internalTreeSelect` seam the
+   tree-select gate: non-leaves only when the merged strategy is not `child`
+   or the cascade multiple mode is on, the tree's `multiple && cascade`
+   values verbatim), `--clickable` (`selectable || expandOnClick ||
+   checkOnClick`). The node div carries `data-key="s-<key>"` under the
+   `internalScrollable` seam (`TreeNode.tsx:422,453` — `createDataKey` prefixes
+   string keys with `s-`). Children order (`TreeNode.tsx:461-499`):
+   indent chain, switcher (or the `showLine` leaf indent), left checkbox,
+   content, drop mark, right checkbox.
+
+   `getCheckedKeys`: treemate's normalize — with `cascade`, each key extends to
+   its whole enabled subtree and the parents aggregate bottom-up
+   (`indeterminateKeys` collects the partial ones); `checkStrategy` then
+   collapses the result (`All` keeps every level, `Parent` the topmost checked
+   ancestor, `Child` leaf levels only). An unloaded node (`isLeaf = False`,
+   `children = Nothing`) keeps its own key and skips only the subtree
+   extension under `allowCheckingNotLoaded` — without it, upstream throws
+   `SubtreeNotLoadedError` (from this normalization too, `lib/check.js`
+   `getExtendedCheckedKeySet`); the pure port stays total by keeping the same
+   set the `allowNotLoaded` path would produce.
 -}
 
 import Element
@@ -253,22 +305,11 @@ defaults =
 -- VIEW -------------------------------------------------------------------------
 
 
-{-| The tree — the `div.n-tree` root (`--rtl` / `--checkable` / `--block-node`
-(blockLine OR blockNode, `Tree.tsx:1775-1776`) / `--block-line` / `--ellipsis`
-modifiers, `tabindex 0` unless `disabled`, inline `--n-*` vars) and one
-`n-tree-node-wrapper` row per flattened node (`TreeNode.tsx:399-501`); the
-`.n-tree__empty` body (an `NUI.Empty` carrying the class itself,
-`Tree.tsx:1896-1903`) when nothing is visible.
-
-The display derivation (`Tree.tsx:395-474, 565-576`): a non-empty `pattern`
-runs `filterTree` unconditionally — its highlight set feeds `--highlight`
-whatever `showIrrelevantNodes` does (that switch only picks the DISPLAY
-tree); the highlight set is `highlightKeys` when given, else the filter's
-match set. Checked / indeterminate normalize against the FULL data tree
-with the default `All` strategy (upstream passes no `checkStrategy` to
-`getCheckedKeys` — the configured one applies only to `check` / `uncheck`);
-`indeterminateKeys` overrides the computed set wholesale.
-
+{-| The tree — the `div.n-tree` root with its modifiers and vars, one
+`n-tree-node-wrapper` row per flattened node, and the `.n-tree__empty`
+body when nothing is visible. The display derivation (filtering,
+highlighting, checked / indeterminate normalization) and the upstream line
+refs live in the porting comment below the module doc.
 -}
 view : Theme.Theme -> Options msg -> Element.Element msg
 view theme opts =
@@ -460,21 +501,11 @@ type alias RowState =
     }
 
 
-{-| One visible node's row — the wrapper div (its padding is CSS-only) over
-the `.n-tree-node` flex row with the state classes (`TreeNode.tsx:435-447`,
-declaration order): `--selected`, `--checkable` (the per-node gate
-`TreeNode.tsx:122-129`: under `cascade` or a non-`Child` strategy every
-node, otherwise leaves only), `--highlight`, `--pending`, `--disabled`,
-`--selectable` (`TreeNode.tsx:111-121` — the node's own enabled state, the
-tree switch, and under the `internalTreeSelect` seam the tree-select gate:
-non-leaves only when the merged strategy is not `child` or the cascade
-multiple mode is on, the tree's `multiple && cascade` values verbatim),
-`--clickable` (`selectable || expandOnClick || checkOnClick`). The node div
-carries `data-key="s-<key>"` under the `internalScrollable` seam
-(`TreeNode.tsx:422,453` — `createDataKey` prefixes string keys with `s-`).
-Children order (`TreeNode.tsx:461-499`):
-indent chain, switcher (or the `showLine` leaf indent), left checkbox,
-content, drop mark, right checkbox.
+{-| One visible node's row — the wrapper div over the `.n-tree-node` flex
+row with the state classes (`--selected`, `--checkable`, `--highlight`,
+`--pending`, `--disabled`, `--selectable`, `--clickable`) and the
+per-class gate details and children order from the porting comment below
+the module doc.
 -}
 rowNode : Theme.Theme -> Options msg -> RowState -> FlatNode msg -> Element.Element msg
 rowNode theme opts state flat =
@@ -982,15 +1013,10 @@ emptyNode theme opts =
 
 {-| treemate's `getCheckedKeys` — normalize raw keys against the tree. With
 `cascade`, each key extends to its whole enabled subtree and the parents
-aggregate bottom-up (`indeterminateKeys` collects the partial ones);
-`checkStrategy` then collapses the result (`All` keeps every level,
-`Parent` the topmost checked ancestor, `Child` leaf levels only). An
-unloaded node (`isLeaf = False`, `children = Nothing`) keeps its own key
-and skips only the subtree extension under `allowCheckingNotLoaded` —
-without it, upstream throws `SubtreeNotLoadedError` (from this
-normalization too, `lib/check.js` `getExtendedCheckedKeySet`); the pure
-port stays total by keeping the same set the `allowNotLoaded` path would
-produce.
+aggregate bottom-up; `checkStrategy` then collapses the result (`All` keeps
+every level, `Parent` the topmost checked ancestor, `Child` leaf levels
+only). The unloaded-node rule (`allowCheckingNotLoaded`) is spelled out in
+the porting comment below the module doc.
 -}
 getCheckedKeys : Bool -> CheckStrategy -> Bool -> List String -> List (TreeOption msg) -> CheckResult
 getCheckedKeys cascade strategy allowNotLoaded keys options =

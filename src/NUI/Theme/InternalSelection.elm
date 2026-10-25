@@ -20,15 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the InternalSelection CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`paddingSingle` → `--n-padding-single`).
-
-Collected by concern:
-
-  - Warning/Error state colors: `borderWarning`, `borderHoverWarning`, `borderActiveWarning`, `borderFocusWarning`, `boxShadowHoverWarning`, `boxShadowActiveWarning`, `boxShadowFocusWarning`, `colorActiveWarning`, `caretColorWarning`, `borderError`, `borderHoverError`, `borderActiveError`, `borderFocusError`, `boxShadowHoverError`, `boxShadowActiveError`, `boxShadowFocusError`, `colorActiveError`, `caretColorError`
-  - metrics (paddings, sizes, fonts, radius): `paddingSingle`, `paddingMultiple`, `clearSize`, `arrowSize`, `fontSizeTiny`, `fontSizeSmall`, `fontSizeMedium`, `fontSizeLarge`, `heightTiny`, `heightSmall`, `heightMedium`, `heightLarge`, `borderRadius`, `fontWeight`
-  - text & placeholder colors: `textColor`, `textColorDisabled`, `placeholderColor`, `placeholderColorDisabled`
-  - state colors, borders, focus rings, arrow & loading: `color`, `colorDisabled`, `colorActive`, `border`, `borderHover`, `borderActive`, `borderFocus`, `boxShadowHover`, `boxShadowActive`, `boxShadowFocus`, `caretColor`, `arrowColor`, `arrowColorDisabled`, `loadingColor`
-  - clear button states: `clearColor`, `clearColorHover`, `clearColorPressed`
-
 -}
 type alias Vars =
     { paddingSingle : String

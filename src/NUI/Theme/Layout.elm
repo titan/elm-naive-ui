@@ -20,14 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Layout CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`textColor` → `--n-text-color`).
-
-Collected by concern:
-
-  - layout surfaces & text, plain & inverted: `textColor`, `textColorInverted`, `color`, `colorEmbedded`, `headerColor`, `headerColorInverted`, `footerColor`, `footerColorInverted`, `siderColor`, `siderColorInverted`
-  - panel borders, plain & inverted: `headerBorderColor`, `headerBorderColorInverted`, `footerBorderColor`, `footerBorderColorInverted`, `siderBorderColor`, `siderBorderColorInverted`
-  - sider toggle button & bar: `siderToggleButtonBorder`, `siderToggleButtonColor`, `siderToggleButtonIconColor`, `siderToggleButtonIconColorInverted`, `siderToggleBarColor`, `siderToggleBarColorHover`
-  - scrollbar flag: `invertScrollbar`
-
 -}
 type alias Vars =
     { textColor : String

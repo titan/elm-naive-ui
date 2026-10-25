@@ -20,14 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Alert CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`iconMargin` → `--n-icon-margin`).
-
-Collected by concern:
-
-  - icon/close layout: `iconMargin`, `iconMarginRtl`, `iconSize`, `closeIconSize`, `closeSize`, `closeMargin`, `closeMarginRtl`, `padding`
-  - typography & shape: `fontSize`, `lineHeight`, `titleFontWeight`, `borderRadius`
-  - neutral look: `border`, `color`, `titleTextColor`, `iconColor`, `contentTextColor`, `closeBorderRadius`, `closeColorHover`, `closeColorPressed`, `closeIconColor`, `closeIconColorHover`, `closeIconColorPressed`
-  - typed variants (Info/Success/Warning/Error): `borderInfo`, `colorInfo`, `titleTextColorInfo`, `iconColorInfo`, `contentTextColorInfo`, `closeColorHoverInfo`, `closeColorPressedInfo`, `closeIconColorInfo`, `closeIconColorHoverInfo`, `closeIconColorPressedInfo`, `borderSuccess`, `colorSuccess`, `titleTextColorSuccess`, `iconColorSuccess`, `contentTextColorSuccess`, `closeColorHoverSuccess`, `closeColorPressedSuccess`, `closeIconColorSuccess`, `closeIconColorHoverSuccess`, `closeIconColorPressedSuccess`, `borderWarning`, `colorWarning`, `titleTextColorWarning`, `iconColorWarning`, `contentTextColorWarning`, `closeColorHoverWarning`, `closeColorPressedWarning`, `closeIconColorWarning`, `closeIconColorHoverWarning`, `closeIconColorPressedWarning`, `borderError`, `colorError`, `titleTextColorError`, `iconColorError`, `contentTextColorError`, `closeColorHoverError`, `closeColorPressedError`, `closeIconColorError`, `closeIconColorHoverError`, `closeIconColorPressedError`
-
 -}
 type alias Vars =
     { iconMargin : String

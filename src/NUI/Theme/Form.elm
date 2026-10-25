@@ -20,14 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Form CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`feedbackPadding` → `--n-feedback-padding`).
-
-Collected by concern:
-
-  - validation feedback metrics per size: `feedbackPadding`, `feedbackHeightSmall`, `feedbackHeightMedium`, `feedbackHeightLarge`, `feedbackFontSizeSmall`, `feedbackFontSizeMedium`, `feedbackFontSizeLarge`
-  - label metrics per size/alignment: `labelFontSizeLeftSmall`, `labelFontSizeLeftMedium`, `labelFontSizeLeftLarge`, `labelFontSizeTopSmall`, `labelFontSizeTopMedium`, `labelFontSizeTopLarge`, `labelHeightSmall`, `labelHeightMedium`, `labelHeightLarge`, `labelPaddingVertical`, `labelPaddingHorizontal`, `labelTextAlignVertical`, `labelTextAlignHorizontal`, `labelFontWeight`, `labelTextColor`
-  - blank spacing per size: `blankHeightSmall`, `blankHeightMedium`, `blankHeightLarge`
-  - line height & text colors: `lineHeight`, `asteriskColor`, `feedbackTextColorError`, `feedbackTextColorWarning`, `feedbackTextColor`
-
 -}
 type alias Vars =
     { feedbackPadding : String

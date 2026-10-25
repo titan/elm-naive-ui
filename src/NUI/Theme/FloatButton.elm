@@ -20,12 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the FloatButton CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`color` → `--n-color`).
-
-Collected by concern:
-
-  - primary variant & square shape: `colorPrimary`, `colorPrimaryHover`, `colorPrimaryPressed`, `textColorPrimary`, `borderRadiusSquare`
-  - default-type surface, text & shadow states: `color`, `colorHover`, `colorPressed`, `textColor`, `boxShadow`, `boxShadowHover`, `boxShadowPressed`
-
 -}
 type alias Vars =
     { color : String

@@ -5,7 +5,7 @@ module NUI.Notification exposing
 
 {-| Naive UI's `Notification` service (provider + environments), rebuilt on
 elm-ui. The `NUI.Message` twin: same `State` contract, a few byte-visible
-deltas called out below.
+deltas (summarised below).
 
     import NUI.Internal as I
     import NUI.Notification as Notification
@@ -13,110 +13,152 @@ deltas called out below.
 
     -- in `update` (the caller owns the queue and the hide clock):
     --
-    --   Notify   -> ( Notification.create "n1" { Notification.defaults | title = Just "Hi" } model.notes
-    --              , ...schedule a `Hide` msg via `Notification.effectiveDuration`...
-    --              )
-    --   Hide     -> ( Notification.destroy "n1" model.notes, ... )      -- stamp LeaveFrom
-    --   AfterLeave -> ( Notification.remove "n1" model.notes, ... )     -- splice when the leave ends
+    --   Notify    -> ( Notification.create "n1" { Notification.defaults | title = Just "Hi" } model.notes
+    --               , ...schedule a `Hide` msg via `Notification.effectiveDuration`...
+    --               )
+    --   Hide      -> ( Notification.destroy "n1" model.notes, ... )    -- stamp LeaveFrom
+    --   AfterLeave -> ( Notification.remove "n1" model.notes, ... )    -- splice when the leave ends
     --
     --   view: Notification.view theme model.notes
 
-Upstream is a `NotificationProvider` holding a queue of
-`NotificationEnvironment`s. Each environment wraps a `div
-.n-notification-wrapper` in `<Transition name="notification-transition"
-appear>` and owns a `setTimeout(hide, duration)` clock. This library is pure —
-no ports, no `update` — so the provider's props and the queue live in one
-caller-owned `State`, the transforms here are the provider API, and `view`
-renders exactly the DOM the environments would show:
+**The caller-owned contract.** This library is pure — no ports, no `update` —
+so the upstream provider's props and the queue live in one caller-owned
+`State`, the transforms here are the provider API, and `view` renders exactly
+the DOM the upstream environments would show:
 
-  - `create` — upstream `create()` (NotificationProvider.tsx): appends to
-    `items` in DOM order. It stamps `phase = Just I.EnterFrom` (upstream
-    mounts with `appear`). When the provider is at `max` — counted as
-    `list.length - leavingCount`, i.e. items already in a leave phase do NOT
-    count (upstream's `leavingKeySet`) — the OLDEST still-live item is
-    destroyed instead of dropped: it enters its leave ladder animated, exactly
-    like a `destroy` (upstream's one instant-splice path is a Vue mount race
-    for not-yet-mounted refs; the pure port always animates — documented
-    divergence). `max` follows JS truthiness: `Just 0` and `Nothing` are
-    UNLIMITED (upstream would also treat a negative `Just` as truthy and evict
-    on every create — the port never evicts for `n <= 0`, the one documented
-    divergence on that pathological input). Exactly
-    one eviction per create.
-  - `info` / `success` / `warning` / `error` — upstream's typed API: `create`
-    with the kind stamped (there is no `loading` kind here, unlike message).
-  - `destroy` — upstream `destroy()` → the environment's `hide()`:
-    `phase := Just I.LeaveFrom`. NO-OP when the item is already in a leave
-    phase (upstream's `showRef` is already `false`; resetting the ladder would
-    restart the slide — a byte-visible divergence). Unknown keys are no-ops.
-  - `destroyAll` — upstream `destroyAll()`: the same rule for every item.
-  - `remove` — upstream `onInternalAfterLeave` → splice: drops the item once
-    its leave has ended. This is what empties the container — `view` renders
-    `Element.none` while `items` is empty.
-  - `effectiveDuration` — the resolved hide timeout: the item's own `duration`
-    and NOTHING else. Upstream's notification provider has NO `duration` prop
-    (unlike message): `Nothing` means never auto-close, `Just 0` is falsy and
-    also means never. The `State` argument exists to keep the service-template
-    signature parallel to `NUI.Message` and is deliberately unused.
-
-**Deltas from `NUI.Message`** (each upstream-byte-checked):
-
-  - **Vars on TWO nodes.** Both `n-notification-wrapper` and
-    `n-notification` carry the full `--n-*` set (upstream `Notification.tsx`
-    puts `cssVars` on both). `--n-icon-color` is emitted only when `kind /=
-    Default`: upstream reads `self[createKey('iconColor', type)]` and there is
-    no `iconColorDefault` key, so the default type drops the var (Vue skips
-    undefined styles).
-  - **`transitioning` container class.** Upstream toggles a bare
-    `transitioning` class on the container while a transition count is > 0
-    (before-enter→after-enter, before-leave→after-leave). The pure derivation:
-    any item whose `phase /= Nothing` — VALID ONLY IF the caller holds the
-    phase `Just` across the whole window (walk the ladder, then `Nothing` on
-    after-enter; `remove` on after-leave). Clearing early diverges silently.
-    Mixed enter+leave items still yield the one bare class.
-  - **`content` renders in a `<pre>`** (upstream keeps a literal `pre` element
-    — whitespace bytes are significant there).
-  - **Close can be vetoed.** Upstream's env `handleClose` resolves the user
-    `onClose` and hides only when the feedback is not `false` (a rejected
-    promise also prevents the hide). In Elm the veto is data, not a return
-    value: the port emits `onClose` on close-icon click and the CALLER decides
-    whether to `destroy`. Timer expiry / `destroy` / `destroyAll` still hide
-    WITHOUT firing `onClose`.
-  - **Hover-pause gate is `duration && keepAliveOnHover`** (env bytes): the
-    internal mouseenter/mouseleave listeners exist only for a notification
-    that has BOTH a duration and the merged keep-alive flag. The public
-    `onMouseenter` / `onMouseleave` options are always attached (upstream
-    merges them via `mergeEventHandlers`).
-  - **Scrollable.** Upstream defaults `scrollable: true` and renders an
-    `NScrollbar` (contentStyle `overflow: hidden`) around the wrappers —
-    unless the placement is `top` / `bottom`, where scrollable is forced off
-    (byte-visible: no scrollbar tree). The scrollbar bars themselves are
-    hidden at rest (runtime-measured, `NUI.Scrollbar`'s documented contract).
-  - **Falsy text fields.** `title` / `description` / `content` / `meta` skip
-    their element when `Nothing` OR an empty string (upstream `this.title ?`
-    — `''` is falsy there too).
-
-**Divergences from upstream** (everything else is a faithful port):
-
-  - **Provider / teleport skipped.** No `NotificationProvider`, no `to`
-    teleport: the caller owns one `State` and mounts the container where it
-    wants it (the `NUI.LoadingBar` precedent).
+  - `create` — appends in DOM order, stamped `phase = Just I.EnterFrom`. At
+    `max` (counting only items NOT already leaving) the OLDEST still-live
+    item is destroyed, animated exactly like a `destroy`; exactly one
+    eviction per create. `Just 0` and `Nothing` are UNLIMITED.
+  - `info` / `success` / `warning` / `error` — `create` with the kind stamped
+    (there is no `loading` kind here, unlike message).
+  - `destroy` / `destroyAll` — stamp `Just I.LeaveFrom`; a NO-OP for items
+    already in a leave phase (the ladder is not restarted); unknown keys are
+    no-ops.
+  - `remove` — splice the item once its leave has ended; this is what empties
+    the container (`view` renders `Element.none` while `items` is empty).
+  - `effectiveDuration` — the resolved hide timeout: the item's own
+    `duration` and nothing else (`Nothing` and `Just 0` both mean never
+    auto-close). The `State` argument is unused — signature parity with
+    `NUI.Message`.
   - **The hide clock is data.** The caller arms the timer from
-    `effectiveDuration`, clears/re-arms on hover (a FULL restart on
-    mouseleave — upstream `setHideTimeout`, not a remaining-time resume), and
-    steps the phase ladder.
-  - **`max-height` pinning of the enter/leave windows** (upstream's manual
-    `handleBefore*` height juggling) is not reproduced — the phase classes and
-    the caller clock drive the CSS transition (the `NUI.Menu` precedent).
-  - **`NotificationReactive` mutability** — edit the item's `options` and
-    rebuild the state instead. The deprecated `hide` / `deactivate` /
-    `onHide` / `onAfterShow` / `onAfterHide` aliases are not ported.
-  - **`themeClass` / `inlineThemeDisabled`** — not ported; the inline
-    `--n-*` vars are always emitted (upstream's default mode).
-  - **`onAfterEnter`** — notification-only (message has none); fires from the
-    caller's clock when the enter ladder settles.
+    `effectiveDuration`, clears/re-arms it on hover (a FULL restart on
+    mouseleave) and steps the phase ladder. Hover-pause applies only to an
+    item with BOTH a duration and `keepAliveOnHover`. A close-icon click
+    emits `onClose` and the CALLER decides whether to `destroy` (the
+    upstream veto); timer expiry / `destroy` / `destroyAll` hide WITHOUT
+    firing `onClose`.
+
+**Deltas from `NUI.Message` (caller-visible):** the `--n-*` vars ride BOTH
+the wrapper and the `n-notification` node (`--n-icon-color` only for
+non-`Default` kinds); a bare `transitioning` class sits on the container
+while any item is mid-phase (hold the phase `Just` across the whole window);
+`content` renders in a `<pre>` (whitespace-significant); the container is
+scrollable unless the placement is `top` / `bottom`; text fields skip their
+element on `Nothing` OR `""`.
+
+(The upstream provider/DOM walkthrough, the byte-checked delta detail and
+the full divergence list live in the plain comment right below — internal
+port notes, deliberately kept out of the published docs.)
 
 @docs Placement, Kind, Options, defaults, Item, item, State, init, create, info, success, warning, error
 @docs destroy, destroyAll, remove, effectiveDuration, view, cssVarsFor
+
+-}
+
+{- INTERNAL PORT NOTES — moved out of the module doc (plain comments do not
+      enter docs.json; the published docs must stay under the package-size
+      limit). Nothing here changes the public contract summarised above.
+
+   Upstream is a `NotificationProvider` holding a queue of
+   `NotificationEnvironment`s. Each environment wraps a `div
+   .n-notification-wrapper` in `<Transition name="notification-transition"
+   appear>` and owns a `setTimeout(hide, duration)` clock.
+
+     - `create` — upstream `create()` (NotificationProvider.tsx): appends to
+       `items` in DOM order. It stamps `phase = Just I.EnterFrom` (upstream
+       mounts with `appear`). When the provider is at `max` — counted as
+       `list.length - leavingCount`, i.e. items already in a leave phase do NOT
+       count (upstream's `leavingKeySet`) — the OLDEST still-live item is
+       destroyed instead of dropped: it enters its leave ladder animated, exactly
+       like a `destroy` (upstream's one instant-splice path is a Vue mount race
+       for not-yet-mounted refs; the pure port always animates — documented
+       divergence). `max` follows JS truthiness: `Just 0` and `Nothing` are
+       UNLIMITED (upstream would also treat a negative `Just` as truthy and evict
+       on every create — the port never evicts for `n <= 0`, the one documented
+       divergence on that pathological input). Exactly one eviction per create.
+     - `info` / `success` / `warning` / `error` — upstream's typed API: `create`
+       with the kind stamped (there is no `loading` kind here, unlike message).
+     - `destroy` — upstream `destroy()` → the environment's `hide()`:
+       `phase := Just I.LeaveFrom`. NO-OP when the item is already in a leave
+       phase (upstream's `showRef` is already `false`; resetting the ladder would
+       restart the slide — a byte-visible divergence). Unknown keys are no-ops.
+     - `destroyAll` — upstream `destroyAll()`: the same rule for every item.
+     - `remove` — upstream `onInternalAfterLeave` → splice: drops the item once
+       its leave has ended. This is what empties the container — `view` renders
+       `Element.none` while `items` is empty.
+     - `effectiveDuration` — the resolved hide timeout: the item's own `duration`
+       and NOTHING else. Upstream's notification provider has NO `duration` prop
+       (unlike message): `Nothing` means never auto-close, `Just 0` is falsy and
+       also means never. The `State` argument exists to keep the service-template
+       signature parallel to `NUI.Message` and is deliberately unused.
+
+   **Deltas from `NUI.Message`** (each upstream-byte-checked):
+
+     - **Vars on TWO nodes.** Both `n-notification-wrapper` and
+       `n-notification` carry the full `--n-*` set (upstream `Notification.tsx`
+       puts `cssVars` on both). `--n-icon-color` is emitted only when `kind /=
+       Default`: upstream reads `self[createKey('iconColor', type)]` and there is
+       no `iconColorDefault` key, so the default type drops the var (Vue skips
+       undefined styles).
+     - **`transitioning` container class.** Upstream toggles a bare
+       `transitioning` class on the container while a transition count is > 0
+       (before-enter→after-enter, before-leave→after-leave). The pure derivation:
+       any item whose `phase /= Nothing` — VALID ONLY IF the caller holds the
+       phase `Just` across the whole window (walk the ladder, then `Nothing` on
+       after-enter; `remove` on after-leave). Clearing early diverges silently.
+       Mixed enter+leave items still yield the one bare class.
+     - **`content` renders in a `<pre>`** (upstream keeps a literal `pre` element
+       — whitespace bytes are significant there).
+     - **Close can be vetoed.** Upstream's env `handleClose` resolves the user
+       `onClose` and hides only when the feedback is not `false` (a rejected
+       promise also prevents the hide). In Elm the veto is data, not a return
+       value: the port emits `onClose` on close-icon click and the CALLER decides
+       whether to `destroy`. Timer expiry / `destroy` / `destroyAll` still hide
+       WITHOUT firing `onClose`.
+     - **Hover-pause gate is `duration && keepAliveOnHover`** (env bytes): the
+       internal mouseenter/mouseleave listeners exist only for a notification
+       that has BOTH a duration and the merged keep-alive flag. The public
+       `onMouseenter` / `onMouseleave` options are always attached (upstream
+       merges them via `mergeEventHandlers`).
+     - **Scrollable.** Upstream defaults `scrollable: true` and renders an
+       `NScrollbar` (contentStyle `overflow: hidden`) around the wrappers —
+       unless the placement is `top` / `bottom`, where scrollable is forced off
+       (byte-visible: no scrollbar tree). The scrollbar bars themselves are
+       hidden at rest (runtime-measured, `NUI.Scrollbar`'s documented contract).
+     - **Falsy text fields.** `title` / `description` / `content` / `meta` skip
+       their element when `Nothing` OR an empty string (upstream `this.title ?`
+       — `''` is falsy there too).
+
+   **Divergences from upstream** (everything else is a faithful port):
+
+     - **Provider / teleport skipped.** No `NotificationProvider`, no `to`
+       teleport: the caller owns one `State` and mounts the container where it
+       wants it (the `NUI.LoadingBar` precedent).
+     - **The hide clock is data.** The caller arms the timer from
+       `effectiveDuration`, clears/re-arms on hover (a FULL restart on
+       mouseleave — upstream `setHideTimeout`, not a remaining-time resume), and
+       steps the phase ladder.
+     - **`max-height` pinning of the enter/leave windows** (upstream's manual
+       `handleBefore*` height juggling) is not reproduced — the phase classes and
+       the caller clock drive the CSS transition (the `NUI.Menu` precedent).
+     - **`NotificationReactive` mutability** — edit the item's `options` and
+       rebuild the state instead. The deprecated `hide` / `deactivate` /
+       `onHide` / `onAfterShow` / `onAfterHide` aliases are not ported.
+     - **`themeClass` / `inlineThemeDisabled`** — not ported; the inline
+       `--n-*` vars are always emitted (upstream's default mode).
+     - **`onAfterEnter`** — notification-only (message has none); fires from the
+       caller's clock when the enter ladder settles.
 
 -}
 

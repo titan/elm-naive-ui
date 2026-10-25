@@ -6,13 +6,6 @@ module NUI.DialogProvider exposing (Item, State, create, destroy, destroyAll, er
     the provider API; each item renders the full `NModal` shell around its
     `NUI.Dialog` body via `NUI.Modal.view`'s `Dialog` preset.
 
-    div.n-modal-container (4 modal vars [+ z-index]) — per item, no shared
-    ├─ div.n-modal-mask (fade-in-transition phase) container upstream:
-    └─ div.n-modal-body-wrapper the provider renders
-    └─ n-scrollbar > .n-modal-scroll-content a Fragment
-    └─ div.n-dialog.n-modal [phase class LAST]
-    (the NUI.Dialog body, 28 vars, aria-modal)
-
     import NUI.Dialog as Dialog
     import NUI.DialogProvider as DialogProvider
     import NUI.Theme as Theme
@@ -30,44 +23,67 @@ module NUI.DialogProvider exposing (Item, State, create, destroy, destroyAll, er
     -- wrap the fragment at the call site:
     Element.column [] (DialogProvider.view Theme.default state)
 
-**Everything runtime is caller-owned** (the `NUI.Message`/`NUI.Notification`
-service pattern, over the `NUI.Modal` shell contract):
+Essential contract: the caller owns the queue `State`; the transforms are
+the provider API — `create*` stamps an enter phase, `destroy` /
+`destroyAll` stamp a leave phase (no-ops on already-leaving items), and
+`remove` (call it on after-leave) is what empties the DOM. No duration or
+max eviction; close gating is the caller choosing whether to `destroy`;
+`zIndex` is per item, caller-allocated. `view` returns the per-dialog
+trees in queue order — no container, wrap the fragment at the call site.
 
-  - **The imperative queue.** Upstream `NDialogProvider` keeps a reactive
-    `dialogList`; `create` pushes a reactive options record and returns it
-    (`destroy` on the reactive calls the environment's `hide`). Here the
-    transforms are pure `State -> State` and the caller threads the state.
-  - **Mount appears.** `create` stamps `Just Internal.EnterFrom` — the
-    environment mounts with `internalAppear`, so the enter transition runs on
-    first paint (the mask fades in, the body scales up from 0.5).
-  - **`destroy` / `destroyAll` stamp `Just Internal.LeaveFrom`** (upstream
-    `hide()` → `show = false`), and are **no-ops on already-leaving items** —
-    resetting the phase ladder would restart the leave. `remove` splices the
-    item out — call it on after-leave; it is what empties the DOM.
-  - **No clock, no eviction.** Dialogs have no upstream `duration`/`max`: they
-    persist until destroyed, and `destroyAll` hides every live dialog at once.
-  - **Close gating is the caller.** Upstream hides unless a callback returns
-    `false` (`Promise.resolve(cb).then(r => r === false || hide())`). Here
-    `onPositiveClick`/`onNegativeClick`/`onClose` are plain msgs on the body
-    options; completing a close is the caller calling `destroy` — the veto is
-    _not_ calling it. The shell-level runtime (`maskClosable`/`onMaskClick`
-    outside-click, `closeOnEsc`/`onEsc`, `autoFocus`/`trapFocus`,
-    `blockScroll`, drag, mouse `transformOrigin`) is `NUI.Modal`-layer caller
-    runtime by that module's contract (its mask is inert and `aria-hidden`).
-    Upstream defaults worth reproducing: `maskClosable: true`, and
-    `closeOnEsc: true` — Esc closes the dialog _after_ emitting `onEsc`
-    (`Modal.handleEsc` emits, then `doUpdateShow(false)`).
-  - **z-index is per item, caller-allocated** (upstream `zindexable`
-    increments; here `NUI.Modal` renders what you pass).
-
-**`view` returns the per-dialog trees**, in queue order — upstream renders a
-Fragment of environments with no container element, so the port has nothing
-container-shaped to return. Wrap at the call site (`modalHost` in the demos).
-An empty queue renders no trees at all (upstream: `dialogList.length` is 0 →
-no environments mount).
+DOM shapes, fidelity notes and porting details live in the comment block
+below the module doc.
 
 @docs Item, State, create, destroy, destroyAll, error, info, init, item, remove, success, view, warning
 
+-}
+
+{- DOM shapes, fidelity notes and porting details for `NUI.DialogProvider` — moved verbatim
+      out of the module docstring (docs.json must stay under elm publish's 768kb
+      limit); plain comments do not enter the published API docs.
+
+       div.n-modal-container (4 modal vars [+ z-index]) — per item, no shared
+       ├─ div.n-modal-mask (fade-in-transition phase) container upstream:
+       └─ div.n-modal-body-wrapper the provider renders
+       └─ n-scrollbar > .n-modal-scroll-content a Fragment
+       └─ div.n-dialog.n-modal [phase class LAST]
+       (the NUI.Dialog body, 28 vars, aria-modal)
+
+   **Everything runtime is caller-owned** (the `NUI.Message`/`NUI.Notification`
+   service pattern, over the `NUI.Modal` shell contract):
+
+     - **The imperative queue.** Upstream `NDialogProvider` keeps a reactive
+       `dialogList`; `create` pushes a reactive options record and returns it
+       (`destroy` on the reactive calls the environment's `hide`). Here the
+       transforms are pure `State -> State` and the caller threads the state.
+     - **Mount appears.** `create` stamps `Just Internal.EnterFrom` — the
+       environment mounts with `internalAppear`, so the enter transition runs on
+       first paint (the mask fades in, the body scales up from 0.5).
+     - **`destroy` / `destroyAll` stamp `Just Internal.LeaveFrom`** (upstream
+       `hide()` → `show = false`), and are **no-ops on already-leaving items** —
+       resetting the phase ladder would restart the leave. `remove` splices the
+       item out — call it on after-leave; it is what empties the DOM.
+     - **No clock, no eviction.** Dialogs have no upstream `duration`/`max`: they
+       persist until destroyed, and `destroyAll` hides every live dialog at once.
+     - **Close gating is the caller.** Upstream hides unless a callback returns
+       `false` (`Promise.resolve(cb).then(r => r === false || hide())`). Here
+       `onPositiveClick`/`onNegativeClick`/`onClose` are plain msgs on the body
+       options; completing a close is the caller calling `destroy` — the veto is
+       _not_ calling it. The shell-level runtime (`maskClosable`/`onMaskClick`
+       outside-click, `closeOnEsc`/`onEsc`, `autoFocus`/`trapFocus`,
+       `blockScroll`, drag, mouse `transformOrigin`) is `NUI.Modal`-layer caller
+       runtime by that module's contract (its mask is inert and `aria-hidden`).
+       Upstream defaults worth reproducing: `maskClosable: true`, and
+       `closeOnEsc: true` — Esc closes the dialog _after_ emitting `onEsc`
+       (`Modal.handleEsc` emits, then `doUpdateShow(false)`).
+     - **z-index is per item, caller-allocated** (upstream `zindexable`
+       increments; here `NUI.Modal` renders what you pass).
+
+   **`view` returns the per-dialog trees**, in queue order — upstream renders a
+   Fragment of environments with no container element, so the port has nothing
+   container-shaped to return. Wrap at the call site (`modalHost` in the demos).
+   An empty queue renders no trees at all (upstream: `dialogList.length` is 0 →
+   no environments mount).
 -}
 
 import Element exposing (Element)

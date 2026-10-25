@@ -17,119 +17,138 @@ caller-mounted panel covering every upstream panel type (`date`, `week`,
     DatePicker.panel theme
         { DatePicker.defaultOptions | value = DatePicker.Single (Just model.ts) }
 
-Trigger (`view`) DOM:
+Essential contract: `show`, closing, positioning and form context are
+caller-owned (the panel never emits `onUpdateShow`). Purely-value
+interactions commit through `onUpdateValue` / `onUpdatePendingValue`;
+side-effectful ones (dual clicks / hovers, month-range items, the quick
+jump, the nav arrows) emit the narrow raw channel — `onDateClick` /
+`onDateEnter` / `onMonthItemClick` / `onUpdateCalendarValue` — which the
+exported pure helpers (`dualDateClick`, `dualHover`, `colItemClick`,
+`quickMonthClick`) compose, their `close` flag saying when the panel
+closes. One message per event: a commit emits `onUpdateValue` when set,
+else `onUpdateFormattedValue`.
 
-    div.n-date-picker [--disabled] [--range]
-      style = 3 trigger vars → --n-bezier, --n-icon-color-override,
-              --n-icon-color-disabled-override
-      └─ NUI.Input.view with the picker seams on:
-         single → the date glyph rides `suffix` (not clearable) or
-                  `clear-icon-placeholder` (clearable) inside
-                  `i.n-base-icon.n-date-picker-icon`;
-         range  → pair mode, `separatorNode` = the `separator` string or the
-                  `To` glyph, and the pair suffix = the `Date` glyph.
-
-Panel (`panel`) DOM — `div.n-date-panel` + `--{date|week|month|datetime|
-daterange|datetimerange}` + `--shadow`, `tabindex 0`, the 43 panel vars in
-upstream declaration order, the per-type tree and the inert focus detector last.
-
-Channel rule for interactions (the `NUI.TimePicker` convention):
-
-  - **purely-value** (single-panel cell click, embedded time-picker change) →
-    the panel computes the value and emits `onUpdateValue` (commit) or
-    `onUpdatePendingValue` (preview);
-  - **side-effectful** (dual date click / hover, month-range item click, the
-    quick-jump header, nav arrows) → the panel emits the narrow raw channel
-    (`onDateClick` / `onDateEnter` / `onMonthItemClick` / `onUpdateCalendarValue`)
-    and the caller composes with the exported pure helpers (`dualDateClick`,
-    `dualHover`, `colItemClick`, `quickMonthClick`).
-
-`show`, closing and positioning stay caller-owned: the panel never emits
-`onUpdateShow` (a DOM event carries one message, and the value travels on
-`onUpdateValue`); the exported pure helpers return a `close` flag telling the
-caller when closing is due (`singleDateClick`, `dualDateClick`).
-
-**Punts (caller-owned runtime, the port-wide convention).**
-
-  - `VirtualList` windowing → the year column renders the full `yearArray`
-    inside `NUI.Scrollbar` (the `NUI.TreeSelect` precedent).
-  - `justifyColumnsScrollState` / scroll anchoring → `NUI.Scrollbar` has no
-    `scrollTo`; the initial scroll position is caller-owned (the panel still
-    emits `onUpdateCalendarValue` for the nav arrows and the quick jump).
-  - `disableTransitionOneTick` (the one-tick `[data-n-date].transition-disabled`
-    toggle, `use-panel-common.ts:116-130`) is a DOM-timing effect with no static
-    equivalent; its cssr rule ships from the prep commit.
-  - The IANA `timeZone` prop → `zone : Time.Zone` (caller supplied, `Time.utc`
-    by default), exactly like `NUI.TimePicker`.
-  - Function-form `DefaultTime` / `Shortcuts` and `ranges`-as-functions →
-    static (`DefaultTime` carries literal `'HH:mm:ss'` strings; `ranges` is a
-    `List`).
-  - Keyboard arrow navigation (`getDerivedTimeFromKeyboardEvent`, `utils.ts:33`)
-    is dead upstream (`DatePicker.tsx:472` is commented out).
-  - Form-item context, `to` / `placement` / clickoutside / Enter-Escape
-    activation / programmatic focus: caller-owned (no ports in house style).
-  - `onNextMonth` / `onPrevMonth` / `onNextYear` / `onPrevYear` notification
-    props → the nav arrows emit `onUpdateCalendarValue` with the computed
-    anchor (the caller sees every change; the redundant per-arrow callbacks are
-    not carried).
-  - The panel's `footer` slot has no Elm counterpart; the header's quick-jump
-    `MonthPanel` renders inline when `monthPanelShow` (no `VFollower`), and the
-    datetime panels' embedded time pickers render their bodies inline after the
-    trigger (no teleport).
-  - A single Elm message cannot carry both the value and the formatted value:
-    a commit emits `onUpdateValue` when set, else `onUpdateFormattedValue`
-    (`NUI.TimePicker` precedent).
-  - Multi-effect interactions emit ONE message: the panel's `clear` button
-    emits `onClear` when set (else a committed empty value); cell clicks emit
-    the value and the caller closes when the pure helper's `close` says so.
-  - `[oracle D]` **R3 — date-input envelope.** The embedded date `NInput`s
-    hardcode `"yyyy-MM-dd"`; upstream uses `props.dateFormat ||
-    locale.dateFormat`. Matches the en-US default; no `dateFormat` option
-    surface — punted.
-  - `[oracle D]` **R4 — `timePickerProps` passthrough.** The embedded time
-    pickers use fixed props (`embeddedTimeOptions`); upstream spreads
-    `timePickerProps` (object) / `[0]`/`[1]` (array) per slot
-    (`datetime.tsx:63-76`, `datetimerange.tsx:74-122`). Needs a per-slot
-    options override surface — punted.
-
-**Upstream-faithful oddities kept on purpose.**
-
-  - `uniCalendarValidation.isTimeInvalid` reads `second = time.getMinutes()`
-    (`validation-utils.ts:55`) — the datetime panel's time-invalid check uses
-    the minute in place of the second.
-  - `month.tsx:83-92` passes `{ type: 'month', year, month: quarter }` as the
-    disabled detail of a quarter cell (the discriminator is `'month'` and the
-    quarter rides the `month` field).
-  - A `daterange` / `datetimerange` confirm button is disabled while `selecting`
-    (`daterange.tsx` `isRangeInvalid || isSelecting`).
-  - `monthrange` / `quarterrange` sanitize with `startOfDay` upstream
-    (`use-dual-calendar.ts:561-571`).
-  - Several emitted classes have no upstream cssr rule and are `ALLOW`-listed in
-    `tools/verify/check-classes.mjs`: `n-date-picker--range`,
-    `n-date-panel-calendar--start`, `n-date-panel__divider`,
-    `n-date-panel-date-input`,
-    `n-date-panel-month-calendar__picker-col-item--current`,
-    `n-date-panel-quarter-calendar__padding`.
-  - `[oracle D]` **R1 — week format tokens.** `w` / `YYYY` use
-    `weekStartsOn = 0`, correct: upstream never threads `firstDayOfWeek` into
-    `format` (v2.45.3, date-fns v4 en-US = `{ weekStartsOn: 0,
-    firstWeekContainsDate: 1 }`). The real week defect is S2 (fwcd 4→1).
-  - `[oracle D]` **R2 — pair date-icon slot.** The pair suffix honors the
-    caller's `iconNode` (`dateGlyphNode`), whereas upstream pair mode renders a
-    fixed `DateIcon` and ignores the `date-icon` slot (`DatePicker.tsx`
-    :1124-1135) — an upstream bug the port supersets; DOM-identical when the
-    slot is unset.
-  - `[oracle D]` **R5 — quick-jump routing.** `onQuickMonthSelect` (side-less)
-    is an additive channel that wins when set; when unset the panel emits
-    `onUpdateCalendarValue side anchor`, matching upstream's per-side
-    `onUpdateValue` routing — faithful when unused.
-  - `[oracle D]` **R8-minor — textDecoration asymmetry.** The single trigger
-    binds `textDecoration = Nothing` when the value is valid, whereas upstream
-    always binds it (`''` / `line-through`), so a valid single input may omit an
-    empty inline `style`. Zero visual impact.
+Trigger/panel DOM shapes and porting notes live in the comment block below
+the module doc.
 
 @docs CalendarSide, ClickTarget, DateAction, DateDisabledArg, DefaultTime, DetailType, FormattedValue, Options, PanelType, RangePos, ShortcutPhase, ShortcutValue, TimeSlot, Value, colItemClick, defaultActions, defaultOptions, dualDateClick, dualHover, isRangeType, panel, placeholders, quickMonthClick, rangeShortcutEffect, sanitizeValue, singleDateClick, singleNow, singleShortcutEffect, view
 
+-}
+
+{- DOM shapes and porting notes for `NUI.DatePicker` — moved verbatim out of the
+      module docstring (docs.json must stay under elm publish's 768kb limit);
+      plain comments do not enter the published API docs.
+
+   Trigger (`view`) DOM:
+
+       div.n-date-picker [--disabled] [--range]
+         style = 3 trigger vars → --n-bezier, --n-icon-color-override,
+                 --n-icon-color-disabled-override
+         └─ NUI.Input.view with the picker seams on:
+            single → the date glyph rides `suffix` (not clearable) or
+                     `clear-icon-placeholder` (clearable) inside
+                     `i.n-base-icon.n-date-picker-icon`;
+            range  → pair mode, `separatorNode` = the `separator` string or the
+                     `To` glyph, and the pair suffix = the `Date` glyph.
+
+   Panel (`panel`) DOM — `div.n-date-panel` + `--{date|week|month|datetime|
+   daterange|datetimerange}` + `--shadow`, `tabindex 0`, the 43 panel vars in
+   upstream declaration order, the per-type tree and the inert focus detector last.
+
+   Channel rule for interactions (the `NUI.TimePicker` convention):
+
+     - **purely-value** (single-panel cell click, embedded time-picker change) →
+       the panel computes the value and emits `onUpdateValue` (commit) or
+       `onUpdatePendingValue` (preview);
+     - **side-effectful** (dual date click / hover, month-range item click, the
+       quick-jump header, nav arrows) → the panel emits the narrow raw channel
+       (`onDateClick` / `onDateEnter` / `onMonthItemClick` / `onUpdateCalendarValue`)
+       and the caller composes with the exported pure helpers (`dualDateClick`,
+       `dualHover`, `colItemClick`, `quickMonthClick`).
+
+   `show`, closing and positioning stay caller-owned: the panel never emits
+   `onUpdateShow` (a DOM event carries one message, and the value travels on
+   `onUpdateValue`); the exported pure helpers return a `close` flag telling the
+   caller when closing is due (`singleDateClick`, `dualDateClick`).
+
+   **Punts (caller-owned runtime, the port-wide convention).**
+
+     - `VirtualList` windowing → the year column renders the full `yearArray`
+       inside `NUI.Scrollbar` (the `NUI.TreeSelect` precedent).
+     - `justifyColumnsScrollState` / scroll anchoring → `NUI.Scrollbar` has no
+       `scrollTo`; the initial scroll position is caller-owned (the panel still
+       emits `onUpdateCalendarValue` for the nav arrows and the quick jump).
+     - `disableTransitionOneTick` (the one-tick `[data-n-date].transition-disabled`
+       toggle, `use-panel-common.ts:116-130`) is a DOM-timing effect with no static
+       equivalent; its cssr rule ships from the prep commit.
+     - The IANA `timeZone` prop → `zone : Time.Zone` (caller supplied, `Time.utc`
+       by default), exactly like `NUI.TimePicker`.
+     - Function-form `DefaultTime` / `Shortcuts` and `ranges`-as-functions →
+       static (`DefaultTime` carries literal `'HH:mm:ss'` strings; `ranges` is a
+       `List`).
+     - Keyboard arrow navigation (`getDerivedTimeFromKeyboardEvent`, `utils.ts:33`)
+       is dead upstream (`DatePicker.tsx:472` is commented out).
+     - Form-item context, `to` / `placement` / clickoutside / Enter-Escape
+       activation / programmatic focus: caller-owned (no ports in house style).
+     - `onNextMonth` / `onPrevMonth` / `onNextYear` / `onPrevYear` notification
+       props → the nav arrows emit `onUpdateCalendarValue` with the computed
+       anchor (the caller sees every change; the redundant per-arrow callbacks are
+       not carried).
+     - The panel's `footer` slot has no Elm counterpart; the header's quick-jump
+       `MonthPanel` renders inline when `monthPanelShow` (no `VFollower`), and the
+       datetime panels' embedded time pickers render their bodies inline after the
+       trigger (no teleport).
+     - A single Elm message cannot carry both the value and the formatted value:
+       a commit emits `onUpdateValue` when set, else `onUpdateFormattedValue`
+       (`NUI.TimePicker` precedent).
+     - Multi-effect interactions emit ONE message: the panel's `clear` button
+       emits `onClear` when set (else a committed empty value); cell clicks emit
+       the value and the caller closes when the pure helper's `close` says so.
+     - `[oracle D]` **R3 — date-input envelope.** The embedded date `NInput`s
+       hardcode `"yyyy-MM-dd"`; upstream uses `props.dateFormat ||
+       locale.dateFormat`. Matches the en-US default; no `dateFormat` option
+       surface — punted.
+     - `[oracle D]` **R4 — `timePickerProps` passthrough.** The embedded time
+       pickers use fixed props (`embeddedTimeOptions`); upstream spreads
+       `timePickerProps` (object) / `[0]`/`[1]` (array) per slot
+       (`datetime.tsx:63-76`, `datetimerange.tsx:74-122`). Needs a per-slot
+       options override surface — punted.
+
+   **Upstream-faithful oddities kept on purpose.**
+
+     - `uniCalendarValidation.isTimeInvalid` reads `second = time.getMinutes()`
+       (`validation-utils.ts:55`) — the datetime panel's time-invalid check uses
+       the minute in place of the second.
+     - `month.tsx:83-92` passes `{ type: 'month', year, month: quarter }` as the
+       disabled detail of a quarter cell (the discriminator is `'month'` and the
+       quarter rides the `month` field).
+     - A `daterange` / `datetimerange` confirm button is disabled while `selecting`
+       (`daterange.tsx` `isRangeInvalid || isSelecting`).
+     - `monthrange` / `quarterrange` sanitize with `startOfDay` upstream
+       (`use-dual-calendar.ts:561-571`).
+     - Several emitted classes have no upstream cssr rule and are `ALLOW`-listed in
+       `tools/verify/check-classes.mjs`: `n-date-picker--range`,
+       `n-date-panel-calendar--start`, `n-date-panel__divider`,
+       `n-date-panel-date-input`,
+       `n-date-panel-month-calendar__picker-col-item--current`,
+       `n-date-panel-quarter-calendar__padding`.
+     - `[oracle D]` **R1 — week format tokens.** `w` / `YYYY` use
+       `weekStartsOn = 0`, correct: upstream never threads `firstDayOfWeek` into
+       `format` (v2.45.3, date-fns v4 en-US = `{ weekStartsOn: 0,
+       firstWeekContainsDate: 1 }`). The real week defect is S2 (fwcd 4→1).
+     - `[oracle D]` **R2 — pair date-icon slot.** The pair suffix honors the
+       caller's `iconNode` (`dateGlyphNode`), whereas upstream pair mode renders a
+       fixed `DateIcon` and ignores the `date-icon` slot (`DatePicker.tsx`
+       :1124-1135) — an upstream bug the port supersets; DOM-identical when the
+       slot is unset.
+     - `[oracle D]` **R5 — quick-jump routing.** `onQuickMonthSelect` (side-less)
+       is an additive channel that wins when set; when unset the panel emits
+       `onUpdateCalendarValue side anchor`, matching upstream's per-side
+       `onUpdateValue` routing — faithful when unused.
+     - `[oracle D]` **R8-minor — textDecoration asymmetry.** The single trigger
+       binds `textDecoration = Nothing` when the value is valid, whereas upstream
+       always binds it (`''` / `line-through`), so a valid single input may omit an
+       empty inline `style`. Zero visual impact.
 -}
 
 import Element exposing (Element)

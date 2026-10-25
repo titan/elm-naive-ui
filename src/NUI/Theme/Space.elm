@@ -20,11 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Space CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`gapSmall` → `--n-gap-small`).
-
-Collected by concern:
-
-  - gaps per size: `gapSmall`, `gapMedium`, `gapLarge`
-
 -}
 type alias Vars =
     { gapSmall : String

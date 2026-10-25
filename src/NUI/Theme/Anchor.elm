@@ -20,13 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Anchor CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`linkFontSize` → `--n-link-font-size`).
-
-Collected by concern:
-
-  - link typography & padding: `linkFontSize`, `linkPadding`
-  - rail shape & color: `railWidth`, `borderRadius`, `railColor`, `railColorActive`, `linkColor`
-  - link text states: `linkTextColor`, `linkTextColorHover`, `linkTextColorPressed`, `linkTextColorActive`
-
 -}
 type alias Vars =
     { linkFontSize : String

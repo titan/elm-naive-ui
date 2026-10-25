@@ -20,13 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Descriptions CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`thPaddingBorderedSmall` → `--n-th-padding-bordered-small`).
-
-Collected by concern:
-
-  - per-size th/td paddings (bordered & not): `thPaddingBorderedSmall`, `thPaddingBorderedMedium`, `thPaddingBorderedLarge`, `thPaddingSmall`, `thPaddingMedium`, `thPaddingLarge`, `tdPaddingBorderedSmall`, `tdPaddingBorderedMedium`, `tdPaddingBorderedLarge`, `tdPaddingSmall`, `tdPaddingMedium`, `tdPaddingLarge`
-  - typography & shape: `lineHeight`, `fontSizeSmall`, `fontSizeMedium`, `fontSizeLarge`, `titleTextColor`, `thFontWeight`, `borderRadius`
-  - surfaces incl. modal & popover: `thColor`, `thColorModal`, `thColorPopover`, `thTextColor`, `tdTextColor`, `tdColor`, `tdColorModal`, `tdColorPopover`, `borderColor`, `borderColorModal`, `borderColorPopover`
-
 -}
 type alias Vars =
     { thPaddingBorderedSmall : String

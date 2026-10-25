@@ -20,12 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the TreeSelect CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`menuPadding` → `--n-menu-padding`).
-
-Collected by concern:
-
-  - dropdown menu (padding, color, shadow, radius, height): `menuPadding`, `menuColor`, `menuBoxShadow`, `menuBorderRadius`, `menuHeight`
-  - header & action areas (divider, text, padding): `actionDividerColor`, `actionTextColor`, `actionPadding`, `headerDividerColor`, `headerTextColor`, `headerPadding`
-
 -}
 type alias Vars =
     { menuPadding : String

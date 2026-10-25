@@ -20,11 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Divider CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`textColor` → `--n-text-color`).
-
-Collected by concern:
-
-  - label typography & rule color: `textColor`, `color`, `fontWeight`
-
 -}
 type alias Vars =
     { textColor : String

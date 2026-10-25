@@ -20,12 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Collapse CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`titleFontSize` → `--n-title-font-size`).
-
-Collected by concern:
-
-  - title & item typography: `titleFontSize`, `titleFontWeight`, `fontSize`, `textColor`, `itemMargin`, `titlePadding`
-  - colors & states: `dividerColor`, `titleTextColor`, `titleTextColorDisabled`, `arrowColor`, `arrowColorDisabled`
-
 -}
 type alias Vars =
     { titleFontSize : String

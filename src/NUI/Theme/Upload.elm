@@ -20,13 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Upload CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`fontSize` → `--n-font-size`).
-
-Collected by concern:
-
-  - chrome (font, line height, radius): `fontSize`, `lineHeight`, `borderRadius`
-  - dragger (surface & borders): `draggerColor`, `draggerBorder`, `draggerBorderHover`
-  - file list items (surfaces, text, icons, borders, opacity): `itemColorHover`, `itemColorHoverError`, `itemTextColor`, `itemTextColorError`, `itemTextColorSuccess`, `itemIconColor`, `itemDisabledOpacity`, `itemBorderImageCardError`, `itemBorderImageCard`
-
 -}
 type alias Vars =
     { fontSize : String

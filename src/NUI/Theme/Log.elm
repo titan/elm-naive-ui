@@ -20,12 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Log CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`loaderFontSize` → `--n-loader-font-size`).
-
-Collected by concern:
-
-  - loader pill: `loaderFontSize`, `loaderTextColor`, `loaderColor`, `loaderBorder`
-  - spinner: `loadingColor`
-
 -}
 type alias Vars =
     { loaderFontSize : String

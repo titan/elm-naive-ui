@@ -20,14 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Result CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`titleFontSizeSmall` → `--n-title-font-size-small`).
-
-Collected by concern:
-
-  - per-size icon sizes: `iconSizeSmall`, `iconSizeMedium`, `iconSizeLarge`, `iconSizeHuge`
-  - per-size title & body font sizes: `titleFontSizeSmall`, `titleFontSizeMedium`, `titleFontSizeLarge`, `titleFontSizeHuge`, `fontSizeSmall`, `fontSizeMedium`, `fontSizeLarge`, `fontSizeHuge`
-  - title & body text, line height & weight: `lineHeight`, `titleFontWeight`, `titleTextColor`, `textColor`
-  - status icon colors: `iconColorError`, `iconColorSuccess`, `iconColorInfo`, `iconColorWarning`
-
 -}
 type alias Vars =
     { titleFontSizeSmall : String

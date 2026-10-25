@@ -20,16 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Slider CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`railHeight` → `--n-rail-height`).
-
-Collected by concern:
-
-  - rail geometry & colors, fill colors: `railHeight`, `railWidthVertical`, `railColor`, `railColorHover`, `fillColor`, `fillColorHover`
-  - handle sizes, colors & shadows: `handleSize`, `handleColor`, `handleBoxShadow`, `handleBoxShadowHover`, `handleBoxShadowActive`, `handleBoxShadowFocus`
-  - dots (geometry, borders, colors, shadows): `dotHeight`, `dotWidth`, `dotBorderRadius`, `dotColor`, `dotColorModal`, `dotColorPopover`, `dotBorder`, `dotBorderActive`, `dotBoxShadow`
-  - value indicator (surface, shadow, text, radius): `indicatorColor`, `indicatorBoxShadow`, `indicatorTextColor`, `indicatorBorderRadius`
-  - typography (label & mark): `fontSize`, `markFontSize`
-  - disabled opacity: `opacityDisabled`
-
 -}
 type alias Vars =
     { railHeight : String

@@ -21,101 +21,105 @@ module NUI.DynamicInput exposing (InputOptions, PairOptions, cssVarsFor, inputDe
         }
 
 An empty list renders the block "Create" button; otherwise every entry renders
-as a `.n-dynamic-input-item` — the preset body (one `NUI.Input` for `input`, a
-key / value pair of them for `pair`) followed by
+as a `.n-dynamic-input-item` — the preset body (one `NUI.Input` for `input`,
+a key / value pair of them for `pair`) followed by
 `.n-dynamic-input-item__action`, a `NUI.ButtonGroup` of circle icon buttons in
 upstream's order: remove, add, and — when `showSortButton` — up (disabled on
-the first entry) and down (disabled on the last). The peers (Input / Button)
-render with the theme you pass in — upstream injects `theme.peers.*`, which a
-pure port has no equivalent of.
+the first entry) and down (disabled on the last).
 
 **Runtime (caller-owned).** Upstream keeps the value array in a ref; here the
 list lives in your model and every change reports through a message. The
 `insertAt` / `removeAt` / `moveUp` / `moveDown` helpers are upstream's array
 edits exposed pure, so an `onRemove`-style handler can apply them itself:
 
-  - `onUpdateValue` — typing inside a preset input (that entry replaced —
-    upstream `handleValueChange`), a create press (the new entry inserted —
-    upstream `createItem`), a sort press (upstream `move`), and — when
+  - `onUpdateValue` — typing inside a preset input (that entry replaced),
+    a create press (the new entry inserted), a sort press, and — when
     `onRemove` is `Nothing` — a remove press (the entry spliced out).
 
   - `onRemove` — a remove press when set, receiving the entry's index.
-    Upstream's `remove` fires `onRemove(index)` and _then_ splices; one click
-    carries one message here, so when `onRemove` is set it owns the press and
-    you apply `removeAt index` yourself (when it is `Nothing` the press maps
-    straight to `onUpdateValue` with the entry removed instead). The button is
+    When it is set it owns the press and you apply `removeAt index`
+    yourself (when it is `Nothing` the press maps straight to
+    `onUpdateValue` with the entry removed instead). The button is
     disabled under upstream's `len <= min` guard either way.
 
   - `onCreate` — a value producer (not a message): the entry a create press
-    inserts, given the insertion index (upstream calls `onCreate(index + 1)`).
-    When `Nothing`, `viewInput` inserts `""` and `viewPair` inserts
-    `( "", "" )` — upstream's preset defaults.
+    inserts, given the insertion index (upstream calls
+    `onCreate(index + 1)`). When `Nothing`, `viewInput` inserts `""` and
+    `viewPair` inserts `( "", "" )` — upstream's preset defaults.
 
-The `min` / `max` guards are upstream's computeds: `insertionDisabled` (max
-set and reached) disables the Create / add buttons, `removeDisabled`
-(`len <= min`) the remove buttons. That disable is the only enforcement —
-upstream's `createItem` / `remove` also no-op under the same guards before
-mutating, but the pure `insertAt` / `removeAt` helpers apply unconditionally
-(they are the splice itself); a caller driving them past `max` / under `min`
-owns that guard. Likewise, with `onUpdateValue = Nothing` create / remove /
-sort presses emit no message, so `onCreate` is never consulted on that path
-(upstream invokes `onCreate(index + 1)` on every create).
+The `min` / `max` guards (`insertionDisabled` / `removeDisabled`) only
+disable the buttons — the pure splice helpers apply unconditionally; a
+caller driving them past `max` / under `min` owns that guard. With
+`onUpdateValue = Nothing` create / remove / sort presses emit no message.
 
-**Not ported** (upstream props with no counterpart in a pure port):
-
-  - the `default` / `action` / `create-button-default` / `create-button-icon`
-    slots — the two presets ARE this port's item rendering; there is no
-    render-your-own-item contract in v1;
-
-  - `keyField`, the `globalDataKeyMap` WeakMap keys and the matching `key` /
-    `data-key` attributes — they feed upstream's form injection and WeakMap
-    bookkeeping, and this port has no form module;
-
-  - form-item injection (the presets' `parentPath` / `path` props; the
-    `.n-form-item` rules nested under `.n-dynamic-input` are extracted into
-    the stylesheet but inert here);
-
-  - `createButtonProps`, the deprecated `onClear` / `onInput` props, and
-    `defaultValue` / uncontrolled mode (the value is caller-owned);
-
-  - `mergedComponentProps.DynamicInput.buttonSize` — undefined by default
-    upstream, so every button (Create and the action circles) is fixed at
-    `medium`, `NUI.Button`'s own default (our `ButtonGroup` has no size option
-    either; the size lives on the buttons);
-
-  - the locale system — the Create label is upstream's `enUS` default,
-    `"Create"`;
-
-  - `placeholder` / `keyPlaceholder` / `valuePlaceholder` keep upstream's
-    empty-string defaults as `Nothing` (an empty placeholder renders nothing
-    in either).
-
-**Markup divergences** (DOM details the port cannot reproduce exactly):
-
-  - the pair preset wraps each of its two inputs in a
-    `div.n-dynamic-input-pair-input`. Upstream puts that class on the `NInput`
-    root itself; `NUI.Input.Options` has no class passthrough, so the class —
-    and with it the CSS `:first-child` margin-right (and its `--rtl` flip) —
-    moves to the wrapper, which carries an inline `flex: 1` to reproduce the
-    geometry the `width: 100%` input root has as a shrinkable flex item
-    upstream;
-
-  - the root's custom properties keep upstream's unprefixed names —
-    `--action-margin` / `--action-margin-rtl`, the only component vars without
-    the `--n-` prefix — and both are emitted unconditionally, exactly like
-    upstream's `cssVarsRef` (the RTL one is only read under
-    `.n-dynamic-input--rtl`);
-
-  - the extracted `.n-dynamic-input-item__action--icon` modifier
-    (`cursor: pointer`) is dead CSS — upstream's default render never applies
-    it either, and neither does this port;
-
-  - root / item / wrapper elements are elm-ui elements whose flex scaffolding
-    Naive UI's scoped rules override (`width`, `display`, `flex`, `margin`),
-    which is this library's standard bridge.
+The unported surface (the slots, `keyField` / form injection, the locale
+system, deprecated props) and the markup divergences (the pair preset's
+wrapper class, the unprefixed `--action-margin` vars) are itemised in the
+porting comment below.
 
 @docs InputOptions, PairOptions, cssVarsFor, inputDefaults, insertAt, insertionDisabled, moveDown, moveUp, pairDefaults, removeAt, removeDisabled, viewInput, viewPair
 
+-}
+
+{-
+   PORTING NOTES (plain comment — not published to docs.json). Moved verbatim
+   from the module doc; the module doc keeps the caller-facing contract.
+
+   The peers (Input / Button) render with the theme you pass in — upstream
+   injects `theme.peers.*`, which a pure port has no equivalent of.
+
+   **Not ported** (upstream props with no counterpart in a pure port):
+
+     - the `default` / `action` / `create-button-default` / `create-button-icon`
+       slots — the two presets ARE this port's item rendering; there is no
+       render-your-own-item contract in v1;
+
+     - `keyField`, the `globalDataKeyMap` WeakMap keys and the matching `key` /
+       `data-key` attributes — they feed upstream's form injection and WeakMap
+       bookkeeping, and this port has no form module;
+
+     - form-item injection (the presets' `parentPath` / `path` props; the
+       `.n-form-item` rules nested under `.n-dynamic-input` are extracted into
+       the stylesheet but inert here);
+
+     - `createButtonProps`, the deprecated `onClear` / `onInput` props, and
+       `defaultValue` / uncontrolled mode (the value is caller-owned);
+
+     - `mergedComponentProps.DynamicInput.buttonSize` — undefined by default
+       upstream, so every button (Create and the action circles) is fixed at
+       `medium`, `NUI.Button`'s own default (our `ButtonGroup` has no size option
+       either; the size lives on the buttons);
+
+     - the locale system — the Create label is upstream's `enUS` default,
+       `"Create"`;
+
+     - `placeholder` / `keyPlaceholder` / `valuePlaceholder` keep upstream's
+       empty-string defaults as `Nothing` (an empty placeholder renders nothing
+       in either).
+
+   **Markup divergences** (DOM details the port cannot reproduce exactly):
+
+     - the pair preset wraps each of its two inputs in a
+       `div.n-dynamic-input-pair-input`. Upstream puts that class on the `NInput`
+       root itself; `NUI.Input.Options` has no class passthrough, so the class —
+       and with it the CSS `:first-child` margin-right (and its `--rtl` flip) —
+       moves to the wrapper, which carries an inline `flex: 1` to reproduce the
+       geometry the `width: 100%` input root has as a shrinkable flex item
+       upstream;
+
+     - the root's custom properties keep upstream's unprefixed names —
+       `--action-margin` / `--action-margin-rtl`, the only component vars without
+       the `--n-` prefix — and both are emitted unconditionally, exactly like
+       upstream's `cssVarsRef` (the RTL one is only read under
+       `.n-dynamic-input--rtl`);
+
+     - the extracted `.n-dynamic-input-item__action--icon` modifier
+       (`cursor: pointer`) is dead CSS — upstream's default render never applies
+       it either, and neither does this port;
+
+     - root / item / wrapper elements are elm-ui elements whose flex scaffolding
+       Naive UI's scoped rules override (`width`, `display`, `flex`, `margin`),
+       which is this library's standard bridge.
 -}
 
 import Element exposing (Element)

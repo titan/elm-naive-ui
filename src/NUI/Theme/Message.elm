@@ -20,16 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Message CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`margin` → `--n-margin`).
-
-Collected by concern:
-
-  - layout & metrics (margin/padding/icon & close sizes/typography): `margin`, `padding`, `maxWidth`, `minWidth`, `iconMargin`, `closeMargin`, `closeSize`, `closeIconSize`, `iconSize`, `fontSize`, `lineHeight`, `borderRadius`, `border`
-  - neutral surface, text & shadow: `textColor`, `color`, `boxShadow`
-  - typed surfaces, text & shadows (Info/Success/Warning/Loading/Error): `textColorInfo`, `textColorSuccess`, `textColorError`, `textColorWarning`, `textColorLoading`, `colorInfo`, `colorSuccess`, `colorError`, `colorWarning`, `colorLoading`, `boxShadowInfo`, `boxShadowSuccess`, `boxShadowError`, `boxShadowWarning`, `boxShadowLoading`
-  - icon colors: `iconColor`, `iconColorInfo`, `iconColorSuccess`, `iconColorWarning`, `iconColorError`, `iconColorLoading`
-  - close button states: `closeBorderRadius`, `closeColorHover`, `closeColorPressed`, `closeIconColor`, `closeIconColorHover`, `closeIconColorPressed`, `closeColorHoverInfo`, `closeColorPressedInfo`, `closeIconColorInfo`, `closeIconColorHoverInfo`, `closeIconColorPressedInfo`, `closeColorHoverSuccess`, `closeColorPressedSuccess`, `closeIconColorSuccess`, `closeIconColorHoverSuccess`, `closeIconColorPressedSuccess`, `closeColorHoverError`, `closeColorPressedError`, `closeIconColorError`, `closeIconColorHoverError`, `closeIconColorPressedError`, `closeColorHoverWarning`, `closeColorPressedWarning`, `closeIconColorWarning`, `closeIconColorHoverWarning`, `closeIconColorPressedWarning`, `closeColorHoverLoading`, `closeColorPressedLoading`, `closeIconColorLoading`, `closeIconColorHoverLoading`, `closeIconColorPressedLoading`
-  - spinner: `loadingColor`
-
 -}
 type alias Vars =
     { margin : String

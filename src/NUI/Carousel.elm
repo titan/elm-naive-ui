@@ -22,19 +22,12 @@ module NUI.Carousel exposing (Direction(..), Effect(..), DotType(..), DotPlaceme
             (Carousel.resize model.opts { width = 1000, height = 400 } (Carousel.init model.opts 2))
             slides
 
-The DOM is Naive UI's own: the root `div.n-carousel` (the 8 `--n-*` vars),
+The DOM is Naive UI's own — the `div.n-carousel` root (the 8 `--n-*` vars),
 the `div.n-carousel__slides` track (`transition-duration` + `transform`), the
-`div.n-carousel__slide` options (`--current` / `--prev` / `--next`), the
-`div.n-carousel__dots` tablist, and the `div.n-carousel__arrow-group` pair.
-`css/naive-ui.css` ships Naive UI's exact CSS.
-
-**Rendering strategy (settled).** The whole carousel is ONE raw `Html` tree
-wrapped in a single `Element.html`. The cssr owns the track's `display:flex`
-(and `flex-direction:column` under `--vertical`); an elm-ui Element would emit
-competing inline layout styles, and there is no public `Element -> Html`.
-Consequence: slides are `List (Html msg)` (upstream slides are arbitrary
-vnode content; the `NCarouselItem` scoped-slot flags are exposed as the pure
-`slideInfo` helper instead).
+`div.n-carousel__slide` items (`--current` / `--prev` / `--next`), the
+`div.n-carousel__dots` tablist and the `div.n-carousel__arrow-group` pair —
+rendered as ONE raw `Html` tree wrapped in a single `Element.html`
+(`css/naive-ui.css` ships Naive UI's exact CSS).
 
 **Caller-owned runtime.** Upstream drives a `setInterval` clock, rAF mount
 flag, `document`-level drag listeners, `ResizeObserver` measurement, focus and
@@ -53,85 +46,108 @@ effects (the same service/caller pattern `NUI.Upload` uses for XHR):
     `decodeDragPoint`, and calls `dragMove` / `dragEnd`. `wheel`,
     `dotKeyAction`, `indexChange`, `slideInfo` are the remaining pure ports.
 
-**Accepted divergences (documented edges):**
+Controlled usage is supported exactly as upstream (`opts.currentIndex` wins
+over `state.displayIndex`; route the same events through `to`).
 
-1.  No Vue `<Transition>` machinery: `transitionProps` is dropped; `effect:
-    custom` hides inactive slides with `display: none` (no enter/leave
-    classes).
-2.  Measurement, timer, focus management, capture-phase click suppression and
-    the `globalDragging` singleton are caller-side.
-3.  `transitionStyle` is narrowed to the two keys upstream `keep()`s
-    (`transitionDuration` + optional `transitionTimingFunction`).
-4.  `prevSlideStyle` / `nextSlideStyle` accept the **string** form only
-    (upstream also allows a CSSProperties object; `normalizeStyle` joins it —
-    strings cover the typed use).
-5.  The `isMounted` rAF flag is caller-set state (`markMounted`); static output
-    matches upstream SSR (fade/card slides carry no transition props until
-    mounted).
-
-**Oracle round (`tasks/recon/carousel-oracle.md`) — 4 S findings fixed here:**
-
-  - `[oracle S1]` usercontrol renders `wrapper div > div.n-carousel__slide`
-    (upstream maps the ITEM vnodes into plain wrappers,
-    `Carousel.tsx:1035-1043`); `vShow`'s `display: none` lives on the inner
-    item, and BOTH usercontrol styles are the early-return branch — size
-    only, no margin.
-  - `[oracle S2]` `dragEnd`'s flick branch reproduces Vue's ASYNC
-    `realIndex` watcher (`flush: 'pre'`): the sync `fixTranslate` runs first,
-    the queued watcher body lands after it — the final translate is the
-    loop-jump clone target, `transitionend` snaps back to the real slide.
-  - `[oracle S3]` the track carries NO style attribute for non-sequence
-    effects (upstream `translateStyleRef` stays `{}`); the live drag translate
-    is sequence-only (`Carousel.tsx:657`).
-  - `[oracle S4]` `onSlideClick` fires on the card-effect gate
-    (`allowClick && effect=='card' && !isRealActive`, `Carousel.tsx:565-577`);
-    the listener is attached only when the gate passes (the closed gate emits
-    nothing either way; the `preventDefault` suppression half is caller-side).
-
-Non-divergences worth noting: controlled usage is supported exactly as
-upstream (`opts.currentIndex` wins over `state.displayIndex` via
-`useMergedState`; route the same events through `to`). `to`'s upper clamp is
-`totalView` (not `-1`) upstream — faithful, harmless (re-clamped by
-`toRealIndex`).
-
-**Port-surface notes (vs `tasks/recon/carousel-2-elm.md` §3):**
-
-  - `init` takes `Options` + the slide count so the `defaultIndex` seed follows
-    the evident INTENT (pins §A6): `displayIndex =
-    getDisplayIndex(getRealIndex(defaultIndex, duplicatedable), totalView,
-    duplicatedable)` with the TRUE total view. Upstream seeds during setup
-    with `slideElsRef` still empty (`totalView` 1 -> every `defaultIndex`
-    lands on display 0); nothing re-seeds it post-mount. The port documents the
-    upstream setup-order quirk and pins the intended semantics.
-  - `State` carries the slide count (`slideCount`) so the navigation functions
-    (`to` / `prev` / `next` / `transitionEnd` / `dragEnd` / …) stay
-    self-contained; `envOf` still takes the count explicitly (its documented
-    signature) and internal callers pass `state.slideCount`.
-  - `applyIndexChange` (the `realIndex` watcher body) takes the watcher's
-    `lastRealIndex` as an extra `Int`: Vue reactivity supplies it upstream and
-    there is no pure equivalent otherwise.
-  - `dragEnd` takes the elapsed drag time (`Float` ms) — upstream reads
-    `Date.now()`, which is a runtime concern.
-  - `getLastViewTranslate`'s "auto" gate is upstream's NARROW
-    `displaySlidesPerView == auto` (`Carousel.tsx:480`) — NOT `Env.autoSlideSize`.
-    Consequence: `centeredSlides + slidesPerView:auto` (displaySpv forced to 1)
-    takes the numeric branch `translates[totalView - 1]`. Pins §A4 re-derived
-    from bytes and CORRECTED (1500, not 900 — orchestrator re-check vs
-    Carousel.tsx:186-189, 478-497; the feat lane had flagged the divergence).
-  - Inline style strings: the root uses the house `NUI.Internal.renderVars`
-    form (joined `k:v` with `;`, no spaces); the track/slide styles mirror
-    upstream Vue's serialization (`key: value; key: value`) since they are the
-    byte-fidelity contract's target. `[oracle D]` The inline-theme `themeClass`
-    is never emitted (house-wide).
-
-Upstream refs: `carousel/src/Carousel.tsx` (props :73-146, `.tsx` state
-machinery :156-894, render :1000-1063), `CarouselItem.tsx`,
-`CarouselDots.tsx:27-94`, `CarouselArrow.tsx:6-33`,
-`utils/duplicatedLogic.ts`, `utils/index.ts:20-37`,
-`styles/index.cssr.ts`.
+5 accepted divergences (no Vue `<Transition>` machinery; runtime caller-side;
+`transitionStyle` narrowed; string-form slide styles; the `markMounted`
+rAF flag), the 4 `[oracle S]` findings and the port-surface decisions
+(`init` seeding, the slide count in `State`, the extra `applyIndexChange` /
+`dragEnd` arguments, inline-style serialization) are recorded verbatim in
+the porting comment directly below — upstream refs included.
 
 @docs Direction, Effect, DotType, DotPlacement, Trigger, PerView, Size, DragPoint, WheelInfo, KeyInfo, DotKeyAction, SlideInfo, ArrowInfo, DotsInfo, State, Env, Options, defaults, init, resize, setSlideSizes, markMounted, autoplayEnabled, envOf, getDisplayTotalView, getDisplayIndex, getRealIndex, getPrevIndex, getNextIndex, to, toRealIndex, prev, next, translateTo, fixTranslate, getTranslate, getLastViewTranslate, resolveSpeed, clampValue, duplicateWrap, applyIndexChange, indexChange, transitionEnd, nextIfSlideTransitionEnd, prevIfSlideTransitionEnd, dragStart, dragMove, dragEnd, decodeDragPoint, wheel, dotKeyAction, slideInfo, view, viewDots, viewArrowGroup, cssVarsFor
 
+-}
+
+{-
+   PORTING NOTES (plain comment — not published to docs.json). Moved verbatim
+   from the module doc; the module doc keeps the caller-facing contract.
+
+   **Rendering strategy (settled).** The whole carousel is ONE raw `Html` tree
+   wrapped in a single `Element.html`. The cssr owns the track's `display:flex`
+   (and `flex-direction:column` under `--vertical`); an elm-ui Element would emit
+   competing inline layout styles, and there is no public `Element -> Html`.
+   Consequence: slides are `List (Html msg)` (upstream slides are arbitrary
+   vnode content; the `NCarouselItem` scoped-slot flags are exposed as the pure
+   `slideInfo` helper instead).
+
+   **Accepted divergences (documented edges):**
+
+   1.  No Vue `<Transition>` machinery: `transitionProps` is dropped; `effect:
+       custom` hides inactive slides with `display: none` (no enter/leave
+       classes).
+   2.  Measurement, timer, focus management, capture-phase click suppression and
+       the `globalDragging` singleton are caller-side.
+   3.  `transitionStyle` is narrowed to the two keys upstream `keep()`s
+       (`transitionDuration` + optional `transitionTimingFunction`).
+   4.  `prevSlideStyle` / `nextSlideStyle` accept the **string** form only
+       (upstream also allows a CSSProperties object; `normalizeStyle` joins it —
+       strings cover the typed use).
+   5.  The `isMounted` rAF flag is caller-set state (`markMounted`); static output
+       matches upstream SSR (fade/card slides carry no transition props until
+       mounted).
+
+   **Oracle round (`tasks/recon/carousel-oracle.md`) — 4 S findings fixed here:**
+
+     - `[oracle S1]` usercontrol renders `wrapper div > div.n-carousel__slide`
+       (upstream maps the ITEM vnodes into plain wrappers,
+       `Carousel.tsx:1035-1043`); `vShow`'s `display: none` lives on the inner
+       item, and BOTH usercontrol styles are the early-return branch — size
+       only, no margin.
+     - `[oracle S2]` `dragEnd`'s flick branch reproduces Vue's ASYNC
+       `realIndex` watcher (`flush: 'pre'`): the sync `fixTranslate` runs first,
+       the queued watcher body lands after it — the final translate is the
+       loop-jump clone target, `transitionend` snaps back to the real slide.
+     - `[oracle S3]` the track carries NO style attribute for non-sequence
+       effects (upstream `translateStyleRef` stays `{}`); the live drag translate
+       is sequence-only (`Carousel.tsx:657`).
+     - `[oracle S4]` `onSlideClick` fires on the card-effect gate
+       (`allowClick && effect=='card' && !isRealActive`, `Carousel.tsx:565-577`);
+       the listener is attached only when the gate passes (the closed gate emits
+       nothing either way; the `preventDefault` suppression half is caller-side).
+
+   Non-divergences worth noting: controlled usage is supported exactly as
+   upstream (`opts.currentIndex` wins over `state.displayIndex` via
+   `useMergedState`; route the same events through `to`). `to`'s upper clamp is
+   `totalView` (not `-1`) upstream — faithful, harmless (re-clamped by
+   `toRealIndex`).
+
+   **Port-surface notes (vs `tasks/recon/carousel-2-elm.md` §3):**
+
+     - `init` takes `Options` + the slide count so the `defaultIndex` seed follows
+       the evident INTENT (pins §A6): `displayIndex =
+       getDisplayIndex(getRealIndex(defaultIndex, duplicatedable), totalView,
+       duplicatedable)` with the TRUE total view. Upstream seeds during setup
+       with `slideElsRef` still empty (`totalView` 1 -> every `defaultIndex`
+       lands on display 0); nothing re-seeds it post-mount. The port documents the
+       upstream setup-order quirk and pins the intended semantics.
+     - `State` carries the slide count (`slideCount`) so the navigation functions
+       (`to` / `prev` / `next` / `transitionEnd` / `dragEnd` / …) stay
+       self-contained; `envOf` still takes the count explicitly (its documented
+       signature) and internal callers pass `state.slideCount`.
+     - `applyIndexChange` (the `realIndex` watcher body) takes the watcher's
+       `lastRealIndex` as an extra `Int`: Vue reactivity supplies it upstream and
+       there is no pure equivalent otherwise.
+     - `dragEnd` takes the elapsed drag time (`Float` ms) — upstream reads
+       `Date.now()`, which is a runtime concern.
+     - `getLastViewTranslate`'s "auto" gate is upstream's NARROW
+       `displaySlidesPerView == auto` (`Carousel.tsx:480`) — NOT `Env.autoSlideSize`.
+       Consequence: `centeredSlides + slidesPerView:auto` (displaySpv forced to 1)
+       takes the numeric branch `translates[totalView - 1]`. Pins §A4 re-derived
+       from bytes and CORRECTED (1500, not 900 — orchestrator re-check vs
+       Carousel.tsx:186-189, 478-497; the feat lane had flagged the divergence).
+     - Inline style strings: the root uses the house `NUI.Internal.renderVars`
+       form (joined `k:v` with `;`, no spaces); the track/slide styles mirror
+       upstream Vue's serialization (`key: value; key: value`) since they are the
+       byte-fidelity contract's target. `[oracle D]` The inline-theme `themeClass`
+       is never emitted (house-wide).
+
+   Upstream refs: `carousel/src/Carousel.tsx` (props :73-146, `.tsx` state
+   machinery :156-894, render :1000-1063), `CarouselItem.tsx`,
+   `CarouselDots.tsx:27-94`, `CarouselArrow.tsx:6-33`,
+   `utils/duplicatedLogic.ts`, `utils/index.ts:20-37`,
+   `styles/index.cssr.ts`.
 -}
 
 import Element exposing (Element)

@@ -43,36 +43,45 @@ The children argument is upstream's `prefix` slot (rendered in
 `.n-pagination-prefix` only when non-empty); the `suffix` option covers the
 `suffix` slot.
 
-**Documented gaps** (runtime or unported dependencies — do not try to close
-them here):
-
-  - **Size picker.** Upstream's `pageSizes` selector is an `NSelect`, which
-    this library has not ported — the element is omitted entirely (upstream's
-    `displayOrder` slot `size-picker`). `onUpdatePageSize` exists for the day
-    it is.
-  - **Quick-jump dropdown.** The ellipsis items' `NPopselect` hover menu is
-    not ported. Hover state is caller-side runtime, so
-    `n-pagination-item--hover` is never emitted and the fast items always
-    show the `More` ellipsis icon (upstream swaps in the fast-backward /
-    fast-forward icon while hovered); `showQuickJumpDropdown` only controls
-    whether `pageItems` attaches the jump option lists.
-  - **Quick-jump commit.** Upstream jumps on the jumper input's `change`
-    (Enter / blur); `NUI.Input` has no change event, so typing is wired
-    (`onJumperInput` filters non-digits, like upstream's `handleJumperInput`)
-    but committing the jump is the caller's concern.
-  - **Focus, transitions, hover.** Upstream's focus management, the
-    `transition-disabled` reflow trick and all hover-state tracking are
-    runtime concerns of the original and intentionally absent.
-  - **Locale / render slots.** "Goto" is upstream's `enUS` `goto` label; the
-    `prev` / `next` / `label` / `goto` render props are not ported (the arrow
-    buttons always render `NBaseIcon` chevrons, page items their number).
-  - **Sizes.** Naive UI's pagination has no `tiny` size; `Tiny` clamps to
-    `Small` for the item metrics (the jumper input still gets upstream's
-    `smallerSize` of the clamped size).
+The documented gaps (the unported size picker and quick-jump dropdown,
+jump-committing, focus/transition/hover runtime, locale / render slots, the
+`tiny`-size clamp) are itemised in the porting comment below.
 
 @docs Options, PageSizeOption, PageItem, PageItemsInfo, pageItems, pageCount, getDefaultPageSize, defaults
 @docs view, cssVarsFor
 
+-}
+
+{-
+   PORTING NOTES (plain comment — not published to docs.json). Moved verbatim
+   from the module doc; the module doc keeps the caller-facing contract.
+
+   **Documented gaps** (runtime or unported dependencies — do not try to close
+   them here):
+
+     - **Size picker.** Upstream's `pageSizes` selector is an `NSelect`, which
+       this library has not ported — the element is omitted entirely (upstream's
+       `displayOrder` slot `size-picker`). `onUpdatePageSize` exists for the day
+       it is.
+     - **Quick-jump dropdown.** The ellipsis items' `NPopselect` hover menu is
+       not ported. Hover state is caller-side runtime, so
+       `n-pagination-item--hover` is never emitted and the fast items always
+       show the `More` ellipsis icon (upstream swaps in the fast-backward /
+       fast-forward icon while hovered); `showQuickJumpDropdown` only controls
+       whether `pageItems` attaches the jump option lists.
+     - **Quick-jump commit.** Upstream jumps on the jumper input's `change`
+       (Enter / blur); `NUI.Input` has no change event, so typing is wired
+       (`onJumperInput` filters non-digits, like upstream's `handleJumperInput`)
+       but committing the jump is the caller's concern.
+     - **Focus, transitions, hover.** Upstream's focus management, the
+       `transition-disabled` reflow trick and all hover-state tracking are
+       runtime concerns of the original and intentionally absent.
+     - **Locale / render slots.** "Goto" is upstream's `enUS` `goto` label; the
+       `prev` / `next` / `label` / `goto` render props are not ported (the arrow
+       buttons always render `NBaseIcon` chevrons, page items their number).
+     - **Sizes.** Naive UI's pagination has no `tiny` size; `Tiny` clamps to
+       `Small` for the item metrics (the jumper input still gets upstream's
+       `smallerSize` of the clamped size).
 -}
 
 import Element exposing (Element)
@@ -100,24 +109,20 @@ type PageSizeOption
     | PageSizeOption { label : String, value : Int }
 
 
-{-| The pagination options. The data model: `currentPage` is the page
-being viewed (1-based; upstream's `page` prop), `itemCount` / `pageCount`
-name the total either way (item count wins when both are set — the merged
-page count derives as `max 1 (ceil(itemCount / mergedPageSize))`), and
-`pageSize` is the page size (`Nothing` falls back to `getDefaultPageSize`
-with these `pageSizes`). The window: `pageSlot` (default 9) is the max
-visible page cells upstream's algorithm centers on the current page, and
-`showQuickJumper` adds the “Goto” input (`jumperValue` is its text,
-`onJumperInput` receives it digit-filtered). `showQuickJumpDropdown`
-only decides whether `pageItems` attaches option lists to the ellipses
-(the hover popselect itself is not ported). Presentation: `disabled`,
-`simple` (the `\{{page}} / N` readout), `size` (no `tiny` — clamps to
-`small`), `rtl`. Events: `onUpdatePage` fires for every navigation
-(page clicks, prev / next, the ellipses' fast jumps) with the target
-page — only when enabled and the target differs (upstream
-`doUpdatePage`); `onUpdatePageSize` exists for the unported size
-picker. The `view` children are the `prefix` slot; `suffix` covers the
-`suffix` slot. `attributes` land on the root.
+{-| The pagination options. `currentPage` is the page being viewed (1-based;
+upstream's `page` prop); `itemCount` / `pageCount` name the total either way
+(item count wins when both are set); `pageSize` is the page size (`Nothing`
+falls back to `getDefaultPageSize` with these `pageSizes`). `pageSlot`
+(default 9) is the max visible page cells the window centers on the current
+page; `showQuickJumper` adds the "Goto" input (`jumperValue` is its text,
+`onJumperInput` receives it digit-filtered); `showQuickJumpDropdown` only
+decides whether `pageItems` attaches option lists to the ellipses.
+Presentation: `disabled`, `simple`, `size`, `rtl` — see the module doc and
+the porting comment below for the edge semantics. `onUpdatePage` fires for
+every navigation with the target page, only when enabled and the target
+differs; `onUpdatePageSize` exists for the unported size picker. The `view`
+children are the `prefix` slot; `suffix` covers the `suffix` slot;
+`attributes` land on the root.
 -}
 type alias Options msg =
     { currentPage : Int

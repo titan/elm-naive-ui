@@ -20,13 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Avatar CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`borderRadius` → `--n-border-radius`).
-
-Collected by concern:
-
-  - shape & typography: `borderRadius`, `fontSize`, `border`
-  - sizes: `heightTiny`, `heightSmall`, `heightMedium`, `heightLarge`, `heightHuge`
-  - surface colors (base/modal/popover): `color`, `colorModal`, `colorPopover`
-
 -}
 type alias Vars =
     { borderRadius : String

@@ -20,15 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Menu CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`borderRadius` → `--n-border-radius`).
-
-Collected by concern:
-
-  - chrome (root color, divider, border, font, radius, group text): `borderRadius`, `color`, `groupTextColor`, `itemHeight`, `colorInverted`, `borderColorHorizontal`, `fontSize`, `dividerColor`, `groupTextColorInverted`
-  - item surface colors (default, hover/active states, horizontal & inverted): `itemColorHover`, `itemColorActive`, `itemColorActiveHover`, `itemColorActiveCollapsed`, `itemColorHoverInverted`, `itemColorActiveInverted`, `itemColorActiveHoverInverted`, `itemColorActiveCollapsedInverted`
-  - item text colors (default, hover/active/child-active, horizontal & inverted): `itemTextColor`, `itemTextColorHover`, `itemTextColorActive`, `itemTextColorActiveHover`, `itemTextColorChildActive`, `itemTextColorChildActiveHover`, `itemTextColorHorizontal`, `itemTextColorHoverHorizontal`, `itemTextColorActiveHorizontal`, `itemTextColorActiveHoverHorizontal`, `itemTextColorChildActiveHorizontal`, `itemTextColorChildActiveHoverHorizontal`, `itemTextColorInverted`, `itemTextColorHoverInverted`, `itemTextColorChildActiveInverted`, `itemTextColorChildActiveHoverInverted`, `itemTextColorActiveInverted`, `itemTextColorActiveHoverInverted`, `itemTextColorHorizontalInverted`, `itemTextColorHoverHorizontalInverted`, `itemTextColorChildActiveHorizontalInverted`, `itemTextColorChildActiveHoverHorizontalInverted`, `itemTextColorActiveHorizontalInverted`, `itemTextColorActiveHoverHorizontalInverted`
-  - item icon colors (default, hover/active/child-active, collapsed, horizontal & inverted): `itemIconColor`, `itemIconColorHover`, `itemIconColorActive`, `itemIconColorActiveHover`, `itemIconColorChildActive`, `itemIconColorChildActiveHover`, `itemIconColorCollapsed`, `itemIconColorHorizontal`, `itemIconColorHoverHorizontal`, `itemIconColorActiveHorizontal`, `itemIconColorActiveHoverHorizontal`, `itemIconColorChildActiveHorizontal`, `itemIconColorChildActiveHoverHorizontal`, `itemIconColorInverted`, `itemIconColorHoverInverted`, `itemIconColorActiveInverted`, `itemIconColorActiveHoverInverted`, `itemIconColorChildActiveInverted`, `itemIconColorChildActiveHoverInverted`, `itemIconColorCollapsedInverted`, `itemIconColorHorizontalInverted`, `itemIconColorHoverHorizontalInverted`, `itemIconColorActiveHorizontalInverted`, `itemIconColorActiveHoverHorizontalInverted`, `itemIconColorChildActiveHorizontalInverted`, `itemIconColorChildActiveHoverHorizontalInverted`
-  - arrow colors: `arrowColor`, `arrowColorHover`, `arrowColorActive`, `arrowColorActiveHover`, `arrowColorChildActive`, `arrowColorChildActiveHover`, `arrowColorInverted`, `arrowColorHoverInverted`, `arrowColorActiveInverted`, `arrowColorActiveHoverInverted`, `arrowColorChildActiveInverted`, `arrowColorChildActiveHoverInverted`
-
 -}
 type alias Vars =
     { borderRadius : String

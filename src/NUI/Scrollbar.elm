@@ -11,73 +11,89 @@ module NUI.Scrollbar exposing (HorizontalPlacement(..), Options, VerticalPlaceme
 The element carries the `.n-scrollbar` BEM classes and Naive UI's `--n-*` custom
 properties, and `NUI.Css` ships Naive UI's exact CSS.
 
-**Runtime.** Upstream measures the container/content, decides whether a rail
-overflows (`needXBar` / `needYBar`), reads the bar geometry, and shows the bar on
-hover (`trigger`) or always (`trigger === 'none'`). This library is pure, so the
-caller owns that state: `showYBar` / `showXBar` decide whether a bar element is
-rendered (upstream's `needBar && isShowBar && !isIos`) and `yBarStyle` / `xBarStyle`
-carry the measured geometry as raw CSS (the `NUI.BackTop` / `NUI.Affix`
-caller-owned-runtime precedent). The rails themselves always render.
-
-Upstream also drives the scroll from a bar drag (`handleYScrollMouseDown` /
-`handleXScrollMouseDown`: mousedown on the bar memoizes the scroll offset +
-pointer, the window mousemove scales the pointer delta by
-`(content - container) / (container - bar)` into `container.scrollTop/Left`,
-window mouseup releases). The seams are the same story: `containerAttributes`
-addresses the scrolling div (`Browser.Dom.setViewportOf`) and
-`yBarAttributes` / `xBarAttributes` put the press decoder on the bar div
-itself (upstream binds `onMousedown` exactly there).
-
 **Composition seams.** `extraClasses` (appended after `n-scrollbar`, like a Vue
 fallthrough class) and `attributes` let wrapper components merge themselves onto
 the scrollbar root — `NUI.DrawerContent`'s non-native body uses it for the
 `n-drawer-body` class (the `NUI.Card` seam precedent).
 
-**Documented gaps:**
+Essential contract: the rails always render; `showYBar` / `showXBar`
+decide whether a bar element is rendered and `yBarStyle` / `xBarStyle`
+carry the measured geometry as raw CSS — measurement and overflow state are
+caller-owned (the `NUI.BackTop` / `NUI.Affix` precedent). Bar-drag scrolling
+is the same story: `containerAttributes` addresses the scrolling div for
+`Browser.Dom.setViewportOf` and `yBarAttributes` / `xBarAttributes` put the
+press decoder on the bar div.
 
-  - The root is an elm-ui element (the `NUI.Progress` / `NUI.Badge` precedent, so the
-    caller's `attributes` land on it), which means elm-ui's own structure classes also
-    sit alongside `n-scrollbar`, and the root is a flex column where upstream is a
-    block. Both are harmless here: Naive UI's doubly-scoped rules declare every
-    load-bearing property of `.n-scrollbar` (`overflow`, `position`, `height`,
-    `width`), the bridge restores `flex-basis`, and every child is `height`/`width:
-    100%` or absolutely positioned, so it does not depend on the root's display mode.
-    The container and rails remain the root's direct children (`>` selectors hold).
-  - `vueuc`'s `VResizeObserver` (content/container resize tracking) is omitted.
-  - `trigger` (public `'none' | 'hover'`) is not modelled: it only selects between a
-    no-op `Wrapper` and a `Transition`, so it has no static DOM effect. Hover-driven
-    show/hide is the caller's (`attributes` can bind `mouseenter` / `mouseleave`).
-  - `onScroll` is not modelled; attach it with `attributes` (the `NUI.Layout`
-    precedent for a native scroll container).
-  - `n-scrollbar-rail--disabled` (added by a `watchEffect` when a rail does not
-    overflow) is not modelled — runtime.
-  - The `fade-in-transition` on the bar is not driven (caller-owned; cf. LoadingBar).
-  - The horizontal bar's RTL offset (`right` vs `left`) is caller-owned via `xBarStyle`.
-  - Upstream's own root merge puts the fallthrough attrs FIRST: `NScrollbar`
-    declares `inheritAttrs: false` and renders its root as
-    `mergeProps(this.$attrs, { class: 'n-scrollbar…', style: cssVars })`
-    (Scrollbar.tsx:868), so a consumer's fallthrough `class` lands BEFORE
-    `n-scrollbar` and its fallthrough style before the `--n-*` vars — the
-    reverse of Vue's template fallthrough. The port keeps the library-wide
-    own-first convention (`extraClasses` / `rootStyle` appended after, the
-    drawer seam's pinned `n-scrollbar n-drawer-body`); the order difference
-    is inert (class order never affects the cascade, and the two style
-    declaration sets are disjoint).
-  - The `scrollable` / `duration` / `container*` / `useUnifiedContainer`
-    / `triggerDisplayManually` / `internal*` props and the `scrollTo` / `scrollBy` /
-    `sync` instance methods are internal-only or imperative — not modelled
-    (`scrollable = false` renders the slot bare upstream; wrapper
-    components branch before calling `view`). The
-    `container` prop (a caller-owned scroll element) is not reproduced: the built-in
-    `n-scrollbar-container` / `n-scrollbar-content` are always rendered. When the caller
-    needs to drive the container's scroll imperatively (upstream's `scrollTo` instance
-    method — e.g. `NUI.TimePicker`'s scroll-to-active), `containerAttributes` puts
-    attributes (an `id`) on the scrolling `n-scrollbar-container` div so
-    `Browser.Dom.setViewportOf` can address it; the container's own classes and
-    structure stay upstream's.
+DOM shapes, fidelity notes and porting details live in the comment block
+below the module doc.
 
 @docs HorizontalPlacement, Options, VerticalPlacement, cssVars, defaults, view
 
+-}
+
+{- DOM shapes, fidelity notes and porting details for `NUI.Scrollbar` — moved verbatim
+      out of the module docstring (docs.json must stay under elm publish's 768kb
+      limit); plain comments do not enter the published API docs.
+
+   **Runtime.** Upstream measures the container/content, decides whether a rail
+   overflows (`needXBar` / `needYBar`), reads the bar geometry, and shows the bar on
+   hover (`trigger`) or always (`trigger === 'none'`). This library is pure, so the
+   caller owns that state: `showYBar` / `showXBar` decide whether a bar element is
+   rendered (upstream's `needBar && isShowBar && !isIos`) and `yBarStyle` / `xBarStyle`
+   carry the measured geometry as raw CSS (the `NUI.BackTop` / `NUI.Affix`
+   caller-owned-runtime precedent). The rails themselves always render.
+
+   Upstream also drives the scroll from a bar drag (`handleYScrollMouseDown` /
+   `handleXScrollMouseDown`: mousedown on the bar memoizes the scroll offset +
+   pointer, the window mousemove scales the pointer delta by
+   `(content - container) / (container - bar)` into `container.scrollTop/Left`,
+   window mouseup releases). The seams are the same story: `containerAttributes`
+   addresses the scrolling div (`Browser.Dom.setViewportOf`) and
+   `yBarAttributes` / `xBarAttributes` put the press decoder on the bar div
+   itself (upstream binds `onMousedown` exactly there).
+
+   **Documented gaps:**
+
+     - The root is an elm-ui element (the `NUI.Progress` / `NUI.Badge` precedent, so the
+       caller's `attributes` land on it), which means elm-ui's own structure classes also
+       sit alongside `n-scrollbar`, and the root is a flex column where upstream is a
+       block. Both are harmless here: Naive UI's doubly-scoped rules declare every
+       load-bearing property of `.n-scrollbar` (`overflow`, `position`, `height`,
+       `width`), the bridge restores `flex-basis`, and every child is `height`/`width:
+       100%` or absolutely positioned, so it does not depend on the root's display mode.
+       The container and rails remain the root's direct children (`>` selectors hold).
+     - `vueuc`'s `VResizeObserver` (content/container resize tracking) is omitted.
+     - `trigger` (public `'none' | 'hover'`) is not modelled: it only selects between a
+       no-op `Wrapper` and a `Transition`, so it has no static DOM effect. Hover-driven
+       show/hide is the caller's (`attributes` can bind `mouseenter` / `mouseleave`).
+     - `onScroll` is not modelled; attach it with `attributes` (the `NUI.Layout`
+       precedent for a native scroll container).
+     - `n-scrollbar-rail--disabled` (added by a `watchEffect` when a rail does not
+       overflow) is not modelled — runtime.
+     - The `fade-in-transition` on the bar is not driven (caller-owned; cf. LoadingBar).
+     - The horizontal bar's RTL offset (`right` vs `left`) is caller-owned via `xBarStyle`.
+     - Upstream's own root merge puts the fallthrough attrs FIRST: `NScrollbar`
+       declares `inheritAttrs: false` and renders its root as
+       `mergeProps(this.$attrs, { class: 'n-scrollbar…', style: cssVars })`
+       (Scrollbar.tsx:868), so a consumer's fallthrough `class` lands BEFORE
+       `n-scrollbar` and its fallthrough style before the `--n-*` vars — the
+       reverse of Vue's template fallthrough. The port keeps the library-wide
+       own-first convention (`extraClasses` / `rootStyle` appended after, the
+       drawer seam's pinned `n-scrollbar n-drawer-body`); the order difference
+       is inert (class order never affects the cascade, and the two style
+       declaration sets are disjoint).
+     - The `scrollable` / `duration` / `container*` / `useUnifiedContainer`
+       / `triggerDisplayManually` / `internal*` props and the `scrollTo` / `scrollBy` /
+       `sync` instance methods are internal-only or imperative — not modelled
+       (`scrollable = false` renders the slot bare upstream; wrapper
+       components branch before calling `view`). The
+       `container` prop (a caller-owned scroll element) is not reproduced: the built-in
+       `n-scrollbar-container` / `n-scrollbar-content` are always rendered. When the caller
+       needs to drive the container's scroll imperatively (upstream's `scrollTo` instance
+       method — e.g. `NUI.TimePicker`'s scroll-to-active), `containerAttributes` puts
+       attributes (an `id`) on the scrolling `n-scrollbar-container` div so
+       `Browser.Dom.setViewportOf` can address it; the container's own classes and
+       structure stay upstream's.
 -}
 
 import Element exposing (Element)

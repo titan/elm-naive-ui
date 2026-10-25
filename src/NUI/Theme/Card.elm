@@ -20,14 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Card CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`paddingSmall` → `--n-padding-small`).
-
-Collected by concern:
-
-  - close-button metrics & states: `closeIconSize`, `closeSize`, `closeColorHover`, `closeColorPressed`, `closeBorderRadius`, `closeIconColor`, `closeIconColorHover`, `closeIconColorPressed`
-  - per-size paddings & title/body font sizes: `paddingSmall`, `paddingMedium`, `paddingLarge`, `paddingHuge`, `titleFontSizeSmall`, `titleFontSizeMedium`, `titleFontSizeLarge`, `titleFontSizeHuge`, `fontSizeSmall`, `fontSizeMedium`, `fontSizeLarge`, `fontSizeHuge`
-  - surfaces (base/modal/popover/embedded) & elevation: `lineHeight`, `color`, `colorModal`, `colorPopover`, `colorTarget`, `colorEmbedded`, `colorEmbeddedModal`, `colorEmbeddedPopover`, `borderColor`, `actionColor`, `boxShadow`, `borderRadius`
-  - text colors: `textColor`, `titleTextColor`, `titleFontWeight`
-
 -}
 type alias Vars =
     { paddingSmall : String

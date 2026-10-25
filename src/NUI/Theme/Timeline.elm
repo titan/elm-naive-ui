@@ -20,15 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Timeline CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`titleMarginMedium` → `--n-title-margin-medium`).
-
-Collected by concern:
-
-  - per-size title metrics & icon sizes, content font size: `titleMarginMedium`, `titleMarginLarge`, `titleFontSizeMedium`, `titleFontSizeLarge`, `iconSizeMedium`, `iconSizeLarge`, `contentFontSize`
-  - title & body text, weight & meta: `titleFontWeight`, `titleTextColor`, `contentTextColor`, `metaTextColor`
-  - circle borders (default & typed): `circleBorder`, `circleBorderInfo`, `circleBorderError`, `circleBorderSuccess`, `circleBorderWarning`
-  - icon colors (default & typed): `iconColor`, `iconColorInfo`, `iconColorError`, `iconColorSuccess`, `iconColorWarning`
-  - line color: `lineColor`
-
 -}
 type alias Vars =
     { titleMarginMedium : String

@@ -20,17 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Pagination CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`itemPaddingSmall` → `--n-item-padding-small`).
-
-Collected by concern:
-
-  - per-size page-item metrics (padding & margins, incl. rtl): `itemPaddingSmall`, `itemMarginSmall`, `itemMarginSmallRtl`, `itemPaddingMedium`, `itemMarginMedium`, `itemMarginMediumRtl`, `itemPaddingLarge`, `itemMarginLarge`, `itemMarginLargeRtl`
-  - per-size pager-button icon sizes: `buttonIconSizeSmall`, `buttonIconSizeMedium`, `buttonIconSizeLarge`
-  - per-size input/select widths & margins, prefix/suffix margins (incl. rtl): `inputWidthSmall`, `selectWidthSmall`, `inputMarginSmall`, `inputMarginSmallRtl`, `selectMarginSmall`, `prefixMarginSmall`, `suffixMarginSmall`, `inputWidthMedium`, `selectWidthMedium`, `inputMarginMedium`, `inputMarginMediumRtl`, `selectMarginMedium`, `prefixMarginMedium`, `suffixMarginMedium`, `inputWidthLarge`, `selectWidthLarge`, `inputMarginLarge`, `inputMarginLargeRtl`, `selectMarginLarge`, `prefixMarginLarge`, `suffixMarginLarge`
-  - per-size item sizes, item & jumper font sizes: `itemSizeSmall`, `itemSizeMedium`, `itemSizeLarge`, `itemFontSizeSmall`, `itemFontSizeMedium`, `itemFontSizeLarge`, `jumperFontSizeSmall`, `jumperFontSizeMedium`, `jumperFontSizeLarge`
-  - page-item text, surface & border states: `itemTextColor`, `itemTextColorHover`, `itemTextColorPressed`, `itemTextColorActive`, `itemTextColorDisabled`, `itemColor`, `itemColorHover`, `itemColorPressed`, `itemColorActive`, `itemColorActiveHover`, `itemColorDisabled`, `itemBorder`, `itemBorderHover`, `itemBorderPressed`, `itemBorderActive`, `itemBorderDisabled`, `itemBorderRadius`
-  - pager-button colors & borders: `buttonColor`, `buttonColorHover`, `buttonColorPressed`, `buttonBorder`, `buttonBorderHover`, `buttonBorderPressed`, `buttonIconColor`, `buttonIconColorHover`, `buttonIconColorPressed`
-  - jumper text colors: `jumperTextColor`, `jumperTextColorDisabled`
-
 -}
 type alias Vars =
     { itemPaddingSmall : String

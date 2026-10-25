@@ -2,15 +2,7 @@ module NUI.Modal exposing (Preset(..), Options, defaults, cardDefaults, view, cs
 
 {-| Naive UI's `Modal` — the mount-body family: unlike `NUI.Popover`/
 `NUI.Dropdown` (a follower anchored to a trigger), Modal renders its own fixed
-full-viewport tree and centres the content with flex (`align-self: center;
-margin: auto` inside the scroll content). Upstream `Modal.tsx` is orchestration
-around `BodyWrapper.tsx` (the `ModalBody` component):
-
-    div.n-modal-container (role=none, the 4 css vars [+ z-index])
-      div.n-modal-mask (aria-hidden)                       — iff showMask
-      div.n-modal-body-wrapper [--mask-hidden] (role=none)
-        NUI.Scrollbar (contentClass n-modal-scroll-content)
-          the content root, always classed `n-modal`
+full-viewport tree and centres the content with flex.
 
     import NUI.Modal as Modal
     import NUI.Theme as Theme
@@ -31,75 +23,94 @@ around `BodyWrapper.tsx` (the `ModalBody` component):
             }
             [ Element.text "Card content" ])
 
-**Everything runtime is caller-owned** (the popover family precedent, applied
-to the inverse architecture — upstream provides
-`popoverBodyInjectionKey = null`, it consumes nothing):
+The preset internals (why the Custom wrapper is TWO nodes, the
+`flex-shrink`/`min-width` inlining, the `.n-modal .n-dialog` width rule) and
+the dialog-preset composition details live in the porting comment below —
+`dialog`/`confirm` compose `NUI.Dialog`, whose env-level runtime
+(`useDialog` queue, the return-`false`-blocks-close gate) is caller-owned
+(see `NUI.Dialog`'s contract).
 
-  - **Mounting and `show`.** The caller decides where the tree lives (upstream
-    teleports to `to`; mount `view` wherever you want it) and owns the show
-    state. `show = False` with no leave phase renders a bare container —
-    unmount the view when fully closed (`displayDirective: 'if'` semantics;
-    the keep-mounted `display: none` variant is not modelled).
-  - **Transitions.** Both the mask (`fade-in-transition`) and the content
-    (`fade-in-scale-up-transition`, enter scale `.5`) run `.25s` on the same
-    clock: pass the phase through `maskTransition`/`bodyTransition` and keep
-    the view mounted while either is a leave phase (`I.isLeavePhase`). The
-    mask node and the body-wrapper tree are only rendered while
-    `show || isLeavePhase …`.
-  - **Outside-click closing.** Upstream's mask never receives clicks (the
-    fixed body-wrapper overlays it; `maskClosable` closes via the
-    `clickoutside` directive on the content node). The port's mask is inert
-    and `aria-hidden`; wire your own outside-click handling.
-  - **Keyboard.** `closeOnEsc`/`onEsc`, `trapFocus`/`autoFocus` (VFocusTrap
-    tab cycling) are caller runtime.
-  - **`blockScroll`.** Upstream locks `document.body`; not reachable from a
-    pure view.
-  - **Drag and mouse `transformOrigin`.** Global mousemove/mousedown runtime
-    (upstream `useDragModal` + the modal provider's mouse tracking); the port
-    is effectively `transformOrigin: 'center'`. The `.n-modal .n-draggable`
-    CSS rule ships unused.
-  - **z-index.** No `zindexable` auto-increment: pass `zIndex` and allocate
-    stacking yourself (rendered as `z-index` appended after the vars).
+Essential contract: everything runtime is caller-owned (the popover-family
+precedent) — mounting and `show`, the mask / content transitions (pass the
+phases through `maskTransition` / `bodyTransition`, keep the view mounted
+while either is a leave phase), outside-click closing, keyboard
+(`closeOnEsc`, focus trapping), `blockScroll`, drag and `z-index` (no
+`zindexable` auto-increment — pass `zIndex`). `Custom` wraps your content in
+a port-owned `div.n-modal`; `Card` composes `NUI.Card` unbordered by default
+(start from `cardDefaults`); both presets wrap each child in
+`Element.paragraph` for upstream's block-flow text, and the body phase class
+is forced last on the root class list (the house invariant).
 
-**Presets.** `Custom` wraps your content in a port-owned `div.n-modal`
-(upstream clones the caller's root vnode and merges the class onto it — Elm
-elements cannot be cloned; the extra wrapper is visually identical because the
-`.n-modal` rules land on it). The Custom wrapper is TWO nodes: the port-owned
-`.n-modal` shell — which also inlines `flex-shrink: 1; min-width: 0`, since
-elm-ui nodes carry `flex-shrink: 0` and would hold an auto-width custom body
-at its max-content size, spilling past the scroll content's box (upstream's
-plain div keeps the flex default) — and an inner carrier column receiving
-the caller's `attributes`: a caller `style` attribute on the shell itself
-would clobber the port's geometry declarations (duplicate `style`
-attributes, last one wins). `Card` composes `NUI.Card.view` with the
-`n-modal` class, `role="dialog"` and `aria-modal="true"` merged onto the card
-root (via Card's `extraClasses`/`attributes` seams) — start from
-`cardDefaults`: upstream spreads `{...cardBaseProps, ...dialogProps}` so the
-card is unbordered by default inside a modal. **Both presets wrap each child in
-`Element.paragraph`** — a bare elm-ui `Element.text` carries `white-space: pre`
-and a content-width box, so it never wraps and overflows the card/mask on one
-line; upstream's `n-modal` body is normal block flow (the `pre` belongs only to
-a `content-in-pre` variant). Either way the body phase class
-(`fade-in-scale-up-transition-*`) is forced **last** in the root class list
-(the house invariant, cf. `NUI.Dropdown`), after any caller-supplied
-`extraClasses`. `dialog`/`confirm` presets compose `NUI.Dialog` (see the
-**The dialog presets** paragraph below).
-
-`showMask = False` adds `n-modal-body-wrapper--mask-hidden` (pointer-events
-pass-through except the content) exactly as upstream's `maskHidden = !showMask`.
-
-**The dialog presets** compose `NUI.Dialog.view`: the body root keeps its own
-`.n-dialog` classes and vars, gains `n-modal` (prepended to the dialog's
-`extraClasses`, before the phase classes — phase LAST stays) and
-`aria-modal="true"` (upstream `BodyWrapper` adds exactly that; `role=dialog`
-is the dialog's own). Upstream's `.n-modal .n-dialog` rule (width `446px`,
-`max-width: calc(100vw - 32px)`) ships with dialog's cssr, so the composed
-body is sized for free. The env-level runtime (`useDialog` queue, the
-return-`false`-blocks-close gate, mask/esc/drag) is caller-owned — see
-`NUI.Dialog`'s contract.
+DOM shapes, fidelity notes and porting details live in the comment block
+below the module doc.
 
 @docs Preset, Options, defaults, cardDefaults, view, cssVars
 
+-}
+
+{- DOM shapes, fidelity notes and porting details for `NUI.Modal` — moved verbatim
+      out of the module docstring (docs.json must stay under elm publish's 768kb
+      limit); plain comments do not enter the published API docs.
+
+       div.n-modal-container (role=none, the 4 css vars [+ z-index])
+         div.n-modal-mask (aria-hidden)                       — iff showMask
+         div.n-modal-body-wrapper [--mask-hidden] (role=none)
+           NUI.Scrollbar (contentClass n-modal-scroll-content)
+             the content root, always classed `n-modal`
+
+   **Everything runtime is caller-owned** (the popover family precedent, applied
+   to the inverse architecture — upstream provides
+   `popoverBodyInjectionKey = null`, it consumes nothing): mounting and `show`
+   (upstream teleports to `to`), the `.25s` mask/content transitions (pass the
+   phase through `maskTransition`/`bodyTransition`, keep the view mounted while
+   either is a leave phase — `I.isLeavePhase`), outside-click closing (the
+   port's mask is inert and `aria-hidden`; wire your own), keyboard
+   (`closeOnEsc`, `trapFocus`/`autoFocus`), `blockScroll`, drag and mouse
+   `transformOrigin` (the port is effectively `transformOrigin: 'center'`), and
+   `z-index` (no `zindexable` auto-increment — pass `zIndex` and allocate
+   stacking yourself).
+
+   **Presets.** `Custom` wraps your content in a port-owned `div.n-modal`
+   (upstream clones the caller's root vnode and merges the class onto it — Elm
+   elements cannot be cloned; the extra wrapper is visually identical). `Card`
+   composes `NUI.Card.view` with `n-modal`, `role="dialog"` and
+   `aria-modal="true"` merged onto the card root — start from `cardDefaults`:
+   upstream spreads `{...cardBaseProps, ...dialogProps}` so the card is
+   unbordered by default inside a modal. **Both presets wrap each child in
+   `Element.paragraph`** so text wraps like upstream's normal block flow
+   (a bare elm-ui `Element.text` carries `white-space: pre` and would overflow
+   one line). The body phase class (`fade-in-scale-up-transition-*`) is forced
+   **last** in the root class list (the house invariant, cf. `NUI.Dropdown`),
+   after any caller-supplied `extraClasses`.
+
+   `showMask = False` adds `n-modal-body-wrapper--mask-hidden` (pointer-events
+   pass-through except the content) exactly as upstream.
+-}
+{-
+   PORTING NOTES (plain comment — not published to docs.json). Moved verbatim
+   from the module doc; the module doc keeps the caller-facing contract.
+
+   **Presets, the fine print.** The Custom wrapper is TWO nodes: the port-owned
+   `.n-modal` shell — which also inlines `flex-shrink: 1; min-width: 0`, since
+   elm-ui nodes carry `flex-shrink: 0` and would hold an auto-width custom body
+   at its max-content size, spilling past the scroll content's box (upstream's
+   plain div keeps the flex default) — and an inner carrier column receiving
+   the caller's `attributes`: a caller `style` attribute on the shell itself
+   would clobber the port's geometry declarations (duplicate `style`
+   attributes, last one wins).
+
+   **The dialog presets** compose `NUI.Dialog.view`: the body root keeps its own
+   `.n-dialog` classes and vars, gains `n-modal` (prepended to the dialog's
+   `extraClasses`, before the phase classes — phase LAST stays) and
+   `aria-modal="true"` (upstream `BodyWrapper` adds exactly that; `role=dialog`
+   is the dialog's own). Upstream's `.n-modal .n-dialog` rule (width `446px`,
+   `max-width: calc(100vw - 32px)`) ships with dialog's cssr, so the composed
+   body is sized for free.
+
+   Transitions detail: both the mask (`fade-in-transition`) and the content
+   (`fade-in-scale-up-transition`, enter scale `.5`) run `.25s` on the same
+   clock; the mask node and the body-wrapper tree are only rendered while
+   `show || isLeavePhase …`. The mask node and body-wrapper are `role=none`.
 -}
 
 import Element exposing (Element)

@@ -1,10 +1,9 @@
 module NUI.Heatmap exposing (ColorTheme(..), DayRect, HeatmapDataItem, MonthLabel, Options, Size(..), calcColorByValue, completeDataGaps, createDayRect, createLoadingMatrix, createSparseMatrix, cssVarsFor, dataMonthLabels, defaults, loadingMonthLabels, view)
 
 {-| Naive UI's `Heatmap`, rebuilt on elm-ui: a GitHub-style contribution
-calendar. Real `<table>` markup (via `Element.html`, the `NUI.Highlight`
-precedent for raw nodes) with week labels down the side, month labels across
-the top, one rect per day coloured by `value / maxValue`, and a footer with the
-less/more colour indicator.
+calendar. Real `<table>` markup with week labels down the side, month labels
+across the top, one rect per day coloured by `value / maxValue`, and a footer
+with the less/more colour indicator.
 
     import NUI.Heatmap exposing (defaults)
 
@@ -19,89 +18,81 @@ less/more colour indicator.
         }
         []
 
-The element carries the `.n-heatmap` BEM classes and Naive UI's `--n-*` custom
-properties, and `NUI.Css` ships Naive UI's exact CSS (plus the bridge's static
-loading keyframes — see below).
-
-**Caller-owned runtime.** Upstream reads the wall clock (`new Date()`) in three
-places; this library is pure, so the caller owns time:
+**The caller-owned contract.** Upstream reads the wall clock (`new Date()`)
+in three places; this library is pure, so the caller owns time:
 
   - `zone` — every date computation (week alignment, gap filling, month
-    grouping) is local-timezone, exactly like date-fns without UTC mode. Pass
-    the same zone you render with.
-  - `now` — only feeds `createLoadingMatrix`'s dead timestamps (upstream
-    `Date.now()`); it never reaches the DOM. Upstream also derives the week
-    labels and loading month-label dates from `new Date()`, but their rendered
-    output (weekday names, month names) depends on nothing but the rotation
-    and the caller-supplied label lists, so `now` is not consulted there.
+    grouping) is local-timezone; pass the same zone you render with.
+  - `now` — only feeds `createLoadingMatrix`'s dead timestamps; it never
+    reaches the DOM.
 
 **Locale** replaces upstream's `useLocale('Heatmap')` + date-fns locale:
+`weekdayLabels` (7 strings, 0 = Sunday … 6 = Saturday, rotated by the week
+start; rows 1/3/5 visible), `monthLabels` (12 strings, 1–12), and
+`indicatorLessText` / `indicatorMoreText` (upstream enUS: `"less"` /
+`"more"`). `firstDayOfWeek` keeps Naive UI's own convention (0 = Monday …
+6 = Sunday, like `NUI.Calendar`); the date-fns shift is applied internally.
 
-  - `weekdayLabels` — 7 strings indexed by date-fns weekday number
-    (0 = Sunday … 6 = Saturday), matching `format(ts, 'eee')` output order.
-    The component rotates them by the (transformed) week start itself; rows
-    1/3/5 are visible, exactly like upstream's `i % 2 !== 0`.
-  - `monthLabels` — 12 strings indexed 1–12, matching `format(ts, 'MMM')`.
-  - `indicatorLessText` / `indicatorMoreText` — the indicator labels
-    (upstream `enUS`: `"less"` / `"more"`).
-
-**`firstDayOfWeek`** keeps Naive UI's own convention (0 = Monday … 6 =
-Sunday, like `NUI.Calendar`); the `(n + 1) % 7` shift to date-fns numbering
-(0 = Sunday … 6 = Saturday) is applied internally, exactly like upstream's
-`transformNaiveFirstDayOfWeekToDateFns` calls. The pure core below speaks
-date-fns numbering.
-
-**Pure core.** The upstream `src/heatmap/src/utils` functions are exposed for
-reuse and testing (`NUI.Grid` / `NUI.Highlight` precedent): `calcColorByValue`,
-`completeDataGaps`, `createDayRect`, `createSparseMatrix`, `createLoadingMatrix`,
-plus `dataMonthLabels` / `loadingMonthLabels`. `view` uses exactly these.
+**Pure core.** The upstream `src/heatmap/src/utils` functions are exposed
+for reuse and testing: `calcColorByValue`, `completeDataGaps`,
+`createDayRect`, `createSparseMatrix`, `createLoadingMatrix`, plus
+`dataMonthLabels` / `loadingMonthLabels`. `view` uses exactly these.
 
 **Slots.** `footer` (rendered inside the inner `.n-heatmap__footer` wrapper,
 only when present) and `indicator` (replaces the whole colour indicator
-block). The default indicator renders only when `showColorIndicator` is set,
-matching upstream's `resolveSlot` fallback.
+block; the default renders only when `showColorIndicator` is set).
 
-**Divergences from upstream** (everything else is a faithful port):
-
-  - **Tooltip is not ported.** Upstream wraps each rect in `n-tooltip` when
-    the `tooltip` prop is set; tooltips are outside this library's contract,
-    so the caller owns hover UX. Rects render exactly upstream's trigger
-    `div.n-heatmap-rect` (with the inline `--n-rect-color`).
-  - **`undefined` vs `null` values collapse.** Upstream's
-    `value?: number | null` lets `{ value: undefined }` (which renders a rect
-    in the _minimum_ colour — `calcColorByValue` treats it like `≤ 0`, but the
-    render checks `!== null`) differ from `{ value: null }` (which renders
-    `.n-heatmap__empty-cell`). Elm's `Maybe Float` has one `Nothing`, so
-    missing values always render the empty cell — one rect _emptier_ than
-    upstream for `undefined`-valued data.
-  - **The empty-data guard moved inside `completeDataGaps`.** Upstream's util
-    crashes on `[]` (`sortedData[0]` of nothing) and `Heatmap.tsx` guards at
-    the call site; here the util returns `[]` itself.
-  - **Day keys are civil-day numbers, not epoch-millis.** Upstream keys its
-    data map by `startOfDay(ts).getTime()`; this port keys by the calendar
-    day index in `zone`. The two agree unless the zone's UTC offset changes
-    mid-range (a DST-style zone), which `Time.customZone` cannot express and
-    no caller supplies — and under such a change the civil-day keys behave
-    more sensibly than epoch-millis. Review-confirmed unreachable divergence.
-  - **The loading animation is static.** Upstream mounts a runtime stylesheet
-    with a color-hashed class (`heatmap-loading-<hash>`) plus keyframes; the
-    port ships the same animation verbatim on the existing `--loading`
-    modifier (`tools/bridge.css`), so no hashed class is emitted.
-  - **`xGap` / `yGap` are visually swapped** — upstream's
-    `border-spacing: var(--n-y-gap) var(--n-x-gap)` swaps the axes relative to
-    the prop names. Kept verbatim (do not "fix").
-  - Quirks kept on purpose: month labels spanning fewer than 3 columns are
-    dropped (`weekCount >= 3`); duplicate timestamps are last-wins (JS `Map`
-    construction over the sorted data); `value <= 0`, `null`, or
-    `maxValue == 0` all paint `colors[0]`; bucketing is `ceil`, not `floor`;
-    the loading matrix is a dead 7×53 grid (`timestamp = now`, `value = 0`,
-    `color = '#000000'`); `maxValue` always comes from `data`, even while the
-    matrix shows `loadingData` (so a loading matrix without `data` paints
-    every rect `colors[0]`); and `loadingData = Just []` counts as _present_
-    (a JS `[]` is truthy), which yields the loading matrix but **data**-derived
-    month labels, while `Nothing` yields the 12 fixed loading labels.
+(The divergence enumeration — tooltip, undefined-vs-null, keying, quirks —
+lives in the plain comment right below: internal port notes, deliberately
+kept out of the published docs.)
 
 @docs ColorTheme, DayRect, HeatmapDataItem, MonthLabel, Options, Size, calcColorByValue, completeDataGaps, createDayRect, createLoadingMatrix, createSparseMatrix, cssVarsFor, dataMonthLabels, defaults, loadingMonthLabels, view
+
+-}
+
+{- INTERNAL PORT NOTES — moved out of the module doc (plain comments do not
+      enter docs.json; the published docs must stay under the package-size
+      limit). Nothing here changes the public contract summarised above.
+
+   **Divergences from upstream** (everything else is a faithful port):
+
+     - **Tooltip is not ported.** Upstream wraps each rect in `n-tooltip` when
+       the `tooltip` prop is set; tooltips are outside this library's contract,
+       so the caller owns hover UX. Rects render exactly upstream's trigger
+       `div.n-heatmap-rect` (with the inline `--n-rect-color`).
+     - **`undefined` vs `null` values collapse.** Upstream's
+       `value?: number | null` lets `{ value: undefined }` (which renders a rect
+       in the _minimum_ colour — `calcColorByValue` treats it like `≤ 0`, but the
+       render checks `!== null`) differ from `{ value: null }` (which renders
+       `.n-heatmap__empty-cell`). Elm's `Maybe Float` has one `Nothing`, so
+       missing values always render the empty cell — one rect _emptier_ than
+       upstream for `undefined`-valued data.
+     - **The empty-data guard moved inside `completeDataGaps`.** Upstream's util
+       crashes on `[]` (`sortedData[0]` of nothing) and `Heatmap.tsx` guards at
+       the call site; here the util returns `[]` itself.
+     - **Day keys are civil-day numbers, not epoch-millis.** Upstream keys its
+       data map by `startOfDay(ts).getTime()`; this port keys by the calendar
+       day index in `zone`. The two agree unless the zone's UTC offset changes
+       mid-range (a DST-style zone), which `Time.customZone` cannot express and
+       no caller supplies — and under such a change the civil-day keys behave
+       more sensibly than epoch-millis. Review-confirmed unreachable divergence.
+     - **The loading animation is static.** Upstream mounts a runtime stylesheet
+       with a color-hashed class (`heatmap-loading-<hash>`) plus keyframes; the
+       port ships the same animation verbatim on the existing `--loading`
+       modifier (`tools/bridge.css`), so no hashed class is emitted.
+     - **`xGap` / `yGap` are visually swapped** — upstream's
+       `border-spacing: var(--n-y-gap) var(--n-x-gap)` swaps the axes relative to
+       the prop names. Kept verbatim (do not "fix").
+     - Quirks kept on purpose: month labels spanning fewer than 3 columns are
+       dropped (`weekCount >= 3`); duplicate timestamps are last-wins (JS `Map`
+       construction over the sorted data); `value <= 0`, `null`, or
+       `maxValue == 0` all paint `colors[0]`; bucketing is `ceil`, not `floor`;
+       the loading matrix is a dead 7×53 grid (`timestamp = now`, `value = 0`,
+       `color = '#000000'`); `maxValue` always comes from `data`, even while the
+       matrix shows `loadingData` (so a loading matrix without `data` paints
+       every rect `colors[0]`); and `loadingData = Just []` counts as _present_
+       (a JS `[]` is truthy), which yields the loading matrix but **data**-derived
+       month labels, while `Nothing` yields the 12 fixed loading labels.
 
 -}
 

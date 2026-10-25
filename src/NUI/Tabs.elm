@@ -16,58 +16,74 @@ The visual result is Naive UI's own: the element carries the `.n-tabs` BEM class
 Naive UI's `--n-*` custom properties, and `NUI.Css` ships Naive UI's exact CSS. The caller
 owns the active `value` (like `NUI.Form` / `NUI.Descriptions`).
 
-**Divergences from upstream (documented):**
+Essential contract: the caller owns the active `value`; the nav / rail /
+tab / pane markup is raw `Html` with the caller's `label` / `content`
+`Element`s embedded through `layoutWith` (`display:contents` wrappers, no
+duplicate stylesheet). Upstream's JS-positioned bar and segment capsule
+have pure-CSS equivalents (no inter-tab transition); scroll buttons and
+`VXScroll` are omitted; `displayDirective` ports `ShowIf` / `Show` only.
+Every documented divergence is itemised below.
 
-  - The nav/rail/tab/pane markup is built as raw `Html` (the port needs `data-*`
-    attributes and a `<button>` close), and the caller's `label` / `content` `Element`s are
-    embedded through `Element.layoutWith` (the `NUI.Form` precedent) with
-    `Element.noStaticStyleSheet` — so each label/content carries one `display:contents`
-    wrapper `div` and no duplicate elm-ui stylesheet.
-  - `vueuc`'s `VXScroll` (top/bottom scroll) and `VResizeObserver` are omitted: for
-    `Top`/`Bottom` the port renders `n-tabs-nav-scroll-wrapper > n-tabs-nav-scroll-content`
-    directly; for `Left`/`Right` it keeps naive-ui's own `n-tabs-nav-y-scroll` wrapper.
-  - The scroll buttons (`TabsButton` / `n-tabs-scroll-button`) are omitted (JS overflow).
-  - `.n-tabs-bar` and the segment `.n-tabs-capsule` are positioned by upstream
-    JS (`updateBarStyle` / `updateSegmentPosition` measure the active tab at
-    runtime). The port inlines a pure-CSS equivalent: the bar rides inside the
-    active tab (`position: relative` + `left/top: 0; width/height: 100%` —
-    exactly the box upstream measures), and the capsule gets
-    `width/height: calc(…)/count` + `translate(calc(3px + i * 100%), 3px)`
-    (segment wrappers are equal-width `flex-grow` items). No transition of
-    either between tabs (upstream animates `left`/`transform`).
-  - `animated` only toggles the `n-tabs-pane-wrapper` markup; the enter/leave transition
-    is not driven (the caller-driven-transition precedent, cf. Form's fade-down).
-  - `displayDirective`: `'show:lazy'` is not ported — `ShowIf` (only the active pane) and
-    `Show` (all panes, inactive ones `display:none`) are.
-  - A close click does **not** `stopPropagation` (Elm has no such hook), so when a card tab
-    is both activatable and closable both messages fire.
-  - The add tab inherits `tabClass` / `tabStyle` (upstream's separate `addTabClass` /
-    `addTabStyle` props are not ported, and the add tab is not a first-class element).
-  - Not ported: draggable tabs, keyboard nav, `tabProps` passthrough,
-    `paneWrapperClass`/`Style`, `addTabClass`/`Style`, `tabsPadding` > 0, `labelSize`,
-    `onBeforeLeave`, `addable` as an object, `showScrollButton`.
-  - `name` is `String` (upstream `string | number`).
-  - `[oracle D]` **D1 — add tab ignores `trigger`.** `onAdd` is always
-    click-wired (`:1072-1080`); upstream's add tab is a `Tab`, so a hover
-    trigger adds on mouseenter (`Tab.tsx:124`).
-  - `[oracle D]` **D2 — close `aria-disabled`.** The port omits it when enabled;
-    `NBaseClose` always emits it (`Close.tsx:40` renders `"false"` when
-    enabled).
-  - `[oracle D]` **D3 — icon SVG byte drift.** `closePath` drops the trailing
-    zero-area path segment + outer `<g>`; the add icon drops `width="512"
-    height="512"` — visually identical (the shipped `_internal/icon` rule sizes
-    the svg to `1em`).
-  - `[oracle D]` **D4 — placement `start`/`end` not ported.** Upstream resolves
-    them via RTL (`Tabs.tsx:171-180`); callers pre-resolve to Left/Right.
-  - `[oracle D]` **D5 — `addTabFixed` not modeled.** The port always renders the
-    add tab inside the scroll wrapper; upstream pins it outside once measured
-    (`Tabs.tsx:666-704`, `:1244`).
-  - `[oracle D]` **D9 — uncontrolled seeding.** Upstream seeds the first pane's
-    name when uncontrolled (`Tabs.tsx:215-223`); the port is fully caller-owned
-    (`value` required).
+DOM shapes, fidelity notes and porting details live in the comment block
+below the module doc.
 
 @docs DisplayDirective, JustifyContent, Options, Placement, Size, Tab, Trigger, Type, cssVars, defaults, view
 
+-}
+
+{- DOM shapes, fidelity notes and porting details for `NUI.Tabs` — moved verbatim
+      out of the module docstring (docs.json must stay under elm publish's 768kb
+      limit); plain comments do not enter the published API docs.
+
+   **Divergences from upstream (documented):**
+
+     - The nav/rail/tab/pane markup is built as raw `Html` (the port needs `data-*`
+       attributes and a `<button>` close), and the caller's `label` / `content` `Element`s are
+       embedded through `Element.layoutWith` (the `NUI.Form` precedent) with
+       `Element.noStaticStyleSheet` — so each label/content carries one `display:contents`
+       wrapper `div` and no duplicate elm-ui stylesheet.
+     - `vueuc`'s `VXScroll` (top/bottom scroll) and `VResizeObserver` are omitted: for
+       `Top`/`Bottom` the port renders `n-tabs-nav-scroll-wrapper > n-tabs-nav-scroll-content`
+       directly; for `Left`/`Right` it keeps naive-ui's own `n-tabs-nav-y-scroll` wrapper.
+     - The scroll buttons (`TabsButton` / `n-tabs-scroll-button`) are omitted (JS overflow).
+     - `.n-tabs-bar` and the segment `.n-tabs-capsule` are positioned by upstream
+       JS (`updateBarStyle` / `updateSegmentPosition` measure the active tab at
+       runtime). The port inlines a pure-CSS equivalent: the bar rides inside the
+       active tab (`position: relative` + `left/top: 0; width/height: 100%` —
+       exactly the box upstream measures), and the capsule gets
+       `width/height: calc(…)/count` + `translate(calc(3px + i * 100%), 3px)`
+       (segment wrappers are equal-width `flex-grow` items). No transition of
+       either between tabs (upstream animates `left`/`transform`).
+     - `animated` only toggles the `n-tabs-pane-wrapper` markup; the enter/leave transition
+       is not driven (the caller-driven-transition precedent, cf. Form's fade-down).
+     - `displayDirective`: `'show:lazy'` is not ported — `ShowIf` (only the active pane) and
+       `Show` (all panes, inactive ones `display:none`) are.
+     - A close click does **not** `stopPropagation` (Elm has no such hook), so when a card tab
+       is both activatable and closable both messages fire.
+     - The add tab inherits `tabClass` / `tabStyle` (upstream's separate `addTabClass` /
+       `addTabStyle` props are not ported, and the add tab is not a first-class element).
+     - Not ported: draggable tabs, keyboard nav, `tabProps` passthrough,
+       `paneWrapperClass`/`Style`, `addTabClass`/`Style`, `tabsPadding` > 0, `labelSize`,
+       `onBeforeLeave`, `addable` as an object, `showScrollButton`.
+     - `name` is `String` (upstream `string | number`).
+     - `[oracle D]` **D1 — add tab ignores `trigger`.** `onAdd` is always
+       click-wired (`:1072-1080`); upstream's add tab is a `Tab`, so a hover
+       trigger adds on mouseenter (`Tab.tsx:124`).
+     - `[oracle D]` **D2 — close `aria-disabled`.** The port omits it when enabled;
+       `NBaseClose` always emits it (`Close.tsx:40` renders `"false"` when
+       enabled).
+     - `[oracle D]` **D3 — icon SVG byte drift.** `closePath` drops the trailing
+       zero-area path segment + outer `<g>`; the add icon drops `width="512"
+       height="512"` — visually identical (the shipped `_internal/icon` rule sizes
+       the svg to `1em`).
+     - `[oracle D]` **D4 — placement `start`/`end` not ported.** Upstream resolves
+       them via RTL (`Tabs.tsx:171-180`); callers pre-resolve to Left/Right.
+     - `[oracle D]` **D5 — `addTabFixed` not modeled.** The port always renders the
+       add tab inside the scroll wrapper; upstream pins it outside once measured
+       (`Tabs.tsx:666-704`, `:1244`).
+     - `[oracle D]` **D9 — uncontrolled seeding.** Upstream seeds the first pane's
+       name when uncontrolled (`Tabs.tsx:215-223`); the port is fully caller-owned
+       (`value` required).
 -}
 
 import Element exposing (Element)

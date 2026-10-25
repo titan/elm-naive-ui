@@ -29,82 +29,97 @@ follower — here both bodies are separate caller-mounted views).
 (Record updates bind `defaults` to a local first — see `NUI.Button`.) The
 value flows out through the menus' `onToggle`, not a trigger field.
 
-Trigger (`view`) DOM — the `.n-cascader` wrapper is bare (no vars, no extra
-classes; `position:relative; width:100%` come from the stylesheet):
+Essential contract: show state, follower positioning, keyboard /
+hover-expansion navigation, `pattern` filtering (through `filterOptions`)
+and remote-load orchestration are caller-owned (the port-wide convention) —
+mount the menu bodies in your own positioned wrapper. Tree checks /
+unchecks and the strategy normalization live in the exported pure helpers
+(`getCheckedKeys`, `check`, `uncheck`, `toggleValue`).
 
-    div.n-cascader
-      └─ NUI.BaseSelection.view (see its docstring for the full tree;
-         `view` derives the display state from `value` + the option tree
-         per the module docs — path labels, fallback keys, tag slicing)
-
-Menu (`menu`) DOM — the columns body, carrying the 17 cascader vars:
-
-    div.n-cascader-menu [fade-in-scale-up-transition-*]
-      tabindex = 0 (upstream hardcodes it)
-      style = 17 vars → --n-menu-mask-color
-      ├─ div.n-cascader-submenu-wrapper                       — iff column 0 non-empty
-      │    ├─ div.n-cascader-submenu [--virtual]              — per column
-      │    │    style = getColumnStyle level (iff columnStyle)
-      │    │    └─ NUI.Scrollbar
-      │    │        └─ div.n-cascader-option [--pending] [--disabled]
-      │    │                       [--show-prefix]             — per option
-      │    │            ├─ div.n-cascader-option__prefix      — iff showCheckbox
-      │    │            │    > NCheckbox{checked, indeterminate, disabled,
-      │    │            │        focusable=false}             — inert (below)
-      │    │            ├─ span.n-cascader-option__label {label}
-      │    │            └─ div.n-cascader-option__suffix
-      │    │                 > div.n-cascader-option-icon-placeholder
-      │    │                     > branch: NBaseLoading(scale .85, strokeWidth 24,
-      │    │                       show=isLoading) > arrow | placeholder
-      │    │                       > leaf: checkmark iff checkStrategy = Child
-      │    │                         && !(multiple && cascade) — with the
-      │    │                         fade-in-scale-up phase class
-      │    └─ div.n-base-menu-mask {mask}                     — iff mask
-      ├─ div.n-cascader-menu__empty {empty | NUI.Empty}      — iff column 0 empty
-      ├─ div.n-cascader-menu-action [data-action]            — iff action
-      └─ div[width:0;height:0][tabindex 0]                   — NFocusDetector, inert
-
-Select menu (`selectMenu`) DOM — the filterable flat body (`showSelectMenu`
-upstream = `filterable && pattern /= ""`; the caller mounts this instead of
-`menu`): the `NUI.SelectMenu` root carrying `extraClasses =
-["n-cascader", …]`… exactly `["n-cascader-menu", transition?]`, the merged
-`selectMenuVars` (23 + 17, last-wins superset — the `NUI.Select.menu`
-precedent) and `focusable = False` (upstream passes no `focusable`).
-
-Caller-owned runtime (the port-wide convention): show state and follower
-positioning (mount the body in your own positioned wrapper), the
-`fade-in-scale-up-transition` phases, keyboard navigation (`keyboardKey`)
-and hover expansion (`hoverKey` — its path is what paints `--pending`),
-`pattern` + `onPatternInput` (filtering runs through `filterOptions`),
-`remote`/`onLoad` orchestration (`loadingKeys` paints the per-option
-spinners; the option tree itself is the loaded state, so treemate's
-`SubtreeNotLoadedError` and `allowCheckingNotLoaded` are moot), the mask's
-`showOnce` timing (render `mask` while the message shows; its
-`fade-in-transition` classes are not driven), `autoPending` and the select
-menu's keyboard `prev`/`next`/`enter` (inject `--pending` through the flat
-rows' `attributes` — the `NUI.SelectMenu` seam), the responsive
-`maxTagCount` overflow and its preview popover (numeric is the static seam
-here, as in `NUI.Select`), `ellipsisTagPopoverProps`, form-item
-size/disabled/status merging, IME, `onFocus`/`onBlur`/`onTabout`, column
-scrolling, `virtualScroll`'s windowing (`virtual` only adds the
-`--virtual` width class; the full column renders).
-
-Not ported: `renderLabel` / `renderPrefix` / `renderSuffix` / `arrow`-
-adjacent custom render slots beyond `arrow` itself; `leafOnly` /
-`onChange` (deprecated upstream); `valueField` / `labelField` /
-`childrenField` / `disabledField` (fixed record names — the
-`NUI.SelectMenu` limitation); a custom `filter` (pass pre-built flat rows
-to `selectMenu` instead of `filterOptions`' output); treemate group /
-ignored nodes. The checkbox renders states only: Elm has no
-`stopPropagation` hook (the `NUI.Tabs` note), so a wired checkbox would
-double-fire with the row's own `onToggle` — branch checks arrive through
-the row click instead. `Cascader.Size` is upstream's three-size scale (no
-`tiny`); the menu carries no size variant (heights flow through the vars),
-and neither body has an `rtl.cssr` upstream (the trigger's `rtl` rides
-`NUI.BaseSelection`).
+Trigger/panel DOM shapes and porting notes live in the comment block below
+the module doc.
 
 @docs Size, Status, CheckStrategy, ExpandTrigger, Option, Options, defaults, MenuOptions, menuDefaults, SelectMenuOptions, selectMenuDefaults, getCheckedKeys, check, uncheck, toggleValue, valueKeys, filterOptions, view, menu, selectMenu, menuVars, selectMenuVars
 
+-}
+
+{- DOM shapes and porting notes for `NUI.Cascader` — moved verbatim out of the
+      module docstring (docs.json must stay under elm publish's 768kb limit);
+      plain comments do not enter the published API docs.
+
+   Trigger (`view`) DOM — the `.n-cascader` wrapper is bare (no vars, no extra
+   classes; `position:relative; width:100%` come from the stylesheet):
+
+       div.n-cascader
+         └─ NUI.BaseSelection.view (see its docstring for the full tree;
+            `view` derives the display state from `value` + the option tree
+            per the module docs — path labels, fallback keys, tag slicing)
+
+   Menu (`menu`) DOM — the columns body, carrying the 17 cascader vars:
+
+       div.n-cascader-menu [fade-in-scale-up-transition-*]
+         tabindex = 0 (upstream hardcodes it)
+         style = 17 vars → --n-menu-mask-color
+         ├─ div.n-cascader-submenu-wrapper                       — iff column 0 non-empty
+         │    ├─ div.n-cascader-submenu [--virtual]              — per column
+         │    │    style = getColumnStyle level (iff columnStyle)
+         │    │    └─ NUI.Scrollbar
+         │    │        └─ div.n-cascader-option [--pending] [--disabled]
+         │    │                       [--show-prefix]             — per option
+         │    │            ├─ div.n-cascader-option__prefix      — iff showCheckbox
+         │    │            │    > NCheckbox{checked, indeterminate, disabled,
+         │    │            │        focusable=false}             — inert (below)
+         │    │            ├─ span.n-cascader-option__label {label}
+         │    │            └─ div.n-cascader-option__suffix
+         │    │                 > div.n-cascader-option-icon-placeholder
+         │    │                     > branch: NBaseLoading(scale .85, strokeWidth 24,
+         │    │                       show=isLoading) > arrow | placeholder
+         │    │                       > leaf: checkmark iff checkStrategy = Child
+         │    │                         && !(multiple && cascade) — with the
+         │    │                         fade-in-scale-up phase class
+         │    └─ div.n-base-menu-mask {mask}                     — iff mask
+         ├─ div.n-cascader-menu__empty {empty | NUI.Empty}      — iff column 0 empty
+         ├─ div.n-cascader-menu-action [data-action]            — iff action
+         └─ div[width:0;height:0][tabindex 0]                   — NFocusDetector, inert
+
+   Select menu (`selectMenu`) DOM — the filterable flat body (`showSelectMenu`
+   upstream = `filterable && pattern /= ""`; the caller mounts this instead of
+   `menu`): the `NUI.SelectMenu` root carrying `extraClasses =
+   ["n-cascader", …]`… exactly `["n-cascader-menu", transition?]`, the merged
+   `selectMenuVars` (23 + 17, last-wins superset — the `NUI.Select.menu`
+   precedent) and `focusable = False` (upstream passes no `focusable`).
+
+   Caller-owned runtime (the port-wide convention): show state and follower
+   positioning (mount the body in your own positioned wrapper), the
+   `fade-in-scale-up-transition` phases, keyboard navigation (`keyboardKey`)
+   and hover expansion (`hoverKey` — its path is what paints `--pending`),
+   `pattern` + `onPatternInput` (filtering runs through `filterOptions`),
+   `remote`/`onLoad` orchestration (`loadingKeys` paints the per-option
+   spinners; the option tree itself is the loaded state, so treemate's
+   `SubtreeNotLoadedError` and `allowCheckingNotLoaded` are moot), the mask's
+   `showOnce` timing (render `mask` while the message shows; its
+   `fade-in-transition` classes are not driven), `autoPending` and the select
+   menu's keyboard `prev`/`next`/`enter` (inject `--pending` through the flat
+   rows' `attributes` — the `NUI.SelectMenu` seam), the responsive
+   `maxTagCount` overflow and its preview popover (numeric is the static seam
+   here, as in `NUI.Select`), `ellipsisTagPopoverProps`, form-item
+   size/disabled/status merging, IME, `onFocus`/`onBlur`/`onTabout`, column
+   scrolling, `virtualScroll`'s windowing (`virtual` only adds the
+   `--virtual` width class; the full column renders).
+
+   Not ported: `renderLabel` / `renderPrefix` / `renderSuffix` / `arrow`-
+   adjacent custom render slots beyond `arrow` itself; `leafOnly` /
+   `onChange` (deprecated upstream); `valueField` / `labelField` /
+   `childrenField` / `disabledField` (fixed record names — the
+   `NUI.SelectMenu` limitation); a custom `filter` (pass pre-built flat rows
+   to `selectMenu` instead of `filterOptions`' output); treemate group /
+   ignored nodes. The checkbox renders states only: Elm has no
+   `stopPropagation` hook (the `NUI.Tabs` note), so a wired checkbox would
+   double-fire with the row's own `onToggle` — branch checks arrive through
+   the row click instead. `Cascader.Size` is upstream's three-size scale (no
+   `tiny`); the menu carries no size variant (heights flow through the vars),
+   and neither body has an `rtl.cssr` upstream (the trigger's `rtl` rides
+   `NUI.BaseSelection`).
 -}
 
 import Element exposing (Element)

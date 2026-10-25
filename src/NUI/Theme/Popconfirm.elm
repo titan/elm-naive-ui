@@ -20,11 +20,6 @@ import NUI.Theme.Common exposing (Common)
 
 {-| All `--n-*` custom properties the Popconfirm CSS consumes, as one record. Fields map
 1:1 onto the component's `--n-<kebab-case-field>` custom properties (`iconSize` → `--n-icon-size`).
-
-Collected by concern:
-
-  - typography & icon: `iconSize`, `fontSize`, `iconColor`
-
 -}
 type alias Vars =
     { iconSize : String

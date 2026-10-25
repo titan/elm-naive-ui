@@ -7,14 +7,6 @@ container. It mounts standalone (upstream's "can be a component" test mounts
 (upstream `NDialogEnvironment` wraps it in an `NModal`; `NUI.Modal.Preset`
 grows `Dialog`/`Confirm` constructors that render this view):
 
-    div.n-dialog [--closable] [--icon-left|top] [--bordered] [--rtl]
-      role=dialog  style=<28 css vars, kind/placement-keyed>
-      ├─ close                                — iff closable
-      ├─ div.n-dialog-icon-container {icon}   — iff showIcon && IconTop
-      ├─ div.n-dialog__title {icon?, title}   — icon inside iff IconLeft
-      ├─ div.n-dialog__content [--last] {content}
-      └─ div.n-dialog__action {action|buttons} — iff action node exists
-
     import NUI.Dialog as Dialog
     import NUI.Theme as Theme
 
@@ -33,46 +25,72 @@ grows `Dialog`/`Confirm` constructors that render this view):
         { Modal.defaults | show = True }
         (Modal.Dialog { Dialog.defaults | title = Just (Element.text "Hi") })
 
-**Everything runtime is caller-owned** (the popover-family precedent —
-upstream's provider/env layers consume nothing this view needs):
+Essential contract: a pure body — never a mask or a container; it mounts
+standalone and is the body of Modal's `dialog` / `confirm` presets. The
+imperative queue and close gating (upstream hides unless a callback
+resolves non-`false`) are caller-owned; mask / esc / drag / focus-trap are
+`NUI.Modal`-layer runtime. Actions are composed `NUI.Button`s — negative
+first (ghost, small), positive second (small, kind-derived `default →
+primary`, `loading` disables AND loads it), each only with its text;
+`action` replaces the buttons outright and the content's `--last`
+modifier tracks its absence.
 
-  - **The imperative queue.** Upstream `useDialog()`/`NDialogProvider` keeps a
-    reactive list (`create`/`destroyAll`, removal on after-leave). The port's
-    caller mounts as many `Modal.view` instances as it wants and owns the
-    list; `destroyAll` is just clearing it.
-  - **Close gating.** Upstream's env hides the dialog unless a callback
-    returns `false` (`Promise.resolve(cb).then(r => r === false || hide())`).
-    The port's `onPositiveClick`/`onNegativeClick`/`onClose` are plain msgs:
-    the caller's update decides whether to clear `show`. Mask/esc/drag/
-    `blockScroll`/focus-trap are Modal-layer runtime (see `NUI.Modal`).
-
-**Actions are composed `NUI.Button`s** (negative first, positive second —
-each only with its text): negative = ghost + small; positive = small,
-kind-derived (`default → primary`), `loading` disables AND loads it (the
-negative never loads). `action` (upstream's slot/prop) replaces the buttons
-outright, and the content's `--last` modifier tracks the action node's
-absence. `positiveProps`/`negativeProps` model upstream's
-`{...buttonProps}` spread as update functions on the derived base
-(caller-wins, exactly the spread).
-
-**Divergences (documented, pinned by tests).** `kind` widens upstream's
-`type` to `NUI.Types.Kind`; `Primary` is invalid upstream and degrades to
-`Default` (Info glyph + base `--n-icon-color`). No inline-theme class is ever
-emitted (house rule). `titleClass/titleStyle/…` pairs collapse to
-`*Attributes` lists — note the style asymmetry: elm-ui layout attributes
-(`Element.width`, `Element.padding`, …) land as elm-ui classes on the node,
-NOT as CSS `style`; only raw `HA.attribute "style"` (or `I.cssVars`)
-reaches the upstream `titleStyle/contentStyle/actionStyle` channel. The root
-`style` option (the env's `style`/`internalStyle`, upstream's fallthrough)
-has its own `style : Maybe String` field — merged into the one root style
-attribute after the vars, never a second attribute (string form only —
-upstream's `CSSProperties` object is the caller's fragment here). The
-close is the ported `n-base-close` **classes-only** (its structure CSS is in
-the generated sheet; dialog's cssr positions it — no `--absolute`, sized by
-`--n-close-size`), `closeFocusable` driving its tabindex (0 vs −1).
+DOM shapes, fidelity notes and porting details live in the comment block
+below the module doc.
 
 @docs IconPlacement, Options, cssVars, defaults, view
 
+-}
+
+{- DOM shapes, fidelity notes and porting details for `NUI.Dialog` — moved verbatim
+      out of the module docstring (docs.json must stay under elm publish's 768kb
+      limit); plain comments do not enter the published API docs.
+
+       div.n-dialog [--closable] [--icon-left|top] [--bordered] [--rtl]
+         role=dialog  style=<28 css vars, kind/placement-keyed>
+         ├─ close                                — iff closable
+         ├─ div.n-dialog-icon-container {icon}   — iff showIcon && IconTop
+         ├─ div.n-dialog__title {icon?, title}   — icon inside iff IconLeft
+         ├─ div.n-dialog__content [--last] {content}
+         └─ div.n-dialog__action {action|buttons} — iff action node exists
+
+   **Everything runtime is caller-owned** (the popover-family precedent —
+   upstream's provider/env layers consume nothing this view needs):
+
+     - **The imperative queue.** Upstream `useDialog()`/`NDialogProvider` keeps a
+       reactive list (`create`/`destroyAll`, removal on after-leave). The port's
+       caller mounts as many `Modal.view` instances as it wants and owns the
+       list; `destroyAll` is just clearing it.
+     - **Close gating.** Upstream's env hides the dialog unless a callback
+       returns `false` (`Promise.resolve(cb).then(r => r === false || hide())`).
+       The port's `onPositiveClick`/`onNegativeClick`/`onClose` are plain msgs:
+       the caller's update decides whether to clear `show`. Mask/esc/drag/
+       `blockScroll`/focus-trap are Modal-layer runtime (see `NUI.Modal`).
+
+   **Actions are composed `NUI.Button`s** (negative first, positive second —
+   each only with its text): negative = ghost + small; positive = small,
+   kind-derived (`default → primary`), `loading` disables AND loads it (the
+   negative never loads). `action` (upstream's slot/prop) replaces the buttons
+   outright, and the content's `--last` modifier tracks the action node's
+   absence. `positiveProps`/`negativeProps` model upstream's
+   `{...buttonProps}` spread as update functions on the derived base
+   (caller-wins, exactly the spread).
+
+   **Divergences (documented, pinned by tests).** `kind` widens upstream's
+   `type` to `NUI.Types.Kind`; `Primary` is invalid upstream and degrades to
+   `Default` (Info glyph + base `--n-icon-color`). No inline-theme class is ever
+   emitted (house rule). `titleClass/titleStyle/…` pairs collapse to
+   `*Attributes` lists — note the style asymmetry: elm-ui layout attributes
+   (`Element.width`, `Element.padding`, …) land as elm-ui classes on the node,
+   NOT as CSS `style`; only raw `HA.attribute "style"` (or `I.cssVars`)
+   reaches the upstream `titleStyle/contentStyle/actionStyle` channel. The root
+   `style` option (the env's `style`/`internalStyle`, upstream's fallthrough)
+   has its own `style : Maybe String` field — merged into the one root style
+   attribute after the vars, never a second attribute (string form only —
+   upstream's `CSSProperties` object is the caller's fragment here). The
+   close is the ported `n-base-close` **classes-only** (its structure CSS is in
+   the generated sheet; dialog's cssr positions it — no `--absolute`, sized by
+   `--n-close-size`), `closeFocusable` driving its tabindex (0 vs −1).
 -}
 
 import Element exposing (Element)
