@@ -1,14 +1,10 @@
 module NUI.Theme.InputNumber exposing (Vars, vars)
 
-{-| Theme variables for the **InputNumber** component — the Elm counterpart of
-Naive UI's `src/input-number/styles/light.ts` & `dark.ts` cssr theme (selfVars).
-InputNumber renders with Naive UI's original CSS, so the single record field here
-is emitted as the `--n-icon-color-disabled` custom property on the component root
-(upstream kebab-case mapping, `iconColorDisabled` → `--n-icon-color-disabled`).
-
-`vars` plays the role of upstream `self(common)`: it switches on `theme.mode`
-(Light/Dark) and derives the disabled step-button icon colour from
-`theme.common.textColorDisabled` (see `NUI.Theme.Common`).
+{-| Theme variables for **InputNumber** (upstream `src/input-number/styles/light.ts` & `dark.ts`, cssr
+selfVars). Fields map 1:1 onto the component's `--n-*` custom properties
+(kebab-case of the field name). `vars` resolves the light/dark palette from
+`theme.mode` + `theme.common` — upstream's `self(common)`; override individual
+fields to customise.
 
 @docs Vars, vars
 
@@ -26,9 +22,8 @@ type alias Vars =
     }
 
 
-{-| Resolve the InputNumber theme variables — upstream's `self(common)`
-counterpart. Switches on `theme.mode`; both palettes derive the disabled icon
-colour from `theme.common.textColorDisabled` (identical in the stock palettes).
+{-| Resolve the InputNumber variables — the disabled step-button icon colour,
+drawn from `theme.common.textColorDisabled` in both modes.
 -}
 vars : Theme -> Vars
 vars theme =

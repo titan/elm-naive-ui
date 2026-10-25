@@ -1,14 +1,10 @@
 module NUI.Theme.Button exposing (Vars, vars)
 
-{-| Theme variables for the **Button** component — the Elm counterpart of Naive UI's
-`src/Button/styles/light.ts` & `dark.ts` cssr theme (selfVars). Button renders with Naive UI's
-original CSS, so each record field here is emitted as one `--n-*` custom property on the
-component root, using the upstream kebab-case mapping (`paddingTiny` → `--n-padding-tiny`, `paddingSmall` → `--n-padding-small`, …).
-
-`vars` plays the role of upstream `self(common)`: it switches on `theme.mode` (Light/Dark) and
-derives every value from `theme.common` (see `NUI.Theme.Common`), reproducing Naive UI's light
-and dark palettes value-for-value. Pass the result to Button's `view`, or override individual
-fields to customise the look.
+{-| Theme variables for **Button** (upstream `src/Button/styles/light.ts` & `dark.ts`, cssr
+selfVars). Fields map 1:1 onto the component's `--n-*` custom properties
+(kebab-case of the field name). `vars` resolves the light/dark palette from
+`theme.mode` + `theme.common` — upstream's `self(common)`; override individual
+fields to customise.
 
 @docs Vars, vars
 
@@ -18,8 +14,7 @@ import NUI.Theme as Theme exposing (Theme)
 import NUI.Theme.Common exposing (Common)
 
 
-{-| All `--n-*` custom properties the Button CSS consumes, as one record. Fields map
-1:1 onto the component's `--n-<kebab-case-field>` custom properties (`paddingTiny` → `--n-padding-tiny`).
+{-| All `--n-*` custom properties this component's CSS consumes, as one record.
 -}
 type alias Vars =
     { paddingTiny : String
@@ -227,8 +222,7 @@ type alias Vars =
     }
 
 
-{-| Resolve the Button variables for a theme — upstream `self(common)`: Light and Dark
-modes each get their own palette, values drawn from `theme.common`.
+{-| Resolve this component's variables for a theme (see the module doc).
 -}
 vars : Theme -> Vars
 vars theme =

@@ -1,14 +1,10 @@
 module NUI.Theme.InputOtp exposing (Vars, vars)
 
-{-| Theme variables for the **InputOtp** component — the Elm counterpart of Naive
-UI's `src/input-otp/styles/light.ts` & `dark.ts` cssr theme (selfVars). InputOtp renders
-with Naive UI's original CSS, so each record field here is emitted as one `--n-*`
-custom property on the component root, using the upstream kebab-case mapping
-(`inputWidthSmall` → `--n-input-width-small`, `gapMedium` → `--n-gap-medium`, …).
-
-`vars` plays the role of upstream `self()`: it switches on `theme.mode`
-(Light/Dark) and picks the size-tuned slot geometry. Pass the result to InputOtp's
-`view`, or override individual fields to customise the look.
+{-| Theme variables for **InputOtp** (upstream `src/input-otp/styles/light.ts` & `dark.ts`, cssr
+selfVars). Fields map 1:1 onto the component's `--n-*` custom properties
+(kebab-case of the field name). `vars` resolves the light/dark palette from
+`theme.mode` + `theme.common` — upstream's `self(common)`; override individual
+fields to customise.
 
 @docs Vars, vars
 
@@ -34,10 +30,8 @@ type alias Vars =
     }
 
 
-{-| Resolve the InputOtp theme variables — upstream's `self()` counterpart.
-Switches on `theme.mode`: both palettes pick the size-tuned slot geometry
-(24/30/36px slots with 8px gaps); only derived colour channels would differ,
-and InputOtp's slots carry none.
+{-| Resolve the InputOtp variables — the size-tuned slot geometry
+(24/30/36px slots, 8px gaps); identical in both modes.
 -}
 vars : Theme -> Vars
 vars theme =
